@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, KeyRound, Pencil, Plus, Users } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, KeyRound, Pencil, Plus, Shield, Users } from 'lucide-react';
 import {
   useSupplierUserChangeStatus,
   useSupplierUserCreate,
   useSupplierUserList,
   useSupplierUserResetPassword,
-  useSupplierUserChangeRole,
+  listSupplierTeamRoles,
+  supplierTeamRolesKey,
   useSupplierUserUpdateProfile,
   type SupplierUserResponse,
 } from '@24bid/api-client';
@@ -23,6 +24,7 @@ import {
   StatusPill,
   cn,
 } from '@24bid/ui';
+import { SupplierTeamRoles } from './team-roles';
 
 const PAGE_SIZE = 10;
 const MEMBER_ROLE = 'role-system-supplier-member';
@@ -148,8 +150,9 @@ export function TeamPage({ canManage = false, currentUserId }: { canManage?: boo
   const users = useSupplierUserList();
   const changeStatus = useSupplierUserChangeStatus();
   const resetPassword = useSupplierUserResetPassword();
-  const changeRole = useSupplierUserChangeRole();
-  const [roleTarget, setRoleTarget] = useState<{ user: SupplierUserResponse; roleId: string } | null>(null);
+  const roles = useQuery({ queryKey: supplierTeamRolesKey, queryFn: ({ signal }) => listSupplierTeamRoles(signal), enabled: canManage });
+  const [roleTarget, setRoleTarget] = useState<SupplierUserResponse | undefined>();
+  const [managingRoles, setManagingRoles] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -208,17 +211,23 @@ export function TeamPage({ canManage = false, currentUserId }: { canManage?: boo
     </div>
   );
 
-  const memberRole = (u: SupplierUserResponse) => canManage ? (
-    <select aria-label={`${u.name}的角色`} value={u.roleId ?? ''}
-      disabled={u.id === currentUserId || changeRole.isPending}
-      title={u.id === currentUserId ? '不能修改当前登录账号的角色' : undefined}
-      className="h-9 w-full min-w-0 rounded-md border border-slate-200 bg-white px-2 text-xs font-semibold disabled:bg-slate-50 disabled:text-slate-500"
-      onChange={(event) => setRoleTarget({ user: u, roleId: event.target.value })}>
-      {u.roleId !== MEMBER_ROLE && u.roleId !== OWNER_ROLE && <option value={u.roleId ?? ''} disabled>原有角色</option>}
-      <option value={MEMBER_ROLE}>业务成员</option>
-      <option value={OWNER_ROLE}>供应商管理员</option>
-    </select>
-  ) : <span className="text-xs text-slate-600">{roleLabel(u.roleId)}</span>;
+  const memberRole = (u: SupplierUserResponse) => {
+    const assigned = roles.data?.data?.assignments.find(a => a.userId === u.id);
+    const label = canManage && assigned
+      ? assigned.roleIds.map(id => roles.data?.data?.roles.find(role => role.id === id)?.name ?? '未知角色').join('、') || '未分配角色'
+      : roleLabel(u.roleId);
+    return <div className="min-w-0 space-y-2"><p className="break-all text-xs text-slate-600">{label}</p>{canManage && <button type="button"
+      aria-label={`${u.name}的角色`} disabled={!currentUserId || !u.id || u.id === currentUserId}
+      title={u.id === currentUserId ? '不能修改当前登录账号的角色' : '角色授权'}
+      className="inline-flex min-h-8 items-center gap-1 rounded-md border border-slate-200 px-2 text-xs font-semibold disabled:opacity-50"
+      onClick={() => setRoleTarget(u)}><Shield size={12} />角色授权</button>}</div>;
+  };
+
+  if (canManage && (managingRoles || roleTarget)) {
+    return <SupplierTeamRoles canManage={canManage} currentUserId={currentUserId} member={roleTarget}
+      onBack={() => { setManagingRoles(false); setRoleTarget(undefined); }}
+      onSaved={message => { setRoleTarget(undefined); setManagingRoles(false); setFeedback(message); refresh(); }} />;
+  }
 
   if ((creating || editing) && canManage) {
     return (
@@ -237,16 +246,6 @@ export function TeamPage({ canManage = false, currentUserId }: { canManage?: boo
 
   return (
     <>
-    <ConfirmDialog open={!!roleTarget && canManage} title={`修改「${roleTarget?.user.name ?? ''}」的角色`}
-      message={`将改为${roleLabel(roleTarget?.roleId)}。${roleTarget?.roleId === OWNER_ROLE ? '拥有企业业务及团队管理权限。' : '可办理报价、订单等业务，无团队管理和资质维护权限。'}原有角色授权将被替换，该成员需要重新登录。`}
-      confirmLabel="确认修改" busy={changeRole.isPending} onCancel={() => setRoleTarget(null)}
-      onConfirm={() => {
-        if (!canManage || !roleTarget?.user.id) return;
-        changeRole.mutate({ userId: roleTarget.user.id, data: { roleId: roleTarget.roleId } }, {
-          onSuccess: () => { setFeedback(`已修改「${roleTarget.user.name}」的角色，请该成员重新登录。`); setRoleTarget(null); refresh(); },
-          onError: (e) => { setRoleTarget(null); reportError(e); },
-        });
-      }} />
     <ConfirmDialog
       open={!!resetTarget && canManage}
       tone="primary"
@@ -286,6 +285,7 @@ export function TeamPage({ canManage = false, currentUserId }: { canManage?: boo
               setPage(1);
             }}
           />
+          {canManage && <button type="button" onClick={() => setManagingRoles(true)} className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-slate-200 px-3 text-xs font-bold"><Shield size={14} />角色管理</button>}
           {canManage && <button
             type="button"
             onClick={() => setCreating(true)}

@@ -62,6 +62,7 @@ public interface SupplierUserMapper {
         and u.id != #{excludedUserId}
         and exists (select 1 from user_roles ur join roles r on r.id = ur.role_id
           where ur.user_id = u.id and r.scope = 'supplier' and r.tenant_id is null
+            and (r.supplier_id is null or r.supplier_id = u.supplier_id)
             and r.permissions @> '["supplier:*"]'::jsonb)
       """)
   int countOtherActiveAdmins(@Param("supplierId") String supplierId, @Param("excludedUserId") String excludedUserId);

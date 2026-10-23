@@ -76,7 +76,8 @@ public interface AuthenticationUserMapper {
       where ur.user_id = #{userId}
         and (
           (#{scope} = 'BUYER' and r.scope = 'buyer' and r.tenant_id = #{tenantId})
-          or (#{scope} = 'SUPPLIER' and r.scope = 'supplier' and r.tenant_id is null)
+          or (#{scope} = 'SUPPLIER' and r.scope = 'supplier' and r.tenant_id is null
+            and (r.supplier_id is null or r.supplier_id = #{supplierId}))
           or (#{scope} = 'PLATFORM' and r.scope = 'platform' and r.tenant_id is null)
         )
       order by security_role

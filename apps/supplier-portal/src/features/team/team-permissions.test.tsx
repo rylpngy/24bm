@@ -1,10 +1,17 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TeamPage } from './team-page';
 
 const mocks = vi.hoisted(() => ({ create: vi.fn(), status: vi.fn(), role: vi.fn(), profile: vi.fn() }));
 vi.mock('@24bid/api-client', () => ({
+  supplierTeamRolesKey: ['/api/v1/supplier/team-roles'],
+  listSupplierTeamRoles: async () => ({ data: { roles: [
+    { id: 'role-system-supplier-owner', name: '供应商管理员', permissions: ['supplier:*'], system: true },
+    { id: 'role-system-supplier-member', name: '业务成员', permissions: [], system: true },
+  ], permissions: [], assignments: [{ userId: 'member', roleIds: ['role-system-supplier-member'] }] } }),
+  assignSupplierTeamRoles: mocks.role,
+  createSupplierTeamRole: vi.fn(), updateSupplierTeamRole: vi.fn(),
   useSupplierUserList: () => ({ data: { data: [
     { id: 'owner', name: '管理员', status: 'active', roleId: 'role-system-supplier-owner' },
     { id: 'member', name: '业务成员', status: 'inactive', roleId: 'role-system-supplier-member' },
@@ -49,14 +56,15 @@ describe('supplier team authorization and status contract', () => {
     fireEvent.click(screen.getByRole('button', { name: '创建成员' }));
     expect(mocks.create).toHaveBeenCalledWith({ data: expect.objectContaining({ status: 'active', name: '新成员' }) }, expect.any(Object));
   });
-  it('requires confirmation before role assignment and prevents self changes', () => {
+  it('requires explicit save before role assignment and prevents self changes', async () => {
     show(true);
     expect(screen.getAllByLabelText('管理员的角色').every((el) => (el as HTMLSelectElement).disabled)).toBe(true);
-    fireEvent.change(screen.getAllByLabelText('业务成员的角色')[0], { target: { value: 'role-system-supplier-owner' } });
+    fireEvent.click(screen.getAllByLabelText('业务成员的角色')[0]);
+    fireEvent.click(await screen.findByLabelText('供应商管理员'));
     expect(mocks.role).not.toHaveBeenCalled();
-    expect(screen.getByRole('dialog').textContent).toContain('需要重新登录');
-    fireEvent.click(screen.getByRole('button', { name: '确认修改' }));
-    expect(mocks.role).toHaveBeenCalledWith({ userId: 'member', data: { roleId: 'role-system-supplier-owner' } }, expect.any(Object));
+    expect(screen.getByText(/本地登录成员需重新登录/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '保存授权' }));
+    await waitFor(() => expect(mocks.role).toHaveBeenCalledWith('member', ['role-system-supplier-member', 'role-system-supplier-owner']));
   });
   it('does not expose role selectors to read-only viewers', () => {
     show();
