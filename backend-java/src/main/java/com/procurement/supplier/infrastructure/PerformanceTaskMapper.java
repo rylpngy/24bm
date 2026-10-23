@@ -49,6 +49,9 @@ public interface PerformanceTaskMapper {
   @Select("select name from users where id=#{userId} and supplier_id=#{supplierId} and tenant_id is null and status='active'")
   String supplierActor(@Param("supplierId") String supplierId, @Param("userId") String userId);
 
+  @Select("select id from users where supplier_id=#{supplierId} and tenant_id is null and status='active' order by id")
+  List<String> supplierRecipients(@Param("supplierId") String supplierId);
+
   @Insert("""
       insert into supplier_performance_tasks(id,tenant_id,supplier_id,relation_id,period,assignee_id,assignee_name,due_date,status)
       values(#{id},#{tenantId},#{supplierId},#{relationId},#{period},#{assigneeId},#{assigneeName},#{dueDate},'assigned')

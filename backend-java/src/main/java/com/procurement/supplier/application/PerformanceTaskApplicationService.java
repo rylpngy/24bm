@@ -26,14 +26,17 @@ public class PerformanceTaskApplicationService {
   private final SupplierEvaluationApplicationService evaluations;
   private final PermissionService permissions;
   private final AuditLogApplicationService audit;
+  private final PerformanceTaskNotificationService notifications;
 
   public PerformanceTaskApplicationService(PerformanceTaskMapper mapper, BuyerSupplierRelationMapper relations,
-      SupplierEvaluationApplicationService evaluations, PermissionService permissions, AuditLogApplicationService audit) {
+      SupplierEvaluationApplicationService evaluations, PermissionService permissions, AuditLogApplicationService audit,
+      PerformanceTaskNotificationService notifications) {
     this.mapper = mapper;
     this.relations = relations;
     this.evaluations = evaluations;
     this.permissions = permissions;
     this.audit = audit;
+    this.notifications = notifications;
   }
 
   public List<PerformanceTaskResponse> listBuyer(String relationId) {
@@ -201,6 +204,7 @@ public class PerformanceTaskApplicationService {
     mapper.event(task.id(), action, userId(), actor, comment);
     audit.recordTenantAction(task.tenantId(), "supplier_performance_task." + action,
         "supplier_performance_task", task.id(), comment);
+    notifications.notifyEvent(mapper.lockBuyer(task.tenantId(), task.relationId(), task.id()), action);
   }
 
   private PerformanceTaskResponse response(PerformanceTask task) {

@@ -29,6 +29,7 @@ import {
 } from 'recharts';
 import { useBuyerAnalyticsProcurement, useBuyerWorkspaceLoad } from '@24bid/api-client';
 import { MiniFact, Panel, ShellState, StatusPill, cn } from '@24bid/ui';
+import { BuyerNotifications } from './buyer-notifications';
 
 const currency = (v: number, compact = false) =>
   compact
@@ -601,6 +602,7 @@ export function DashboardPage({ onNavigate }: { onNavigate: (moduleId: string) =
           </div>
         </div>
 
+        <BuyerNotifications />
         <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-slate-400">
           <StatusPill label="数据来自采购工作台" />
           <span>遵循统一列表页体验规约，数据实时来自采购工作台。</span>
