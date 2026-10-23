@@ -1,4 +1,14 @@
-import { expect, type APIRequestContext, type Page } from '@playwright/test';
+import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
+
+async function fillPortalCredentials(page: Page) {
+  const project = test.info().project.name;
+  if (project !== 'platform' && project !== 'supplier') return;
+  await page.getByLabel('账号', { exact: true }).fill(
+    project === 'platform' ? 'platform.admin@example.com' : 'supplier.sales@example.com',
+  );
+  await page.getByLabel('密码', { exact: true }).fill('demo123456');
+  if (project === 'supplier') await page.getByLabel('企业编号', { exact: true }).fill('ent-supplier-sunrise');
+}
 
 // 通用:走各端登录门的 Keycloak 主登录路径。
 export async function loginViaKeycloak(page: Page) {
@@ -7,6 +17,7 @@ export async function loginViaKeycloak(page: Page) {
   if (await portalLogin.isVisible({ timeout: 2_000 }).catch(() => false)) {
     await portalLogin.click();
   }
+  await fillPortalCredentials(page);
   await page.getByRole('button', { name: /登录系统|Keycloak 登录/ }).click();
 }
 
@@ -18,7 +29,8 @@ export async function loginViaDevJwt(page: Page) {
   if (await portalLogin.isVisible({ timeout: 2_000 }).catch(() => false)) {
     await portalLogin.click();
   }
-  await page.getByRole('button', { name: /自研 JWT|采购管理员/ }).first().click();
+  await fillPortalCredentials(page);
+  await page.getByRole('button', { name: /自研 JWT|采购管理员|账号登录/ }).first().click();
 }
 
 // 左侧全局导航(aside)里的模块按钮;限定侧边栏范围,避免匹配到工作台快捷操作。

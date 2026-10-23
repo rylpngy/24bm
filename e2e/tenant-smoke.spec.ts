@@ -100,7 +100,7 @@ test('付款批次为发票付款二级页,显示财务异常看板', async ({ p
   await expect(page.getByRole('button', { name: /^付款阻断 \d+/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /^差异待处理 \d+/ })).toBeVisible();
   await expect(page.getByText('执行记录明细').first()).toBeVisible();
-  await expect(page.getByRole('button', { name: /登记付款/ }).first()).toBeVisible();
+  await expect(page.getByRole('link', { name: '付款金额台账', exact: true }).first()).toBeVisible();
 });
 
 test('采购申请员仅显示需求与寻源相关菜单', async ({ page }) => {

@@ -15,7 +15,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   workers: 1,
-  reporter: [['list']],
+  reporter: [['list'], ['html', { open: 'never' }]],
   use: { headless: true, trace: 'on-first-retry', locale: 'zh-CN' },
   projects: [
     {
