@@ -40,6 +40,7 @@ import { WorkflowStatusPanel } from '../workflow/workflow-instance-panel';
 import { SupplierAdmissionReviewDialog } from './supplier-admission-review-dialog';
 import { SupplierExitActions } from './supplier-exit-actions';
 import { SupplierEvaluationPanel } from './supplier-evaluation-panel';
+import { SupplierPerformanceTasks } from './supplier-performance-tasks';
 
 type TabId = 'orders' | 'finance' | 'performance' | 'products' | 'qualifications';
 
@@ -208,7 +209,7 @@ export function SupplierDetailPage({
 
           {tab === 'orders' && <OrdersTab orders={orders} loading={ordersQuery.isLoading} />}
           {tab === 'finance' && <FinanceTab orders={orders} />}
-          {id && <div hidden={tab !== 'performance'}><SupplierEvaluationPanel key={id} relationId={id} supplierId={supplierId} /></div>}
+          {id && <div hidden={tab !== 'performance'}><SupplierPerformanceTasks key={`tasks-${id}`} relationId={id} /><SupplierEvaluationPanel key={id} relationId={id} supplierId={supplierId} /></div>}
           {tab === 'products' && <ProductsTab supplier={supplier} />}
           {tab === 'qualifications' && id && (
             <SupplierQualificationsTab relationId={id} supplierId={supplier.supplierId} />

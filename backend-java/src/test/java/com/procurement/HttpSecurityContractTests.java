@@ -241,6 +241,8 @@ import org.springframework.test.web.servlet.MvcResult;
     BuyerSupplierDiscoveryController.class,
     BuyerSupplierInvitationController.class,
     SupplierEvaluationController.class,
+    com.procurement.supplier.api.BuyerPerformanceTaskController.class,
+    com.procurement.supplier.api.SupplierPerformanceTaskController.class,
     SupplierFulfillmentController.class,
     MaterialController.class,
     BuyerRoleController.class,
@@ -437,6 +439,9 @@ class HttpSecurityContractTests {
   private SupplierEvaluationApplicationService supplierEvaluationApplicationService;
 
   @MockBean
+  private com.procurement.supplier.application.PerformanceTaskApplicationService performanceTaskApplicationService;
+
+  @MockBean
   private com.procurement.supplier.application.SupplierFulfillmentMetricsService supplierFulfillmentMetricsService;
 
   @MockBean
@@ -567,6 +572,62 @@ class HttpSecurityContractTests {
 
   @MockBean
   private com.procurement.audit.application.AuditReadAccess auditReadAccess;
+
+  @Test
+  void performanceTaskRoutesEnforcePortalAndPermissionBoundaries() throws Exception {
+    String supplierToken = loginAndExtractToken("""
+        {"account":"supplier","password":"demo123456","scope":"SUPPLIER","supplierId":"ent-supplier-sunrise"}
+        """);
+    String buyerToken = loginAndExtractToken("""
+        {"account":"buyer","password":"demo123456","scope":"BUYER","tenantId":"tenant-acme"}
+        """);
+    String buyerPath = "/api/v1/buyer/suppliers/r/performance-tasks";
+    String supplierPath = "/api/v1/supplier/performance-tasks";
+    mockMvc.perform(get(buyerPath)).andExpect(status().isForbidden());
+    mockMvc.perform(get(supplierPath)).andExpect(status().isForbidden());
+    mockMvc.perform(get(buyerPath).header("Authorization","Bearer " + supplierToken)).andExpect(status().isForbidden());
+    mockMvc.perform(get(supplierPath).header("Authorization","Bearer " + buyerToken)).andExpect(status().isForbidden());
+    when(portalPermissions.currentUserHas("buyer:supplier:read")).thenReturn(false);
+    mockMvc.perform(get(buyerPath).header("Authorization","Bearer " + buyerToken)).andExpect(status().isForbidden());
+    when(portalPermissions.currentUserHas("supplier:profile:manage")).thenReturn(false);
+    mockMvc.perform(post(supplierPath + "/t/response").header("Authorization","Bearer " + supplierToken)
+        .contentType(MediaType.APPLICATION_JSON).content("{\"response\":\"已整改\"}"))
+        .andExpect(status().isForbidden());
+    when(portalPermissions.currentUserHas("supplier:profile:read")).thenReturn(true);
+    when(performanceTaskApplicationService.listSupplier()).thenReturn(List.of());
+    mockMvc.perform(get(supplierPath).header("Authorization","Bearer " + supplierToken))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.data").isArray());
+  }
+
+  @Test
+  void performanceReviewAndResponseRequireNonnegativeExpectedVersion() throws Exception {
+    String supplierToken = loginAndExtractToken("""
+        {"account":"supplier","password":"demo123456","scope":"SUPPLIER","supplierId":"ent-supplier-sunrise"}
+        """);
+    String buyerToken = loginAndExtractToken("""
+        {"account":"buyer","password":"demo123456","scope":"BUYER","tenantId":"tenant-acme"}
+        """);
+    when(portalPermissions.currentUserHas("buyer:supplier:manage")).thenReturn(true);
+    when(portalPermissions.currentUserHas("supplier:profile:manage")).thenReturn(true);
+    for (String version : new String[]{"", ",\"expectedVersion\":null", ",\"expectedVersion\":-1"}) {
+      mockMvc.perform(post("/api/v1/buyer/suppliers/r/performance-tasks/t/review")
+          .header("Authorization","Bearer " + buyerToken).contentType(MediaType.APPLICATION_JSON)
+          .content("{\"approved\":true,\"comment\":\"已核实\"" + version + "}"))
+          .andExpect(status().isBadRequest()).andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("expectedVersion")));
+      mockMvc.perform(post("/api/v1/supplier/performance-tasks/t/response")
+          .header("Authorization","Bearer " + supplierToken).contentType(MediaType.APPLICATION_JSON)
+          .content("{\"response\":\"已整改\"" + version + "}"))
+          .andExpect(status().isBadRequest()).andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("expectedVersion")));
+    }
+    mockMvc.perform(post("/api/v1/buyer/suppliers/r/performance-tasks/t/review")
+        .header("Authorization","Bearer " + buyerToken).contentType(MediaType.APPLICATION_JSON)
+        .content("{\"approved\":true,\"comment\":\"已核实\",\"expectedVersion\":0}"))
+        .andExpect(status().isOk());
+    mockMvc.perform(post("/api/v1/supplier/performance-tasks/t/response")
+        .header("Authorization","Bearer " + supplierToken).contentType(MediaType.APPLICATION_JSON)
+        .content("{\"response\":\"已整改\",\"expectedVersion\":0}"))
+        .andExpect(status().isOk());
+  }
 
   @Test
   void viteLocalhostPreflightCanUseAuthorizationHeaderForJavaApiCalls() throws Exception {

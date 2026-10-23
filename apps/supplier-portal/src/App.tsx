@@ -19,6 +19,7 @@ import { DeliveriesPage } from './features/deliveries/deliveries-page';
 import { ReconciliationsPage } from './features/reconciliations/reconciliations-page';
 import { QualificationsPage } from './features/qualifications/qualifications-page';
 import { TeamPage } from './features/team/team-page';
+import { PerformanceTasksPage } from './features/performance/performance-tasks-page';
 
 export function App() {
   const session = useAuthStore((s) => s.session);
@@ -102,6 +103,8 @@ export function App() {
         <ProfilePage />
       ) : activeModuleId === 'qualifications' ? (
         <QualificationsPage canManage={hasPermission(granted, 'supplier:qualification:manage')} />
+      ) : activeModuleId === 'performance-tasks' ? (
+        <PerformanceTasksPage canRead={hasPermission(granted, 'supplier:profile:read')} canManage={hasPermission(granted, 'supplier:profile:manage')} />
       ) : activeModuleId === 'team' ? (
         <TeamPage canManage={hasPermission(granted, 'supplier:*')} currentUserId={session.userId} />
       ) : (

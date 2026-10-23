@@ -19,6 +19,7 @@ export * from './buyer-notification-controller/buyer-notification-controller';
 export * from './buyer-payment-controller/buyer-payment-controller';
 export * from './buyer-payment-ledger-controller/buyer-payment-ledger-controller';
 export * from './buyer-payment-review-controller/buyer-payment-review-controller';
+export * from './buyer-performance-task-controller/buyer-performance-task-controller';
 export * from './buyer-receipt-controller/buyer-receipt-controller';
 export * from './buyer-role-controller/buyer-role-controller';
 export * from './buyer-supplier-controller/buyer-supplier-controller';
@@ -64,6 +65,7 @@ export * from './supplier-invoice-reconciliation-controller/supplier-invoice-rec
 export * from './supplier-mall-controller/supplier-mall-controller';
 export * from './supplier-notification-controller/supplier-notification-controller';
 export * from './supplier-order-controller/supplier-order-controller';
+export * from './supplier-performance-task-controller/supplier-performance-task-controller';
 export * from './supplier-profile-controller/supplier-profile-controller';
 export * from './supplier-qualification-controller/supplier-qualification-controller';
 export * from './supplier-quote-controller/supplier-quote-controller';
