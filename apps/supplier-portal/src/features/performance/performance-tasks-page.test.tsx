@@ -3,17 +3,26 @@ import '@testing-library/jest-dom/vitest';
 import { focusManager, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, expect, it, vi } from 'vitest';
 import { PerformanceTasksPage } from './performance-tasks-page';
-const mocks = vi.hoisted(() => ({ status: 'remediation_requested', version: 2, response: vi.fn(), list: vi.fn() }));
+const mocks = vi.hoisted(() => ({ evidenceBusy: false, status: 'remediation_requested', version: 2, response: vi.fn(), list: vi.fn() }));
 vi.mock('@24bid/api-client', () => ({
+  usePerformanceEvidence: () => ({ files: [], loading: false, busy: mocks.evidenceBusy, error: '', upload: vi.fn(), download: vi.fn(), refresh: vi.fn() }),
   listSupplierPerformanceTasks: mocks.list,
   respondPerformanceTask: mocks.response,
 }));
-afterEach(() => { cleanup(); focusManager.setFocused(undefined); vi.clearAllMocks(); mocks.status = 'remediation_requested'; mocks.version = 2; });
+afterEach(() => { cleanup(); focusManager.setFocused(undefined); vi.clearAllMocks(); mocks.status = 'remediation_requested'; mocks.version = 2; mocks.evidenceBusy = false; });
 async function mount(canManage = true, count = 1) {
   mocks.list.mockImplementation(async () => ({ data: Array.from({ length: count }, (_, index) => ({ id: `task-${index + 1}`, version: mocks.version, buyerName: '采购企业甲', period: '2026-Q4', dueDate: '2026-12-31', status: mocks.status, requirement: '补充验收材料', assigneeName: '不展示的采购经办人', history: [{ action: 'remediation_rejected', actorName: '采购方', comment: '请补充材料', createdAt: '2026-10-01' }] })) }));
   render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><PerformanceTasksPage canManage={canManage} /></QueryClientProvider>);
   fireEvent.click((await screen.findAllByRole('button', { name: '查看整改' }))[0]);
 }
+it('blocks closing, refreshing and feedback submission during an evidence upload', async () => {
+  mocks.evidenceBusy = true;
+  await mount();
+  expect(screen.getByRole('button', { name: '查看整改' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '刷新任务' })).toBeDisabled();
+  fireEvent.change(screen.getByLabelText('整改反馈内容'), { target: { value: '待上传完成' } });
+  expect(screen.getByRole('button', { name: '提交整改反馈' })).toBeDisabled();
+});
 it('requires a response and retains it on failure', async () => {
   mocks.response.mockRejectedValue(new Error('offline')); await mount();
   expect(screen.getByRole('button', { name: '提交整改反馈' })).toBeDisabled();

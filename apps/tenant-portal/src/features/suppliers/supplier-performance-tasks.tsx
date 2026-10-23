@@ -6,8 +6,9 @@ import {
   type PerformanceTask, type PerformanceTaskDraft, type PerformanceTaskEvaluation,
   listBuyerPerformanceTasks, listPerformanceAssignees, createPerformanceTask,
   evaluatePerformanceTask, requestPerformanceRemediation, reviewPerformanceTask,
+  usePerformanceEvidence,
 } from '@24bid/api-client';
-import { FeedbackNotice, Pagination, StatusPill } from '@24bid/ui';
+import { EvidencePanel, FeedbackNotice, Pagination, StatusPill } from '@24bid/ui';
 import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
 import { useAuthStore } from '../../lib/auth-store';
 
@@ -95,6 +96,7 @@ function CreateTaskDialog({ relationId, onClose, refresh, onComplete }: { relati
 }
 
 function TaskDetail({ task, canManage, refreshing, refreshError, notice, userId, onClose, refresh, onComplete }: { task: PerformanceTask; canManage: boolean; refreshing: boolean; refreshError: boolean; notice: string; userId?: string; onClose: () => void; refresh: (updated?: PerformanceTask) => Promise<unknown>; onComplete: () => void }) {
+  const evidence = usePerformanceEvidence(task.id, task.version, task.relationId);
   // A refetch must not attach an existing draft to a newer remediation round.
   const [expectedVersion] = useState(task.version);
   const staleDraft = expectedVersion !== task.version;
@@ -143,5 +145,6 @@ function TaskDetail({ task, canManage, refreshing, refreshError, notice, userId,
     {mutation.isError && <div role="alert"><FeedbackNotice tone="error" message={errorMessage(mutation.error)} /></div>}
     <h4 className="mt-5 border-t border-slate-200 pt-4 text-sm font-bold">任务历史</h4>
     <ol className="mt-2 space-y-3">{task.history.map((event, index) => <li key={index} className="break-words text-sm"><p className="text-xs text-slate-500">{event.createdAt} · {event.actorName} · {actionNames[event.action] ?? event.action}</p><p className="mt-1 whitespace-pre-wrap">{event.comment}</p></li>)}</ol>
+    <EvidencePanel {...evidence} />
   </TaskDialog>;
 }
