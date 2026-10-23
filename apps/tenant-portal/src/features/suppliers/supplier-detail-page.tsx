@@ -71,13 +71,15 @@ export function SupplierDetailPage({
   supplier,
   onBack,
   onEdit,
+  initialTab = 'performance',
 }: {
   supplier: BuyerSupplierResponse;
   onBack: () => void;
   onEdit?: () => void;
+  initialTab?: TabId;
 }) {
   const { can } = useBuyerPermissions();
-  const [tab, setTab] = useState<TabId>('performance');
+  const [tab, setTab] = useState<TabId>(initialTab);
   const [showApproval, setShowApproval] = useState(false);
   const id = supplier.id ?? '';
   const supplierId = supplier.supplierId ?? '';

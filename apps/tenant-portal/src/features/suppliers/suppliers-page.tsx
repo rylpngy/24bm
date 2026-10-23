@@ -1,4 +1,4 @@
-import { useEffect, useState, type ElementType } from 'react';
+import { useState, type ElementType } from 'react';
 import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
 import { BadgeCheck, Boxes, Gauge, Mail, Search, ShieldCheck } from 'lucide-react';
 import { useBuyerSupplierList } from '@24bid/api-client';
@@ -28,18 +28,13 @@ interface SubItem {
 export function SuppliersPage() {
   const { can } = useBuyerPermissions();
   const [sub, setSub] = useState<SubId>('list');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(() => new URLSearchParams(window.location.search).get('recordId'));
   const [registering, setRegistering] = useState(false);
   const [editing, setEditing] = useState(false);
 
   const query = useBuyerSupplierList();
   const all = query.data?.data ?? [];
   const admissionCount = all.filter((s) => ADMISSION_STATUSES.includes(s.status ?? '')).length;
-
-  useEffect(() => {
-    const recordId = new URLSearchParams(window.location.search).get('recordId');
-    if (!selectedId && recordId && all.some((item) => item.id === recordId)) setSelectedId(recordId);
-  }, [all, selectedId]);
 
   // 供应商登记独立页(详细建档)。
   if (registering && can('buyer:supplier:manage')) {
@@ -53,7 +48,7 @@ export function SuppliersPage() {
       if (editing && can('buyer:supplier:manage')) {
         return <SupplierRegisterPage key={fresh.id} supplier={fresh} onBack={() => setEditing(false)} />;
       }
-      return <SupplierDetailPage supplier={fresh} onEdit={() => setEditing(true)} onBack={() => { setEditing(false); setSelectedId(null); }} />;
+      return <SupplierDetailPage key={fresh.id} supplier={fresh} initialTab={sub === 'qualifications' ? 'qualifications' : 'performance'} onEdit={() => setEditing(true)} onBack={() => { setEditing(false); setSelectedId(null); }} />;
     }
   }
 

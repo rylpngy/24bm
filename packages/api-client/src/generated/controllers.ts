@@ -48,6 +48,7 @@ export * from './public-portal-controller/public-portal-controller';
 export * from './public-procurement-announcement-controller/public-procurement-announcement-controller';
 export * from './purchase-demand-controller/purchase-demand-controller';
 export * from './purchase-order-controller/purchase-order-controller';
+export * from './qualification-ledger-controller/qualification-ledger-controller';
 export * from './qualification-review-controller/qualification-review-controller';
 export * from './rfq-award-controller/rfq-award-controller';
 export * from './rfq-controller/rfq-controller';

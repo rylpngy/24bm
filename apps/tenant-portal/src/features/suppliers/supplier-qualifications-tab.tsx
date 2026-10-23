@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Download } from 'lucide-react';
 import { downloadReport, buyerQualificationArchive } from '@24bid/api-client';
-import { ShellState } from '@24bid/ui';
+import { FilterTabs, Pagination, ShellState } from '@24bid/ui';
 import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
 import { OwnerAttachments } from '../attachments/owner-attachments';
 
@@ -23,6 +23,12 @@ export function SupplierQualificationsTab({
   const quals = qualifications.data ?? [];
   const [downloadError, setDownloadError] = useState('');
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [scope, setScope] = useState('active');
+  const [expiry, setExpiry] = useState('all');
+  const [page, setPage] = useState(1);
+  const rows = quals.filter(q => (scope === 'active' ? q.status === 'active' : q.status !== 'active'))
+    .filter(q => expiry === 'all' || qualificationAlert(q.expiresAt).state === expiry);
+  const safePage = Math.min(page, Math.max(1, Math.ceil(rows.length / 8)));
 
   return (
     <div className="space-y-4">
@@ -30,6 +36,16 @@ export function SupplierQualificationsTab({
       <div>
         {downloadError && <p role="alert" className="mb-2 text-sm text-red-700">{downloadError}</p>}
         <p className="text-xs font-black text-slate-500">证照台账 · 到期预警</p>
+        <div className="my-3 flex flex-wrap items-center justify-between gap-3">
+          <FilterTabs value={scope} items={[
+            { id: 'active', label: '当前证照', count: quals.filter(q => q.status === 'active').length },
+            { id: 'history', label: '历史/停用', count: quals.filter(q => q.status !== 'active').length },
+          ]} onChange={value => { setScope(value); setExpiry('all'); setPage(1); }} />
+          <select aria-label="证照有效期" value={expiry} onChange={event => { setExpiry(event.target.value); setPage(1); }} className="h-10 max-w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700">
+            <option value="all">全部有效期</option><option value="expired">已过期</option>
+            <option value="expiring">30天内到期（含今日）</option><option value="unknown">未登记/格式异常</option><option value="valid">有效期超过30天</option>
+          </select>
+        </div>
         {qualifications.isLoading ? (
           <ShellState variant="loading" title="加载资质" desc="拉取该供应商的证照…" />
         ) : qualifications.isError ? (
@@ -37,15 +53,15 @@ export function SupplierQualificationsTab({
             资质加载失败，暂时无法确认资质情况。
             <button type="button" className="ml-3 font-bold underline" onClick={() => void qualifications.refetch()}>重试</button>
           </div>
-        ) : quals.length === 0 ? (
+        ) : rows.length === 0 ? (
           <ShellState
             variant="empty"
-            title="暂无资质证照"
-            desc="供应商上传或采购方登记的营业执照、资质证书等将列示于此。"
+            title="暂无符合条件的证照"
+            desc="可切换当前/历史证照或调整有效期筛选。"
           />
         ) : (
           <div className="mt-2 space-y-2">
-            {quals.map((q) => {
+            {rows.slice((safePage - 1) * 8, safePage * 8).map((q) => {
               const alert = qualificationAlert(q.expiresAt);
               return (
                 <div
@@ -80,6 +96,7 @@ export function SupplierQualificationsTab({
                 </div>
               );
             })}
+            <Pagination page={safePage} pageSize={8} total={rows.length} onPageChange={setPage} />
           </div>
         )}
       </div>
