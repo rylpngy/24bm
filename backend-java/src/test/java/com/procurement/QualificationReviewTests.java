@@ -14,7 +14,8 @@ import org.junit.jupiter.api.*;
 class QualificationReviewTests {
   private final SupplierQualificationMapper mapper = mock(SupplierQualificationMapper.class);
   private final ObjectStorageService storage = mock(ObjectStorageService.class);
-  private final SupplierQualificationApplicationService service = new SupplierQualificationApplicationService(mapper, new SupplierQualificationStatusTransition(), storage);
+  private final com.procurement.supplier.application.QualificationNotificationService notifications = mock(com.procurement.supplier.application.QualificationNotificationService.class);
+  private final SupplierQualificationApplicationService service = new SupplierQualificationApplicationService(mapper, new SupplierQualificationStatusTransition(), storage, notifications);
   @BeforeEach void setup() { TenantContext.set("tenant-a", null, "reviewer"); }
   @AfterEach void clear() { TenantContext.clear(); }
   private void fixture(LocalDate expiry) {
@@ -37,11 +38,13 @@ class QualificationReviewTests {
     when(mapper.decideReview("tenant-a",1,"rejected","请补件","reviewer")).thenReturn(1);
     service.review(1,new QualificationReviewRequest(false," 请补件 "));
     verify(mapper).decideReview("tenant-a",1,"rejected","请补件","reviewer");
+    verify(notifications).reviewCompleted("tenant-a", 1);
     verifyNoInteractions(storage);
   }
   @Test void rejectsRepeatedDecision() {
     fixture(LocalDate.now().plusDays(1));
     assertThatThrownBy(() -> service.review(1,new QualificationReviewRequest(true,"核验通过"))).hasMessageContaining("已办理");
+    verifyNoInteractions(notifications);
   }
   @Test void refusesReplacedVersion() {
     fixture(LocalDate.now().plusDays(1));

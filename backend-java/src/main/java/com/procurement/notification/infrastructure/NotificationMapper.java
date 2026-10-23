@@ -14,6 +14,13 @@ public interface NotificationMapper {
   @Insert("""
       insert into notifications (id, tenant_id, recipient_id, title, content)
       values (#{id}, #{tenantId}, #{recipientId}, #{title}, #{content})
+      on conflict (id) do nothing
+      """)
+  int insertOnce(String id, String tenantId, String recipientId, String title, String content);
+
+  @Insert("""
+      insert into notifications (id, tenant_id, recipient_id, title, content)
+      values (#{id}, #{tenantId}, #{recipientId}, #{title}, #{content})
       """)
   void insert(
       @Param("id") String id,

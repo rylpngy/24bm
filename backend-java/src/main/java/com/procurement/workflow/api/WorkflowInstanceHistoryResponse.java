@@ -19,6 +19,7 @@ public record WorkflowInstanceHistoryResponse(
     String departmentId,
     BigDecimal amount,
     Map<String, Object> formData,
+    String formSchema,
     Map<String, Object> businessSnapshot,
     List<WorkflowAttachmentResponse> attachments,
     UnifiedWorkflowTaskResponse currentTask,

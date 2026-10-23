@@ -49,6 +49,7 @@ export function WorkflowInstancePanel({
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const snapshotEntries = visibleEntries(history.businessSnapshot);
   const formEntries = visibleEntries(history.formData);
+  const formLabels = workflowFormLabels(history.formSchema);
   const detailHref = workflowBusinessHref(history);
 
   const download = async (id: string, fileName: string) => {
@@ -100,7 +101,7 @@ export function WorkflowInstancePanel({
       {!compact && (snapshotEntries.length > 0 || formEntries.length > 0) && (
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
           <ContextBlock title="业务快照" icon={FileText} entries={snapshotEntries} />
-          <ContextBlock title="审批表单" icon={FileText} entries={formEntries} />
+          <ContextBlock title="审批表单" icon={FileText} entries={formEntries} labels={formLabels} />
         </div>
       )}
 
@@ -137,12 +138,12 @@ export function WorkflowInstancePanel({
   );
 }
 
-function ContextBlock({ title, icon: Icon, entries }: { title: string; icon: React.ElementType; entries: Array<[string, unknown]> }) {
+function ContextBlock({ title, icon: Icon, entries, labels }: { title: string; icon: React.ElementType; entries: Array<[string, unknown]>; labels?: Map<string, string> }) {
   return (
     <div className="rounded-lg bg-slate-50 p-4">
       <p className="flex items-center gap-1.5 text-xs font-black text-slate-600"><Icon size={13} /> {title}</p>
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
-        {entries.map(([key, value]) => <Fact key={key} label={fieldLabel(key)} value={displayValue(value)} />)}
+        {entries.map(([key, value]) => <Fact key={key} label={labels?.get(key) ?? fieldLabel(key)} value={displayValue(value)} />)}
         {entries.length === 0 && <p className="text-xs font-bold text-slate-400">无额外信息。</p>}
       </div>
     </div>
@@ -150,7 +151,23 @@ function ContextBlock({ title, icon: Icon, entries }: { title: string; icon: Rea
 }
 
 function Fact({ label, value }: { label: string; value: string }) {
-  return <div className="rounded-md border border-slate-100 bg-white px-3 py-2"><p className="text-[11px] font-black text-slate-400">{label}</p><p className="mt-1 break-words text-xs font-black text-slate-700">{value}</p></div>;
+  return <div className="min-w-0 rounded-md border border-slate-100 bg-white px-3 py-2"><p className="break-words text-[11px] font-black text-slate-400">{label}</p><p className="mt-1 whitespace-pre-wrap break-words text-xs font-black text-slate-700 [overflow-wrap:anywhere]">{value}</p></div>;
+}
+
+export function workflowFormLabels(schema?: string): Map<string, string> {
+  const labels = new Map<string, string>();
+  try {
+    const parsed = JSON.parse(schema ?? '{}');
+    if (!Array.isArray(parsed?.fields)) return labels;
+    for (const field of parsed.fields) {
+      if (typeof field?.id === 'string' && typeof field.label === 'string' && field.label.trim()) {
+        labels.set(field.id, field.label);
+      }
+    }
+  } catch {
+    // Legacy records remain readable even when their schema is unavailable.
+  }
+  return labels;
 }
 
 function currentHandler(history: WorkflowInstanceHistory) {
@@ -166,6 +183,7 @@ function visibleEntries(value: Record<string, unknown> | undefined) {
 }
 
 function displayValue(value: unknown): string {
+  if (typeof value === 'boolean') return value ? '是' : '否';
   if (Array.isArray(value)) return value.map(displayValue).join('、');
   if (typeof value === 'object' && value != null) return JSON.stringify(value);
   return String(value ?? '—');

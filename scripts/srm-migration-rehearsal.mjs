@@ -51,7 +51,10 @@ const code = await new Promise((resolve, reject) => { result.on('close', resolve
 writeFileSync(resolve(output, 'migration.log'), logs, { mode: 0o600 });
 if (code !== 0) throw new Error(`Flyway rehearsal failed; inspect ${output}/migration.log`);
 const after = fingerprint();
-const differences = after.filter((row, i) => row.rows !== before[i].rows || row.digest !== before[i].digest);
+const differences = after.filter(row => {
+  const previous = before.find(item => item.name === row.name);
+  return !previous || row.rows !== previous.rows || row.digest !== previous.digest;
+});
 const migrations = JSON.parse(sql("select json_agg(t) from (select version,description,success from flyway_schema_history where version in ('211','212') order by installed_rank) t"));
 const report = { database, sourceDatabase: sourceDb, checkedTables: tables.length, differences, migrations,
   passed: differences.length === 0 && migrations?.length === 2 && migrations.every(x => x.success), backup: resolve(output, 'original.dump') };

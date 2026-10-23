@@ -89,6 +89,11 @@ public class NotificationApplicationService {
   }
 
   @Transactional
+  public void notifyOnce(String eventId, String tenantId, String recipientId, String title, String content) {
+    notificationMapper.insertOnce(eventId, tenantId, recipientId, title, content);
+  }
+
+  @Transactional
   public void notifyActiveSupplierUsers(String tenantId, String supplierId, String title, String content) {
     supplierUserMapper.listBySupplier(supplierId).stream()
         .filter(user -> NotificationRecipientStatus.ENABLED.equals(user.status()))

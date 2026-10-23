@@ -25,6 +25,7 @@ export interface WorkflowInstanceHistoryResponse {
   departmentId?: string;
   amount?: number;
   formData?: WorkflowInstanceHistoryResponseFormData;
+  formSchema?: string;
   businessSnapshot?: WorkflowInstanceHistoryResponseBusinessSnapshot;
   attachments?: WorkflowAttachmentResponse[];
   currentTask?: UnifiedWorkflowTaskResponse;

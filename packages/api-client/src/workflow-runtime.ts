@@ -82,6 +82,8 @@ export interface WorkflowInstanceHistory {
   departmentId?: string;
   amount?: number;
   formData: Record<string, unknown>;
+  /** Schema from the instance's immutable definition version, not the latest publication. */
+  formSchema?: string;
   businessSnapshot: Record<string, unknown>;
   attachments: WorkflowAttachment[];
   currentTask?: WorkflowTask;

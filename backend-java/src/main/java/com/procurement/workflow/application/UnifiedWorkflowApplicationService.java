@@ -731,6 +731,8 @@ public class UnifiedWorkflowApplicationService {
 
   private WorkflowInstanceHistoryResponse toHistoryResponse(
       String tenantId, WorkflowBusinessInstance instance) {
+    WorkflowDefinitionVersion version = workflowDefinitionPublicationService.findVersion(
+        tenantId, instance.definitionVersionId());
     List<WorkflowTaskEventResponse> events = workflowTaskEventMapper
         .listByTenantAndWorkflowInstance(tenantId, instance.id())
         .stream()
@@ -755,6 +757,7 @@ public class UnifiedWorkflowApplicationService {
         instance.departmentId(),
         instance.amount(),
         readJson(instance.formData()),
+        version == null ? null : version.formSchema(),
         readJson(instance.businessSnapshot()),
         workflowAttachments(tenantId, instance),
         activeTask == null ? null : toTaskResponse(activeTask, instance),
