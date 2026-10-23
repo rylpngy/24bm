@@ -33,6 +33,9 @@ class PerformanceTaskIT {
   @Autowired JdbcTemplate jdbc;
   @Autowired PerformanceTaskApplicationService service;
   @Autowired com.procurement.supplier.application.SupplierEvaluationApplicationService evaluations;
+  @Autowired org.springframework.transaction.PlatformTransactionManager transactions;
+  @Autowired com.procurement.supplier.application.PerformanceTaskNotificationService notices;
+  @Autowired com.procurement.supplier.infrastructure.PerformanceTaskMapper tasks;
   final LocalDate due = LocalDate.now().plusDays(10);
 
   @BeforeEach void seed() {
@@ -49,6 +52,54 @@ class PerformanceTaskIT {
   void buyer(String user) { TenantContext.set("pta", null, user); }
   void supplier() { TenantContext.set(null, "pts", "ptsu"); }
   Evaluate scores() { return new Evaluate(new BigDecimal("80"),new BigDecimal("90"),new BigDecimal("70"),new BigDecimal("60"),"Evaluation comment"); }
+
+  @Test void lifecycleNotifiesOnlyAuthorizedRecipientsAndKeepsRoundsDistinct() {
+    var task = service.create("ptra", new Create("2040-Q1", "ptu", due));
+    String id = task.id();
+    assertThat(noticeRecipients(id)).containsExactly("ptu");
+    assertThatThrownBy(() -> service.create("ptra", new Create("2040-Q1", "ptu", due)))
+        .isInstanceOf(IllegalStateException.class);
+    assertThat(noticeRecipients(id)).hasSize(1);
+    service.evaluate("ptra", id, scores());
+    assertThat(noticeRecipients(id)).containsExactlyInAnyOrder("ptu", "ptu", "ptmanager");
+    var requested = service.requestRemediation("ptra", id, new Remediation("Private remediation detail", due));
+    supplier();
+    var first = service.respond(id, new Response("First response", requested.version()));
+    buyer("ptmanager");
+    var rejected = service.review("ptra", id, new Review(false, "Private review comment", first.version()));
+    supplier();
+    var second = service.respond(id, new Response("Second response", rejected.version()));
+    buyer("ptmanager");
+    int count = noticeRecipients(id).size();
+    assertThatThrownBy(() -> service.review("ptra", id, new Review(true, "Stale", first.version())))
+        .isInstanceOf(IllegalStateException.class);
+    assertThat(noticeRecipients(id)).hasSize(count);
+    service.review("ptra", id, new Review(true, "Done", second.version()));
+    assertThat(noticeRecipients(id)).containsOnly("ptu", "ptmanager", "ptsu").hasSize(10);
+    new org.springframework.transaction.support.TransactionTemplate(transactions).executeWithoutResult(status ->
+        notices.notifyEvent(tasks.lockBuyer("pta", "ptra", id), "closed"));
+    assertThat(noticeRecipients(id)).hasSize(10);
+    assertThat(jdbc.queryForList("select content from notifications where content like ?", String.class, "%" + id + "%"))
+        .allSatisfy(content -> assertThat(content).doesNotContain("Private", "Evaluation comment", "First response", "Second response"));
+    assertThat(jdbc.queryForList("select distinct tenant_id from notifications where content like ?", String.class, "%" + id + "%"))
+        .containsExactly("pta");
+  }
+
+  java.util.List<String> noticeRecipients(String taskId) {
+    return jdbc.queryForList("select recipient_id from notifications where content like ? order by created_at,id", String.class, "%" + taskId + "%");
+  }
+
+  @Test void rollingBackTaskAlsoRollsBackItsNoticesAndHistory() {
+    String id = new org.springframework.transaction.support.TransactionTemplate(transactions).execute(status -> {
+      var task = service.create("ptra", new Create("2040-Q2", "ptu", due));
+      assertThat(noticeRecipients(task.id())).containsExactly("ptu");
+      status.setRollbackOnly();
+      return task.id();
+    });
+    assertThat(noticeRecipients(id)).isEmpty();
+    assertThat(jdbc.queryForObject("select count(*) from supplier_performance_tasks where id=?", Integer.class, id)).isZero();
+    assertThat(jdbc.queryForObject("select count(*) from supplier_performance_task_events where task_id=?", Integer.class, id)).isZero();
+  }
 
   @Test void fullLifecyclePreservesRoundsAndIsolation() {
     assertThat(service.assignees("ptra")).extracting(a -> a.id()).containsExactlyInAnyOrder("ptu","ptmanager");
