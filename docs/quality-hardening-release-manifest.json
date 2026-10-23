@@ -4,7 +4,7 @@
   "sourceHead": "6005d23951e41624fdf2f22f726a70613483de42",
   "targetMain": "5efcc9f7f6706daf4b6c7caff9902c512c4d5e1f",
   "date": "2026-10-23",
-  "note": "Pre-commit content snapshot. Manifest itself is also submitted. Excluded local artifacts are preserved, not deleted. No credentials or runtime data are bundled.",
+  "note": "Release candidate content inventory, refreshed after main synchronization and PR documentation. Manifest itself is also submitted. Excluded local artifacts are preserved, not deleted. No credentials or runtime data are bundled.",
   "includedCount": 359,
   "included": [
     {
@@ -17,7 +17,7 @@
     },
     {
       "path": "HANDOFF.md",
-      "sha256": "d1055b9bb5b6b3a4e5aae6051dcbd98ad912423b2bc8a954396db828ed9c77a8"
+      "sha256": "34966125e8cf2de5f094a55dda8ee23fef9886ddc1e297b568d6d4a2262eb275"
     },
     {
       "path": "README.md",
@@ -1033,7 +1033,7 @@
     },
     {
       "path": "docs/quality-hardening-release.md",
-      "sha256": "a0f40bf59a6014cd5df93e696feed4ea3cc9025ed5e6919c517188065105b3f7"
+      "sha256": "5af01b8a7918d698992643b6290b803e05e54b0c763779762b0a49efc7047dc7"
     },
     {
       "path": "package.json",

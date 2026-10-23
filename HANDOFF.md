@@ -2,6 +2,8 @@
 
 更新：2026-10-23。工作分支 `codex/quality-hardening`，本机工作区 `/Users/epl/.codex/worktrees/6166/24Bid`。
 
+代码已提交推送：整改提交 `6885a626`，main同步提交 `997c7ca7`；草稿PR https://github.com/rylpngy/24bid/pull/107 。尚未合并main或发布生产。请以PR最新提交为准接手，不用复制未提交临时文件来启动应用。
+
 ## 当前目标
 
 冻结质量整改1至16轮，完成代码审查和可复现交付，不继续无限扩张整改范围。先读 `docs/quality-hardening-release.md`，详细历轮证据见 `docs/quality-hardening-2026-10-22.md`。
