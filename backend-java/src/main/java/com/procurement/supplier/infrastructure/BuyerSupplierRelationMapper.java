@@ -17,8 +17,11 @@ public interface BuyerSupplierRelationMapper {
       select r.id, r.tenant_id, r.supplier_id, e.name as supplier_name, r.status, r.level,
              r.categories::text as categories_json, r.performance_score,
              r.cooperation_tier, r.last_evaluation_score,
-             s.credit_code, s.legal_person, s.contact_name, s.contact_phone,
-             s.contact_email, s.business_scope, s.bank_name, s.bank_account
+             coalesce(r.credit_code, s.credit_code) as credit_code,
+             coalesce(r.legal_person, s.legal_person) as legal_person,
+             r.contact_name, r.contact_phone, r.contact_email,
+             coalesce(r.business_scope, s.business_scope) as business_scope,
+             r.bank_name, r.bank_account
       from buyer_supplier_relations r
       join enterprises e on e.id = r.supplier_id
       left join supplier_enterprises s on s.enterprise_id = r.supplier_id
@@ -52,8 +55,11 @@ public interface BuyerSupplierRelationMapper {
       select r.id, r.tenant_id, r.supplier_id, e.name as supplier_name, r.status, r.level,
              r.categories::text as categories_json, r.performance_score,
              r.cooperation_tier, r.last_evaluation_score,
-             s.credit_code, s.legal_person, s.contact_name, s.contact_phone,
-             s.contact_email, s.business_scope, s.bank_name, s.bank_account
+             coalesce(r.credit_code, s.credit_code) as credit_code,
+             coalesce(r.legal_person, s.legal_person) as legal_person,
+             r.contact_name, r.contact_phone, r.contact_email,
+             coalesce(r.business_scope, s.business_scope) as business_scope,
+             r.bank_name, r.bank_account
       from buyer_supplier_relations r
       join enterprises e on e.id = r.supplier_id
       left join supplier_enterprises s on s.enterprise_id = r.supplier_id
@@ -121,6 +127,32 @@ public interface BuyerSupplierRelationMapper {
       @Param("id") String id,
       @Param("level") String level,
       @Param("categoriesJson") String categoriesJson);
+
+  // Null leaves an existing value unchanged; an empty string explicitly clears it.
+  @Update("""
+      update buyer_supplier_relations
+      set credit_code = coalesce(#{creditCode,jdbcType=VARCHAR}, credit_code),
+          legal_person = coalesce(#{legalPerson,jdbcType=VARCHAR}, legal_person),
+          contact_name = coalesce(#{contactName,jdbcType=VARCHAR}, contact_name),
+          contact_phone = coalesce(#{contactPhone,jdbcType=VARCHAR}, contact_phone),
+          contact_email = coalesce(#{contactEmail,jdbcType=VARCHAR}, contact_email),
+          business_scope = coalesce(#{businessScope,jdbcType=VARCHAR}, business_scope),
+          bank_name = coalesce(#{bankName,jdbcType=VARCHAR}, bank_name),
+          bank_account = coalesce(#{bankAccount,jdbcType=VARCHAR}, bank_account),
+          updated_at = now()
+      where tenant_id = #{tenantId} and id = #{id}
+      """)
+  void updatePrivateProfile(
+      @Param("tenantId") String tenantId,
+      @Param("id") String id,
+      @Param("creditCode") String creditCode,
+      @Param("legalPerson") String legalPerson,
+      @Param("contactName") String contactName,
+      @Param("contactPhone") String contactPhone,
+      @Param("contactEmail") String contactEmail,
+      @Param("businessScope") String businessScope,
+      @Param("bankName") String bankName,
+      @Param("bankAccount") String bankAccount);
 
   @Update("""
       update buyer_supplier_relations

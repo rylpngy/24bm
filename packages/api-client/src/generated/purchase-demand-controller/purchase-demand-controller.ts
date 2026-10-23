@@ -27,10 +27,12 @@ import type {
 import type {
   ApiResponseApprovalTaskResponse,
   ApiResponseListPurchaseDemandResponse,
+  ApiResponsePurchaseDemandPageResponse,
   ApiResponsePurchaseDemandResponse,
   ApiResponseVoid,
   CreatePurchaseDemandRequest,
   PurchaseDemandListParams,
+  PurchaseDemandPageParams,
   ReviewPurchaseDemandRequest,
   SubmitPurchaseDemandRequest,
   UpdatePurchaseDemandRequest
@@ -38,6 +40,92 @@ import type {
 
 import { customInstance } from '../../http-client';
 import type { ErrorType , BodyType } from '../../http-client';
+
+
+
+
+export const purchaseDemandDetail = (
+    demandId: string,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponsePurchaseDemandResponse>(
+      {url: `/api/v1/buyer/demands/${demandId}`, method: 'GET', signal
+    },
+      );
+    }
+
+
+
+
+export const getPurchaseDemandDetailQueryKey = (demandId?: string,) => {
+    return [
+    `/api/v1/buyer/demands/${demandId}`
+    ] as const;
+    }
+
+
+export const getPurchaseDemandDetailQueryOptions = <TData = Awaited<ReturnType<typeof purchaseDemandDetail>>, TError = ErrorType<ApiResponseVoid>>(demandId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof purchaseDemandDetail>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPurchaseDemandDetailQueryKey(demandId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof purchaseDemandDetail>>> = ({ signal }) => purchaseDemandDetail(demandId, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(demandId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof purchaseDemandDetail>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PurchaseDemandDetailQueryResult = NonNullable<Awaited<ReturnType<typeof purchaseDemandDetail>>>
+export type PurchaseDemandDetailQueryError = ErrorType<ApiResponseVoid>
+
+
+export function usePurchaseDemandDetail<TData = Awaited<ReturnType<typeof purchaseDemandDetail>>, TError = ErrorType<ApiResponseVoid>>(
+ demandId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof purchaseDemandDetail>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof purchaseDemandDetail>>,
+          TError,
+          Awaited<ReturnType<typeof purchaseDemandDetail>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePurchaseDemandDetail<TData = Awaited<ReturnType<typeof purchaseDemandDetail>>, TError = ErrorType<ApiResponseVoid>>(
+ demandId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof purchaseDemandDetail>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof purchaseDemandDetail>>,
+          TError,
+          Awaited<ReturnType<typeof purchaseDemandDetail>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePurchaseDemandDetail<TData = Awaited<ReturnType<typeof purchaseDemandDetail>>, TError = ErrorType<ApiResponseVoid>>(
+ demandId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof purchaseDemandDetail>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function usePurchaseDemandDetail<TData = Awaited<ReturnType<typeof purchaseDemandDetail>>, TError = ErrorType<ApiResponseVoid>>(
+ demandId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof purchaseDemandDetail>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPurchaseDemandDetailQueryOptions(demandId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
 
 
 
@@ -363,3 +451,86 @@ const {mutation: mutationOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
+    export const purchaseDemandPage = (
+    params?: PurchaseDemandPageParams,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponsePurchaseDemandPageResponse>(
+      {url: `/api/v1/buyer/demands/page`, method: 'GET',
+        params, signal
+    },
+      );
+    }
+
+
+
+
+export const getPurchaseDemandPageQueryKey = (params?: PurchaseDemandPageParams,) => {
+    return [
+    `/api/v1/buyer/demands/page`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+
+export const getPurchaseDemandPageQueryOptions = <TData = Awaited<ReturnType<typeof purchaseDemandPage>>, TError = ErrorType<ApiResponseVoid>>(params?: PurchaseDemandPageParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof purchaseDemandPage>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPurchaseDemandPageQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof purchaseDemandPage>>> = ({ signal }) => purchaseDemandPage(params, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof purchaseDemandPage>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PurchaseDemandPageQueryResult = NonNullable<Awaited<ReturnType<typeof purchaseDemandPage>>>
+export type PurchaseDemandPageQueryError = ErrorType<ApiResponseVoid>
+
+
+export function usePurchaseDemandPage<TData = Awaited<ReturnType<typeof purchaseDemandPage>>, TError = ErrorType<ApiResponseVoid>>(
+ params: undefined |  PurchaseDemandPageParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof purchaseDemandPage>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof purchaseDemandPage>>,
+          TError,
+          Awaited<ReturnType<typeof purchaseDemandPage>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePurchaseDemandPage<TData = Awaited<ReturnType<typeof purchaseDemandPage>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: PurchaseDemandPageParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof purchaseDemandPage>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof purchaseDemandPage>>,
+          TError,
+          Awaited<ReturnType<typeof purchaseDemandPage>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePurchaseDemandPage<TData = Awaited<ReturnType<typeof purchaseDemandPage>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: PurchaseDemandPageParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof purchaseDemandPage>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function usePurchaseDemandPage<TData = Awaited<ReturnType<typeof purchaseDemandPage>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: PurchaseDemandPageParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof purchaseDemandPage>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPurchaseDemandPageQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}

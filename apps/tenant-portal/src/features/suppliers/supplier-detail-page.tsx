@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
@@ -16,6 +17,7 @@ import {
   Mail,
   MapPin,
   Phone,
+  Pencil,
   ShieldCheck,
   Star,
   TrendingUp,
@@ -73,19 +75,22 @@ const scoreTone = (score: number) => {
 export function SupplierDetailPage({
   supplier,
   onBack,
+  onEdit,
 }: {
   supplier: BuyerSupplierResponse;
   onBack: () => void;
+  onEdit?: () => void;
 }) {
+  const { can } = useBuyerPermissions();
   const [tab, setTab] = useState<TabId>('performance');
   const [showApproval, setShowApproval] = useState(false);
   const id = supplier.id ?? '';
   const supplierId = supplier.supplierId ?? '';
   const ordersQuery = usePurchaseOrderList(
     supplierId ? { supplierId } : undefined,
-    { query: { enabled: !!supplierId } },
+    { query: { enabled: !!supplierId && can('buyer:order:read') } },
   );
-  const orders = ordersQuery.data?.data ?? [];
+  const orders = can('buyer:order:read') && !ordersQuery.isError ? ordersQuery.data?.data ?? [] : [];
   const score = Math.round(
     supplier.lastEvaluationScore ?? supplier.performanceScore ?? fallbackScore(supplier),
   );
@@ -126,13 +131,17 @@ export function SupplierDetailPage({
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
+            {onEdit && can('buyer:supplier:manage') && <button type="button" onClick={onEdit}
+              className="inline-flex h-10 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 hover:bg-slate-50">
+              <Pencil size={16} />编辑私域资料
+            </button>}
             <button
               onClick={() => setTab('performance')}
               className="inline-flex h-10 items-center gap-2 rounded-lg bg-slate-900 px-4 text-sm font-black text-white  hover:bg-slate-800"
             >
               <TrendingUp size={16} /> 绩效考核
             </button>
-            <button
+            {can('buyer:workflow:read') && <button
               type="button"
               onClick={() => setShowApproval((visible) => !visible)}
               disabled={!id}
@@ -151,12 +160,12 @@ export function SupplierDetailPage({
                 size={15}
                 className={cn('transition-transform', showApproval && 'rotate-180')}
               />
-            </button>
+            </button>}
           </div>
         </div>
       </section>
 
-      {id && showApproval && (
+      {id && showApproval && can('buyer:workflow:read') && (
         <div id="supplier-approval-panel">
           <WorkflowStatusPanel businessType="buyer_supplier_admission" businessId={id} />
         </div>
@@ -308,7 +317,7 @@ function ContactCard({ supplier }: { supplier: BuyerSupplierResponse }) {
       <PanelTitle icon={MapPin} title="联系方式" />
       <InfoRows
         rows={[
-          ['销售代表', supplier.contactName || supplier.legalPerson || '—', Contact],
+          ['销售代表', supplier.contactName || '—', Contact],
           ['移动电话', supplier.contactPhone || '—', Phone],
           ['电子邮箱', supplier.contactEmail || '—', Mail],
         ]}
@@ -331,9 +340,10 @@ function AdmissionCard({ supplier }: { supplier: BuyerSupplierResponse }) {
 
 // 底部悬浮操作条:生命周期动作常驻可见,样式对齐需求/登记页提交操作条。
 function AdmissionActionBar({ supplier }: { supplier: BuyerSupplierResponse }) {
+  const { can } = useBuyerPermissions();
   const queryClient = useQueryClient();
   const submit = useWorkflowBuyerSupplierAdmissionSubmit();
-  const workflowTasks = useWorkflowRuntimeTasks();
+  const workflowTasks = useWorkflowRuntimeTasks(can('buyer:workflow:review'));
   const completeTask = useUnifiedWorkflowCompleteTask();
   const changeStatus = useBuyerSupplierChangeStatus();
   const id = supplier.id ?? '';
@@ -402,8 +412,8 @@ function AdmissionActionBar({ supplier }: { supplier: BuyerSupplierResponse }) {
       restore: () =>
         changeStatus.mutate({ relationId: id, data: { status: '待准入' } }, { onSuccess: refresh }),
     },
-    Boolean(admissionTask),
-  );
+    Boolean(admissionTask) && can('buyer:workflow:review'),
+  ).filter(() => supplier.status === '准入审批中' ? can('buyer:workflow:review') : can('buyer:supplier:manage'));
   const hint =
     supplier.status === '待准入' || supplier.status === '已驳回'
       ? '资料确认无误后提交准入,进入准入审批。'

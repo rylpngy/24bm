@@ -200,7 +200,3 @@ export function usePublicProcurementAnnouncementGet<TData = Awaited<ReturnType<t
 
   return query;
 }
-
-
-
-

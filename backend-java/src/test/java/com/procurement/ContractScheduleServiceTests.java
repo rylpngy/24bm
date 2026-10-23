@@ -24,8 +24,19 @@ class ContractScheduleServiceTests {
   private final ContractPaymentMilestoneMapper milestoneMapper =
       mock(ContractPaymentMilestoneMapper.class);
   private final OrderLineItemMapper orderLineItemMapper = mock(OrderLineItemMapper.class);
+  private final com.procurement.identity.application.PermissionService permissions =
+      mock(com.procurement.identity.application.PermissionService.class);
+  private final com.procurement.identity.application.DataScopeService scopes =
+      mock(com.procurement.identity.application.DataScopeService.class);
   private final ContractScheduleService service =
-      new ContractScheduleService(contractMapper, milestoneMapper, orderLineItemMapper);
+      new ContractScheduleService(contractMapper, milestoneMapper, orderLineItemMapper,
+          permissions, scopes, mock(com.procurement.audit.application.AuditLogApplicationService.class));
+
+  @org.junit.jupiter.api.BeforeEach
+  void access() {
+    when(scopes.currentUserDataScope()).thenReturn(com.procurement.identity.domain.DataScope.unrestricted());
+    when(contractMapper.canAccessAttachment("tenant-1", "ctr-1", null, null)).thenReturn(true);
+  }
 
   @AfterEach
   void clear() {
@@ -77,7 +88,7 @@ class ContractScheduleServiceTests {
   }
 
   @Test
-  void payRejectsNonPendingMilestone() {
+  void payCannotMarkReachedMilestonePaidWithoutFinanceEvidence() {
     TenantContext.set("tenant-1", null, "buyer-user");
     when(contractMapper.findByTenantAndId("tenant-1", "ctr-1"))
         .thenReturn(contract(new BigDecimal("88000.00")));
@@ -87,7 +98,8 @@ class ContractScheduleServiceTests {
 
     assertThatThrownBy(() -> service.payMilestone("ctr-1", "m-1"))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("待付");
+        .hasMessageContaining("不能单独登记");
+    verify(milestoneMapper, org.mockito.Mockito.never()).markPaid("tenant-1", "m-1", "待付", "已付");
   }
 
   @Test
@@ -102,7 +114,7 @@ class ContractScheduleServiceTests {
 
     assertThatThrownBy(() -> service.payMilestone("ctr-1", "m-3"))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("须先按序支付前序里程碑");
+        .hasMessageContaining("不能单独登记");
     verify(milestoneMapper, org.mockito.Mockito.never()).markPaid("tenant-1", "m-3", "待付", "已付");
   }
 

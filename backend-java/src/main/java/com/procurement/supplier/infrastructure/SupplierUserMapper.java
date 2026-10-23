@@ -4,12 +4,27 @@ import com.procurement.supplier.domain.SupplierUser;
 import java.util.List;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
 @Mapper
 public interface SupplierUserMapper {
+
+  @Select("select id from enterprises where id = #{supplierId} and type = 'supplier' for update")
+  @Options(flushCache = Options.FlushCachePolicy.TRUE)
+  String lockSupplier(@Param("supplierId") String supplierId);
+
+  @Select("""
+      select count(*) from users u
+      where u.supplier_id = #{supplierId} and u.tenant_id is null and u.status = 'active'
+        and u.id != #{excludedUserId}
+        and exists (select 1 from user_roles ur join roles r on r.id = ur.role_id
+          where ur.user_id = u.id and r.scope = 'supplier' and r.tenant_id is null
+            and r.permissions @> '["supplier:*"]'::jsonb)
+      """)
+  int countOtherActiveAdmins(@Param("supplierId") String supplierId, @Param("excludedUserId") String excludedUserId);
 
   @Select("""
       select u.id, u.supplier_id, u.name, u.mobile, u.email, u.status, min(r.id) as role_id
@@ -81,6 +96,7 @@ public interface SupplierUserMapper {
       select r.id
       from roles r
       where r.scope = 'supplier'
+        and r.id = 'role-system-supplier-member'
         and r.tenant_id is null
         and exists (
           select 1
@@ -88,8 +104,6 @@ public interface SupplierUserMapper {
           where u.supplier_id = #{supplierId,jdbcType=VARCHAR}
             and u.tenant_id is null
         )
-      order by r.id
-      limit 1
       """)
   String findDefaultSupplierRoleId(@Param("supplierId") String supplierId);
 

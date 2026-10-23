@@ -73,27 +73,82 @@ class FinanceActionPaymentBlockingTests {
       org.mockito.Mockito.mock(TenantFeatureApplicationService.class);
   private final com.procurement.identity.application.PermissionService permissionService =
       org.mockito.Mockito.mock(com.procurement.identity.application.PermissionService.class);
+  private final com.procurement.workflow.application.UnifiedWorkflowApplicationService workflow =
+      org.mockito.Mockito.mock(com.procurement.workflow.application.UnifiedWorkflowApplicationService.class);
+  private final com.procurement.finance.application.FinanceAccessService financeAccess = TestFinanceAccess.unrestricted();
+  private final com.procurement.finance.application.PaymentBatchApplicationService batchService =
+      new com.procurement.finance.application.PaymentBatchApplicationService(
+          paymentBatchMapper, paymentExecutionRecordMapper, auditLogApplicationService,
+          tenantFeatureApplicationService, permissionService, financeAccess, workflow);
+  private final com.procurement.finance.application.PaymentArchiveExceptionApplicationService archiveService =
+      new com.procurement.finance.application.PaymentArchiveExceptionApplicationService(
+          paymentArchiveExceptionRequestMapper, paymentBatchMapper, auditLogApplicationService,
+          tenantFeatureApplicationService, permissionService, financeAccess, workflow);
   private final FinanceActionApplicationService financeActionApplicationService =
       new FinanceActionApplicationService(
           invoiceMapper,
           purchaseOrderMapper,
           paymentBatchMapper,
-          paymentArchiveExceptionRequestMapper,
           paymentBlockResolutionMapper,
           paymentExecutionRecordMapper,
           paymentRequestMapper,
           threeWayMatchMapper,
           varianceHandlingMapper,
           paymentApplicationService,
-          approvalTaskApplicationService,
-          approvalTaskMapper,
           auditLogApplicationService,
           tenantFeatureApplicationService,
-          permissionService);
+          permissionService,
+          financeAccess, workflow, batchService, archiveService);
 
   @AfterEach
   void clearTenantContext() {
     TenantContext.clear();
+  }
+
+  @Test
+  void batchSubmissionStartsUnifiedWorkflowWithFormAndBusinessSnapshot() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(paymentBatchMapper.findByTenantAndPaymentBatchNo("tenant-1", "PAY-202606"))
+        .thenReturn(paymentBatch("待提交审批"), paymentBatch("审批中"));
+    financeActionApplicationService.updateCurrentTenantPaymentBatchStatus(
+        "PAY-202606", new UpdatePaymentBatchStatusRequest("审批中", Map.of("reason", "checked")));
+    verify(workflow).start(org.mockito.ArgumentMatchers.argThat(command ->
+        ApprovalBusinessType.PAYMENT_BATCH.equals(command.businessType())
+            && "PAY-202606".equals(command.businessId())
+            && "checked".equals(command.formData().get("reason"))
+            && "PAY-202606".equals(command.businessSnapshot().get("paymentBatchNo"))));
+    org.mockito.Mockito.verifyNoInteractions(approvalTaskApplicationService, approvalTaskMapper);
+  }
+
+  @Test
+  void batchCannotBeApprovedByDirectStatusWrite() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(paymentBatchMapper.findByTenantAndPaymentBatchNo("tenant-1", "PAY-202606"))
+        .thenReturn(paymentBatch("审批中"));
+    assertThatThrownBy(() -> financeActionApplicationService.updateCurrentTenantPaymentBatchStatus(
+        "PAY-202606", new UpdatePaymentBatchStatusRequest("可安排付款")))
+        .isInstanceOf(IllegalStateException.class).hasMessageContaining("Flowable");
+    verify(paymentBatchMapper, never()).updateStatus(
+        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString());
+    org.mockito.Mockito.verifyNoInteractions(approvalTaskApplicationService, approvalTaskMapper, workflow);
+  }
+
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(strings = {"付款申请已通过", "付款申请已驳回", "unknown"})
+  void requestCannotSupplyApprovalOutcomeOrUnknownStatus(String status) {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(invoiceMapper.findByTenantAndId("tenant-1", "invoice-1")).thenReturn(invoice());
+    assertThatThrownBy(() -> financeActionApplicationService.createCurrentTenantPaymentRequest(
+        new CreatePaymentRequestRequest("invoice-1", status, "PAY-202606", "checked")))
+        .isInstanceOf(IllegalStateException.class).hasMessageContaining("Flowable");
+    verify(paymentRequestMapper, never()).upsert(
+        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString());
+    org.mockito.Mockito.verifyNoInteractions(approvalTaskApplicationService, approvalTaskMapper, workflow);
   }
 
   @Test
@@ -336,7 +391,7 @@ class FinanceActionPaymentBlockingTests {
     assertThat(response.executionStatus()).isEqualTo("已登记付款");
     assertThat(response.releaseEvidenceNo()).isEqualTo("BANK-20260701-001");
     assertThat(response.releaseRemark()).isEqualTo("招商银行付款流水");
-    verify(paymentApplicationService).register("invoice-1", new RegisterPaymentRequest("已付款"));
+    verify(paymentApplicationService).register("invoice-1", new RegisterPaymentRequest("已付款", "BANK-20260701-001", "招商银行付款流水"));
     verify(paymentExecutionRecordMapper).markReleaseEvidence(
         "tenant-1",
         "payexec-1",
@@ -474,61 +529,35 @@ class FinanceActionPaymentBlockingTests {
         org.mockito.ArgumentMatchers.eq("payment_archive_exception.requested"),
         org.mockito.ArgumentMatchers.eq("payment_batch"),
         org.mockito.ArgumentMatchers.eq("PAY-202606"));
-    verify(approvalTaskApplicationService).createPendingTask(
-        org.mockito.ArgumentMatchers.eq("tenant-1"),
-        org.mockito.ArgumentMatchers.eq(ApprovalBusinessType.PAYMENT_ARCHIVE_EXCEPTION),
-        org.mockito.ArgumentMatchers.eq("payarchive-exception-1"),
-        org.mockito.ArgumentMatchers.isNull());
+    verify(workflow).start(org.mockito.ArgumentMatchers.argThat(command ->
+        ApprovalBusinessType.PAYMENT_ARCHIVE_EXCEPTION.equals(command.businessType())
+            && "payarchive-exception-1".equals(command.businessId())));
+    org.mockito.Mockito.verifyNoInteractions(approvalTaskApplicationService, approvalTaskMapper);
   }
 
   @Test
-  void archiveExceptionReviewUpdatesApprovalTaskAndRequestStatusWithoutUnfreezingBatch() {
+  void archiveExceptionReviewUsesWorkflowWithoutUnfreezingBatch() {
     TenantContext.set("tenant-1", null, "finance-approver");
     when(paymentArchiveExceptionRequestMapper.findByTenantAndId("tenant-1", "payarchive-exception-1"))
-        .thenReturn(paymentArchiveExceptionRequest(), paymentArchiveExceptionRequest("已通过", "finance-approver"));
-    when(approvalTaskMapper.findPendingByBiz(
-        "tenant-1",
-        ApprovalBusinessType.PAYMENT_ARCHIVE_EXCEPTION,
-        "payarchive-exception-1",
-        ApprovalStatus.PENDING))
-        .thenReturn(approvalTask("approval-archive-exception-1", "待审批"));
-    when(approvalTaskMapper.updateStatus(
-        "tenant-1",
-        "approval-archive-exception-1",
-        ApprovalStatus.PENDING,
-        ApprovalStatus.APPROVED,
-        "finance-approver",
-        null))
-        .thenReturn(1);
-    when(approvalTaskMapper.findByTenantAndId("tenant-1", "approval-archive-exception-1"))
-        .thenReturn(approvalTask("approval-archive-exception-1", "已通过"));
-    when(paymentArchiveExceptionRequestMapper.updateApprovalStatus(
-        "tenant-1",
-        "payarchive-exception-1",
-        "待审批",
-        "已通过",
-        "finance-approver"))
-        .thenReturn(1);
+        .thenReturn(paymentArchiveExceptionRequest());
+    when(workflow.completeCurrentUserBusinessTask(
+        ApprovalBusinessType.PAYMENT_ARCHIVE_EXCEPTION, "payarchive-exception-1", true, null))
+        .thenReturn(new com.procurement.workflow.application.WorkflowCompletionResult(
+            "approved", OffsetDateTime.now(), List.of()));
 
     var response = financeActionApplicationService.reviewCurrentTenantPaymentArchiveExceptionRequest(
-        "payarchive-exception-1",
-        new ReviewPaymentArchiveExceptionRequest(true));
+        "payarchive-exception-1", new ReviewPaymentArchiveExceptionRequest(true));
 
     assertThat(response.status()).isEqualTo("已通过");
-    verify(paymentArchiveExceptionRequestMapper).updateApprovalStatus(
-        "tenant-1",
-        "payarchive-exception-1",
-        "待审批",
-        "已通过",
-        "finance-approver");
-    verify(auditLogApplicationService).recordTenantAction(
-        org.mockito.ArgumentMatchers.eq("tenant-1"),
-        org.mockito.ArgumentMatchers.eq("payment_archive_exception.approved"),
-        org.mockito.ArgumentMatchers.eq("payment_batch"),
-        org.mockito.ArgumentMatchers.eq("PAY-202606"));
+    verify(workflow).completeCurrentUserBusinessTask(
+        ApprovalBusinessType.PAYMENT_ARCHIVE_EXCEPTION, "payarchive-exception-1", true, null);
+    org.mockito.Mockito.verifyNoInteractions(approvalTaskApplicationService, approvalTaskMapper);
+    verify(paymentArchiveExceptionRequestMapper, never()).updateApprovalStatus(
+        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString());
     verify(paymentBatchMapper, never()).updateStatus(
-        org.mockito.ArgumentMatchers.anyString(),
-        org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString());
   }
 

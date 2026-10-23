@@ -26,7 +26,7 @@ public class PlatformAnnouncementController {
 
   @GetMapping
   public ApiResponse<List<PlatformAnnouncementResponse>> list() {
-    return ApiResponse.ok(platformAnnouncementApplicationService.listActive());
+    return ApiResponse.ok(platformAnnouncementApplicationService.listForManagement());
   }
 
   @PostMapping

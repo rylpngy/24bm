@@ -11,5 +11,8 @@ public record ContractPaymentMilestoneResponse(
     String status,
     OffsetDateTime paidAt,
     boolean reached,
-    OffsetDateTime reachedAt) {
+    OffsetDateTime reachedAt,
+    BigDecimal paidAmount,
+    BigDecimal remainingAmount,
+    boolean paymentVerified) {
 }

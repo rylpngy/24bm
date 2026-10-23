@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useMallPermissions } from '../../lib/use-mall-permissions';
 import { ArrowLeft, CheckCircle2, MapPin, Plus } from 'lucide-react';
 import {
   useBuyerMallAddAddress,
@@ -16,6 +17,7 @@ const inputCls =
 
 /** 结算页:选收货地址 → 确认拆单与金额 → 提交。清单以服务端购物车为准。 */
 export function MallCheckoutPage({ onNavigate }: { onNavigate: (route: MallRoute) => void }) {
+  const { can } = useMallPermissions();
   const queryClient = useQueryClient();
   const cart = useBuyerMallCart();
   const addresses = useBuyerMallAddresses();
@@ -69,6 +71,8 @@ export function MallCheckoutPage({ onNavigate }: { onNavigate: (route: MallRoute
     );
   };
 
+  if (cart.isError || addresses.isError) return <FeedbackNotice tone="error" message="结算信息加载失败，请刷新重试。" />;
+  if (cart.isLoading || addresses.isLoading) return <FeedbackNotice tone="info" message="正在加载结算信息…" />;
   if (placed) {
     return (
       <div className="mx-auto max-w-lg rounded-lg border border-slate-200 bg-white p-10 text-center">
@@ -81,13 +85,13 @@ export function MallCheckoutPage({ onNavigate }: { onNavigate: (route: MallRoute
           订单已进入履约流程,供应商确认后可跟踪发货与验收。
         </p>
         <div className="mt-5 flex justify-center gap-2">
-          <button
+          {can('buyer:order:read') && <button
             type="button"
             onClick={() => onNavigate({ name: 'orders' })}
             className="inline-flex h-9 items-center rounded-lg bg-blue-600 px-4 text-xs font-black text-white hover:bg-blue-700"
           >
             查看我的订单
-          </button>
+          </button>}
           <button
             type="button"
             onClick={() => onNavigate({ name: 'category' })}
@@ -119,20 +123,20 @@ export function MallCheckoutPage({ onNavigate }: { onNavigate: (route: MallRoute
               <h2 className="inline-flex items-center gap-2 text-base font-black text-slate-950">
                 <MapPin size={17} className="text-blue-600" /> 收货信息
               </h2>
-              <button
+              {can('buyer:mall:manage') && <button
                 type="button"
                 onClick={() => setShowAddressForm((v) => !v)}
                 className="inline-flex items-center gap-1 text-xs font-black text-blue-600 hover:underline"
               >
                 <Plus size={13} /> 新增地址
-              </button>
+              </button>}
             </div>
 
             {list.length === 0 && !showAddressForm && (
               <div className="mt-3">
                 <FeedbackNotice
                   tone="info"
-                  message="尚无收货地址。可先新增地址;不填也能下单(线下约定收货),但供应商看不到送达信息。"
+                  message="尚无企业收货地址，请联系商城管理员维护。"
                 />
               </div>
             )}
@@ -173,7 +177,7 @@ export function MallCheckoutPage({ onNavigate }: { onNavigate: (route: MallRoute
               </div>
             )}
 
-            {showAddressForm && (
+            {can('buyer:mall:manage') && showAddressForm && (
               <div className="mt-3 rounded-lg border border-slate-100 bg-slate-50/60 p-3">
                 <div className="grid gap-2 sm:grid-cols-2">
                   <input className={inputCls} placeholder="收货人 *" value={form.receiver}

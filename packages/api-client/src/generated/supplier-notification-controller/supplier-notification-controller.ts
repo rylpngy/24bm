@@ -176,7 +176,3 @@ export function useSupplierNotificationList<TData = Awaited<ReturnType<typeof su
 
   return query;
 }
-
-
-
-

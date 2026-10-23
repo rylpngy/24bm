@@ -113,7 +113,3 @@ export function useBuyerDeliveryList<TData = Awaited<ReturnType<typeof buyerDeli
 
   return query;
 }
-
-
-
-

@@ -225,7 +225,7 @@ export function DemandDetail({
 }) {
   const queryClient = useQueryClient();
   const materials = useMaterialList();
-  const approvedDemands = usePurchaseDemandList({ status: '已通过' });
+  const approvedDemands = usePurchaseDemandList({ status: '已通过' }, { query: { enabled: false } });
   const [mergeCandidates, setMergeCandidates] = useState<
     Array<{ id: string; title: string; reasons: string[] }> | null
   >(null);
@@ -282,6 +282,8 @@ export function DemandDetail({
             <button
               type="button"
               onClick={onBack}
+              aria-label="返回需求列表"
+              title="返回需求列表"
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-50"
             >
               <ArrowLeft size={18} />
@@ -423,7 +425,10 @@ export function DemandDetail({
             <button
               className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 text-xs font-black text-white shadow-sm shadow-blue-900/40 transition hover:bg-blue-500 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-300"
               type="button"
-              onClick={() => {
+              disabled={approvedDemands.isFetching}
+              onClick={async () => {
+                const result = await approvedDemands.refetch();
+                if (result.isError) return;
                 // 真实扫描:同部门或品类重叠、已通过且未关联询比的其它需求。
                 const materialCategory: Record<string, string> = {};
                 (materials.data?.data ?? []).forEach((m) => {
@@ -432,7 +437,7 @@ export function DemandDetail({
                 const myCategories = new Set(
                   (demand.lineItems ?? []).map((line) => materialCategory[line.materialId ?? '']).filter(Boolean),
                 );
-                const candidates = (approvedDemands.data?.data ?? [])
+                const candidates = (result.data?.data ?? [])
                   .filter((other: PurchaseDemandResponse) => other.id !== demand.id && !other.linkedRfqId)
                   .map((other: PurchaseDemandResponse) => {
                     const reasons: string[] = [];
@@ -448,8 +453,9 @@ export function DemandDetail({
               }}
             >
               <ScanSearch size={15} />
-              {mergeCandidates == null ? '扫描可合并需求' : '重新扫描'}
+              {approvedDemands.isFetching ? '扫描中…' : mergeCandidates == null ? '扫描可合并需求' : '重新扫描'}
             </button>
+            {approvedDemands.isError && <p role="alert" className="mt-2 text-sm text-red-200">扫描失败，请重试。</p>}
             {mergeCandidates && (
               <div className="mt-3 space-y-2">
                 {mergeCandidates.length === 0 ? (

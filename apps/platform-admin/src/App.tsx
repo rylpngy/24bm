@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Construction } from 'lucide-react';
-import { platformNavigation } from '@24bid/shared';
+import { hasPermission, platformNavigation, visiblePortalModules } from '@24bid/shared';
+import { useSessionPermissions } from '@24bid/api-client';
 import { AppShell, FeedbackNotice, Panel } from '@24bid/ui';
 import { useAuthStore } from './lib/auth-store';
 import { LoginGate } from './features/login-gate';
@@ -13,9 +14,13 @@ import { AnnouncementsPage } from './features/announcements/announcements-page';
 
 export function App() {
   const session = useAuthStore((s) => s.session);
-  const [activeModuleId, setActiveModuleId] = useState(
+  const permissions = useSessionPermissions(session?.userId);
+  const granted = permissions.isError ? [] : permissions.data?.data.permissions ?? [];
+  const modules = visiblePortalModules(platformNavigation, granted);
+  const [requestedModuleId, setActiveModuleId] = useState(
     () => new URLSearchParams(window.location.search).get('module') ?? 'overview',
   );
+  const activeModuleId = modules.some(m => m.id === requestedModuleId) ? requestedModuleId : modules[0]?.id ?? '';
   // 深链接:模块选择同步进 ?module=,刷新/分享链接可直达。
   const selectModule = (moduleId: string) => {
     setActiveModuleId(moduleId);
@@ -29,11 +34,15 @@ export function App() {
     return <LoginGate />;
   }
 
+  if (permissions.isPending || permissions.isError || modules.length === 0) {
+    return <div className="p-6"><FeedbackNotice tone={permissions.isPending ? 'info' : 'error'} message={permissions.isPending ? '正在读取权限…' : permissions.isError ? '权限读取失败，请重试。' : '当前账号未分配可访问的模块，请联系管理员。'} /><button type="button" className="mt-4 text-sm text-blue-700" onClick={() => useAuthStore.getState().signOut()}>退出登录</button></div>;
+  }
+
   return (
     <AppShell
       brandSubtitle={platformNavigation.label}
       mainlineHint="企业审核 - 租户运营 - 平台公告"
-      modules={platformNavigation.modules}
+      modules={modules}
       activeModuleId={activeModuleId}
       onSelectModule={selectModule}
       portalUrl={import.meta.env.VITE_PORTAL_URL ?? 'http://localhost:5173'}
@@ -49,7 +58,7 @@ export function App() {
       ) : activeModuleId === 'supplier-credit' ? (
         <SupplierCreditPage />
       ) : activeModuleId === 'announcements' ? (
-        <AnnouncementsPage />
+        <AnnouncementsPage canManage={hasPermission(granted, 'platform:announcement:manage')} />
       ) : activeModuleId === 'settings' ? (
         <DictionariesPage />
       ) : (

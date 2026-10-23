@@ -2,9 +2,21 @@ import { describe, expect, it } from 'vitest';
 import { buildFinanceExceptionDashboard, getFinanceExceptionView } from './finance-exception-dashboard';
 
 describe('buildFinanceExceptionDashboard', () => {
+  it('uses the remaining amount for partially paid blocked invoices', () => {
+    const dashboard = buildFinanceExceptionDashboard({
+      paymentRequests: [{ id: 'p', amount: 100 }],
+      executionRecords: [{ id: 'e', paymentRequestId: 'p', registeredAmount: 20, executionStatus: '暂不可登记' }],
+      paymentBatches: [], blockResolutions: [], varianceHandlings: [], archiveExceptionRequests: [],
+    });
+    expect(dashboard.summary.blockedAmount).toBe(80);
+  });
   it('prioritizes blocked payments, variance handling, archive exceptions, and overdue registrations', () => {
     const dashboard = buildFinanceExceptionDashboard(
       {
+        paymentRequests: [
+          { invoiceId: 'inv-1', amount: 300 },
+          { invoiceId: 'inv-2', amount: 800 },
+        ],
         paymentBatches: [
           {
             paymentBatchNo: 'PB-BLOCKED',
@@ -26,7 +38,7 @@ describe('buildFinanceExceptionDashboard', () => {
             id: 'exec-blocked',
             paymentBatchNo: 'PB-BLOCKED',
             invoiceId: 'inv-1',
-            registeredAmount: 300,
+            registeredAmount: 0,
             executionStatus: '暂不可登记',
             executionBlockReason: '前序里程碑未付款',
           },
@@ -34,7 +46,7 @@ describe('buildFinanceExceptionDashboard', () => {
             id: 'exec-overdue',
             paymentBatchNo: 'PB-OVERDUE',
             invoiceId: 'inv-2',
-            registeredAmount: 800,
+            registeredAmount: 0,
             plannedPaymentDate: '2026-06-25',
             executionStatus: '待登记付款',
           },
@@ -132,6 +144,23 @@ describe('buildFinanceExceptionDashboard', () => {
 
     expect(dashboard.summary.totalExceptions).toBe(0);
     expect(dashboard.items).toEqual([]);
+  });
+
+  it('uses individual request amounts without repeating a batch total or substituting paid amounts', () => {
+    const dashboard = buildFinanceExceptionDashboard({
+      paymentBatches: [{ paymentBatchNo: 'mixed', blockedRegistrationAmount: 147000 }],
+      paymentRequests: [{ id: 'one', amount: 95000 }, { id: 'two', amount: 52000 }],
+      executionRecords: [
+        { id: 'a', paymentBatchNo: 'mixed', paymentRequestId: 'one', registeredAmount: 0, executionStatus: '暂不可登记' },
+        { id: 'b', paymentBatchNo: 'mixed', paymentRequestId: 'two', registeredAmount: 0, executionStatus: '暂不可登记' },
+        { id: 'c', paymentBatchNo: 'mixed', paymentRequestId: 'unknown', registeredAmount: 500, executionStatus: '暂不可登记' },
+      ],
+      blockResolutions: [], varianceHandlings: [], archiveExceptionRequests: [],
+    });
+    expect(dashboard.summary.blockedAmount).toBe(147000);
+    expect(dashboard.items.find((item) => item.id === 'blocked:a')?.amount).toBe(95000);
+    expect(dashboard.items.find((item) => item.id === 'blocked:b')?.amount).toBe(52000);
+    expect(dashboard.items.find((item) => item.id === 'blocked:c')?.amount).toBeUndefined();
   });
 
   it('filters exception items and keeps the default view capped for scanning', () => {

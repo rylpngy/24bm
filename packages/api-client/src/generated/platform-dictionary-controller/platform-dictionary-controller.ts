@@ -323,7 +323,3 @@ export function usePlatformDictionaryEntries<TData = Awaited<ReturnType<typeof p
 
   return query;
 }
-
-
-
-

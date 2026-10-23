@@ -1,6 +1,5 @@
 package com.procurement.order.application;
 
-import com.procurement.approval.domain.ApprovalStatus;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.audit.domain.AuditTargetType;
@@ -15,10 +14,8 @@ import com.procurement.order.domain.PurchaseOrderStatusTransition;
 import com.procurement.order.infrastructure.PurchaseOrderMapper;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.sourcing.domain.AwardDecision;
-import com.procurement.sourcing.domain.Rfq;
-import com.procurement.sourcing.infrastructure.AwardDecisionMapper;
+import com.procurement.sourcing.application.OrderAwardQueryService;
 import com.procurement.sourcing.application.RfqDemandLinkQueryService;
-import com.procurement.sourcing.infrastructure.RfqMapper;
 import com.procurement.tenant.application.TenantFeatureApplicationService;
 import com.procurement.tenant.domain.TenantFeatureKey;
 import java.util.List;
@@ -29,8 +26,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PurchaseOrderApplicationService {
-  private final AwardDecisionMapper awardDecisionMapper;
-  private final RfqMapper rfqMapper;
+  private final OrderAccessService access;
+  private final OrderAwardQueryService awards;
   private final PurchaseOrderMapper purchaseOrderMapper;
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
@@ -40,8 +37,8 @@ public class PurchaseOrderApplicationService {
   private final RfqDemandLinkQueryService rfqDemandLinkQueryService;
 
   public PurchaseOrderApplicationService(
-      AwardDecisionMapper awardDecisionMapper,
-      RfqMapper rfqMapper,
+      OrderAccessService access,
+      OrderAwardQueryService awards,
       PurchaseOrderMapper purchaseOrderMapper,
       AuditLogApplicationService auditLogApplicationService,
       NotificationApplicationService notificationApplicationService,
@@ -49,8 +46,8 @@ public class PurchaseOrderApplicationService {
       PurchaseOrderStatusTransition purchaseOrderStatusTransition,
       OrderLineItemApplicationService orderLineItemApplicationService,
       RfqDemandLinkQueryService rfqDemandLinkQueryService) {
-    this.awardDecisionMapper = awardDecisionMapper;
-    this.rfqMapper = rfqMapper;
+    this.access = access;
+    this.awards = awards;
     this.purchaseOrderMapper = purchaseOrderMapper;
     this.auditLogApplicationService = auditLogApplicationService;
     this.notificationApplicationService = notificationApplicationService;
@@ -61,20 +58,20 @@ public class PurchaseOrderApplicationService {
   }
 
   public List<PurchaseOrderResponse> listCurrentTenantOrders() {
-    String tenantId = TenantAccessGuard.requireTenantId("buyer order APIs");
-    return purchaseOrderMapper.listByTenant(tenantId).stream()
-        .map(this::toResponse)
-        .toList();
+    if (!access.canRead("buyer:order:read")) return List.of();
+    return listCurrentTenantOrders(null, null, null);
   }
 
   public List<PurchaseOrderResponse> listCurrentTenantOrders(String status, String supplierId, String rfqId) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer order APIs");
+    var visible = access.visibleOrders("buyer:order:read");
     return purchaseOrderMapper.listByTenantFiltered(
             tenantId,
             blankToNull(status),
             blankToNull(supplierId),
             blankToNull(rfqId))
         .stream()
+        .filter(order -> visible.test(order.id()))
         .map(this::toResponse)
         .toList();
   }
@@ -130,6 +127,7 @@ public class PurchaseOrderApplicationService {
 
   @Transactional
   public PurchaseOrderResponse update(String orderId, UpdatePurchaseOrderRequest request) {
+    access.requireOrder(orderId, "buyer:order:manage");
     String tenantId = TenantAccessGuard.requireTenantId("buyer order APIs");
     PurchaseOrder order = purchaseOrderMapper.findByTenantAndId(tenantId, orderId);
     if (order == null) {
@@ -172,11 +170,12 @@ public class PurchaseOrderApplicationService {
   public PurchaseOrderResponse createFromAward(CreatePurchaseOrderRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer order APIs");
     tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.ORDER);
-    AwardDecision award = awardDecisionMapper.findApprovedForOrder(tenantId, request.awardId(), ApprovalStatus.APPROVED);
+    AwardDecision award = awards.findApproved(tenantId, request.awardId());
     if (award == null) {
       throw new IllegalArgumentException("Approved award decision not found in tenant scope: " + request.awardId());
     }
-    requireFinalizedRfqAward(tenantId, award);
+    access.requireRfq(award.rfqId());
+    awards.requireFinalized(tenantId, award);
 
     PurchaseOrder existingOrder = purchaseOrderMapper.findByAwardSource(tenantId, award.rfqId(), award.supplierId());
     if (existingOrder != null) {
@@ -352,16 +351,6 @@ public class PurchaseOrderApplicationService {
       return null;
     }
     return rfqDemandLinkQueryService.findRfqMethod(order.tenantId(), order.rfqId());
-  }
-
-  private void requireFinalizedRfqAward(String tenantId, AwardDecision award) {
-    Rfq rfq = rfqMapper.findByTenantAndId(tenantId, award.rfqId());
-    if (rfq == null
-        || !ApprovalStatus.APPROVED.equals(award.approvedStatus())
-        || !"已定标".equals(rfq.status())
-        || !award.supplierId().equals(rfq.awardedSupplierId())) {
-      throw new IllegalStateException("RFQ award is not finalized for order creation: " + award.rfqId());
-    }
   }
 
   private String newId(String prefix) {

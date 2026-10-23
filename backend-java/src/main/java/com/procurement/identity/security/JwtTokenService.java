@@ -44,6 +44,7 @@ public class JwtTokenService {
         .claim("tenantId", principal.tenantId())
         .claim("supplierId", principal.supplierId())
         .claim("roles", principal.roles())
+        .claim("sessionVersion", principal.sessionVersion() == null ? 0L : principal.sessionVersion())
         .issuedAt(Date.from(now))
         .expiration(Date.from(now.plusSeconds(expiresInSeconds)))
         .signWith(secretKey)
@@ -63,7 +64,8 @@ public class JwtTokenService {
         IdentityScope.valueOf(claims.get("scope", String.class)),
         claims.get("tenantId", String.class),
         claims.get("supplierId", String.class),
-        claims.get("roles", java.util.List.class));
+        claims.get("roles", java.util.List.class),
+        claims.get("sessionVersion", Long.class) == null ? 0L : claims.get("sessionVersion", Long.class));
   }
 
   public long expiresInSeconds() {

@@ -176,7 +176,3 @@ export function useBuyerNotificationList<TData = Awaited<ReturnType<typeof buyer
 
   return query;
 }
-
-
-
-

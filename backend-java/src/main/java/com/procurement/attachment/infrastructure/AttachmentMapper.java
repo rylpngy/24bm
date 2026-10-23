@@ -10,6 +10,21 @@ import org.apache.ibatis.annotations.Select;
 @Mapper
 public interface AttachmentMapper {
 
+  record Fingerprint(Long contentSize, String contentSha256) {}
+
+  @Select("select content_size,content_sha256 from attachments where tenant_id=#{tenantId} and id=#{id}")
+  Fingerprint fingerprint(@Param("tenantId") String tenantId, @Param("id") String id);
+
+  @org.apache.ibatis.annotations.Update("""
+      update attachments a set content_size=t.content_size,content_sha256=t.content_sha256
+      from attachment_upload_tickets t
+      where a.tenant_id=#{tenantId} and a.id=#{id} and t.tenant_id=a.tenant_id
+        and t.storage_key=a.storage_key and t.owner_type=a.owner_type and t.owner_id=a.owner_id
+        and t.user_id=a.uploaded_by and t.file_name=a.file_name and t.visibility=a.visibility
+        and t.state='registered'
+      """)
+  int copyUploadFingerprint(@Param("tenantId") String tenantId, @Param("id") String id);
+
   @Select("""
       select id, tenant_id, owner_type, owner_id, file_name, storage_key, uploaded_by, visibility, status, created_at
       from attachments

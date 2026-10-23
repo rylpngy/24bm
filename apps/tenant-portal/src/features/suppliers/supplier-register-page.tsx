@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Banknote, Building2, Contact, FileBadge, Handshake } from 'lucide-react';
-import { usePublicPortalListSuppliers, useBuyerSupplierCreate } from '@24bid/api-client';
+import { type BuyerSupplierResponse, usePublicPortalListSuppliers, useBuyerSupplierCreate, useBuyerSupplierChangeProfile } from '@24bid/api-client';
 import { FeedbackNotice, FormErrorSummary, PrimaryActionButton } from '@24bid/ui';
+import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
 
 const inputCls =
   'h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100';
@@ -51,22 +52,25 @@ function Field({
 }
 
 // 供应商登记独立页:详细建档表单(字段对齐供应商详情页),登记后状态「待准入」。
-export function SupplierRegisterPage({ onBack }: { onBack: () => void }) {
+export function SupplierRegisterPage({ onBack, supplier }: { onBack: () => void; supplier?: BuyerSupplierResponse }) {
   const queryClient = useQueryClient();
+  const { can } = useBuyerPermissions();
   const create = useBuyerSupplierCreate();
-  const platformSuppliers = usePublicPortalListSuppliers();
+  const update = useBuyerSupplierChangeProfile();
+  const editing = !!supplier;
+  const platformSuppliers = usePublicPortalListSuppliers({ query: { enabled: !editing } });
   const [form, setForm] = useState({
-    supplierId: '',
-    level: '普通',
-    categories: '',
-    creditCode: '',
-    legalPerson: '',
-    contactName: '',
-    contactPhone: '',
-    contactEmail: '',
-    businessScope: '',
-    bankName: '',
-    bankAccount: '',
+    supplierId: supplier?.supplierId ?? '',
+    level: supplier?.level ?? '普通',
+    categories: supplier?.categories?.join('、') ?? '',
+    creditCode: supplier?.creditCode ?? '',
+    legalPerson: supplier?.legalPerson ?? '',
+    contactName: supplier?.contactName ?? '',
+    contactPhone: supplier?.contactPhone ?? '',
+    contactEmail: supplier?.contactEmail ?? '',
+    businessScope: supplier?.businessScope ?? '',
+    bankName: supplier?.bankName ?? '',
+    bankAccount: supplier?.bankAccount ?? '',
   });
   const [error, setError] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<string[]>([]);
@@ -76,44 +80,48 @@ export function SupplierRegisterPage({ onBack }: { onBack: () => void }) {
   const ready = form.supplierId.trim() && form.level.trim();
 
   const submit = () => {
+    if (!can('buyer:supplier:manage')) {
+      setError('当前账号没有供应商资料维护权限。');
+      return;
+    }
     const missing: string[] = [];
     if (!form.supplierId.trim()) missing.push('请选择「供应商企业」(从平台认证供应商中选择)');
     if (!form.level.trim()) missing.push('请选择「合作等级」');
     setFormErrors(missing);
     if (missing.length > 0) return;
     setError(null);
-    create.mutate(
-      {
-        data: {
-          supplierId: form.supplierId.trim(),
-          status: '待准入',
-          level: form.level,
-          categories: form.categories.split(/[,，、\s]+/).filter(Boolean),
-          creditCode: form.creditCode.trim() || undefined,
-          legalPerson: form.legalPerson.trim() || undefined,
-          contactName: form.contactName.trim() || undefined,
-          contactPhone: form.contactPhone.trim() || undefined,
-          contactEmail: form.contactEmail.trim() || undefined,
-          businessScope: form.businessScope.trim() || undefined,
-          bankName: form.bankName.trim() || undefined,
-          bankAccount: form.bankAccount.trim() || undefined,
-        },
+    const fieldValue = (value: string) => editing ? value.trim() : value.trim() || undefined;
+    const data = {
+      level: form.level,
+      categories: form.categories.split(/[,，、\s]+/).filter(Boolean),
+      creditCode: fieldValue(form.creditCode),
+      legalPerson: fieldValue(form.legalPerson),
+      contactName: fieldValue(form.contactName),
+      contactPhone: fieldValue(form.contactPhone),
+      contactEmail: fieldValue(form.contactEmail),
+      businessScope: fieldValue(form.businessScope),
+      bankName: fieldValue(form.bankName),
+      bankAccount: fieldValue(form.bankAccount),
+    };
+    const options = {
+      onSuccess: () => {
+        void queryClient.invalidateQueries({
+          predicate: (q) =>
+            typeof q.queryKey[0] === 'string' && (q.queryKey[0] as string).includes('/buyer/suppliers'),
+        });
+        onBack();
       },
-      {
-        onSuccess: () => {
-          void queryClient.invalidateQueries({
-            predicate: (q) =>
-              typeof q.queryKey[0] === 'string' && (q.queryKey[0] as string).includes('/buyer/suppliers'),
-          });
-          onBack();
-        },
-        onError: (err) =>
-          setError(
-            (err as { response?: { data?: { message?: string } } }).response?.data?.message
-              ?? '登记失败:供应商可能已在库中。',
-          ),
-      },
-    );
+      onError: (err: unknown) =>
+        setError(
+          (err as { response?: { data?: { message?: string } } }).response?.data?.message
+            ?? (editing ? '保存失败，请重试。' : '登记失败:供应商可能已在库中。'),
+        ),
+    };
+    if (editing && supplier.id) {
+      update.mutate({ relationId: supplier.id, data }, options);
+    } else {
+      create.mutate({ data: { ...data, supplierId: form.supplierId.trim(), status: '待准入' } }, options);
+    }
   };
 
   return (
@@ -124,14 +132,14 @@ export function SupplierRegisterPage({ onBack }: { onBack: () => void }) {
             type="button"
             onClick={onBack}
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-50"
-            aria-label="返回供应商列表"
+            aria-label={editing ? '返回供应商详情' : '返回供应商列表'}
           >
             <ArrowLeft size={18} />
           </button>
           <div>
-            <h1 className="text-xl font-black text-slate-950">登记私域供应商</h1>
+            <h1 className="text-xl font-black text-slate-950">{editing ? '编辑私域资料' : '登记私域供应商'}</h1>
             <p className="mt-1 text-sm font-bold text-slate-500">
-              完整建档后状态为「待准入」,在详情页提交准入审核
+              {editing ? supplier.supplierName : '企业私域供应商档案'}
               <span className="ml-2 text-xs text-slate-400">(<span className="text-red-500">*</span> 为必填项,其余选填)</span>
             </p>
           </div>
@@ -141,8 +149,9 @@ export function SupplierRegisterPage({ onBack }: { onBack: () => void }) {
       <Section icon={Building2} title="基本信息" desc="关联平台认证供应商;主数据(名称/行业)以平台档案为准">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="供应商企业" required>
-            <select className={inputCls} value={form.supplierId} onChange={(e) => set('supplierId')(e.target.value)}>
+            <select disabled={editing} className={inputCls} value={form.supplierId} onChange={(e) => set('supplierId')(e.target.value)}>
               <option value="">从平台认证供应商中选择</option>
+              {editing && <option value={form.supplierId}>{supplier.supplierName}</option>}
               {(platformSuppliers.data?.data ?? []).map((s) => (
                 <option key={s.id} value={s.id}>{s.name}({s.industry || '行业未填写'})</option>
               ))}
@@ -155,6 +164,7 @@ export function SupplierRegisterPage({ onBack }: { onBack: () => void }) {
           </Field>
           <Field label="合作等级" required>
             <select className={inputCls} value={form.level} onChange={(e) => set('level')(e.target.value)}>
+              {!['战略', '重要', '普通', '备选'].includes(form.level) && <option value={form.level}>{form.level}</option>}
               {['战略', '重要', '普通', '备选'].map((l) => (
                 <option key={l} value={l}>{l}</option>
               ))}
@@ -166,7 +176,7 @@ export function SupplierRegisterPage({ onBack }: { onBack: () => void }) {
         </div>
       </Section>
 
-      <Section icon={FileBadge} title="工商信息" desc="选填;登记后写入供应商主档,空值不覆盖既有档案">
+      <Section icon={FileBadge} title="工商信息" desc="企业私域登记资料">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="统一社会信用代码">
             <input className={inputCls} placeholder="91xxxxxxxxxxxxxxxx" value={form.creditCode} onChange={(e) => set('creditCode')(e.target.value)} />
@@ -186,7 +196,7 @@ export function SupplierRegisterPage({ onBack }: { onBack: () => void }) {
         </div>
       </Section>
 
-      <Section icon={Contact} title="联系人信息" desc="选填;询价邀请与履约协同的默认联系人">
+      <Section icon={Contact} title="联系人信息" desc="企业私域业务联系人">
         <div className="grid gap-4 sm:grid-cols-3">
           <Field label="联系人姓名">
             <input className={inputCls} value={form.contactName} onChange={(e) => set('contactName')(e.target.value)} />
@@ -200,7 +210,7 @@ export function SupplierRegisterPage({ onBack }: { onBack: () => void }) {
         </div>
       </Section>
 
-      <Section icon={Banknote} title="结算信息" desc="选填;付款登记与对账使用">
+      <Section icon={Banknote} title="结算信息" desc="企业私域结算资料">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="开户银行">
             <input className={inputCls} value={form.bankName} onChange={(e) => set('bankName')(e.target.value)} />
@@ -217,7 +227,7 @@ export function SupplierRegisterPage({ onBack }: { onBack: () => void }) {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
             <Handshake size={14} className="text-blue-600" />
-            {ready ? '登记后进入「待准入」,可在详情页提交准入审核。' : '请先选择供应商企业与合作等级。'}
+            {editing ? '保存至当前企业私域档案' : ready ? '登记后进入「待准入」,可在详情页提交准入审核。' : '请先选择供应商企业与合作等级。'}
           </div>
           <div className="flex shrink-0 gap-3">
             {error && <FeedbackNotice tone="error" message={error} />}
@@ -228,8 +238,8 @@ export function SupplierRegisterPage({ onBack }: { onBack: () => void }) {
             >
               取消
             </button>
-            <PrimaryActionButton onClick={submit} busy={create.isPending} pendingLabel="登记中" size="md" flushTop>
-              登记供应商
+            <PrimaryActionButton onClick={submit} disabled={!can('buyer:supplier:manage')} busy={create.isPending || update.isPending} pendingLabel="保存中" size="md" flushTop>
+              {editing ? '保存资料' : '登记供应商'}
             </PrimaryActionButton>
           </div>
         </div>

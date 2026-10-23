@@ -115,7 +115,3 @@ export function useDictionaryList<TData = Awaited<ReturnType<typeof dictionaryLi
 
   return query;
 }
-
-
-
-

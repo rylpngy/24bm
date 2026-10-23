@@ -69,8 +69,13 @@ import com.procurement.identity.security.JwtAuthenticationFilter;
 import com.procurement.identity.security.JwtTokenService;
 import com.procurement.finance.api.SupplierReceivableController;
 import com.procurement.finance.api.BuyerFinanceActionController;
+import com.procurement.finance.api.BuyerFinanceReportController;
 import com.procurement.finance.api.BuyerInvoiceReconciliationController;
 import com.procurement.finance.api.BuyerPaymentController;
+import com.procurement.finance.api.BuyerPaymentLedgerController;
+import com.procurement.finance.api.BuyerPaymentReviewController;
+import com.procurement.finance.application.PaymentReviewApplicationService;
+import com.procurement.finance.application.PaymentLedgerApplicationService;
 import com.procurement.finance.api.CreatePaymentRequestRequest;
 import com.procurement.finance.api.CreateVarianceHandlingRequest;
 import com.procurement.finance.api.InvoiceResponse;
@@ -255,7 +260,10 @@ import org.springframework.test.web.servlet.MvcResult;
     BuyerInvoiceReconciliationController.class,
     SupplierInvoiceReconciliationController.class,
     BuyerFinanceActionController.class,
+    BuyerFinanceReportController.class,
     BuyerPaymentController.class,
+    BuyerPaymentLedgerController.class,
+    BuyerPaymentReviewController.class,
     SupplierInvoiceController.class,
     SupplierReceivableController.class,
     AuditLogController.class,
@@ -276,14 +284,16 @@ import org.springframework.test.web.servlet.MvcResult;
     com.procurement.tender.api.BuyerTenderController.class,
     com.procurement.tender.api.SupplierTenderController.class,
     com.procurement.tenant.api.BuyerCapabilityController.class,
-    com.procurement.ludongpoc.api.LudongPocController.class
+    com.procurement.ludongpoc.api.LudongPocController.class,
+    com.procurement.identity.api.SessionPermissionController.class
 })
 @Import({
     SecurityConfig.class,
     JwtAuthenticationFilter.class,
     JwtTokenService.class,
     com.procurement.identity.security.KeycloakTokenService.class,
-    AuthenticationApplicationService.class
+    AuthenticationApplicationService.class,
+    com.procurement.identity.application.AuthenticatedSessionService.class
 })
 @TestPropertySource(properties = {
     "procurement.security.jwt-secret=local-test-secret-must-be-at-least-32-bytes",
@@ -378,7 +388,16 @@ class HttpSecurityContractTests {
   private PaymentApplicationService paymentApplicationService;
 
   @MockBean
+  private PaymentLedgerApplicationService paymentLedgerApplicationService;
+
+  @MockBean
+  private PaymentReviewApplicationService paymentReviewApplicationService;
+
+  @MockBean
   private FinanceActionApplicationService financeActionApplicationService;
+
+  @MockBean
+  private com.procurement.finance.application.FinanceReportApplicationService financeReportApplicationService;
 
   @MockBean
   private PlatformTenantApplicationService platformTenantApplicationService;
@@ -496,6 +515,20 @@ class HttpSecurityContractTests {
 
   @BeforeEach
   void stubDatabaseBackedLoginPrincipals() {
+    when(portalPermissions.currentUserHas(org.mockito.ArgumentMatchers.anyString())).thenReturn(true);
+    when(authenticationUserMapper.findActiveSessionUser(
+        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.nullable(String.class), org.mockito.ArgumentMatchers.nullable(String.class)))
+        .thenAnswer(invocation -> {
+          String scope = invocation.getArgument(1);
+          String account = switch (scope) {
+            case "BUYER" -> "buyer";
+            case "SUPPLIER" -> "supplier";
+            default -> "platform";
+          };
+          return authenticationUserMapper.findActiveUser(account, scope,
+              invocation.getArgument(2), invocation.getArgument(3));
+        });
     when(authenticationUserMapper.findActiveUser("buyer", "BUYER", "tenant-acme", null))
         .thenReturn(new AuthenticatedUser(
             "user-buyer-owner",
@@ -524,6 +557,12 @@ class HttpSecurityContractTests {
     when(authenticationUserMapper.listSecurityRoles("user-platform-admin", "PLATFORM", null, null))
         .thenReturn(List.of("PLATFORM_ADMIN"));
   }
+
+  @MockBean
+  private com.procurement.identity.application.PermissionService portalPermissions;
+
+  @MockBean
+  private com.procurement.audit.application.AuditReadAccess auditReadAccess;
 
   @Test
   void viteLocalhostPreflightCanUseAuthorizationHeaderForJavaApiCalls() throws Exception {
@@ -607,6 +646,12 @@ class HttpSecurityContractTests {
     mockMvc.perform(get("/api/v1/buyer/demands")
             .header("Authorization", "Bearer " + supplierToken))
         .andExpect(status().isForbidden());
+
+    for (String report : List.of("invoices", "reconciliation", "procurement-analytics")) {
+      mockMvc.perform(get("/api/v1/buyer/reports/" + report)).andExpect(status().isForbidden());
+      mockMvc.perform(get("/api/v1/buyer/reports/" + report)
+          .header("Authorization", "Bearer " + supplierToken)).andExpect(status().isForbidden());
+    }
 
     when(purchaseDemandApplicationService.listCurrentTenantDemands(
         org.mockito.ArgumentMatchers.isNull(),
@@ -2553,7 +2598,7 @@ class HttpSecurityContractTests {
             "active",
             "user-platform-admin",
             OffsetDateTime.parse("2026-06-16T10:00:00+08:00")));
-    when(platformAnnouncementApplicationService.listActive()).thenReturn(List.of(new PlatformAnnouncementResponse(
+    when(platformAnnouncementApplicationService.listForManagement()).thenReturn(List.of(new PlatformAnnouncementResponse(
         "announcement-demo",
         "系统维护通知",
         "6 月 20 日 22:00-23:00 进行例行维护。",
@@ -4596,6 +4641,20 @@ class HttpSecurityContractTests {
             .content(validInvoicePayload()))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.data.id").value("invoice-created"));
+  }
+
+  @Test
+  void accountStoreOutageReturnsRetryable503InsteadOfInvalidatingSession() throws Exception {
+    String token = loginAndExtractToken("""
+        {"account":"buyer","password":"demo123456","scope":"BUYER","tenantId":"tenant-acme"}
+        """);
+    org.mockito.Mockito.doThrow(new org.springframework.dao.DataAccessResourceFailureException("Account store unavailable"))
+        .when(authenticationUserMapper).findActiveSessionUser(
+            org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(),
+            org.mockito.ArgumentMatchers.nullable(String.class), org.mockito.ArgumentMatchers.nullable(String.class));
+    mockMvc.perform(get("/api/v1/buyer/demands").header("Authorization", "Bearer " + token))
+        .andExpect(status().isServiceUnavailable())
+        .andExpect(header().string("Retry-After", "5"));
   }
 
   private String loginAndExtractToken(String payload) throws Exception {

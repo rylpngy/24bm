@@ -180,7 +180,3 @@ export function useBuyerReceiptList<TData = Awaited<ReturnType<typeof buyerRecei
 
   return query;
 }
-
-
-
-

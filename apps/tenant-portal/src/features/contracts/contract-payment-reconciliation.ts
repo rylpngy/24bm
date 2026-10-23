@@ -1,5 +1,5 @@
 import type {
-  ContractPaymentMilestoneResponse,
+  MonetaryContractMilestone,
   ContractResponse,
   PaymentBatchResponse,
   PaymentExecutionRecordResponse,
@@ -16,7 +16,7 @@ export type ReconciliationStatus =
 
 export interface ContractPaymentReconciliationInput {
   contract: ContractResponse;
-  milestones: ContractPaymentMilestoneResponse[];
+  milestones: MonetaryContractMilestone[];
   paymentRequests: PaymentRequestResponse[];
   paymentBatches: PaymentBatchResponse[];
   executionRecords: PaymentExecutionRecordResponse[];
@@ -71,28 +71,27 @@ export function buildContractPaymentReconciliation({
     (request) => Boolean(contract.relatedOrderId) && request.orderId === contract.relatedOrderId,
   );
   const requestIds = new Set(unique(relatedRequests.map((request) => request.id)));
+  const invoiceIds = new Set(unique(relatedRequests.map((request) => request.invoiceId)));
   const paymentBatchNos = unique(relatedRequests.map((request) => request.paymentBatchNo));
   const batchNoSet = new Set(paymentBatchNos);
   const relatedBatches = paymentBatches.filter((batch) => batch.paymentBatchNo && batchNoSet.has(batch.paymentBatchNo));
   const relatedExecutions = executionRecords.filter(
     (record) =>
       (record.paymentRequestId && requestIds.has(record.paymentRequestId)) ||
-      (record.paymentBatchNo && batchNoSet.has(record.paymentBatchNo)),
+      (record.invoiceId && invoiceIds.has(record.invoiceId)),
   );
 
   const milestoneAmount = milestones.reduce((sum, milestone) => sum + n(milestone.amount), 0);
-  const milestonePaidAmount = milestones
-    .filter((milestone) => milestone.status === '已付')
-    .reduce((sum, milestone) => sum + n(milestone.amount), 0);
+  const milestonePaidAmount = milestones.reduce((sum, milestone) => sum +
+    (milestone.paymentVerified === false ? 0 : milestone.paidAmount ?? (milestone.status === '已付' ? n(milestone.amount) : 0)), 0);
   const reachedUnpaidAmount = milestones
     .filter((milestone) => milestone.reached && milestone.status !== '已付')
-    .reduce((sum, milestone) => sum + n(milestone.amount), 0);
+    .reduce((sum, milestone) => sum + (milestone.paymentVerified === false ? 0 : milestone.remainingAmount ?? n(milestone.amount)), 0);
   const paymentRequestAmount = relatedRequests.reduce((sum, request) => sum + n(request.amount), 0);
   const approvedRequestAmount = relatedRequests
     .filter((request) => request.requestStatus === '付款申请已通过')
     .reduce((sum, request) => sum + n(request.amount), 0);
   const registeredAmount = relatedExecutions
-    .filter((record) => record.executionStatus === '已登记付款')
     .reduce((sum, record) => sum + n(record.registeredAmount), 0);
   const executionBlockedCount = relatedExecutions.filter((record) => record.executionStatus === '暂不可登记').length;
   const batchBlockedCount = relatedBatches.reduce((sum, batch) => sum + n(batch.blockedRegistrationCount), 0);
@@ -101,7 +100,9 @@ export function buildContractPaymentReconciliation({
       .filter((record) => record.executionStatus === '暂不可登记')
       .map((record) => record.executionBlockReason),
   );
-  const blockedCount = Math.max(executionBlockedCount, batchBlockedCount);
+  const unknownPayments = milestones.filter(m => m.paymentVerified === false).length;
+  if (unknownPayments) blockReasons.push('历史合同付款金额待核对');
+  const blockedCount = Math.max(executionBlockedCount, batchBlockedCount, unknownPayments);
   const unrequestedContractAmount = Math.max(contractAmount - paymentRequestAmount, 0);
   const unregisteredContractAmount = Math.max(contractAmount - registeredAmount, 0);
 

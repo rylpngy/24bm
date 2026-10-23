@@ -24,7 +24,7 @@ import {
   useRfqList,
 } from '@24bid/api-client';
 import { ApprovalTimeline, FeedbackNotice, Panel, SearchInput, StatusPill, cn } from '@24bid/ui';
-import { ProcurementPlanMergePage } from '../demands/demands-page';
+import { ProcurementPlanMergePage } from './procurement-plan-form';
 
 const currency = (value?: number) =>
   value == null ? '--' : `¥${value.toLocaleString('zh-CN', { minimumFractionDigits: 0 })}`;

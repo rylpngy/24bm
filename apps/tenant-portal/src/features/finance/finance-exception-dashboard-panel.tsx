@@ -7,6 +7,7 @@ import {
   useBuyerFinanceActionPaymentArchiveExceptionRequests,
   useBuyerFinanceActionPaymentBlockResolutions,
   useBuyerFinanceActionPaymentExecutionRecords,
+  useBuyerFinanceActionPaymentRequests,
   useBuyerFinanceActionReviewPaymentArchiveExceptionRequest,
   useBuyerFinanceActionVarianceHandlings,
   useWorkflowPaymentArchiveExceptionCreate,
@@ -14,6 +15,7 @@ import {
   type PaymentBatchResponse,
 } from '@24bid/api-client';
 import { FeedbackNotice, MiniFact, StatusPill } from '@24bid/ui';
+import { financeErrorMessage } from './finance-feedback';
 import {
   buildFinanceExceptionDashboard,
   getFinanceExceptionView,
@@ -155,6 +157,7 @@ export function FinanceExceptionDashboardPanel({ paymentBatches }: { paymentBatc
     exceptionReason: string;
   } | null>(null);
   const executions = useBuyerFinanceActionPaymentExecutionRecords();
+  const paymentRequests = useBuyerFinanceActionPaymentRequests();
   const blockResolutions = useBuyerFinanceActionPaymentBlockResolutions();
   const variances = useBuyerFinanceActionVarianceHandlings();
   const archiveExceptions = useBuyerFinanceActionPaymentArchiveExceptionRequests();
@@ -191,12 +194,14 @@ export function FinanceExceptionDashboardPanel({ paymentBatches }: { paymentBatc
   const mutationHandlers = { onSuccess: refreshFinanceQueries, onError: reportActionError };
 
   const loading =
+    paymentRequests.isLoading ||
     executions.isLoading ||
     blockResolutions.isLoading ||
     variances.isLoading ||
     archiveExceptions.isLoading;
 
   const dashboard = buildFinanceExceptionDashboard({
+    paymentRequests: paymentRequests.data?.data ?? [],
     paymentBatches,
     executionRecords: executions.data?.data ?? [],
     blockResolutions: blockResolutions.data?.data ?? [],
@@ -214,6 +219,11 @@ export function FinanceExceptionDashboardPanel({ paymentBatches }: { paymentBatc
     setFilter(itemFilter);
     setExpanded(false);
   };
+
+  if ([executions, paymentRequests, blockResolutions, variances, archiveExceptions].some((query) => query.isError)) {
+    const failed = [executions, paymentRequests, blockResolutions, variances, archiveExceptions].find((query) => query.isError);
+    return <FeedbackNotice tone="error" message={financeErrorMessage(failed?.error, '财务异常数据加载失败，请刷新重试。')} />;
+  }
 
   return (
     <div className="mb-4 rounded-lg border border-red-100 bg-red-50/30 p-4">

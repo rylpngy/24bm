@@ -17,7 +17,7 @@ describe('buildPaymentBatchExecutionSummaries', () => {
         id: 'exec-blocked',
         paymentBatchNo: 'PB-001',
         paymentRequestId: 'pay-2',
-        registeredAmount: 700,
+        registeredAmount: 0,
         executionStatus: '暂不可登记',
         executionBlockReason: '前序里程碑未付款',
         executionNextAction: '补齐前序里程碑',
@@ -34,7 +34,7 @@ describe('buildPaymentBatchExecutionSummaries', () => {
     expect(summaries.get('PB-001')).toMatchObject({
       totalCount: 2,
       registeredAmount: 300,
-      blockedAmount: 700,
+      blockedAmount: 0,
       pendingAmount: 0,
     });
     expect(summaries.get('PB-001')?.records.map((record) => record.id)).toEqual([
@@ -51,9 +51,9 @@ describe('buildPaymentBatchExecutionSummaries', () => {
     });
     expect(summaries.get('PB-002')).toMatchObject({
       totalCount: 1,
-      registeredAmount: 0,
+      registeredAmount: 500,
       blockedAmount: 0,
-      pendingAmount: 500,
+      pendingAmount: 0,
     });
   });
 

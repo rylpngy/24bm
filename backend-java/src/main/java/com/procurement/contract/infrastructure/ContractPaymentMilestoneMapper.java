@@ -12,6 +12,16 @@ import org.apache.ibatis.annotations.Update;
 @Mapper
 public interface ContractPaymentMilestoneMapper {
 
+  @Select("select coalesce(sum(amount),0) from contract_payment_allocations where tenant_id=#{tenant} and milestone_id=#{id}")
+  BigDecimal allocatedAmount(@Param("tenant") String tenant, @Param("id") String id);
+
+  @Update("""
+      update contract_payment_milestones set status=#{status},
+      paid_at=case when #{status}='已付' then now() else null end
+      where tenant_id=#{tenant} and id=#{id}
+      """)
+  int syncPayment(@Param("tenant") String tenant, @Param("id") String id, @Param("status") String status);
+
   @Insert("""
       insert into contract_payment_milestones
         (id, tenant_id, contract_id, name, percent, amount, status, sort_no)

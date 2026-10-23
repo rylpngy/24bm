@@ -33,7 +33,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 // 真实基础设施验收：不 mock Flowable、MyBatis 或业务回调，验证采购需求已完全走统一运行时。
 @SpringBootTest
-@Testcontainers(disabledWithoutDocker = true)
+@Testcontainers
+@org.springframework.test.annotation.DirtiesContext(classMode = org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER_CLASS)
 class UnifiedWorkflowRuntimeIT {
   private static final String TENANT_ID = "tenant-workflow-it";
   private static final String DEPARTMENT_ID = "dept-workflow-it";

@@ -30,13 +30,16 @@ const inputCls =
   'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100';
 
 // 销售订单:供应商确认订单(待确认→待发货),并登记发货(承运商/运单/数量)与开票。
-export function OrdersPage() {
+export function OrdersPage({ canConfirm = false, canShip = false, canInvoice = false }: {
+  canConfirm?: boolean; canShip?: boolean; canInvoice?: boolean;
+}) {
   const queryClient = useQueryClient();
   const orders = useSupplierOrderList();
   const confirm = useSupplierOrderConfirm();
   const ship = useSupplierDeliveryCreate();
   const issue = useSupplierInvoiceCreate();
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [shipForm, setShipForm] = useState<{ orderId: string; carrier: string; trackingNo: string; qty: string } | null>(null);
   const [invForm, setInvForm] = useState<{
@@ -49,7 +52,7 @@ export function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState('全部');
   const [page, setPage] = useState(1);
 
-  const all = orders.data?.data ?? [];
+  const all = orders.isError ? [] : orders.data?.data ?? [];
   const statuses = ['全部', ...Array.from(new Set(all.map((o) => o.status).filter(Boolean) as string[]))];
   const kw = keyword.toLowerCase();
   const list = all.filter((o) => {
@@ -71,14 +74,22 @@ export function OrdersPage() {
 
   const onIssueInvoice = (orderId: string, orderAmount?: number) => {
     const f = invForm?.orderId === orderId ? invForm : null;
+    setFeedback(null);
+    setError(null);
+    if (!f || !canInvoice) return;
+    const taxRate = f.taxRate.trim() === '' ? 13 : Number(f.taxRate);
+    if (!Number.isFinite(taxRate) || taxRate < 0 || taxRate > 100) {
+      setError('税率应为 0 至 100 之间的数值。');
+      return;
+    }
     issue.mutate(
       {
         orderId,
         data: {
           amount: orderAmount ?? 0,
-          invoiceNo: f!.invoiceNo,
+          invoiceNo: f.invoiceNo.trim(),
           invoiceCode: f?.invoiceCode || undefined,
-          taxRate: Number(f?.taxRate) || 13,
+          taxRate,
         },
       },
       {
@@ -87,26 +98,43 @@ export function OrdersPage() {
           setInvForm(null);
           refresh();
         },
-        onError: () => setFeedback('开票失败:该订单可能已开票或金额需与订单一致。'),
+        onError: reportError,
       },
     );
   };
 
-  const onConfirm = (orderId: string) =>
-    confirm.mutate({ orderId }, { onSuccess: () => { setFeedback(`订单 ${orderId} 已确认`); refresh(); } });
+  const reportError = (failure: unknown) => setError(
+    (failure as { response?: { data?: { message?: string } } })?.response?.data?.message
+      || '操作失败，请核对当前权限、订单状态和填写内容后重试。',
+  );
+
+  const onConfirm = (orderId: string) => {
+    setFeedback(null);
+    setError(null);
+    if (!canConfirm) return;
+    confirm.mutate({ orderId }, { onSuccess: () => { setFeedback(`订单 ${orderId} 已确认`); refresh(); }, onError: reportError });
+  };
 
   const onShip = (orderId: string) => {
     const f = shipForm?.orderId === orderId ? shipForm : null;
+    setFeedback(null);
+    setError(null);
+    if (!f || !canShip) return;
+    const quantity = f.qty.trim() === '' ? undefined : Number(f.qty);
+    if (quantity !== undefined && (!Number.isInteger(quantity) || quantity <= 0)) {
+      setError('发货数量应为正整数，不能填写零、负数或小数。');
+      return;
+    }
     ship.mutate(
       {
         orderId,
         data: {
-          carrier: f!.carrier,
-          trackingNo: f!.trackingNo,
-          shippedQuantity: Number(f?.qty) || undefined,
+          carrier: f.carrier.trim(),
+          trackingNo: f.trackingNo.trim(),
+          shippedQuantity: quantity,
         },
       },
-      { onSuccess: () => { setFeedback(`订单 ${orderId} 已登记发货`); setShipForm(null); refresh(); } },
+      { onSuccess: () => { setFeedback(`订单 ${orderId} 已登记发货`); setShipForm(null); refresh(); }, onError: reportError },
     );
   };
 
@@ -155,7 +183,7 @@ export function OrdersPage() {
           </div>
         )}
 
-        {editing && (
+        {canShip && editing && (
           <div className="rounded-lg border border-blue-100 bg-blue-50/40 p-3">
             <p className="text-xs font-black text-blue-800">发货登记</p>
             <div className="mt-2 grid gap-2 sm:grid-cols-3">
@@ -163,7 +191,7 @@ export function OrdersPage() {
                 onChange={(e) => setShipForm({ ...shipForm!, carrier: e.target.value })} />
               <input className={inputCls} placeholder="运单号" value={shipForm!.trackingNo}
                 onChange={(e) => setShipForm({ ...shipForm!, trackingNo: e.target.value })} />
-              <input className={inputCls} type="number" placeholder="发货数量" value={shipForm!.qty}
+              <input className={inputCls} type="number" min="1" step="1" placeholder="发货数量" value={shipForm!.qty}
                 onChange={(e) => setShipForm({ ...shipForm!, qty: e.target.value })} />
             </div>
             <div className="mt-2 flex gap-2">
@@ -183,7 +211,7 @@ export function OrdersPage() {
           </div>
         )}
 
-        {invEditing && (
+        {canInvoice && invEditing && (
           <div className="rounded-lg border border-blue-100 bg-blue-50/40 p-3">
             <p className="text-xs font-black text-blue-800">开具发票(金额须与订单一致 {currency(o.amount)})</p>
             <div className="mt-2 grid gap-2 sm:grid-cols-3">
@@ -191,7 +219,7 @@ export function OrdersPage() {
                 onChange={(e) => setInvForm({ ...invForm!, invoiceNo: e.target.value })} />
               <input className={inputCls} placeholder="发票代码" value={invForm!.invoiceCode}
                 onChange={(e) => setInvForm({ ...invForm!, invoiceCode: e.target.value })} />
-              <input className={inputCls} type="number" placeholder="税率%" value={invForm!.taxRate}
+              <input className={inputCls} type="number" min="0" max="100" step="0.01" placeholder="税率%" value={invForm!.taxRate}
                 onChange={(e) => setInvForm({ ...invForm!, taxRate: e.target.value })} />
             </div>
             <div className="mt-2 flex gap-2">
@@ -220,7 +248,7 @@ export function OrdersPage() {
     const expanded = expandedId === o.id;
     return (
       <div className="flex flex-wrap justify-end gap-2">
-        {o.status === '待确认' && o.id && (
+        {canConfirm && o.status === '待供应商确认' && o.id && (
           <button
             type="button"
             disabled={busyC}
@@ -230,7 +258,7 @@ export function OrdersPage() {
             {busyC ? '确认中' : '确认订单'}
           </button>
         )}
-        {o.status === '待发货' && o.id && (
+        {canShip && o.status === '待发货' && o.id && (
           <button
             type="button"
             onClick={() => {
@@ -243,7 +271,7 @@ export function OrdersPage() {
             登记发货
           </button>
         )}
-        {o.status === '已收货' && o.id && (
+        {canInvoice && o.status === '已收货' && o.id && (
           <button
             type="button"
             onClick={() => {
@@ -297,6 +325,7 @@ export function OrdersPage() {
         </div>
       )}
 
+      {error && <FeedbackNotice tone="error" message={error} />}
       {orders.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载销售订单…" />
       ) : orders.isError ? (

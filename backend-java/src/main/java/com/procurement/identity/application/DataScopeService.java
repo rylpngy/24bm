@@ -7,7 +7,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 // 行级权限:解析当前登录用户的有效数据范围。各业务列表据此做收窄。
-// 并集语义:取最宽档(all > department_and_below > department > self);无角色范围 → 不受限。
+// 并集语义:取最宽档(all > department_and_below > department > self);无角色范围拒绝访问。
 @Service
 public class DataScopeService {
   private final DataScopeMapper dataScopeMapper;
@@ -19,14 +19,30 @@ public class DataScopeService {
   public DataScope currentUserDataScope() {
     String userId = TenantContext.userId();
     if (userId == null) {
-      return DataScope.unrestricted();
+      return DataScope.departments(List.of());
     }
     return userDataScope(TenantContext.tenantId(), userId);
   }
 
+  public void requireRecordAccess(String departmentId, String creatorId) {
+    DataScope scope = currentUserDataScope();
+    if (!scope.restricted()) return;
+    boolean allowed = scope.requesterId() != null
+        ? scope.requesterId().equals(creatorId)
+        : departmentId != null && scope.departmentIds().contains(departmentId);
+    if (!allowed) throw new com.procurement.common.tenant.PermissionDeniedException("当前数据范围无权访问该业务记录");
+  }
+
+  public void requireCreatorAccess(String creatorId) {
+    requireRecordAccess(creatorId == null ? null : dataScopeMapper.findUserDepartmentId(creatorId), creatorId);
+  }
+
   public DataScope userDataScope(String tenantId, String userId) {
     List<String> scopes = dataScopeMapper.listUserRoleDataScopes(userId);
-    if (scopes == null || scopes.isEmpty() || scopes.contains(DataScope.ALL)) {
+    if (scopes == null || scopes.isEmpty()) {
+      return DataScope.departments(List.of());
+    }
+    if (scopes.contains(DataScope.ALL)) {
       return DataScope.unrestricted();
     }
     if (scopes.contains(DataScope.DEPARTMENT_AND_BELOW)) {

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
 import { useQueryClient } from '@tanstack/react-query';
 import { AlertCircle, CheckCircle2, ChevronRight, Clock3, ShieldCheck } from 'lucide-react';
 import {
@@ -31,13 +32,14 @@ function errorMessage(error: unknown, fallback: string) {
 
 // 准入审批台:把准入流程中的供应商聚成工作队列,行内直接提交/过/驳。
 export function SupplierAdmissionQueue({ onOpen }: { onOpen: (id: string) => void }) {
+  const { can } = useBuyerPermissions();
   const queryClient = useQueryClient();
   const [keyword, setKeyword] = useState('');
   const [page, setPage] = useState(1);
   const [submitRelation, setSubmitRelation] = useState<{ id: string; name: string } | null>(null);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const query = useBuyerSupplierList();
-  const workflowTasks = useWorkflowRuntimeTasks();
+  const workflowTasks = useWorkflowRuntimeTasks(can('buyer:workflow:review'));
   const submit = useWorkflowBuyerSupplierAdmissionSubmit();
   const completeTask = useUnifiedWorkflowCompleteTask();
   const all = query.data?.data ?? [];
@@ -131,7 +133,7 @@ export function SupplierAdmissionQueue({ onOpen }: { onOpen: (id: string) => voi
     switch (status) {
       case '待准入':
       case '已驳回':
-        return btn('提交准入', () => setSubmitRelation({ id, name: supplierName ?? '供应商准入' }), 'blue');
+        return can('buyer:supplier:manage') ? btn('提交准入', () => setSubmitRelation({ id, name: supplierName ?? '供应商准入' }), 'blue') : null;
       case '准入审批中': {
         if (workflowTasks.isLoading) {
           return (
@@ -141,7 +143,7 @@ export function SupplierAdmissionQueue({ onOpen }: { onOpen: (id: string) => voi
           );
         }
         const task = admissionTaskByRelationId.get(id);
-        if (!task) {
+        if (!task || !can('buyer:workflow:review')) {
           return (
             <span
               className="inline-flex h-8 items-center gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-3 text-xs font-black text-amber-700"

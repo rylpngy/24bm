@@ -5,7 +5,6 @@ import com.procurement.attachment.application.AttachmentApplicationService.Downl
 import com.procurement.common.api.ApiResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.springframework.core.io.ByteArrayResource;
@@ -58,13 +57,19 @@ public class AttachmentController {
     return ApiResponse.ok(attachmentApplicationService.createCurrentTenantDownloadLink(attachmentId));
   }
 
+  @PostMapping("/{attachmentId}/integrity-check")
+  public ApiResponse<AttachmentIntegrityResponse> integrity(@PathVariable String attachmentId) {
+    return ApiResponse.ok(attachmentApplicationService.checkCurrentTenantIntegrity(attachmentId));
+  }
+
   // 服务端代收上传字节(上传票据中的 upload-sink),落到对象存储。
   @PostMapping("/upload-sink")
   public ApiResponse<Void> uploadSink(
       @RequestParam @NotBlank String storageKey,
+      @RequestParam @NotBlank String token,
       @RequestParam(required = false) String contentType,
       @RequestBody byte[] data) {
-    attachmentApplicationService.storeCurrentTenantObject(storageKey, data, contentType);
+    attachmentApplicationService.storeCurrentTenantObject(storageKey, token, data, contentType);
     return ApiResponse.ok(null);
   }
 
@@ -72,11 +77,10 @@ public class AttachmentController {
   @GetMapping("/{attachmentId}/download")
   public ResponseEntity<Resource> download(@PathVariable String attachmentId) {
     DownloadedObject object = attachmentApplicationService.loadCurrentTenantObject(attachmentId);
-    String encoded = URLEncoder.encode(object.fileName(), StandardCharsets.UTF_8).replace("+", "%20");
     return ResponseEntity.ok()
         .header(
             HttpHeaders.CONTENT_DISPOSITION,
-            "attachment; filename=\"" + object.fileName() + "\"; filename*=UTF-8''" + encoded)
+            org.springframework.http.ContentDisposition.attachment().filename(object.fileName(), StandardCharsets.UTF_8).build().toString())
         .contentType(
             object.contentType() == null || object.contentType().isBlank()
                 ? MediaType.APPLICATION_OCTET_STREAM

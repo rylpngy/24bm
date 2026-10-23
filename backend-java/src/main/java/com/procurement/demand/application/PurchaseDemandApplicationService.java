@@ -12,6 +12,7 @@ import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.demand.api.CreatePurchaseDemandRequest;
 import com.procurement.demand.api.PurchaseDemandLineItemResponse;
 import com.procurement.demand.api.PurchaseDemandResponse;
+import com.procurement.demand.api.PurchaseDemandPageResponse;
 import com.procurement.demand.api.ReviewPurchaseDemandRequest;
 import com.procurement.demand.api.UpdatePurchaseDemandRequest;
 import com.procurement.demand.domain.PurchaseDemand;
@@ -23,6 +24,8 @@ import com.procurement.demand.domain.PurchaseDemandStatus;
 import com.procurement.demand.infrastructure.PurchaseDemandItemMapper;
 import com.procurement.demand.infrastructure.PurchaseDemandMapper;
 import com.procurement.identity.application.DataScopeService;
+import com.procurement.identity.application.PermissionService;
+import com.procurement.common.tenant.PermissionDeniedException;
 import com.procurement.identity.domain.DataScope;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.notification.domain.NotificationTitle;
@@ -33,11 +36,13 @@ import com.procurement.workflow.application.WorkflowStartCommand;
 import com.procurement.workflow.application.WorkflowStartResult;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,6 +61,7 @@ public class PurchaseDemandApplicationService {
   private final NotificationApplicationService notificationApplicationService;
   private final PurchaseDemandApprovalStatusTransition purchaseDemandApprovalStatusTransition;
   private final DataScopeService dataScopeService;
+  private final PermissionService permissionService;
   private UnifiedWorkflowApplicationService unifiedWorkflowApplicationService;
 
   public PurchaseDemandApplicationService(
@@ -69,7 +75,8 @@ public class PurchaseDemandApplicationService {
       AuditLogApplicationService auditLogApplicationService,
       NotificationApplicationService notificationApplicationService,
       PurchaseDemandApprovalStatusTransition purchaseDemandApprovalStatusTransition,
-      DataScopeService dataScopeService) {
+      DataScopeService dataScopeService,
+      PermissionService permissionService) {
     this.purchaseDemandMapper = purchaseDemandMapper;
     this.purchaseDemandItemMapper = purchaseDemandItemMapper;
     this.approvalTaskMapper = approvalTaskMapper;
@@ -81,6 +88,7 @@ public class PurchaseDemandApplicationService {
     this.notificationApplicationService = notificationApplicationService;
     this.purchaseDemandApprovalStatusTransition = purchaseDemandApprovalStatusTransition;
     this.dataScopeService = dataScopeService;
+    this.permissionService = permissionService;
   }
 
   @Autowired
@@ -93,11 +101,44 @@ public class PurchaseDemandApplicationService {
     return listCurrentTenantDemands(null, null, null);
   }
 
+  @Transactional(readOnly = true, isolation = org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
+  public PurchaseDemandPageResponse pageCurrentTenantDemands(
+      int page, int pageSize, String status, String departmentId, String keyword) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer demand APIs");
+    permissionService.require("buyer:demand:read");
+    if (page < 1 || pageSize < 1 || pageSize > 100) {
+      throw new IllegalArgumentException("page must be positive and pageSize must be between 1 and 100");
+    }
+    DataScope scope = dataScopeService.currentUserDataScope();
+    List<String> departments = scope.restricted() && scope.requesterId() == null ? scope.departmentIds() : null;
+    String department = blankToNull(departmentId);
+    if (scope.blocksAll() || (departments != null && department != null && !departments.contains(department))) {
+      return new PurchaseDemandPageResponse(List.of(), 0, page, pageSize);
+    }
+    String requester = scope.restricted() ? scope.requesterId() : null;
+    long total = purchaseDemandMapper.countPage(tenantId, blankToNull(status), department,
+        blankToNull(keyword), departments, requester);
+    List<PurchaseDemandResponse> items = toResponses(purchaseDemandMapper.listPage(tenantId,
+        blankToNull(status), department, blankToNull(keyword), departments, requester,
+        pageSize, (long) (page - 1) * pageSize));
+    return new PurchaseDemandPageResponse(items, total, page, pageSize);
+  }
+
+  public PurchaseDemandResponse getCurrentTenantDemand(String id) {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer demand APIs");
+    permissionService.require("buyer:demand:read");
+    PurchaseDemand demand = purchaseDemandMapper.findByTenantAndId(tenantId, id);
+    if (demand == null) throw new IllegalArgumentException("Purchase demand not found in tenant scope");
+    requireDataScope(demand.departmentId(), demand.requesterId());
+    return toResponse(demand);
+  }
+
   public List<PurchaseDemandResponse> listCurrentTenantDemands(
       String status,
       String departmentId,
       String keyword) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer demand APIs");
+    permissionService.require("buyer:demand:read");
     // 行级权限:按有效数据范围收窄——部门集合(本部门 / 本部门及下级)IN,或仅本人(requester_id)。
     DataScope dataScope = dataScopeService.currentUserDataScope();
     if (dataScope.blocksAll()) {
@@ -113,24 +154,23 @@ public class PurchaseDemandApplicationService {
       return List.of();
     }
     String requesterId = dataScope.restricted() ? dataScope.requesterId() : null;
-    return purchaseDemandMapper.listByTenantFiltered(
+    return toResponses(purchaseDemandMapper.listByTenantFiltered(
             tenantId,
             blankToNull(status),
             uiDepartmentId,
             blankToNull(keyword),
             scopeDepartmentIds,
-            requesterId)
-        .stream()
-        .map(this::toResponse)
-        .toList();
+            requesterId));
   }
 
   @Transactional
   public PurchaseDemandResponse create(CreatePurchaseDemandRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer demand APIs");
     String userId = TenantAccessGuard.requireUserId("buyer demand APIs");
+    permissionService.require("buyer:demand:create");
     requireActiveDepartment(tenantId, request.departmentId());
-    String demandId = nextDemandId(tenantId, request.departmentId());
+    requireDataScope(request.departmentId(), userId);
+    String demandId = nextDemandId(request.departmentId());
 
     purchaseDemandMapper.insert(
         demandId,
@@ -164,10 +204,13 @@ public class PurchaseDemandApplicationService {
   @Transactional
   public PurchaseDemandResponse update(String demandId, UpdatePurchaseDemandRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer demand APIs");
+    permissionService.require("buyer:demand:create");
     PurchaseDemand demand = purchaseDemandMapper.findByTenantAndId(tenantId, demandId);
     if (demand == null) {
       throw new IllegalArgumentException("Purchase demand not found: " + demandId);
     }
+    requireDataScope(demand.departmentId(), demand.requesterId());
+    requireDataScope(request.departmentId(), demand.requesterId());
     if (!PurchaseDemandStatus.DRAFT.equals(demand.status())) {
       throw new IllegalStateException("Only draft purchase demand can be updated: " + demandId);
     }
@@ -211,10 +254,12 @@ public class PurchaseDemandApplicationService {
   @Transactional
   public ApprovalTaskResponse submit(String demandId, Map<String, Object> formData) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer demand APIs");
+    permissionService.require("buyer:demand:create");
     PurchaseDemand demand = purchaseDemandMapper.findByTenantAndId(tenantId, demandId);
     if (demand == null) {
       throw new IllegalArgumentException("Purchase demand not found: " + demandId);
     }
+    requireDataScope(demand.departmentId(), demand.requesterId());
     purchaseDemandApprovalStatusTransition.requireSubmission(demand.status(), demandId);
 
     // 旧离线构造的兼容路径；Spring 生产装配始终注入 Flowable 统一门面。
@@ -397,6 +442,30 @@ public class PurchaseDemandApplicationService {
     RfqDemandLinkQueryService.RfqDemandLink linkedRfq =
         rfqDemandLinkQueryService.findLatestLinkForDemand(demand.tenantId(), demand.id());
 
+    return toResponse(demand, lineItems, linkedRfq);
+  }
+
+  private List<PurchaseDemandResponse> toResponses(List<PurchaseDemand> demands) {
+    var responses = new ArrayList<PurchaseDemandResponse>(demands.size());
+    // Bound SQL parameters for legacy full-list callers while avoiding per-row queries.
+    for (int start = 0; start < demands.size(); start += 500) {
+      var batch = demands.subList(start, Math.min(start + 500, demands.size()));
+      String tenantId = batch.getFirst().tenantId();
+      var ids = batch.stream().map(PurchaseDemand::id).toList();
+      var items = purchaseDemandItemMapper.listByDemands(tenantId, ids).stream()
+          .collect(Collectors.groupingBy(PurchaseDemandItem::demandId));
+      var links = rfqDemandLinkQueryService.findLatestLinksForDemands(tenantId, ids);
+      for (var demand : batch) {
+        responses.add(toResponse(demand, items.getOrDefault(demand.id(), List.of()).stream()
+            .map(this::toLineItemResponse).toList(), links.get(demand.id())));
+      }
+    }
+    return responses;
+  }
+
+  private PurchaseDemandResponse toResponse(PurchaseDemand demand,
+      List<PurchaseDemandLineItemResponse> lineItems, RfqDemandLinkQueryService.RfqDemandLink linkedRfq) {
+
     return new PurchaseDemandResponse(
         demand.id(),
         demand.tenantId(),
@@ -420,10 +489,20 @@ public class PurchaseDemandApplicationService {
     return new PurchaseDemandLineItemResponse(item.id(), item.materialId(), item.quantity());
   }
 
-  private String nextDemandId(String tenantId, String departmentId) {
+  private String nextDemandId(String departmentId) {
     String prefix = departmentAbbreviation(departmentId) + LocalDate.now().format(DEMAND_DATE_FORMAT);
-    int nextSeq = purchaseDemandMapper.countByTenantAndIdPrefix(tenantId, prefix) + 1;
+    long nextSeq = purchaseDemandMapper.allocateSequence(prefix);
     return prefix + String.format(Locale.ROOT, "%03d", nextSeq);
+  }
+
+  private void requireDataScope(String departmentId, String requesterId) {
+    DataScope scope = dataScopeService.currentUserDataScope();
+    if (scope == null || scope.blocksAll()
+        || (scope.restricted() && (scope.requesterId() != null
+            ? !scope.requesterId().equals(requesterId)
+            : !scope.departmentIds().contains(departmentId)))) {
+      throw new PermissionDeniedException("当前数据范围无权操作该采购需求");
+    }
   }
 
   private static String departmentAbbreviation(String departmentId) {

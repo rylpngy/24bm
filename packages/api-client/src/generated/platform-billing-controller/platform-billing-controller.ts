@@ -378,7 +378,3 @@ export function usePlatformBillingUsage<TData = Awaited<ReturnType<typeof platfo
 
   return query;
 }
-
-
-
-

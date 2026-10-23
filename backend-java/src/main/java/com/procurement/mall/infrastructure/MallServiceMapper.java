@@ -104,11 +104,12 @@ public interface MallServiceMapper {
 
   /** 商品评价:私域商品按租户隔离,公开专区商品的评价对所有可见方公开。 */
   @Select("""
-      select r.id, r.tenant_id, r.order_id, r.order_line_id, r.product_id, r.supplier_id,
+      select r.id, null::text as tenant_id, null::text as order_id, null::text as order_line_id, r.product_id, r.supplier_id,
              r.rating, r.content, r.created_at
       from mall_reviews r
       join mall_products p on p.id = r.product_id
-      where r.product_id = #{productId} and (p.tenant_id = #{tenantId} or p.scope = 'public')
+      where r.product_id = #{productId} and p.status = '在架'
+        and ((p.tenant_id = #{tenantId} and r.tenant_id = #{tenantId}) or p.scope = 'public')
       order by r.created_at desc
       limit 20
       """)

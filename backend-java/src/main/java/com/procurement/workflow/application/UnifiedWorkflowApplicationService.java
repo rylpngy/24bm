@@ -261,8 +261,9 @@ public class UnifiedWorkflowApplicationService {
     if (instance == null || !WorkflowInstanceStatus.PROCESSING.equals(instance.status())) {
       throw new IllegalArgumentException("Workflow task is not part of an active tenant workflow: " + taskId);
     }
-    if ("ludong_project_application".equals(instance.businessType()) && !businessProjectionEnabled) {
-      throw new IllegalStateException("鲁东采购申报任务必须通过业务审批入口办理，以同步保存节点表单");
+    WorkflowBusinessCompletionHandler businessHandler = requireCompletionHandler(instance.businessType());
+    if (businessHandler.requiresBusinessProjection() && !businessProjectionEnabled) {
+      throw new IllegalStateException("该流程任务必须通过业务审批入口办理，以同步保存节点表单");
     }
     if (!isVisible(instance, dataScopeService.currentUserDataScope())) {
       throw new PermissionDeniedException("当前数据范围无权办理该审批任务");
@@ -282,7 +283,7 @@ public class UnifiedWorkflowApplicationService {
         "reviewComment", request.comment() == null ? "" : request.comment()));
     recordTaskEvent(tenantId, instance.id(), task, approved ? "approved" : "rejected", userId, request.comment());
     List<WorkflowReusedTask> reusedTasks = approved
-        && "ludong_project_application".equals(instance.businessType())
+        && businessHandler.reusesEmployeeDecisions()
         ? reuseApprovedDecisionsWithinInstance(tenantId, instance)
         : List.of();
     boolean ended = runtimeService.createProcessInstanceQuery()

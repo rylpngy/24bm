@@ -176,7 +176,3 @@ export function useSupplierOrderList<TData = Awaited<ReturnType<typeof supplierO
 
   return query;
 }
-
-
-
-

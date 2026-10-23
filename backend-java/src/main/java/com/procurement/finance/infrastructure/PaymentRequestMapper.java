@@ -12,6 +12,15 @@ import org.apache.ibatis.annotations.Update;
 @Mapper
 public interface PaymentRequestMapper {
 
+  default List<PaymentRequest> listByTenantFiltered(
+      @Param("tenantId") String tenantId,
+      @Param("requestStatus") String requestStatus,
+      @Param("supplierId") String supplierId,
+      @Param("orderId") String orderId,
+      @Param("invoiceId") String invoiceId) {
+    return listVisible(tenantId, requestStatus, supplierId, orderId, invoiceId, com.procurement.identity.domain.DataScope.unrestricted());
+  }
+
   @Select("""
       <script>
       select id, tenant_id, invoice_id, supplier_id, order_id, amount, request_status,
@@ -30,15 +39,19 @@ public interface PaymentRequestMapper {
       <if test="invoiceId != null">
         and invoice_id = #{invoiceId}
       </if>
+      and order_id in (
+      """ + FinanceScopeSql.ORDERS + """
+      )
       order by updated_at desc, created_at desc
       </script>
       """)
-  List<PaymentRequest> listByTenantFiltered(
+  List<PaymentRequest> listVisible(
       @Param("tenantId") String tenantId,
       @Param("requestStatus") String requestStatus,
       @Param("supplierId") String supplierId,
       @Param("orderId") String orderId,
-      @Param("invoiceId") String invoiceId);
+      @Param("invoiceId") String invoiceId,
+      @Param("scope") com.procurement.identity.domain.DataScope scope);
 
   @Select("""
       select id, tenant_id, invoice_id, supplier_id, order_id, amount, request_status,
@@ -97,4 +110,12 @@ public interface PaymentRequestMapper {
         and invoice_id = #{invoiceId}
       """)
   PaymentRequest findByTenantAndInvoice(@Param("tenantId") String tenantId, @Param("invoiceId") String invoiceId);
+
+  @Select("""
+      select id, tenant_id, invoice_id, supplier_id, order_id, amount, request_status,
+             payment_batch_no, remark, created_by, created_at, updated_at
+      from payment_requests where tenant_id = #{tenantId} and invoice_id = #{invoiceId}
+      for update
+      """)
+  PaymentRequest lockByTenantAndInvoice(@Param("tenantId") String tenantId, @Param("invoiceId") String invoiceId);
 }

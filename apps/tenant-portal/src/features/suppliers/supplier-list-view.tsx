@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
 import { Activity, Boxes, CheckCircle2, ChevronRight, Clock3, Plus, Search, ShieldCheck } from 'lucide-react';
 import { useBuyerSupplierList } from '@24bid/api-client';
 import {
@@ -21,6 +22,7 @@ type StatusFilter = (typeof STATUS_FILTERS)[number];
 
 // 供应商列表子页:KPI + 状态筛选 + 登记 + 钻取 360(onOpen)。
 export function SupplierListView({ onOpen, onRegister }: { onOpen: (id: string) => void; onRegister: () => void }) {
+  const { can } = useBuyerPermissions();
   const [status, setStatus] = useState<StatusFilter>('全部');
   const [input, setInput] = useState('');
   const [keyword, setKeyword] = useState('');
@@ -142,17 +144,17 @@ export function SupplierListView({ onOpen, onRegister }: { onOpen: (id: string) 
             </button>
           )}
         </form>
-        <button
+        {can('buyer:supplier:manage') && <button
           type="button"
           onClick={onRegister}
           className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-slate-900 px-4 text-xs font-black text-white transition hover:bg-slate-800"
         >
           <Plus size={14} /> 登记供应商
-        </button>
+        </button>}
       </div>
 
 
-      {query.isLoading ? (
+      {query.isError ? <FeedbackNotice tone="error" message="供应商库加载失败，请刷新或确认当前账号权限。" /> : query.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载供应商库…" />
       ) : suppliers.length === 0 ? (
         <FeedbackNotice tone="info" message="当前筛选下暂无供应商。" />

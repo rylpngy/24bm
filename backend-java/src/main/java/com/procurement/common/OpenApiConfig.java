@@ -34,6 +34,11 @@ public class OpenApiConfig {
   @Bean
   OperationCustomizer operationIdCustomizer() {
     return (operation, handlerMethod) -> {
+      var declared = handlerMethod.getMethodAnnotation(io.swagger.v3.oas.annotations.Operation.class);
+      if (declared != null && !declared.operationId().isBlank()) {
+        operation.setOperationId(declared.operationId());
+        return operation;
+      }
       String controller = handlerMethod.getBeanType().getSimpleName().replaceAll("Controller$", "");
       String method = handlerMethod.getMethod().getName();
       operation.setOperationId(controller + "_" + method);

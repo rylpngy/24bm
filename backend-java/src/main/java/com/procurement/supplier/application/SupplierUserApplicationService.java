@@ -3,6 +3,7 @@ package com.procurement.supplier.application;
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.audit.domain.AuditTargetType;
 import com.procurement.common.tenant.TenantAccessGuard;
+import com.procurement.identity.application.PermissionService;
 import com.procurement.supplier.api.ChangeSupplierUserStatusRequest;
 import com.procurement.supplier.api.CreateSupplierUserRequest;
 import com.procurement.supplier.api.ResetSupplierUserPasswordRequest;
@@ -23,16 +24,19 @@ public class SupplierUserApplicationService {
   private final AuditLogApplicationService auditLogApplicationService;
   private final PasswordEncoder passwordEncoder;
   private final SupplierUserStatusTransition supplierUserStatusTransition;
+  private final PermissionService permissions;
 
   public SupplierUserApplicationService(
       SupplierUserMapper supplierUserMapper,
       AuditLogApplicationService auditLogApplicationService,
       PasswordEncoder passwordEncoder,
-      SupplierUserStatusTransition supplierUserStatusTransition) {
+      SupplierUserStatusTransition supplierUserStatusTransition,
+      PermissionService permissions) {
     this.supplierUserMapper = supplierUserMapper;
     this.auditLogApplicationService = auditLogApplicationService;
     this.passwordEncoder = passwordEncoder;
     this.supplierUserStatusTransition = supplierUserStatusTransition;
+    this.permissions = permissions;
   }
 
   public List<SupplierUserResponse> listCurrentSupplierUsers() {
@@ -55,6 +59,7 @@ public class SupplierUserApplicationService {
 
   @Transactional
   public SupplierUserResponse createCurrentSupplierUser(CreateSupplierUserRequest request) {
+    permissions.require("supplier:*");
     String supplierId = TenantAccessGuard.requireSupplierId("supplier user APIs");
     supplierUserStatusTransition.requireSupportedTarget(request.status());
     String supplierRoleId = requireDefaultSupplierRoleId(supplierId);
@@ -78,6 +83,7 @@ public class SupplierUserApplicationService {
 
   @Transactional
   public SupplierUserResponse resetUserPassword(String userId, ResetSupplierUserPasswordRequest request) {
+    permissions.require("supplier:*");
     String supplierId = TenantAccessGuard.requireSupplierId("supplier user APIs");
     requireSupplierUser(supplierId, userId);
     supplierUserMapper.updatePasswordHash(
@@ -94,9 +100,20 @@ public class SupplierUserApplicationService {
 
   @Transactional
   public SupplierUserResponse changeUserStatus(String userId, ChangeSupplierUserStatusRequest request) {
+    permissions.require("supplier:*");
     String supplierId = TenantAccessGuard.requireSupplierId("supplier user APIs");
     requireSupplierUser(supplierId, userId);
     supplierUserStatusTransition.requireSupportedTarget(request.status());
+    // Serialize status changes within a supplier and recheck the actor after acquiring the lock.
+    supplierUserMapper.lockSupplier(supplierId);
+    permissions.require("supplier:*");
+    if ("inactive".equals(request.status())
+        && userId.equals(TenantAccessGuard.requireUserId("supplier user APIs"))) {
+      throw new IllegalArgumentException("不能停用当前登录账号，请由其他管理员处理。");
+    }
+    if ("inactive".equals(request.status()) && supplierUserMapper.countOtherActiveAdmins(supplierId, userId) == 0) {
+      throw new IllegalArgumentException("供应商企业必须保留至少一名启用的管理员。");
+    }
     supplierUserMapper.updateStatus(supplierId, userId, request.status());
     auditLogApplicationService.recordTenantAction(
         null,

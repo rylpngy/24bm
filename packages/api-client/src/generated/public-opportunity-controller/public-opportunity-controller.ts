@@ -264,7 +264,3 @@ export function usePublicOpportunityGet<TData = Awaited<ReturnType<typeof public
 
   return query;
 }
-
-
-
-

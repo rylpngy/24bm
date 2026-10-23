@@ -7,6 +7,6 @@ import java.math.BigDecimal;
 
 public record UpsertDepartmentBudgetRequest(
     @NotBlank String departmentId,
-    @NotBlank String period,
+    @NotBlank @jakarta.validation.constraints.Pattern(regexp = "[0-9]{4}") String period,
     @NotNull @PositiveOrZero BigDecimal totalAmount) {
 }

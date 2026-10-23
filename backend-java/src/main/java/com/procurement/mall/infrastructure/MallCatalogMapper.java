@@ -316,11 +316,11 @@ public interface MallCatalogMapper {
       select id, code, name, unit from materials
       where tenant_id = #{tenantId} and id = #{materialId}
       """)
-  @org.apache.ibatis.annotations.Results({
-      @org.apache.ibatis.annotations.Result(column = "id", property = "id"),
-      @org.apache.ibatis.annotations.Result(column = "code", property = "code"),
-      @org.apache.ibatis.annotations.Result(column = "name", property = "name"),
-      @org.apache.ibatis.annotations.Result(column = "unit", property = "unit")
+  @org.apache.ibatis.annotations.ConstructorArgs({
+      @org.apache.ibatis.annotations.Arg(column = "id", javaType = String.class),
+      @org.apache.ibatis.annotations.Arg(column = "code", javaType = String.class),
+      @org.apache.ibatis.annotations.Arg(column = "name", javaType = String.class),
+      @org.apache.ibatis.annotations.Arg(column = "unit", javaType = String.class)
   })
   MaterialBrief findMaterialBrief(
       @Param("tenantId") String tenantId, @Param("materialId") String materialId);

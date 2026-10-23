@@ -26,6 +26,7 @@ import type {
 
 import type {
   ApiResponseAttachmentDownloadLinkResponse,
+  ApiResponseAttachmentIntegrityResponse,
   ApiResponseAttachmentResponse,
   ApiResponseAttachmentUploadTicketResponse,
   ApiResponseListAttachmentResponse,
@@ -184,6 +185,62 @@ const {mutation: mutationOptions} = options ?
       > => {
 
       const mutationOptions = getAttachmentCreateMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const attachmentIntegrity = (
+    attachmentId: string,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseAttachmentIntegrityResponse>(
+      {url: `/api/v1/buyer/attachments/${attachmentId}/integrity-check`, method: 'POST', signal
+    },
+      );
+    }
+
+
+
+export const getAttachmentIntegrityMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof attachmentIntegrity>>, TError,{attachmentId: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof attachmentIntegrity>>, TError,{attachmentId: string}, TContext> => {
+
+const mutationKey = ['attachmentIntegrity'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof attachmentIntegrity>>, {attachmentId: string}> = (props) => {
+          const {attachmentId} = props ?? {};
+
+          return  attachmentIntegrity(attachmentId,)
+        }
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AttachmentIntegrityMutationResult = NonNullable<Awaited<ReturnType<typeof attachmentIntegrity>>>
+
+    export type AttachmentIntegrityMutationError = ErrorType<ApiResponseVoid>
+
+    export const useAttachmentIntegrity = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof attachmentIntegrity>>, TError,{attachmentId: string}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof attachmentIntegrity>>,
+        TError,
+        {attachmentId: string},
+        TContext
+      > => {
+
+      const mutationOptions = getAttachmentIntegrityMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
@@ -444,7 +501,3 @@ export function useAttachmentDownload<TData = Awaited<ReturnType<typeof attachme
 
   return query;
 }
-
-
-
-

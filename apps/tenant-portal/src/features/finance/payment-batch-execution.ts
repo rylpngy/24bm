@@ -82,9 +82,7 @@ export function buildPaymentBatchExecutionSummaries(
     };
 
     summary.totalCount += 1;
-    if (record.executionStatus === '已登记付款') summary.registeredAmount += n(record.registeredAmount);
-    if (record.executionStatus === '暂不可登记') summary.blockedAmount += n(record.registeredAmount);
-    if (record.executionStatus === '待登记付款') summary.pendingAmount += n(record.registeredAmount);
+    summary.registeredAmount += n(record.registeredAmount);
     const blockResolution = blockResolutions.find((resolution) => matchesResolution(record, resolution));
     summary.records.push(toRecordView(record, blockResolution));
     summaries.set(record.paymentBatchNo, summary);

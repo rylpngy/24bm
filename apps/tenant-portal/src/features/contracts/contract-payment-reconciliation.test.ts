@@ -8,6 +8,31 @@ import {
 } from './contract-payment-reconciliation';
 
 describe('buildContractPaymentReconciliation', () => {
+  it('counts partial amounts and excludes other contracts in the same batch', () => {
+    const result = buildContractPaymentReconciliation({
+      contract: { id: 'c', relatedOrderId: 'o', amount: 100 },
+      milestones: [{ id: 'm', amount: 50, status: '部分已付', reached: true, paidAmount: 20, remainingAmount: 30, paymentVerified: true }],
+      paymentRequests: [{ id: 'p', orderId: 'o', invoiceId: 'i', paymentBatchNo: 'batch', amount: 100 }],
+      paymentBatches: [],
+      executionRecords: [
+        { id: 'own', paymentRequestId: 'p', invoiceId: 'i', paymentBatchNo: 'batch', executionStatus: '待登记付款', registeredAmount: 20 },
+        { id: 'other', paymentRequestId: 'other', invoiceId: 'other', paymentBatchNo: 'batch', executionStatus: '已登记付款', registeredAmount: 900 },
+      ],
+    });
+    expect(result).toMatchObject({ registeredAmount: 20, milestonePaidAmount: 20, reachedUnpaidAmount: 30, unregisteredContractAmount: 80 });
+  });
+
+  it('flags historical milestone statuses without payment evidence', () => {
+    const result = buildContractPaymentReconciliation({
+      contract: { id: 'c', relatedOrderId: 'o', amount: 100 },
+      milestones: [{ id: 'm', amount: 100, status: '已付', reached: true, paidAmount: null, remainingAmount: null, paymentVerified: false }],
+      paymentRequests: [{ id: 'p', orderId: 'o', amount: 100 }], paymentBatches: [], executionRecords: [],
+    });
+    expect(result.milestonePaidAmount).toBe(0);
+    expect(result.status).toBe('存在付款阻断');
+    expect(result.blockReasons).toContain('历史合同付款金额待核对');
+  });
+
   it('links contract, payment requests, batches, executions, and milestones by order/payment batch', () => {
     const result = buildContractPaymentReconciliation({
       contract: {

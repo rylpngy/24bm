@@ -35,7 +35,7 @@ Start the Java backend:
 cd backend-java
 export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
 export PATH=/opt/homebrew/opt/openjdk@21/bin:/opt/homebrew/bin:$PATH
-SPRING_FLYWAY_LOCATIONS='classpath:db/migration,classpath:db/dev' mvn spring-boot:run -Dspring-boot.run.profiles=local
+mvn spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
 Start a frontend workspace against Java:

@@ -15,6 +15,8 @@ export function MallHomePage({ onNavigate }: { onNavigate: (route: MallRoute) =>
     .filter((p): p is number => p != null)
     .sort((a, b) => a - b)[0];
 
+  if (products.isError || categories.isError) return <FeedbackNotice tone="error" message="商城商品或分类加载失败，请刷新重试。" />;
+
   return (
     <div className="space-y-6">
       <section className="overflow-hidden rounded-2xl bg-slate-950 px-6 py-10 text-white sm:px-10">

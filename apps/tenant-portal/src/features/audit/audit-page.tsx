@@ -18,11 +18,13 @@ const TARGET_LABELS: Record<string, string> = {
   supplier_enterprise: '供应商企业',
   buyer_user: '成员',
   buyer_role: '角色',
+  department_budget: '部门预算',
 };
 
 const ACTION_VERB: Record<string, string> = {
   created: '创建',
   updated: '更新',
+  profile_updated: '更新私域资料',
   submitted: '提交',
   approved: '通过',
   rejected: '驳回',
@@ -69,7 +71,7 @@ export function AuditPage() {
     ...(dateFrom ? { dateFrom } : {}),
     ...(dateTo ? { dateTo } : {}),
   });
-  const logs = audit.data?.data ?? [];
+  const logs = audit.isError ? [] : audit.data?.data ?? [];
   const filtered = Boolean(keyword || targetType || dateFrom || dateTo);
 
   return (
@@ -113,7 +115,7 @@ export function AuditPage() {
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <CountTag className="mr-1">
-          {filtered ? `命中 ${logs.length} 条` : `共 ${logs.length} 条`}
+          {audit.isError ? '记录加载失败' : audit.isLoading ? '记录待加载' : filtered ? `命中 ${logs.length} 条` : `共 ${logs.length} 条`}
         </CountTag>
         {[50, 100, 200].map((n) => (
           <button key={n} type="button" onClick={() => setLimit(n)}
@@ -141,7 +143,9 @@ export function AuditPage() {
         )}
       </div>
 
-      {audit.isLoading ? (
+      {audit.isError ? (
+        <FeedbackNotice tone="error" message={(audit.error as { response?: { data?: { message?: string } } })?.response?.data?.message ?? '审计数据加载失败，请确认审计权限和数据范围后重试。'} />
+      ) : audit.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载审计日志…" />
       ) : logs.length === 0 ? (
         <FeedbackNotice
@@ -152,12 +156,12 @@ export function AuditPage() {
         <div className="space-y-2">
           {logs.map((l) => (
             <div key={l.id}
-              className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3">
-              <div className="flex min-w-0 items-center gap-3">
-                <StatusPill label={actionLabel(l.action)} />
+              className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex min-w-0 flex-1 flex-col items-start gap-2 lg:flex-row lg:gap-3">
+                <StatusPill label={actionLabel(l.action)} className="max-w-full shrink-0 break-all whitespace-normal" />
                 <div className="min-w-0">
-                  <p className="break-words font-mono text-xs font-black text-slate-700">{l.targetId}</p>
-                  <p className="mt-0.5 text-[11px] font-bold text-slate-400">
+                  <p className="break-all font-mono text-xs font-black text-slate-700">{l.targetId}</p>
+                  <p className="mt-0.5 break-words text-[11px] font-bold text-slate-400">
                     {TARGET_LABELS[l.targetType ?? ''] ?? l.targetType}
                     {l.detail ? (
                       <span className="ml-1.5 rounded bg-emerald-50 px-1.5 py-0.5 font-black text-emerald-700">
@@ -167,8 +171,8 @@ export function AuditPage() {
                   </p>
                 </div>
               </div>
-              <div className="shrink-0 text-right">
-                <p className="text-xs font-black text-slate-600">{l.actorId}</p>
+              <div className="min-w-0 border-t border-slate-100 pt-2 sm:w-36 sm:shrink-0 sm:border-0 sm:pt-0 sm:text-right">
+                <p className="break-all text-xs font-black text-slate-600">{l.actorId}</p>
                 <p className="mt-0.5 text-[11px] font-bold text-slate-400">
                   {l.createdAt?.slice(0, 19).replace('T', ' ')}
                 </p>

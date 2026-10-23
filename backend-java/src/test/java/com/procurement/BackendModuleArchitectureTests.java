@@ -669,11 +669,14 @@ class BackendModuleArchitectureTests {
         List.of(
             "PurchaseOrderStatus.PENDING_SUPPLIER_CONFIRMATION",
             "PurchaseOrderStatus.PENDING_SHIPMENT",
-            "ApprovalStatus.APPROVED"),
+            "awards.requireFinalized"),
         List.of(
             "private static final String APPROVED_STATUS",
             "private static final String PENDING_SUPPLIER_CONFIRM_STATUS",
             "private static final String READY_TO_SHIP_STATUS"));
+    assertSourceUsesStatusConstants(
+        SOURCE_ROOT.resolve("sourcing/application/OrderAwardQueryService.java"),
+        List.of("ApprovalStatus.APPROVED"), List.of("private static final String APPROVED_STATUS"));
     assertSourceUsesStatusConstants(
         SOURCE_ROOT.resolve("order/application/DeliveryApplicationService.java"),
         List.of(

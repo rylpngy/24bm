@@ -212,6 +212,7 @@ interface AttachmentPayload {
 
 interface AttachmentUploadTicket {
   storageKey: string;
+  uploadUrl: string;
 }
 
 async function listArchiveMaterials(applicationId: string): Promise<LudongArchiveMaterial[]> {
@@ -240,8 +241,8 @@ async function uploadArchiveMaterial(
       visibility: 'buyer_internal',
     },
   ));
-  await axiosInstance.post('/api/v1/buyer/attachments/upload-sink', await file.arrayBuffer(), {
-    params: { storageKey: ticket.storageKey, contentType: file.type || 'application/octet-stream' },
+  await axiosInstance.post(ticket.uploadUrl, await file.arrayBuffer(), {
+    params: { contentType: file.type || 'application/octet-stream' },
     headers: { 'Content-Type': 'application/octet-stream' },
   });
   await axiosInstance.post('/api/v1/buyer/attachments', {

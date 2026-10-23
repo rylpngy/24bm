@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class DeliveryApplicationService {
+  private final OrderAccessService access;
   private final PurchaseOrderMapper purchaseOrderMapper;
   private final DeliveryMapper deliveryMapper;
   private final AuditLogApplicationService auditLogApplicationService;
@@ -33,12 +34,14 @@ public class DeliveryApplicationService {
   private final PurchaseOrderStatusTransition purchaseOrderStatusTransition;
 
   public DeliveryApplicationService(
+      OrderAccessService access,
       PurchaseOrderMapper purchaseOrderMapper,
       DeliveryMapper deliveryMapper,
       AuditLogApplicationService auditLogApplicationService,
       NotificationApplicationService notificationApplicationService,
       TenantFeatureApplicationService tenantFeatureApplicationService,
       PurchaseOrderStatusTransition purchaseOrderStatusTransition) {
+    this.access = access;
     this.purchaseOrderMapper = purchaseOrderMapper;
     this.deliveryMapper = deliveryMapper;
     this.auditLogApplicationService = auditLogApplicationService;
@@ -60,7 +63,10 @@ public class DeliveryApplicationService {
 
   public List<DeliveryResponse> listCurrentTenantDeliveries() {
     String tenantId = TenantAccessGuard.requireTenantId("delivery APIs");
+    if (!access.canRead("buyer:order:read")) return List.of();
+    var visible = access.visibleOrders("buyer:order:read");
     return deliveryMapper.listByTenant(tenantId).stream()
+        .filter(delivery -> visible.test(delivery.orderId()))
         .map(this::toResponse)
         .toList();
   }

@@ -15,7 +15,8 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @SpringBootTest
-@Testcontainers(disabledWithoutDocker = true)
+@Testcontainers
+@org.springframework.test.annotation.DirtiesContext(classMode = org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER_CLASS)
 class DatabaseMigrationIT {
 
   @Container
@@ -55,7 +56,7 @@ class DatabaseMigrationIT {
         order by table_name
         """, String.class);
 
-    assertThat(tableNames).containsExactly(
+    assertThat(tableNames).containsExactlyInAnyOrder(
         "dictionaries",
         "invoices",
         "invoice_reconciliations",

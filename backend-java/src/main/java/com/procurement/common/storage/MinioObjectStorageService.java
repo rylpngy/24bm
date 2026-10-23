@@ -62,8 +62,11 @@ public class MinioObjectStorageService implements ObjectStorageService {
       byte[] data = response.readAllBytes();
       String contentType = response.headers().get("Content-Type");
       return new StoredObject(data, contentType);
+    } catch (io.minio.errors.ErrorResponseException exception) {
+      if ("NoSuchKey".equals(exception.errorResponse().code())) throw new StoredObjectMissingException(exception);
+      throw new IllegalStateException("附件存储暂不可用，请联系管理员检查存储连接与授权", exception);
     } catch (Exception exception) {
-      throw new IllegalStateException("对象下载失败:" + storageKey, exception);
+      throw new IllegalStateException("附件存储暂不可用，请联系管理员检查存储连接与授权", exception);
     }
   }
 }

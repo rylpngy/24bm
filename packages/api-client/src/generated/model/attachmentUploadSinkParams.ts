@@ -8,5 +8,6 @@
 
 export type AttachmentUploadSinkParams = {
 storageKey: string;
+token: string;
 contentType?: string;
 };

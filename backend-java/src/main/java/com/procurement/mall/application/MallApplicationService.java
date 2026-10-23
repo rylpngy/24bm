@@ -46,6 +46,7 @@ public class MallApplicationService {
   private final PurchaseOrderApplicationService purchaseOrderApplicationService;
   private final AuditLogApplicationService auditLogApplicationService;
   private final TenantCapabilityApplicationService tenantCapabilityApplicationService;
+  private final com.procurement.identity.application.DataScopeService scopes;
 
   public MallApplicationService(
       MallListingMapper mallListingMapper,
@@ -54,7 +55,8 @@ public class MallApplicationService {
       RfqApplicationService rfqApplicationService,
       PurchaseOrderApplicationService purchaseOrderApplicationService,
       AuditLogApplicationService auditLogApplicationService,
-      TenantCapabilityApplicationService tenantCapabilityApplicationService) {
+      TenantCapabilityApplicationService tenantCapabilityApplicationService,
+      com.procurement.identity.application.DataScopeService scopes) {
     this.mallListingMapper = mallListingMapper;
     this.mallCatalogMapper = mallCatalogMapper;
     this.mallCartMapper = mallCartMapper;
@@ -62,6 +64,7 @@ public class MallApplicationService {
     this.purchaseOrderApplicationService = purchaseOrderApplicationService;
     this.auditLogApplicationService = auditLogApplicationService;
     this.tenantCapabilityApplicationService = tenantCapabilityApplicationService;
+    this.scopes = scopes;
   }
 
   public List<MallListingResponse> listCurrentTenantListings(String status, String keyword) {
@@ -193,6 +196,8 @@ public class MallApplicationService {
   @Transactional
   public List<MallOrderResponse> checkoutServerCart(CheckoutCartRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer mall APIs");
+    tenantCapabilityApplicationService.requireMethodEnabled(
+        tenantId, ProcurementMethodCatalog.MALL.code());
     String userId = TenantAccessGuard.requireUserId("buyer mall APIs");
     List<com.procurement.mall.domain.MallCartItem> items =
         mallCartMapper.listItems(tenantId, userId);
@@ -348,7 +353,7 @@ public class MallApplicationService {
   public MallAnalyticsResponse mallAnalytics() {
     String tenantId = TenantAccessGuard.requireTenantId("buyer mall APIs");
     java.util.List<com.procurement.mall.domain.MallSupplierSpend> spend =
-        mallListingMapper.mallSpendBySupplier(tenantId);
+        mallListingMapper.mallSpendBySupplier(tenantId, scopes.currentUserDataScope());
     BigDecimal total = spend.stream()
         .map(com.procurement.mall.domain.MallSupplierSpend::totalAmount)
         .reduce(BigDecimal.ZERO, BigDecimal::add);

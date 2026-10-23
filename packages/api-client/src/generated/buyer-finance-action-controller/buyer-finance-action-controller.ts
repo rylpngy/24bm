@@ -1956,7 +1956,3 @@ export function useBuyerFinanceActionPaymentBatches<TData = Awaited<ReturnType<t
 
   return query;
 }
-
-
-
-

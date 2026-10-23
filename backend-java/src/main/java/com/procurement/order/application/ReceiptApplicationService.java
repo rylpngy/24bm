@@ -36,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ReceiptApplicationService {
+  private final OrderAccessService access;
   private final PurchaseOrderMapper purchaseOrderMapper;
   private final DeliveryMapper deliveryMapper;
   private final ReceiptMapper receiptMapper;
@@ -47,6 +48,7 @@ public class ReceiptApplicationService {
   private final PurchaseOrderStatusTransition purchaseOrderStatusTransition;
 
   public ReceiptApplicationService(
+      OrderAccessService access,
       PurchaseOrderMapper purchaseOrderMapper,
       DeliveryMapper deliveryMapper,
       ReceiptMapper receiptMapper,
@@ -56,6 +58,7 @@ public class ReceiptApplicationService {
       NotificationApplicationService notificationApplicationService,
       TenantFeatureApplicationService tenantFeatureApplicationService,
       PurchaseOrderStatusTransition purchaseOrderStatusTransition) {
+    this.access = access;
     this.purchaseOrderMapper = purchaseOrderMapper;
     this.deliveryMapper = deliveryMapper;
     this.receiptMapper = receiptMapper;
@@ -69,17 +72,20 @@ public class ReceiptApplicationService {
 
   public List<ReceiptResponse> listCurrentTenantReceipts(String orderId, String receiverId) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer receipt APIs");
+    var visible = access.visibleOrders("buyer:receipt:read");
     return receiptMapper.listByTenantFiltered(
             tenantId,
             blankToNull(orderId),
             blankToNull(receiverId))
         .stream()
+        .filter(receipt -> visible.test(receipt.orderId()))
         .map(this::toResponse)
         .toList();
   }
 
   @Transactional
   public ReceiptResponse create(String orderId, CreateReceiptRequest request) {
+    access.requireOrder(orderId, "buyer:receipt:manage");
     String tenantId = TenantAccessGuard.requireTenantId("buyer receipt APIs");
     String userId = TenantAccessGuard.requireUserId("buyer receipt APIs");
     PurchaseOrder order = purchaseOrderMapper.findByTenantAndId(tenantId, orderId);

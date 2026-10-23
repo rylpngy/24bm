@@ -83,7 +83,8 @@ public class AuthenticationApplicationService {
         request.scope(),
         user.tenantId(),
         user.supplierId(),
-        roles);
+        roles,
+        user.sessionVersion());
   }
 
   private void requirePresentOnly(String requiredValue, String forbiddenValue, String message) {

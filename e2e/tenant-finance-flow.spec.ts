@@ -13,19 +13,33 @@ async function openPaymentBatches(page: Page) {
   await expect(page.getByText('执行记录明细').first()).toBeVisible();
 }
 
-test('登记付款证据表单:未审批批次被后端守卫拦截(无状态变更)', async ({ page }) => {
+test('付款金额台账入口可访问且未审批批次被后端拦截(无状态变更)', async ({ page, request }) => {
   await openPaymentBatches(page);
+  await page.getByRole('link', { name: '付款金额台账', exact: true }).first().click();
+  await expect(page.getByRole('heading', { name: '付款金额台账', exact: true })).toBeVisible();
 
-  // 展开第一条待登记付款记录的放款证据表单并提交。
-  await page.getByRole('button', { name: '登记付款', exact: true }).first().click();
-  await page.getByPlaceholder(/放款凭证号/).fill('E2E-EVIDENCE-001');
-  await page.getByPlaceholder(/放款备注/).fill('E2E 行为验证付款流水');
-  await page.getByRole('button', { name: '确认登记付款' }).click();
-
-  // 批次未审批通过 → 后端拒绝,错误浮出到页面。
-  await expect(
-    page.getByText(/must be approved before payment execution registration/),
-  ).toBeVisible();
+  // 旧登记入口已移除，但直接调用仍须受服务端审批约束。
+  const api = 'http://localhost:8080/api/v1';
+  const login = await request.post(`${api}/auth/login`, { data: {
+    account: 'buyer.owner@example.com', password: 'demo123456', scope: 'BUYER', tenantId: 'tenant-acme',
+  } });
+  expect(login.ok()).toBeTruthy();
+  const headers = { Authorization: `Bearer ${(await login.json()).data.accessToken}` };
+  const url = `${api}/buyer/payment-execution-records?paymentBatchNo=PB-2026-0001`;
+  const beforeResponse = await request.get(url, { headers });
+  expect(beforeResponse.ok()).toBeTruthy();
+  const before = (await beforeResponse.json()).data;
+  expect(before.length).toBeGreaterThan(0);
+  const rejected = await request.post(`${api}/buyer/payment-execution-records/${before[0].id}/registration`, {
+    headers, data: { paymentStatus: '已付款', releaseEvidenceNo: 'E2E-EVIDENCE-001' },
+  });
+  expect(rejected.ok()).toBeFalsy();
+  expect(await rejected.text()).toContain('must be approved before payment execution registration');
+  const afterResponse = await request.get(url, { headers });
+  expect(afterResponse.ok()).toBeTruthy();
+  // 列表读取会刷新执行汇总时间，仅排除汇总时间戳，金额、状态、凭据等业务字段必须完全一致。
+  const businessState = (records: Array<Record<string, unknown>>) => records.map(({ updatedAt: _updatedAt, ...record }) => record);
+  expect(businessState((await afterResponse.json()).data)).toEqual(businessState(before));
 });
 
 test('付款批次提交审批后进入统一流程状态与我发起台账', async ({ page }) => {

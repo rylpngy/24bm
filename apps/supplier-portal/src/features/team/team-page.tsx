@@ -6,6 +6,7 @@ import {
   useSupplierUserCreate,
   useSupplierUserList,
   useSupplierUserResetPassword,
+  type SupplierUserResponse,
 } from '@24bid/api-client';
 import {
   ConfirmDialog,
@@ -22,6 +23,7 @@ import {
 } from '@24bid/ui';
 
 const PAGE_SIZE = 10;
+const statusLabel = (status?: string) => status === 'active' ? '启用' : status === 'inactive' ? '停用' : status ?? '未知';
 
 const inputCls =
   'h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100';
@@ -46,7 +48,7 @@ function MemberCreatePage({ onBack, onSaved }: { onBack: () => void; onSaved: (m
           name: form.name.trim(),
           mobile: form.mobile.trim() || undefined,
           email: form.email.trim() || undefined,
-          status: '启用',
+          status: 'active',
           initialPassword: form.password,
         },
       },
@@ -87,6 +89,7 @@ function MemberCreatePage({ onBack, onSaved }: { onBack: () => void; onSaved: (m
       <FormErrorSummary errors={formErrors} />
 
       <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/50">
+        <p className="mb-4 text-sm text-slate-600">默认角色：业务成员（报价、订单、发货、发票及商品业务权限，无团队管理权限）</p>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block">
             <span className="text-xs font-black text-slate-500"><span className="mr-1 text-red-500">*</span>姓名</span>
@@ -123,7 +126,7 @@ function MemberCreatePage({ onBack, onSaved }: { onBack: () => void; onSaved: (m
 }
 
 // 员工管理:成员账号列表 + 启停 + 重置密码;新增走独立页。
-export function TeamPage() {
+export function TeamPage({ canManage = false, currentUserId }: { canManage?: boolean; currentUserId?: string }) {
   const queryClient = useQueryClient();
   const users = useSupplierUserList();
   const changeStatus = useSupplierUserChangeStatus();
@@ -136,7 +139,7 @@ export function TeamPage() {
   const [statusFilter, setStatusFilter] = useState('全部');
   const [page, setPage] = useState(1);
 
-  const all = users.data?.data ?? [];
+  const all = users.isError ? [] : users.data?.data ?? [];
   const statuses = ['全部', ...Array.from(new Set(all.map((u) => u.status).filter(Boolean) as string[]))];
   const kw = keyword.toLowerCase();
   const list = all.filter((u) => {
@@ -161,7 +164,27 @@ export function TeamPage() {
       (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? '操作失败,请稍后重试',
     );
 
-  if (creating) {
+  const memberActions = (u: SupplierUserResponse) => canManage && (
+    <div className="flex shrink-0 flex-wrap justify-end gap-2">
+      <button type="button" disabled={resetPassword.isPending}
+        onClick={() => u.id && setResetTarget({ id: u.id, name: u.name ?? '' })}
+        className="inline-flex h-8 shrink-0 items-center gap-1 whitespace-nowrap rounded-md border border-slate-200 bg-white px-2.5 text-xs font-black text-slate-600 hover:bg-slate-50 disabled:opacity-50">
+        <KeyRound size={12} /> 重置密码
+      </button>
+      <button type="button" disabled={changeStatus.isPending || u.id === currentUserId}
+        title={u.id === currentUserId ? '不能停用当前登录账号' : undefined}
+        onClick={() => u.id && changeStatus.mutate(
+          { userId: u.id, data: { status: u.status === 'active' ? 'inactive' : 'active' } },
+          { onSuccess: () => { setFeedback(`已${u.status === 'active' ? '停用' : '启用'}「${u.name}」。`); refresh(); }, onError: reportError },
+        )}
+        className={cn('inline-flex h-8 shrink-0 items-center whitespace-nowrap rounded-md border px-3 text-xs font-black disabled:opacity-50',
+          u.status === 'active' ? 'border-red-200 text-red-600' : 'border-emerald-200 text-emerald-700')}>
+        {u.status === 'active' ? '停用' : '启用'}
+      </button>
+    </div>
+  );
+
+  if (creating && canManage) {
     return (
       <MemberCreatePage
         onBack={() => setCreating(false)}
@@ -177,7 +200,7 @@ export function TeamPage() {
   return (
     <>
     <ConfirmDialog
-      open={!!resetTarget}
+      open={!!resetTarget && canManage}
       tone="primary"
       title={`重置「${resetTarget?.name ?? ''}」的登录密码`}
       message="重置后旧密码立即失效,请将新密码告知该成员并提醒尽快修改。"
@@ -186,7 +209,7 @@ export function TeamPage() {
       busy={resetPassword.isPending}
       onCancel={() => setResetTarget(null)}
       onConfirm={(pwd) => {
-        resetTarget &&
+        canManage && resetTarget &&
           resetPassword.mutate(
             { userId: resetTarget.id, data: { newPassword: pwd } },
             {
@@ -199,14 +222,14 @@ export function TeamPage() {
     <Panel title="员工管理" icon={Users} subtitle="成员账号 · 启停与密码管理">
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <FilterTabs
-          items={statuses.map((s) => ({ id: s, label: s, count: s === '全部' ? undefined : statusCount(s) }))}
+          items={statuses.map((s) => ({ id: s, label: statusLabel(s), count: s === '全部' ? undefined : statusCount(s) }))}
           value={statusFilter}
           onChange={(id) => {
             setStatusFilter(id);
             setPage(1);
           }}
         />
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex max-w-full flex-wrap items-center gap-2">
           <SearchInput
             className="mb-0"
             placeholder="按姓名 / 手机 / 邮箱搜索"
@@ -215,13 +238,13 @@ export function TeamPage() {
               setPage(1);
             }}
           />
-          <button
+          {canManage && <button
             type="button"
             onClick={() => setCreating(true)}
             className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-slate-900 px-4 text-xs font-black text-white transition hover:bg-slate-800"
           >
             <Plus size={14} /> 新增成员
-          </button>
+          </button>}
         </div>
       </div>
       {feedback && (
@@ -255,70 +278,44 @@ export function TeamPage() {
                       <span className="mr-1.5 font-mono text-slate-400">{(safePage - 1) * PAGE_SIZE + i + 1}.</span>
                       {u.name}
                     </p>
-                    <p className="mt-1 text-xs font-bold text-slate-500">{u.mobile ?? '—'} · {u.email ?? '—'}</p>
+                    <p className="mt-1 break-all text-xs font-bold text-slate-500">{u.mobile ?? '—'} · {u.email ?? '—'}</p>
                   </div>
-                  {u.status && <StatusPill label={u.status} />}
+                  {u.status && <span className="shrink-0 whitespace-nowrap"><StatusPill label={statusLabel(u.status)} /></span>}
                 </div>
+                {canManage && <div className="mt-3">{memberActions(u)}</div>}
               </div>
             ))}
           >
-            <table className="w-full min-w-[920px] text-left text-sm">
-              <thead className="bg-slate-50 text-xs font-black text-slate-500">
+            <table className="w-full min-w-[900px] table-fixed text-left text-sm">
+              <colgroup>
+                <col className="w-12" /><col className="w-48" /><col className="w-32" />
+                <col /><col className="w-20" />{canManage && <col className="w-52" />}
+              </colgroup>
+              <thead className="whitespace-nowrap bg-slate-50 text-xs font-black text-slate-500">
                 <tr>
                   <th className="w-12 px-2 py-4 text-center">序号</th>
                   <th className="px-5 py-4">姓名</th>
                   <th className="px-5 py-4">手机号</th>
                   <th className="px-5 py-4">邮箱</th>
                   <th className="px-5 py-4">状态</th>
-                  <th className="px-5 py-4 text-right">操作</th>
+                  {canManage && <th className="sticky right-0 z-10 bg-slate-50 px-5 py-4 text-right">操作</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {pageItems.map((u, i) => {
-                  const enabled = u.status !== '停用';
                   return (
                     <tr key={u.id} className="hover:bg-blue-50/30">
                       <td className="px-2 py-5 text-center font-mono font-black text-slate-400">
                         {(safePage - 1) * PAGE_SIZE + i + 1}
                       </td>
                       <td className="px-5 py-5">
-                        <p className="font-black text-slate-950">{u.name}</p>
-                        <p className="mt-1 font-mono text-[11px] font-bold text-slate-400">{u.id}</p>
+                        <p className="break-words font-black text-slate-950">{u.name}</p>
+                        <p className="mt-1 break-all font-mono text-[11px] font-bold text-slate-400">{u.id}</p>
                       </td>
-                      <td className="px-5 py-5 font-mono text-xs font-bold text-slate-600">{u.mobile ?? '—'}</td>
-                      <td className="px-5 py-5 text-xs font-bold text-slate-600">{u.email ?? '—'}</td>
-                      <td className="px-5 py-5">{u.status && <StatusPill label={u.status} />}</td>
-                      <td className="px-5 py-5 text-right">
-                        <div className="flex justify-end gap-2">
-                          <button
-                            type="button"
-                            disabled={resetPassword.isPending}
-                            onClick={() => u.id && setResetTarget({ id: u.id, name: u.name ?? '' })}
-                            className="inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-black text-slate-600 hover:bg-slate-50 disabled:opacity-50"
-                          >
-                            <KeyRound size={12} /> 重置密码
-                          </button>
-                          <button
-                            type="button"
-                            disabled={changeStatus.isPending}
-                            onClick={() =>
-                              u.id &&
-                              changeStatus.mutate(
-                                { userId: u.id, data: { status: enabled ? '停用' : '启用' } },
-                                { onSuccess: () => { setFeedback(enabled ? `已停用「${u.name}」。` : `已启用「${u.name}」。`); refresh(); }, onError: reportError },
-                              )
-                            }
-                            className={cn(
-                              'inline-flex h-8 items-center rounded-md border px-3 text-xs font-black transition disabled:opacity-50',
-                              enabled
-                                ? 'border-red-200 bg-white text-red-600 hover:bg-red-50'
-                                : 'border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50',
-                            )}
-                          >
-                            {enabled ? '停用' : '启用'}
-                          </button>
-                        </div>
-                      </td>
+                      <td className="break-all px-5 py-5 font-mono text-xs font-bold text-slate-600">{u.mobile ?? '—'}</td>
+                      <td className="break-all px-5 py-5 text-xs font-bold text-slate-600">{u.email ?? '—'}</td>
+                      <td className="whitespace-nowrap px-5 py-5">{u.status && <StatusPill label={statusLabel(u.status)} />}</td>
+                      {canManage && <td className="sticky right-0 bg-white px-5 py-5 text-right">{memberActions(u)}</td>}
                     </tr>
                   );
                 })}

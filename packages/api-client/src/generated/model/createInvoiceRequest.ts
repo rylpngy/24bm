@@ -11,5 +11,9 @@ export interface CreateInvoiceRequest {
   invoiceNo: string;
   invoiceCode?: string;
   invoiceDate?: string;
+  /**
+   * @minimum 0
+   * @maximum 100
+   */
   taxRate?: number;
 }

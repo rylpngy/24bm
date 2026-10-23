@@ -38,6 +38,10 @@ public class PlatformAnnouncementApplicationService {
         .toList();
   }
 
+  public List<PlatformAnnouncementResponse> listForManagement() {
+    return platformAnnouncementMapper.listForManagement().stream().map(this::toResponse).toList();
+  }
+
   public List<PlatformAnnouncementResponse> listBuyerVisible() {
     return platformAnnouncementMapper
         .listActiveForAudiences(PlatformAnnouncementAudience.ALL, PlatformAnnouncementAudience.BUYER)

@@ -1,13 +1,8 @@
 package com.procurement.finance.application;
 
-import com.procurement.approval.application.ApprovalTaskApplicationService;
-import com.procurement.identity.application.DataScopeService;
 import com.procurement.identity.application.PermissionService;
 import com.procurement.identity.domain.DataScope;
 import com.procurement.approval.domain.ApprovalBusinessType;
-import com.procurement.approval.domain.ApprovalStatus;
-import com.procurement.approval.domain.ApprovalTask;
-import com.procurement.approval.infrastructure.ApprovalTaskMapper;
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.audit.domain.AuditTargetType;
 import com.procurement.common.tenant.TenantAccessGuard;
@@ -31,13 +26,10 @@ import com.procurement.finance.api.UpdatePaymentBatchStatusRequest;
 import com.procurement.finance.api.UpdatePaymentBlockResolutionStatusRequest;
 import com.procurement.finance.api.UpdatePaymentRequestStatusRequest;
 import com.procurement.finance.api.ApproveVarianceHandlingRequest;
-import com.procurement.finance.api.FinanceReport;
-import com.procurement.finance.infrastructure.FinanceReportRenderer;
 import com.procurement.finance.api.UpdateVarianceHandlingStatusRequest;
 import com.procurement.finance.api.VarianceHandlingResponse;
 import com.procurement.common.api.ApprovalTaskResponse;
 import com.procurement.finance.domain.Invoice;
-import com.procurement.finance.domain.PaymentArchiveExceptionRequest;
 import com.procurement.finance.domain.PaymentBatch;
 import com.procurement.finance.domain.PaymentBatchStatus;
 import com.procurement.finance.domain.PaymentBlockResolution;
@@ -48,7 +40,6 @@ import com.procurement.finance.domain.VarianceApprovalPolicy;
 import com.procurement.finance.domain.ThreeWayMatchLineRow;
 import com.procurement.finance.domain.VarianceHandling;
 import com.procurement.finance.infrastructure.InvoiceMapper;
-import com.procurement.finance.infrastructure.PaymentArchiveExceptionRequestMapper;
 import com.procurement.finance.infrastructure.PaymentBatchMapper;
 import com.procurement.finance.infrastructure.PaymentBlockResolutionMapper;
 import com.procurement.finance.infrastructure.PaymentExecutionRecordMapper;
@@ -62,7 +53,6 @@ import com.procurement.tenant.domain.TenantFeatureKey;
 import com.procurement.workflow.application.UnifiedWorkflowApplicationService;
 import com.procurement.workflow.application.WorkflowStartCommand;
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -73,130 +63,64 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class FinanceActionApplicationService {
-  private static final String ARCHIVE_EXCEPTION_ACTION_PENDING = "待处理";
-  private static final String ARCHIVE_EXCEPTION_ACTION_COMPLETED = "已登记受控处理";
-  private static final String ARCHIVE_EXCEPTION_CLOSURE_PENDING = "待关闭";
-  private static final String ARCHIVE_EXCEPTION_CLOSURE_CLOSED = "已关闭";
 
   private final InvoiceMapper invoiceMapper;
   private final PurchaseOrderMapper purchaseOrderMapper;
   private final PaymentBatchMapper paymentBatchMapper;
-  private final PaymentArchiveExceptionRequestMapper paymentArchiveExceptionRequestMapper;
   private final PaymentBlockResolutionMapper paymentBlockResolutionMapper;
   private final PaymentExecutionRecordMapper paymentExecutionRecordMapper;
   private final PaymentRequestMapper paymentRequestMapper;
   private final ThreeWayMatchMapper threeWayMatchMapper;
   private final VarianceHandlingMapper varianceHandlingMapper;
   private final PaymentApplicationService paymentApplicationService;
-  private final ApprovalTaskApplicationService approvalTaskApplicationService;
-  private final ApprovalTaskMapper approvalTaskMapper;
   private final AuditLogApplicationService auditLogApplicationService;
   private final TenantFeatureApplicationService tenantFeatureApplicationService;
   private final PermissionService permissionService;
-  private final DataScopeService dataScopeService;
-  private UnifiedWorkflowApplicationService unifiedWorkflowApplicationService;
-
-  public FinanceActionApplicationService(
-      InvoiceMapper invoiceMapper,
-      PurchaseOrderMapper purchaseOrderMapper,
-      PaymentBatchMapper paymentBatchMapper,
-      PaymentArchiveExceptionRequestMapper paymentArchiveExceptionRequestMapper,
-      PaymentBlockResolutionMapper paymentBlockResolutionMapper,
-      PaymentExecutionRecordMapper paymentExecutionRecordMapper,
-      PaymentRequestMapper paymentRequestMapper,
-      ThreeWayMatchMapper threeWayMatchMapper,
-      VarianceHandlingMapper varianceHandlingMapper,
-      PaymentApplicationService paymentApplicationService,
-      ApprovalTaskApplicationService approvalTaskApplicationService,
-      ApprovalTaskMapper approvalTaskMapper,
-      AuditLogApplicationService auditLogApplicationService,
-      TenantFeatureApplicationService tenantFeatureApplicationService,
-      PermissionService permissionService) {
-    this(
-        invoiceMapper,
-        purchaseOrderMapper,
-        paymentBatchMapper,
-        paymentArchiveExceptionRequestMapper,
-        paymentBlockResolutionMapper,
-        paymentExecutionRecordMapper,
-        paymentRequestMapper,
-        threeWayMatchMapper,
-        varianceHandlingMapper,
-        paymentApplicationService,
-        approvalTaskApplicationService,
-        approvalTaskMapper,
-        auditLogApplicationService,
-        tenantFeatureApplicationService,
-        permissionService,
-        null);
-  }
+  private final FinanceAccessService financeAccess;
+  private final UnifiedWorkflowApplicationService unifiedWorkflowApplicationService;
+  private final PaymentBatchApplicationService paymentBatchService;
+  private final PaymentArchiveExceptionApplicationService archiveExceptionService;
 
   @Autowired
   public FinanceActionApplicationService(
       InvoiceMapper invoiceMapper,
       PurchaseOrderMapper purchaseOrderMapper,
       PaymentBatchMapper paymentBatchMapper,
-      PaymentArchiveExceptionRequestMapper paymentArchiveExceptionRequestMapper,
       PaymentBlockResolutionMapper paymentBlockResolutionMapper,
       PaymentExecutionRecordMapper paymentExecutionRecordMapper,
       PaymentRequestMapper paymentRequestMapper,
       ThreeWayMatchMapper threeWayMatchMapper,
       VarianceHandlingMapper varianceHandlingMapper,
       PaymentApplicationService paymentApplicationService,
-      ApprovalTaskApplicationService approvalTaskApplicationService,
-      ApprovalTaskMapper approvalTaskMapper,
       AuditLogApplicationService auditLogApplicationService,
       TenantFeatureApplicationService tenantFeatureApplicationService,
       PermissionService permissionService,
-      DataScopeService dataScopeService) {
+      FinanceAccessService financeAccess,
+      UnifiedWorkflowApplicationService unifiedWorkflowApplicationService,
+      PaymentBatchApplicationService paymentBatchService,
+      PaymentArchiveExceptionApplicationService archiveExceptionService) {
     this.invoiceMapper = invoiceMapper;
     this.purchaseOrderMapper = purchaseOrderMapper;
     this.paymentBatchMapper = paymentBatchMapper;
-    this.paymentArchiveExceptionRequestMapper = paymentArchiveExceptionRequestMapper;
     this.paymentBlockResolutionMapper = paymentBlockResolutionMapper;
     this.paymentExecutionRecordMapper = paymentExecutionRecordMapper;
     this.paymentRequestMapper = paymentRequestMapper;
     this.threeWayMatchMapper = threeWayMatchMapper;
     this.varianceHandlingMapper = varianceHandlingMapper;
     this.paymentApplicationService = paymentApplicationService;
-    this.approvalTaskApplicationService = approvalTaskApplicationService;
-    this.approvalTaskMapper = approvalTaskMapper;
     this.auditLogApplicationService = auditLogApplicationService;
     this.tenantFeatureApplicationService = tenantFeatureApplicationService;
     this.permissionService = permissionService;
-    this.dataScopeService = dataScopeService;
-  }
-
-  @Autowired
-  void setUnifiedWorkflowApplicationService(
-      UnifiedWorkflowApplicationService unifiedWorkflowApplicationService) {
-    this.unifiedWorkflowApplicationService = unifiedWorkflowApplicationService;
+    this.financeAccess = financeAccess;
+    this.unifiedWorkflowApplicationService = java.util.Objects.requireNonNull(unifiedWorkflowApplicationService);
+    this.paymentBatchService = paymentBatchService;
+    this.archiveExceptionService = archiveExceptionService;
   }
 
   public List<PaymentBatchResponse> listCurrentTenantPaymentBatches(
       String batchStatus,
       String supplierId) {
-    String tenantId = TenantAccessGuard.requireTenantId("payment batch APIs");
-    paymentExecutionRecordMapper.refreshTenantFromPaymentRequests(tenantId);
-    DataScope dataScope = dataScopeService == null
-        ? DataScope.unrestricted()
-        : dataScopeService.currentUserDataScope();
-    if (dataScope.blocksAll()) {
-      return List.of();
-    }
-    List<String> scopeDepartmentIds = dataScope.restricted() && dataScope.requesterId() == null
-        ? dataScope.departmentIds()
-        : null;
-    String requesterId = dataScope.restricted() ? dataScope.requesterId() : null;
-    return paymentBatchMapper.listByTenantFiltered(
-            tenantId,
-            blankToNull(batchStatus),
-            blankToNull(supplierId),
-            scopeDepartmentIds,
-            requesterId)
-        .stream()
-        .map(this::toPaymentBatchResponse)
-        .toList();
+    return paymentBatchService.listCurrentTenantPaymentBatches(batchStatus, supplierId);
   }
 
   public List<PaymentBlockResolutionResponse> listCurrentTenantPaymentBlockResolutions(
@@ -205,12 +129,14 @@ public class FinanceActionApplicationService {
       String resolutionStatus,
       String invoiceId) {
     String tenantId = TenantAccessGuard.requireTenantId("payment block resolution APIs");
-    return paymentBlockResolutionMapper.listByTenantFiltered(
+    DataScope scope = financeAccess.readScope();
+    if (scope.blocksAll()) return List.of();
+    return paymentBlockResolutionMapper.listVisible(
             tenantId,
             blankToNull(paymentBatchNo),
             blankToNull(blockReason),
             blankToNull(resolutionStatus),
-            blankToNull(invoiceId))
+            blankToNull(invoiceId), scope)
         .stream()
         .map(this::toPaymentBlockResolutionResponse)
         .toList();
@@ -220,208 +146,34 @@ public class FinanceActionApplicationService {
       String paymentBatchNo,
       String approvalStatus,
       String exceptionType) {
-    String tenantId = TenantAccessGuard.requireTenantId("payment archive exception request APIs");
-    return paymentArchiveExceptionRequestMapper.listByTenantFiltered(
-            tenantId,
-            blankToNull(paymentBatchNo),
-            blankToNull(approvalStatus),
-            blankToNull(exceptionType))
-        .stream()
-        .map(this::toPaymentArchiveExceptionRequestResponse)
-        .toList();
+    return archiveExceptionService.listCurrentTenantPaymentArchiveExceptionRequests(paymentBatchNo, approvalStatus, exceptionType);
   }
 
   @Transactional
   public PaymentArchiveExceptionRequestResponse createCurrentTenantPaymentArchiveExceptionRequest(
       CreatePaymentArchiveExceptionRequestRequest request) {
-    String tenantId = TenantAccessGuard.requireTenantId("payment archive exception request APIs");
-    String userId = TenantAccessGuard.requireUserId("payment archive exception request APIs");
-    tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
-    requirePaymentBatchArchived(tenantId, request.paymentBatchNo());
-    String approvalStatus = ApprovalStatus.PENDING;
-    paymentArchiveExceptionRequestMapper.upsert(
-        "payarchive-exception-" + UUID.randomUUID(),
-        tenantId,
-        request.paymentBatchNo(),
-        request.exceptionType(),
-        request.exceptionReason(),
-        approvalStatus,
-        userId);
-    auditLogApplicationService.recordTenantAction(
-        tenantId,
-        "payment_archive_exception.requested",
-        AuditTargetType.PAYMENT_BATCH,
-        request.paymentBatchNo());
-    PaymentArchiveExceptionRequest savedRequest = paymentArchiveExceptionRequestMapper.findByTenantAndNaturalKey(
-        tenantId,
-        request.paymentBatchNo(),
-        request.exceptionType(),
-        approvalStatus);
-    if (unifiedWorkflowApplicationService != null) {
-      Map<String, Object> snapshot = new LinkedHashMap<>();
-      snapshot.put("paymentBatchNo", savedRequest.paymentBatchNo());
-      snapshot.put("exceptionType", savedRequest.exceptionType());
-      snapshot.put("exceptionReason", savedRequest.exceptionReason());
-      unifiedWorkflowApplicationService.start(new WorkflowStartCommand(
-          ApprovalBusinessType.PAYMENT_ARCHIVE_EXCEPTION,
-          savedRequest.id(),
-          null,
-          null,
-          request.formData() == null ? Map.of() : request.formData(),
-          snapshot));
-    } else {
-      ensurePaymentArchiveExceptionApprovalTask(tenantId, savedRequest);
-    }
-    return toPaymentArchiveExceptionRequestResponse(savedRequest);
+    return archiveExceptionService.createCurrentTenantPaymentArchiveExceptionRequest(request);
   }
 
   @Transactional
   public ApprovalTaskResponse reviewCurrentTenantPaymentArchiveExceptionRequest(
       String requestId,
       ReviewPaymentArchiveExceptionRequest request) {
-    String tenantId = TenantAccessGuard.requireTenantId("payment archive exception request APIs");
-    String userId = TenantAccessGuard.requireUserId("payment archive exception request APIs");
-    tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
-    PaymentArchiveExceptionRequest archiveExceptionRequest =
-        paymentArchiveExceptionRequestMapper.findByTenantAndId(tenantId, requestId);
-    if (archiveExceptionRequest == null) {
-      throw new IllegalArgumentException("Payment archive exception request not found in tenant scope: " + requestId);
-    }
-    if (!ApprovalStatus.PENDING.equals(archiveExceptionRequest.approvalStatus())) {
-      throw new IllegalStateException("Only pending payment archive exception requests can be reviewed: " + requestId);
-    }
-    if (unifiedWorkflowApplicationService != null) {
-      var history = unifiedWorkflowApplicationService.completeCurrentUserBusinessTask(
-          ApprovalBusinessType.PAYMENT_ARCHIVE_EXCEPTION,
-          requestId,
-          Boolean.TRUE.equals(request.approved()),
-          request.comment());
-      String status = "approved".equals(history.status())
-          ? ApprovalStatus.APPROVED
-          : "rejected".equals(history.status()) ? ApprovalStatus.REJECTED : "审批中";
-      return new ApprovalTaskResponse(
-          null,
-          tenantId,
-          ApprovalBusinessType.PAYMENT_ARCHIVE_EXCEPTION,
-          requestId,
-          userId,
-          status,
-          request.comment(),
-          history.actedAt());
-    }
-    ApprovalTask approvalTask = approvalTaskMapper.findPendingByBiz(
-        tenantId,
-        ApprovalBusinessType.PAYMENT_ARCHIVE_EXCEPTION,
-        requestId,
-        ApprovalStatus.PENDING);
-    if (approvalTask == null) {
-      throw new IllegalStateException("Pending approval task not found for payment archive exception request: " + requestId);
-    }
-    boolean approved = Boolean.TRUE.equals(request.approved());
-    String approvalStatus = approved ? ApprovalStatus.APPROVED : ApprovalStatus.REJECTED;
-    int approvalUpdated = approvalTaskMapper.updateStatus(
-        tenantId,
-        approvalTask.id(),
-        ApprovalStatus.PENDING,
-        approvalStatus,
-        userId,
-        request.comment());
-    if (approvalUpdated == 0) {
-      throw new IllegalStateException("Approval task status changed before review could be recorded: " + approvalTask.id());
-    }
-    int requestUpdated = paymentArchiveExceptionRequestMapper.updateApprovalStatus(
-        tenantId,
-        requestId,
-        ApprovalStatus.PENDING,
-        approvalStatus,
-        userId);
-    if (requestUpdated == 0) {
-      throw new IllegalStateException("Payment archive exception request status changed before review could be applied: " + requestId);
-    }
-    auditLogApplicationService.recordTenantAction(
-        tenantId,
-        approved ? "payment_archive_exception.approved" : "payment_archive_exception.rejected",
-        AuditTargetType.PAYMENT_BATCH,
-        archiveExceptionRequest.paymentBatchNo());
-    ApprovalTask reviewedTask = approvalTaskMapper.findByTenantAndId(tenantId, approvalTask.id());
-    return new ApprovalTaskResponse(
-        reviewedTask.id(),
-        reviewedTask.tenantId(),
-        reviewedTask.bizType(),
-        reviewedTask.bizId(),
-        reviewedTask.assigneeId(),
-        reviewedTask.status(),
-        reviewedTask.reviewComment(),
-        reviewedTask.createdAt());
+    return archiveExceptionService.reviewCurrentTenantPaymentArchiveExceptionRequest(requestId, request);
   }
 
   @Transactional
   public PaymentArchiveExceptionRequestResponse completeCurrentTenantPaymentArchiveExceptionAction(
       String requestId,
       CompletePaymentArchiveExceptionActionRequest request) {
-    String tenantId = TenantAccessGuard.requireTenantId("payment archive exception request APIs");
-    String userId = TenantAccessGuard.requireUserId("payment archive exception request APIs");
-    tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
-    PaymentArchiveExceptionRequest archiveExceptionRequest =
-        paymentArchiveExceptionRequestMapper.findByTenantAndId(tenantId, requestId);
-    if (archiveExceptionRequest == null) {
-      throw new IllegalArgumentException("Payment archive exception request not found in tenant scope: " + requestId);
-    }
-    if (!ApprovalStatus.APPROVED.equals(archiveExceptionRequest.approvalStatus())) {
-      throw new IllegalStateException(
-          "Only approved payment archive exception requests can register controlled actions: " + requestId);
-    }
-    int updated = paymentArchiveExceptionRequestMapper.updateActionStatus(
-        tenantId,
-        requestId,
-        ARCHIVE_EXCEPTION_ACTION_COMPLETED,
-        request.actionResult(),
-        userId);
-    if (updated == 0) {
-      throw new IllegalStateException("Payment archive exception request action changed before it could be applied: " + requestId);
-    }
-    auditLogApplicationService.recordTenantAction(
-        tenantId,
-        "payment_archive_exception.action_completed",
-        AuditTargetType.PAYMENT_BATCH,
-        archiveExceptionRequest.paymentBatchNo());
-    PaymentArchiveExceptionRequest savedRequest = paymentArchiveExceptionRequestMapper.findByTenantAndId(tenantId, requestId);
-    return toPaymentArchiveExceptionRequestResponse(savedRequest);
+    return archiveExceptionService.completeCurrentTenantPaymentArchiveExceptionAction(requestId, request);
   }
 
   @Transactional
   public PaymentArchiveExceptionRequestResponse closeCurrentTenantPaymentArchiveExceptionRequest(
       String requestId,
       ClosePaymentArchiveExceptionRequestRequest request) {
-    String tenantId = TenantAccessGuard.requireTenantId("payment archive exception request APIs");
-    String userId = TenantAccessGuard.requireUserId("payment archive exception request APIs");
-    tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
-    PaymentArchiveExceptionRequest archiveExceptionRequest =
-        paymentArchiveExceptionRequestMapper.findByTenantAndId(tenantId, requestId);
-    if (archiveExceptionRequest == null) {
-      throw new IllegalArgumentException("Payment archive exception request not found in tenant scope: " + requestId);
-    }
-    if (!ApprovalStatus.APPROVED.equals(archiveExceptionRequest.approvalStatus())
-        || !ARCHIVE_EXCEPTION_ACTION_COMPLETED.equals(archiveExceptionRequest.actionStatus())) {
-      throw new IllegalStateException(
-          "Only controlled payment archive exception requests can be closed: " + requestId);
-    }
-    int updated = paymentArchiveExceptionRequestMapper.updateClosureStatus(
-        tenantId,
-        requestId,
-        ARCHIVE_EXCEPTION_CLOSURE_CLOSED,
-        request.closureResult(),
-        userId);
-    if (updated == 0) {
-      throw new IllegalStateException("Payment archive exception request closure changed before it could be applied: " + requestId);
-    }
-    auditLogApplicationService.recordTenantAction(
-        tenantId,
-        "payment_archive_exception.closed",
-        AuditTargetType.PAYMENT_BATCH,
-        archiveExceptionRequest.paymentBatchNo());
-    PaymentArchiveExceptionRequest savedRequest = paymentArchiveExceptionRequestMapper.findByTenantAndId(tenantId, requestId);
-    return toPaymentArchiveExceptionRequestResponse(savedRequest);
+    return archiveExceptionService.closeCurrentTenantPaymentArchiveExceptionRequest(requestId, request);
   }
 
   @Transactional
@@ -429,8 +181,11 @@ public class FinanceActionApplicationService {
       CreatePaymentBlockResolutionRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("payment block resolution APIs");
     String userId = TenantAccessGuard.requireUserId("payment block resolution APIs");
+    permissionService.require("buyer:payment:register");
     tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
+    financeAccess.requireBatch(request.paymentBatchNo(), "buyer:payment:register");
     requirePaymentBatchNotArchived(tenantId, request.paymentBatchNo());
+    validateBlockResolutionReferences(tenantId, request);
     paymentBlockResolutionMapper.upsert(
         "payblock-" + UUID.randomUUID(),
         tenantId,
@@ -462,11 +217,13 @@ public class FinanceActionApplicationService {
       String resolutionId,
       UpdatePaymentBlockResolutionStatusRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("payment block resolution APIs");
+    permissionService.require("buyer:payment:register");
     tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
     PaymentBlockResolution resolution = paymentBlockResolutionMapper.findByTenantAndId(tenantId, resolutionId);
     if (resolution == null) {
       throw new IllegalArgumentException("Payment block resolution not found in tenant scope: " + resolutionId);
     }
+    financeAccess.requireBatch(resolution.paymentBatchNo(), "buyer:payment:register");
     requirePaymentBatchNotArchived(tenantId, resolution.paymentBatchNo());
     paymentBlockResolutionMapper.updateStatus(
         tenantId,
@@ -492,13 +249,15 @@ public class FinanceActionApplicationService {
       String supplierId,
       String invoiceId) {
     String tenantId = TenantAccessGuard.requireTenantId("payment execution record APIs");
-    paymentExecutionRecordMapper.refreshTenantFromPaymentRequests(tenantId);
-    return paymentExecutionRecordMapper.listByTenantFiltered(
+    DataScope scope = financeAccess.readScope();
+    if (scope.blocksAll()) return List.of();
+    paymentExecutionRecordMapper.refreshVisible(tenantId, scope);
+    return paymentExecutionRecordMapper.listVisible(
             tenantId,
             blankToNull(paymentBatchNo),
             blankToNull(executionStatus),
             blankToNull(supplierId),
-            blankToNull(invoiceId))
+            blankToNull(invoiceId), scope)
         .stream()
         .map(this::toPaymentExecutionRecordResponse)
         .toList();
@@ -508,97 +267,7 @@ public class FinanceActionApplicationService {
   public PaymentBatchResponse updateCurrentTenantPaymentBatchStatus(
       String paymentBatchNo,
       UpdatePaymentBatchStatusRequest request) {
-    String tenantId = TenantAccessGuard.requireTenantId("payment batch APIs");
-    tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
-    PaymentBatch paymentBatch = paymentBatchMapper.findByTenantAndPaymentBatchNo(tenantId, paymentBatchNo);
-    if (paymentBatch == null) {
-      throw new IllegalArgumentException("Payment batch not found in tenant scope: " + paymentBatchNo);
-    }
-    if (PaymentBatchStatus.ARCHIVED.equals(paymentBatch.batchStatus())
-        && !PaymentBatchStatus.ARCHIVED.equals(request.batchStatus())) {
-      requirePaymentBatchNotArchived(tenantId, paymentBatchNo);
-    }
-    if (PaymentBatchStatus.APPROVAL_IN_PROGRESS.equals(request.batchStatus())
-        || PaymentBatchStatus.READY_FOR_PAYMENT.equals(request.batchStatus())) {
-      requirePaymentBatchRequestsApproved(paymentBatch);
-    }
-    PaymentBatchStatus.requireManualTransition(paymentBatch.batchStatus(), request.batchStatus());
-    if (PaymentBatchStatus.ARCHIVED.equals(request.batchStatus())) {
-      paymentExecutionRecordMapper.refreshTenantFromPaymentRequests(tenantId);
-      requirePaymentBatchArchiveReady(tenantId, paymentBatchNo);
-    }
-    if (unifiedWorkflowApplicationService != null
-        && PaymentBatchStatus.READY_FOR_PAYMENT.equals(request.batchStatus())) {
-      throw new IllegalStateException("Payment batch approval outcome can only be applied by Flowable workflow tasks");
-    }
-    paymentBatchMapper.updateStatus(tenantId, paymentBatchNo, request.batchStatus());
-    paymentExecutionRecordMapper.refreshTenantFromPaymentRequests(tenantId);
-    if (PaymentBatchStatus.APPROVAL_IN_PROGRESS.equals(request.batchStatus())) {
-      if (unifiedWorkflowApplicationService != null) {
-        Map<String, Object> snapshot = new LinkedHashMap<>();
-        snapshot.put("paymentBatchNo", paymentBatch.paymentBatchNo());
-        snapshot.put("supplierId", paymentBatch.supplierId());
-        snapshot.put("requestCount", paymentBatch.requestCount());
-        snapshot.put("totalAmount", paymentBatch.totalAmount());
-        unifiedWorkflowApplicationService.start(new WorkflowStartCommand(
-            ApprovalBusinessType.PAYMENT_BATCH,
-            paymentBatchNo,
-            null,
-            paymentBatch.totalAmount(),
-            request.formData() == null ? Map.of() : request.formData(),
-            snapshot));
-      } else {
-        ensurePaymentBatchApprovalTask(tenantId, paymentBatch);
-      }
-      auditLogApplicationService.recordTenantAction(
-          tenantId,
-          "payment_batch.submitted",
-          AuditTargetType.PAYMENT_BATCH,
-          paymentBatchNo);
-    } else if (PaymentBatchStatus.READY_FOR_PAYMENT.equals(request.batchStatus())) {
-      if (unifiedWorkflowApplicationService == null) {
-        approvePendingPaymentBatchTask(tenantId, paymentBatch);
-      }
-      auditLogApplicationService.recordTenantAction(
-          tenantId,
-          "payment_batch.approved",
-          AuditTargetType.PAYMENT_BATCH,
-          paymentBatchNo);
-    } else if (PaymentBatchStatus.ARCHIVED.equals(request.batchStatus())) {
-      auditLogApplicationService.recordTenantAction(
-          tenantId,
-          buildPaymentBatchArchiveAuditAction(tenantId, paymentBatchNo),
-          AuditTargetType.PAYMENT_BATCH,
-          paymentBatchNo);
-    }
-    return toPaymentBatchResponse(paymentBatchMapper.findByTenantAndPaymentBatchNo(tenantId, paymentBatchNo));
-  }
-
-  private void requirePaymentBatchRequestsApproved(PaymentBatch paymentBatch) {
-    BigDecimal totalAmount = paymentBatch.totalAmount() == null ? BigDecimal.ZERO : paymentBatch.totalAmount();
-    BigDecimal approvedAmount = paymentBatch.approvedAmount() == null ? BigDecimal.ZERO : paymentBatch.approvedAmount();
-    if (paymentBatch.requestCount() == null
-        || paymentBatch.requestCount() <= 0
-        || approvedAmount.compareTo(totalAmount) < 0) {
-      throw new IllegalStateException(
-          "Payment batch cannot be approved until all payment requests are approved: "
-              + paymentBatch.paymentBatchNo());
-    }
-  }
-
-  private void requirePaymentBatchArchiveReady(String tenantId, String paymentBatchNo) {
-    Map<String, Object> summary = paymentExecutionRecordMapper.summarizeByTenantAndBatch(tenantId, paymentBatchNo);
-    int registeredCount = summaryInteger(summary, "registered_count");
-    int pendingRegistrationCount = summaryInteger(summary, "pending_registration_count");
-    int blockedRegistrationCount = summaryInteger(summary, "blocked_registration_count");
-    String executionDecision = summary == null ? null : String.valueOf(summary.get("execution_decision"));
-    if (registeredCount <= 0
-        || pendingRegistrationCount > 0
-        || blockedRegistrationCount > 0
-        || !"批次付款已登记".equals(executionDecision)) {
-      throw new IllegalStateException(
-          "Payment batch cannot be archived until all execution records are registered: " + paymentBatchNo);
-    }
+    return paymentBatchService.updateCurrentTenantPaymentBatchStatus(paymentBatchNo, request);
   }
 
   private void requirePaymentBatchNotArchived(String tenantId, String paymentBatchNo) {
@@ -606,43 +275,6 @@ public class FinanceActionApplicationService {
     if (paymentBatch != null && "已付款归档".equals(paymentBatch.batchStatus())) {
       throw new IllegalStateException("Payment batch is archived and can only be audited: " + paymentBatchNo);
     }
-  }
-
-  private void requirePaymentBatchArchived(String tenantId, String paymentBatchNo) {
-    PaymentBatch paymentBatch = paymentBatchMapper.findByTenantAndPaymentBatchNo(tenantId, paymentBatchNo);
-    if (paymentBatch == null) {
-      throw new IllegalArgumentException("Payment batch not found in tenant scope: " + paymentBatchNo);
-    }
-    if (!"已付款归档".equals(paymentBatch.batchStatus())) {
-      throw new IllegalStateException(
-          "Payment archive exception request requires archived batch: " + paymentBatchNo);
-    }
-  }
-
-  private String buildPaymentBatchArchiveAuditAction(String tenantId, String paymentBatchNo) {
-    Map<String, Object> summary = paymentExecutionRecordMapper.summarizeByTenantAndBatch(tenantId, paymentBatchNo);
-    return "payment_batch.archived|registered=" + summaryInteger(summary, "registered_count")
-        + "|amount=" + summaryBigDecimal(summary, "registered_amount").stripTrailingZeros().toPlainString()
-        + "|decision=" + (summary == null ? "unknown" : String.valueOf(summary.get("execution_decision")));
-  }
-
-  private int summaryInteger(Map<String, Object> summary, String key) {
-    Object value = summary == null ? null : summary.get(key);
-    if (value instanceof Number number) {
-      return number.intValue();
-    }
-    return 0;
-  }
-
-  private BigDecimal summaryBigDecimal(Map<String, Object> summary, String key) {
-    Object value = summary == null ? null : summary.get(key);
-    if (value instanceof BigDecimal decimal) {
-      return decimal;
-    }
-    if (value instanceof Number number) {
-      return BigDecimal.valueOf(number.doubleValue());
-    }
-    return BigDecimal.ZERO;
   }
 
   @Transactional
@@ -657,6 +289,7 @@ public class FinanceActionApplicationService {
       String executionRecordId,
       RegisterPaymentRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("payment execution record APIs");
+    permissionService.require("buyer:payment:register");
     tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
     RegisterPaymentRequest effectiveRequest =
         request == null ? new RegisterPaymentRequest("已付款") : request;
@@ -664,12 +297,14 @@ public class FinanceActionApplicationService {
     if (record == null) {
       throw new IllegalArgumentException("Payment execution record not found in tenant scope: " + executionRecordId);
     }
+    financeAccess.requireInvoice(record.invoiceId(), "buyer:payment:register");
+    financeAccess.requireBatch(record.paymentBatchNo(), "buyer:payment:register");
     requirePaymentBatchNotArchived(tenantId, record.paymentBatchNo());
     requirePaymentBatchReadyForExecution(tenantId, record.paymentBatchNo());
     if (!record.executionStatus().equals("待登记付款")) {
       throw new IllegalStateException("Payment execution record is not ready for registration: " + executionRecordId);
     }
-    paymentApplicationService.register(record.invoiceId(), new RegisterPaymentRequest(effectiveRequest.paymentStatus()));
+    paymentApplicationService.register(record.invoiceId(), effectiveRequest);
     paymentExecutionRecordMapper.refreshByTenantAndId(tenantId, executionRecordId);
     if (blankToNull(effectiveRequest.releaseEvidenceNo()) != null
         || blankToNull(effectiveRequest.releaseRemark()) != null) {
@@ -700,12 +335,14 @@ public class FinanceActionApplicationService {
       String orderId,
       String invoiceId) {
     String tenantId = TenantAccessGuard.requireTenantId("three-way match APIs");
-    return threeWayMatchMapper.listByTenantFiltered(
+    DataScope scope = financeAccess.readScope();
+    if (scope.blocksAll()) return List.of();
+    return threeWayMatchMapper.listVisible(
             tenantId,
             blankToNull(matchStatus),
             blankToNull(supplierId),
             blankToNull(orderId),
-            blankToNull(invoiceId))
+            blankToNull(invoiceId), scope)
         .stream()
         .map(this::toThreeWayMatchResponse)
         .toList();
@@ -714,6 +351,7 @@ public class FinanceActionApplicationService {
   // 行级三单匹配:给定发票,按订单行项逐行对照订单/收货/发票,标注金额差异与数量短缺。
   public List<ThreeWayMatchLineResponse> listCurrentTenantThreeWayMatchLines(String invoiceId) {
     String tenantId = TenantAccessGuard.requireTenantId("three-way match APIs");
+    financeAccess.requireInvoice(invoiceId, "buyer:invoice:read");
     Invoice invoice = invoiceMapper.findByTenantAndId(tenantId, invoiceId);
     if (invoice == null) {
       throw new IllegalArgumentException("Invoice not found in tenant scope: " + invoiceId);
@@ -762,8 +400,14 @@ public class FinanceActionApplicationService {
   @Transactional
   public ThreeWayMatchRebuildResponse rebuildCurrentTenantThreeWayMatches() {
     String tenantId = TenantAccessGuard.requireTenantId("three-way match APIs");
+    permissionService.require("buyer:payment:register");
     tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
-    int rebuiltCount = threeWayMatchMapper.rebuildByTenant(tenantId).size();
+    var scope = financeAccess.requireScope("buyer:payment:register");
+    var invoices = invoiceMapper.listVisible(tenantId, null, null, null, scope);
+    for (var invoice : invoices) {
+      threeWayMatchMapper.upsertFromInvoice("match-" + UUID.randomUUID(), tenantId, invoice.id());
+    }
+    int rebuiltCount = invoices.size();
     return new ThreeWayMatchRebuildResponse(tenantId, rebuiltCount);
   }
 
@@ -771,11 +415,13 @@ public class FinanceActionApplicationService {
   public VarianceHandlingResponse createVarianceHandlingFromThreeWayMatch(String matchId) {
     String tenantId = TenantAccessGuard.requireTenantId("three-way match APIs");
     String userId = TenantAccessGuard.requireUserId("three-way match APIs");
+    permissionService.require("buyer:payment:register");
     tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
     ThreeWayMatch match = threeWayMatchMapper.findByTenantAndId(tenantId, matchId);
     if (match == null) {
       throw new IllegalArgumentException("Three-way match not found in tenant scope: " + matchId);
     }
+    financeAccess.requireInvoice(match.invoiceId(), "buyer:payment:register");
     if (!"金额差异".equals(match.matchStatus())) {
       throw new IllegalStateException("Only amount variance three-way matches can create variance handling: " + matchId);
     }
@@ -808,7 +454,9 @@ public class FinanceActionApplicationService {
       String invoiceId, String orderLineId) {
     String tenantId = TenantAccessGuard.requireTenantId("three-way match APIs");
     String userId = TenantAccessGuard.requireUserId("three-way match APIs");
+    permissionService.require("buyer:payment:register");
     tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
+    financeAccess.requireInvoice(invoiceId, "buyer:payment:register");
     Invoice invoice = requireTenantInvoice(tenantId, invoiceId);
     ThreeWayMatchLineResponse line =
         listCurrentTenantThreeWayMatchLines(invoiceId).stream()
@@ -848,12 +496,14 @@ public class FinanceActionApplicationService {
       String orderId,
       String invoiceId) {
     String tenantId = TenantAccessGuard.requireTenantId("payment request APIs");
-    return paymentRequestMapper.listByTenantFiltered(
+    DataScope scope = financeAccess.readScope();
+    if (scope.blocksAll()) return List.of();
+    return paymentRequestMapper.listVisible(
             tenantId,
             blankToNull(requestStatus),
             blankToNull(supplierId),
             blankToNull(orderId),
-            blankToNull(invoiceId))
+            blankToNull(invoiceId), scope)
         .stream()
         .map(this::toPaymentRequestResponse)
         .toList();
@@ -865,12 +515,14 @@ public class FinanceActionApplicationService {
       String orderId,
       String invoiceId) {
     String tenantId = TenantAccessGuard.requireTenantId("variance handling APIs");
-    return varianceHandlingMapper.listByTenantFiltered(
+    DataScope scope = financeAccess.readScope();
+    if (scope.blocksAll()) return List.of();
+    return varianceHandlingMapper.listVisible(
             tenantId,
             blankToNull(status),
             blankToNull(supplierId),
             blankToNull(orderId),
-            blankToNull(invoiceId))
+            blankToNull(invoiceId), scope)
         .stream()
         .map(this::toVarianceHandlingResponse)
         .toList();
@@ -882,20 +534,22 @@ public class FinanceActionApplicationService {
     String userId = TenantAccessGuard.requireUserId("payment request APIs");
     permissionService.require("buyer:payment:register"); // 发起付款申请须具备该权限
     tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
+    financeAccess.requireInvoice(request.invoiceId(), "buyer:payment:register");
     Invoice invoice = requireTenantInvoice(tenantId, request.invoiceId());
     ensureAmountVarianceHandledBeforePaymentRequest(tenantId, invoice);
     PaymentRequest existingRequest = paymentRequestMapper.findByTenantAndInvoice(tenantId, invoice.id());
     if (existingRequest != null) {
+      financeAccess.requireBatch(existingRequest.paymentBatchNo(), "buyer:payment:register");
       requirePaymentRequestNotExecuted(tenantId, existingRequest);
       requirePaymentBatchNotArchived(tenantId, existingRequest.paymentBatchNo());
       requirePaymentBatchAcceptsRequestChanges(tenantId, existingRequest.paymentBatchNo());
+      requirePaymentRequestEditable(existingRequest);
+    }
+    if (paymentBatchMapper.findByTenantAndPaymentBatchNo(tenantId, request.paymentBatchNo()) != null) {
+      financeAccess.requireBatch(request.paymentBatchNo(), "buyer:payment:register");
     }
     requirePaymentBatchAcceptsRequestChanges(tenantId, request.paymentBatchNo());
-    if (unifiedWorkflowApplicationService != null
-        && ("付款申请已通过".equals(request.requestStatus())
-            || "付款申请已驳回".equals(request.requestStatus()))) {
-      throw new IllegalStateException("Payment request approval outcome can only be applied by Flowable workflow tasks");
-    }
+    requirePaymentRequestInputStatus(request.requestStatus());
     paymentRequestMapper.upsert(
         "payreq-" + UUID.randomUUID(),
         tenantId,
@@ -914,11 +568,7 @@ public class FinanceActionApplicationService {
       syncPaymentBatch(tenantId, existingRequest.paymentBatchNo());
     }
     if ("付款申请审批中".equals(request.requestStatus())) {
-      if (unifiedWorkflowApplicationService != null) {
-        startPaymentRequestWorkflow(savedRequest, request.formData());
-      } else {
-        ensurePaymentRequestApprovalTask(tenantId, savedRequest);
-      }
+      startPaymentRequestWorkflow(savedRequest, request.formData());
       auditLogApplicationService.recordTenantAction(
           tenantId,
           "payment_request.submitted",
@@ -953,40 +603,27 @@ public class FinanceActionApplicationService {
       String paymentRequestId,
       UpdatePaymentRequestStatusRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("payment request APIs");
+    permissionService.require("buyer:payment:register");
     tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
     PaymentRequest paymentRequest = paymentRequestMapper.findByTenantAndId(tenantId, paymentRequestId);
     if (paymentRequest == null) {
       throw new IllegalArgumentException("Payment request not found in tenant scope: " + paymentRequestId);
     }
+    financeAccess.requireInvoice(paymentRequest.invoiceId(), "buyer:payment:register");
+    financeAccess.requireBatch(paymentRequest.paymentBatchNo(), "buyer:payment:register");
     requirePaymentBatchNotArchived(tenantId, paymentRequest.paymentBatchNo());
     requirePaymentRequestNotExecuted(tenantId, paymentRequest);
     requirePaymentBatchAcceptsRequestChanges(tenantId, paymentRequest.paymentBatchNo());
-    if (unifiedWorkflowApplicationService != null
-        && ("付款申请已通过".equals(request.requestStatus())
-            || "付款申请已驳回".equals(request.requestStatus()))) {
-      throw new IllegalStateException("Payment request approval outcome can only be applied by Flowable workflow tasks");
-    }
+    requirePaymentRequestEditable(paymentRequest);
+    requirePaymentRequestInputStatus(request.requestStatus());
     paymentRequestMapper.updateStatus(tenantId, paymentRequestId, request.requestStatus());
     syncPaymentBatch(tenantId, paymentRequest.paymentBatchNo());
     syncPaymentExecutionRecord(tenantId, paymentRequestId);
     if ("付款申请审批中".equals(request.requestStatus())) {
-      if (unifiedWorkflowApplicationService != null) {
-        startPaymentRequestWorkflow(paymentRequest, request.formData());
-      } else {
-        ensurePaymentRequestApprovalTask(tenantId, paymentRequest);
-      }
+      startPaymentRequestWorkflow(paymentRequest, request.formData());
       auditLogApplicationService.recordTenantAction(
           tenantId,
           "payment_request.submitted",
-          AuditTargetType.INVOICE,
-          paymentRequest.invoiceId());
-    } else if ("付款申请已通过".equals(request.requestStatus())) {
-      if (unifiedWorkflowApplicationService == null) {
-        approvePendingPaymentRequestTask(tenantId, paymentRequest);
-      }
-      auditLogApplicationService.recordTenantAction(
-          tenantId,
-          "payment_request.approved",
           AuditTargetType.INVOICE,
           paymentRequest.invoiceId());
     }
@@ -1013,6 +650,7 @@ public class FinanceActionApplicationService {
   public VarianceHandlingResponse createCurrentTenantVarianceHandling(CreateVarianceHandlingRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("variance handling APIs");
     String userId = TenantAccessGuard.requireUserId("variance handling APIs");
+    permissionService.require("buyer:payment:register");
     tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
     Invoice invoice = requireTenantInvoice(tenantId, request.invoiceId());
     PurchaseOrder order = purchaseOrderMapper.findByTenantAndId(tenantId, invoice.orderId());
@@ -1039,11 +677,13 @@ public class FinanceActionApplicationService {
       String varianceHandlingId,
       UpdateVarianceHandlingStatusRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("variance handling APIs");
+    permissionService.require("buyer:payment:register");
     tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
     VarianceHandling varianceHandling = varianceHandlingMapper.findByTenantAndId(tenantId, varianceHandlingId);
     if (varianceHandling == null) {
       throw new IllegalArgumentException("Variance handling not found in tenant scope: " + varianceHandlingId);
     }
+    financeAccess.requireInvoice(varianceHandling.invoiceId(), "buyer:payment:register");
     PaymentRequest linkedPaymentRequest =
         paymentRequestMapper.findByTenantAndInvoice(tenantId, varianceHandling.invoiceId());
     if (linkedPaymentRequest != null) {
@@ -1082,6 +722,7 @@ public class FinanceActionApplicationService {
       throw new IllegalArgumentException(
           "Variance handling not found in tenant scope: " + varianceHandlingId);
     }
+    financeAccess.requireInvoice(varianceHandling.invoiceId(), "buyer:variance:approve");
     if (!VarianceApprovalPolicy.STATUS_MANAGER_REVIEW.equals(varianceHandling.status())) {
       throw new IllegalStateException(
           "Only variance handlings pending manager approval can be reviewed: " + varianceHandlingId);
@@ -1101,95 +742,6 @@ public class FinanceActionApplicationService {
         varianceHandling.invoiceId());
     return toVarianceHandlingResponse(
         varianceHandlingMapper.findByTenantAndId(tenantId, varianceHandlingId));
-  }
-
-  // ============ 报表导出(发票清单 / 对账单 / 采购分析)============
-
-  private static String money(BigDecimal v) {
-    return v == null ? "" : v.toPlainString();
-  }
-
-  private static String orEmpty(String v) {
-    return v == null ? "" : v;
-  }
-
-  public FinanceReport exportInvoices(String format) {
-    String tenantId = TenantAccessGuard.requireTenantId("report APIs");
-    permissionService.require("buyer:report:export");
-    List<String> headers =
-        List.of("发票号", "发票代码", "订单", "供应商", "价税合计", "税率(%)", "开票日期", "付款状态");
-    List<List<String>> rows = new ArrayList<>();
-    for (Invoice inv : invoiceMapper.listByTenant(tenantId)) {
-      rows.add(List.of(
-          orEmpty(inv.invoiceNo()),
-          orEmpty(inv.invoiceCode()),
-          orEmpty(inv.orderId()),
-          orEmpty(inv.supplierId()),
-          money(inv.amount()),
-          money(inv.taxRate()),
-          inv.invoiceDate() == null ? "" : inv.invoiceDate().toString(),
-          orEmpty(inv.paymentStatus())));
-    }
-    return render("发票清单", "invoices", headers, rows, format);
-  }
-
-  public FinanceReport exportReconciliation(String format) {
-    String tenantId = TenantAccessGuard.requireTenantId("report APIs");
-    permissionService.require("buyer:report:export");
-    List<String> headers =
-        List.of("发票", "订单", "供应商", "订单金额", "发票金额", "差异金额", "匹配状态", "收货状态", "付款就绪");
-    List<List<String>> rows = new ArrayList<>();
-    for (ThreeWayMatch m : threeWayMatchMapper.listByTenantFiltered(tenantId, null, null, null, null)) {
-      rows.add(List.of(
-          orEmpty(m.invoiceId()),
-          orEmpty(m.orderId()),
-          orEmpty(m.supplierId()),
-          money(m.orderAmount()),
-          money(m.invoiceAmount()),
-          money(m.varianceAmount()),
-          orEmpty(m.matchStatus()),
-          orEmpty(m.receiptStatus()),
-          orEmpty(m.paymentReadiness())));
-    }
-    return render("三单匹配对账单", "reconciliation", headers, rows, format);
-  }
-
-  // 采购分析:按订单状态汇总订单数与金额(含合计行)。
-  public FinanceReport exportProcurementAnalytics(String format) {
-    String tenantId = TenantAccessGuard.requireTenantId("report APIs");
-    permissionService.require("buyer:report:export");
-    Map<String, long[]> byStatusCount = new LinkedHashMap<>();
-    Map<String, BigDecimal> byStatusAmount = new LinkedHashMap<>();
-    BigDecimal total = BigDecimal.ZERO;
-    long totalCount = 0;
-    for (PurchaseOrder po : purchaseOrderMapper.listByTenant(tenantId)) {
-      String status = orEmpty(po.status());
-      byStatusCount.computeIfAbsent(status, k -> new long[1])[0]++;
-      byStatusAmount.merge(status, po.amount() == null ? BigDecimal.ZERO : po.amount(), BigDecimal::add);
-      total = total.add(po.amount() == null ? BigDecimal.ZERO : po.amount());
-      totalCount++;
-    }
-    List<String> headers = List.of("订单状态", "订单数", "订单金额合计");
-    List<List<String>> rows = new ArrayList<>();
-    for (String status : byStatusCount.keySet()) {
-      rows.add(List.of(status, String.valueOf(byStatusCount.get(status)[0]), money(byStatusAmount.get(status))));
-    }
-    rows.add(List.of("合计", String.valueOf(totalCount), money(total)));
-    return render("采购分析汇总", "procurement-analytics", headers, rows, format);
-  }
-
-  private FinanceReport render(
-      String title, String base, List<String> headers, List<List<String>> rows, String format) {
-    if ("pdf".equalsIgnoreCase(format)) {
-      return new FinanceReport(
-          FinanceReportRenderer.toPdf(title, headers, rows),
-          base + ".pdf",
-          FinanceReport.PDF_CONTENT_TYPE);
-    }
-    return new FinanceReport(
-        FinanceReportRenderer.toXlsx(title, headers, rows),
-        base + ".xlsx",
-        FinanceReport.XLSX_CONTENT_TYPE);
   }
 
   private void syncPaymentBatch(String tenantId, String paymentBatchNo) {
@@ -1230,93 +782,52 @@ public class FinanceActionApplicationService {
     }
   }
 
-  private void ensurePaymentRequestApprovalTask(String tenantId, PaymentRequest paymentRequest) {
-    ApprovalTask existingTask = approvalTaskMapper.findPendingByBiz(
-        tenantId,
-        ApprovalBusinessType.PAYMENT_REQUEST,
-        paymentRequest.id(),
-        ApprovalStatus.PENDING);
-    if (existingTask == null) {
-      approvalTaskApplicationService.createPendingTask(
-          tenantId,
-          ApprovalBusinessType.PAYMENT_REQUEST,
-          paymentRequest.id(),
-          null);
+  private void requirePaymentRequestEditable(PaymentRequest request) {
+    if (!"付款申请待提交".equals(request.requestStatus())
+        && !"付款申请已驳回".equals(request.requestStatus())) {
+      throw new IllegalStateException("审批中或已通过的付款申请不可修改，请通过工作流办理");
     }
   }
 
-  private void approvePendingPaymentRequestTask(String tenantId, PaymentRequest paymentRequest) {
-    ApprovalTask existingTask = approvalTaskMapper.findPendingByBiz(
-        tenantId,
-        ApprovalBusinessType.PAYMENT_REQUEST,
-        paymentRequest.id(),
-        ApprovalStatus.PENDING);
-    if (existingTask != null) {
-      approvalTaskMapper.updateStatus(
-          tenantId,
-          existingTask.id(),
-          ApprovalStatus.PENDING,
-          ApprovalStatus.APPROVED,
-          existingTask.assigneeId(),
-          null);
-    }
-  }
-
-  private void ensurePaymentBatchApprovalTask(String tenantId, PaymentBatch paymentBatch) {
-    ApprovalTask existingTask = approvalTaskMapper.findPendingByBiz(
-        tenantId,
-        ApprovalBusinessType.PAYMENT_BATCH,
-        paymentBatch.paymentBatchNo(),
-        ApprovalStatus.PENDING);
-    if (existingTask == null) {
-      approvalTaskApplicationService.createPendingTask(
-          tenantId,
-          ApprovalBusinessType.PAYMENT_BATCH,
-          paymentBatch.paymentBatchNo(),
-          null);
-    }
-  }
-
-  private void ensurePaymentArchiveExceptionApprovalTask(
-      String tenantId,
-      PaymentArchiveExceptionRequest request) {
-    ApprovalTask existingTask = approvalTaskMapper.findPendingByBiz(
-        tenantId,
-        ApprovalBusinessType.PAYMENT_ARCHIVE_EXCEPTION,
-        request.id(),
-        ApprovalStatus.PENDING);
-    if (existingTask == null) {
-      approvalTaskApplicationService.createPendingTask(
-          tenantId,
-          ApprovalBusinessType.PAYMENT_ARCHIVE_EXCEPTION,
-          request.id(),
-          null);
-    }
-  }
-
-  private void approvePendingPaymentBatchTask(String tenantId, PaymentBatch paymentBatch) {
-    ApprovalTask existingTask = approvalTaskMapper.findPendingByBiz(
-        tenantId,
-        ApprovalBusinessType.PAYMENT_BATCH,
-        paymentBatch.paymentBatchNo(),
-        ApprovalStatus.PENDING);
-    if (existingTask != null) {
-      approvalTaskMapper.updateStatus(
-          tenantId,
-          existingTask.id(),
-          ApprovalStatus.PENDING,
-          ApprovalStatus.APPROVED,
-          existingTask.assigneeId(),
-          null);
+  private void requirePaymentRequestInputStatus(String status) {
+    if (!"付款申请待提交".equals(status) && !"付款申请审批中".equals(status)) {
+      throw new IllegalStateException("付款申请只能保存草稿或提交审批，审批结果由 Flowable 回写");
     }
   }
 
   private Invoice requireTenantInvoice(String tenantId, String invoiceId) {
+    financeAccess.requireInvoice(invoiceId, "buyer:payment:register");
     Invoice invoice = invoiceMapper.findByTenantAndId(tenantId, invoiceId);
     if (invoice == null) {
       throw new IllegalArgumentException("Invoice not found in tenant scope: " + invoiceId);
     }
     return invoice;
+  }
+
+  private void validateBlockResolutionReferences(String tenantId, CreatePaymentBlockResolutionRequest request) {
+    PaymentRequest linked = blankToNull(request.paymentRequestId()) == null ? null
+        : paymentRequestMapper.findByTenantAndId(tenantId, request.paymentRequestId());
+    if (blankToNull(request.paymentRequestId()) != null
+        && (linked == null || !request.paymentBatchNo().equals(linked.paymentBatchNo()))) {
+      throw new IllegalArgumentException("付款申请不属于所选批次");
+    }
+    if (blankToNull(request.invoiceId()) != null) {
+      financeAccess.requireInvoice(request.invoiceId(), "buyer:payment:register");
+      PaymentRequest invoiceRequest = paymentRequestMapper.findByTenantAndInvoice(tenantId, request.invoiceId());
+      if (invoiceRequest == null || !request.paymentBatchNo().equals(invoiceRequest.paymentBatchNo())
+          || (linked != null && !linked.id().equals(invoiceRequest.id()))) {
+        throw new IllegalArgumentException("发票与付款申请、批次不一致");
+      }
+      linked = invoiceRequest;
+    }
+    if (blankToNull(request.supplierId()) != null) {
+      String supplier = linked == null
+          ? paymentBatchMapper.findByTenantAndPaymentBatchNo(tenantId, request.paymentBatchNo()).supplierId()
+          : linked.supplierId();
+      if (!request.supplierId().equals(supplier)) {
+        throw new IllegalArgumentException("供应商与付款申请、批次不一致");
+      }
+    }
   }
 
   private PaymentRequestResponse toPaymentRequestResponse(PaymentRequest request) {
@@ -1335,29 +846,6 @@ public class FinanceActionApplicationService {
         request.updatedAt());
   }
 
-  private PaymentBatchResponse toPaymentBatchResponse(PaymentBatch batch) {
-    return new PaymentBatchResponse(
-        batch.id(),
-        batch.tenantId(),
-        batch.paymentBatchNo(),
-        batch.supplierId(),
-        batch.requestCount(),
-        batch.totalAmount(),
-        batch.approvedAmount(),
-        batch.registeredAmount(),
-        batch.pendingRegistrationAmount(),
-        batch.blockedRegistrationAmount(),
-        batch.registeredCount(),
-        batch.pendingRegistrationCount(),
-        batch.blockedRegistrationCount(),
-        batch.executionDecision(),
-        batch.executionBlockSummary(),
-        batch.batchStatus(),
-        batch.plannedPaymentDate(),
-        batch.createdAt(),
-        batch.updatedAt());
-  }
-
   private PaymentBlockResolutionResponse toPaymentBlockResolutionResponse(PaymentBlockResolution resolution) {
     return new PaymentBlockResolutionResponse(
         resolution.id(),
@@ -1374,27 +862,6 @@ public class FinanceActionApplicationService {
         resolution.createdBy(),
         resolution.createdAt(),
         resolution.updatedAt());
-  }
-
-  private PaymentArchiveExceptionRequestResponse toPaymentArchiveExceptionRequestResponse(
-      PaymentArchiveExceptionRequest request) {
-    return new PaymentArchiveExceptionRequestResponse(
-        request.id(),
-        request.tenantId(),
-        request.paymentBatchNo(),
-        request.exceptionType(),
-        request.exceptionReason(),
-        request.approvalStatus(),
-        request.actionStatus() == null ? ARCHIVE_EXCEPTION_ACTION_PENDING : request.actionStatus(),
-        request.actionResult(),
-        request.closureStatus() == null ? ARCHIVE_EXCEPTION_CLOSURE_PENDING : request.closureStatus(),
-        request.closureResult(),
-        request.requestedBy(),
-        request.reviewedBy(),
-        request.handledBy(),
-        request.closedBy(),
-        request.createdAt(),
-        request.updatedAt());
   }
 
   private PaymentExecutionRecordResponse toPaymentExecutionRecordResponse(PaymentExecutionRecord record) {

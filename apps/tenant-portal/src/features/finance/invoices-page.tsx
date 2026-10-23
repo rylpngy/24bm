@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, ArrowLeft, Banknote, Info, Receipt, Scale } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Banknote, ClipboardCheck, Info, Receipt, Scale } from 'lucide-react';
 import {
   useBuyerPaymentList,
   useBuyerPaymentPaymentAuditLogs,
-  useBuyerPaymentUpdate,
   useBuyerSupplierList,
   useWorkflowPaymentRequestCreate,
 } from '@24bid/api-client';
@@ -20,7 +19,10 @@ import {
 } from '@24bid/ui';
 import { ReconciliationVariancePanel } from './reconciliation-variance-panel';
 import { PaymentBatchesPage } from './payment-batches-page';
+import { financeErrorMessage } from './finance-feedback';
 import { InvoiceLineMatchPanel } from './invoice-line-match-panel';
+import { PaymentLedgerPanel } from './payment-ledger-panel';
+import { PaymentReviewsPage } from './payment-reviews-page';
 import { WorkflowSubmitDialog } from '../workflow/workflow-submit-dialog';
 import { WorkflowStatusPanel } from '../workflow/workflow-instance-panel';
 
@@ -43,6 +45,8 @@ function PaymentExecutionTimeline({ invoiceId }: { invoiceId: string }) {
       <h3 className="text-base font-black text-slate-950">付款执行记录</h3>
       {audit.isLoading ? (
         <p className="mt-2 text-xs font-bold text-slate-400">加载付款流水…</p>
+      ) : audit.isError ? (
+        <FeedbackNotice tone="error" message={financeErrorMessage(audit.error, '付款流水加载失败，请刷新重试。')} />
       ) : logs.length === 0 ? (
         <p className="mt-2 text-xs font-bold text-slate-400">尚无付款登记记录。</p>
       ) : (
@@ -70,8 +74,9 @@ function PaymentExecutionTimeline({ invoiceId }: { invoiceId: string }) {
 // 二级页:对账差异处理(从对账详情进入,返回详情)、付款批次(从台账进入,返回台账)。
 export function InvoicesPage() {
   const queryClient = useQueryClient();
-  const [subpage, setSubpage] = useState<'none' | 'variance' | 'batches'>('none');
+  const [subpage, setSubpage] = useState<'none' | 'variance' | 'batches' | 'reviews'>(() => new URLSearchParams(window.location.search).get('financeView') === 'reviews' ? 'reviews' : 'none');
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState('全部');
@@ -84,7 +89,6 @@ export function InvoicesPage() {
 
   const query = useBuyerPaymentList();
   const suppliersQuery = useBuyerSupplierList({ status: '已准入' });
-  const pay = useBuyerPaymentUpdate();
   const paymentRequest = useWorkflowPaymentRequestCreate();
   const allInvoices = query.data?.data ?? [];
 
@@ -129,20 +133,13 @@ export function InvoicesPage() {
         typeof q.queryKey[0] === 'string' && /\/buyer\/(invoices|payment)/.test(q.queryKey[0] as string),
     });
 
-  const register = (invoiceId: string, paymentStatus: string) => {
-    pay.mutate(
-      { invoiceId, data: { paymentStatus } },
-      {
-        onSuccess: () => {
-          setFeedback(`发票 ${invoiceId} 已登记为「${paymentStatus}」`);
-          refresh();
-        },
-        onError: () => setFeedback('付款登记失败:可能存在三单差异或金额不一致。'),
-      },
-    );
-  };
-
   const selected = selectedId ? allInvoices.find((inv) => inv.id === selectedId) : undefined;
+
+  if (query.isError) {
+    return <FeedbackNotice tone="error" message={financeErrorMessage(query.error, '发票数据加载失败，请刷新重试。')} />;
+  }
+
+  if (subpage === 'reviews') return <PaymentReviewsPage onBack={() => setSubpage('none')} onInvoice={id => { setSelectedId(id); setSubpage('none'); }} />;
 
   // ── 二级页:付款批次(发票付款的批量执行工作台) ─────────────
   if (subpage === 'batches') {
@@ -205,9 +202,7 @@ export function InvoicesPage() {
     const inv = selected;
     const variance = inv.varianceAmount ?? 0;
     const matched = variance === 0;
-    const busy =
-      (pay.isPending && pay.variables?.invoiceId === inv.id)
-      || paymentRequest.isPending;
+    const busy = paymentRequest.isPending;
     const payable = inv.paymentStatus === '待付款' || inv.paymentStatus === '部分付款';
     const supplierName = inv.supplierId ? (supplierNames[inv.supplierId] ?? inv.supplierId) : '—';
     return (
@@ -245,7 +240,8 @@ export function InvoicesPage() {
           </div>
         </div>
 
-        {feedback && <FeedbackNotice tone="success" message={feedback} />}
+        {actionError ? <FeedbackNotice tone="error" message={actionError} />
+          : feedback && <FeedbackNotice tone="success" message={feedback} />}
 
         {inv.id && <WorkflowStatusPanel businessType="payment_request" businessId={inv.id} />}
 
@@ -346,6 +342,7 @@ export function InvoicesPage() {
             )}
 
             {/* 付款执行记录 */}
+            {inv.id && <PaymentLedgerPanel key={inv.id} invoiceId={inv.id} />}
             {inv.id && <PaymentExecutionTimeline invoiceId={inv.id} />}
           </div>
 
@@ -392,7 +389,7 @@ export function InvoicesPage() {
                   {!payable
                     ? '本发票已完成付款登记。'
                     : matched
-                      ? '三单匹配无差异,可登记付款。'
+                      ? '付款申请及批次审批通过后，按实际金额登记。'
                       : '存在对账差异,登记付款前建议先完成差异处置。'}
                 </span>
               </span>
@@ -413,23 +410,13 @@ export function InvoicesPage() {
                 >
                   提交付款申请
                 </button>
-                {inv.paymentStatus === '待付款' && (
-                  <button
-                    type="button"
-                    onClick={() => register(inv.id!, '部分付款')}
-                    disabled={busy}
-                    className="inline-flex h-10 items-center rounded-lg border border-amber-200 bg-white px-4 text-sm font-black text-amber-700 transition hover:bg-amber-50 disabled:opacity-50"
-                  >
-                    登记部分付款
-                  </button>
-                )}
                 <button
                   type="button"
-                  onClick={() => register(inv.id!, '已付款')}
+                  onClick={() => document.getElementById('payment-amount-ledger')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
                   disabled={busy}
                   className="inline-flex h-10 items-center rounded-lg bg-emerald-600 px-5 text-sm font-black text-white transition hover:bg-emerald-700 disabled:bg-slate-300"
                 >
-                  {busy ? '登记中…' : '登记已付款'}
+                  登记付款金额
                 </button>
               </div>
             )}
@@ -445,7 +432,7 @@ export function InvoicesPage() {
             onSubmit={(formData) => {
               const paymentBatchNo = paymentRequestDraft.paymentBatchNo.trim();
               if (!paymentBatchNo) {
-                setFeedback('请填写付款批次号后再提交。');
+                setActionError('请填写付款批次号后再提交。');
                 return;
               }
               paymentRequest.mutate(
@@ -458,11 +445,12 @@ export function InvoicesPage() {
                 },
                 {
                   onSuccess: () => {
+                    setActionError(null);
                     setPaymentRequestDraft(null);
                     setFeedback('付款申请已提交审批，待候选审批人办理。');
                     refresh();
                   },
-                  onError: () => setFeedback('付款申请提交失败，请检查发票对账状态和流程配置。'),
+                  onError: (error) => setActionError(financeErrorMessage(error, '付款申请提交失败，请稍后重试。')),
                 },
               );
             }}
@@ -535,11 +523,12 @@ export function InvoicesPage() {
             >
               <Banknote size={15} className="text-blue-600" /> 付款批次
             </button>
+            <button type="button" onClick={() => setSubpage('reviews')} className="inline-flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 hover:bg-slate-50"><ClipboardCheck size={15} className="text-blue-600" />历史付款核对</button>
           </div>
 
-          {feedback && (
+          {(actionError || feedback) && (
             <div className="mb-4">
-              <FeedbackNotice tone="success" message={feedback} />
+              <FeedbackNotice tone={actionError ? 'error' : 'success'} message={actionError ?? feedback!} />
             </div>
           )}
 

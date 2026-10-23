@@ -12,6 +12,15 @@ import org.apache.ibatis.annotations.Update;
 @Mapper
 public interface VarianceHandlingMapper {
 
+  default List<VarianceHandling> listByTenantFiltered(
+      @Param("tenantId") String tenantId,
+      @Param("status") String status,
+      @Param("supplierId") String supplierId,
+      @Param("orderId") String orderId,
+      @Param("invoiceId") String invoiceId) {
+    return listVisible(tenantId, status, supplierId, orderId, invoiceId, com.procurement.identity.domain.DataScope.unrestricted());
+  }
+
   @Select("""
       <script>
       select id, tenant_id, invoice_id, supplier_id, order_id, variance_amount, reason,
@@ -31,15 +40,19 @@ public interface VarianceHandlingMapper {
       <if test="invoiceId != null">
         and invoice_id = #{invoiceId}
       </if>
+      and order_id in (
+      """ + FinanceScopeSql.ORDERS + """
+      )
       order by updated_at desc, created_at desc
       </script>
       """)
-  List<VarianceHandling> listByTenantFiltered(
+  List<VarianceHandling> listVisible(
       @Param("tenantId") String tenantId,
       @Param("status") String status,
       @Param("supplierId") String supplierId,
       @Param("orderId") String orderId,
-      @Param("invoiceId") String invoiceId);
+      @Param("invoiceId") String invoiceId,
+      @Param("scope") com.procurement.identity.domain.DataScope scope);
 
   @Select("""
       select id, tenant_id, invoice_id, supplier_id, order_id, variance_amount, reason,

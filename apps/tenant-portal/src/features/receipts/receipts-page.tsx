@@ -1,4 +1,5 @@
 import { Fragment, useMemo, useState } from 'react';
+import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, ClipboardCheck, Info, PackageCheck } from 'lucide-react';
 import {
@@ -47,6 +48,8 @@ interface ReceiveLine {
 
 // 收货验收工作台:待验收队列 → 验收登记独立页 → 验收记录台账;订单页仅保留只读结果。
 export function ReceiptsPage() {
+  const { can } = useBuyerPermissions();
+  const canReceive = can('buyer:receipt:manage');
   const queryClient = useQueryClient();
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -56,14 +59,14 @@ export function ReceiptsPage() {
   const [receivingId, setReceivingId] = useState<string | null>(null);
   const [expandedReceiptId, setExpandedReceiptId] = useState<string | null>(null);
 
-  const ordersQuery = usePurchaseOrderList();
+  const ordersQuery = usePurchaseOrderList(undefined, { query: { enabled: can('buyer:order:read') } });
   const receiptsQuery = useBuyerReceiptList();
-  const deliveriesQuery = useBuyerDeliveryList();
-  const suppliersQuery = useBuyerSupplierList({ status: '已准入' });
+  const deliveriesQuery = useBuyerDeliveryList({ query: { enabled: can('buyer:order:read') } });
+  const suppliersQuery = useBuyerSupplierList({ status: '已准入' }, { query: { enabled: can('buyer:supplier:read') } });
   const receipt = useBuyerReceiptCreate();
 
-  const orders = ordersQuery.data?.data ?? [];
-  const receipts = receiptsQuery.data?.data ?? [];
+  const orders = can('buyer:order:read') && !ordersQuery.isError ? ordersQuery.data?.data ?? [] : [];
+  const receipts = receiptsQuery.isError ? [] : receiptsQuery.data?.data ?? [];
 
   const supplierNames = useMemo(() => {
     const map: Record<string, string> = {};
@@ -123,6 +126,7 @@ export function ReceiptsPage() {
   const [disposition, setDisposition] = useState('退货换货');
 
   const startReceiving = (o: PurchaseOrderResponse) => {
+    if (!canReceive) return;
     setReceivingId(o.id ?? null);
     setLines(
       (o.lineItems ?? []).map((l) => ({
@@ -146,6 +150,7 @@ export function ReceiptsPage() {
     : (Number(headQualified) || 0) < (Number(headReceived) || 0);
 
   const submitReceipt = () => {
+    if (!canReceive) return;
     if (!receivingOrder?.id) return;
     let data: Record<string, unknown>;
     if (lines.length > 0) {
@@ -379,7 +384,7 @@ export function ReceiptsPage() {
               >
                 取消
               </button>
-              <PrimaryActionButton onClick={submitReceipt} busy={receipt.isPending} pendingLabel="提交中" size="md" flushTop>
+              <PrimaryActionButton onClick={submitReceipt} disabled={!canReceive} busy={receipt.isPending} pendingLabel="提交中" size="md" flushTop>
                 提交验收
               </PrimaryActionButton>
             </div>
@@ -392,6 +397,7 @@ export function ReceiptsPage() {
   // ── 工作台列表 ─────────────────────────────────────────────
   return (
     <Panel title="收货验收" icon={PackageCheck} subtitle="待验收队列 · 验收登记 · 质检记录">
+      {(ordersQuery.isError || receiptsQuery.isError) && <FeedbackNotice tone="error" message="收货数据加载失败，请刷新或确认当前账号权限。" />}
       <div className="mb-4 grid gap-2 sm:grid-cols-4">
         <MiniFact label="待验收订单" value={`${pendingAll.length} 单`} />
         <MiniFact label="已完成验收" value={`${receipts.length} 单`} />
@@ -458,14 +464,17 @@ export function ReceiptsPage() {
                   <button
                     type="button"
                     onClick={() => startReceiving(o)}
-                    className="mt-3 inline-flex h-8 w-full items-center justify-center rounded-md bg-blue-600 text-xs font-black text-white hover:bg-blue-700"
+                    disabled={!canReceive}
+                    title={canReceive ? '登记收货验收' : '当前账号仅可查看'}
+                    className="mt-3 inline-flex h-8 w-full items-center justify-center whitespace-nowrap rounded-md bg-blue-600 text-xs font-black text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
                   >
-                    验收登记
+                    {canReceive ? '验收登记' : '仅可查看'}
                   </button>
                 </div>
               ))}
             >
-              <table className="w-full min-w-[920px] text-left text-sm">
+              <table className="w-full min-w-[840px] table-fixed text-left text-sm [&_td]:px-3 [&_th]:px-3 [&_td_p]:max-w-full">
+                <colgroup>{['5%', '20%', '13%', '16%', '8%', '12%', '13%', '13%'].map((width, i) => <col key={i} style={{ width }} />)}</colgroup>
                 <thead className="bg-slate-50 text-xs font-black text-slate-500">
                   <tr>
                     <th className="w-12 px-2 py-4 text-center">序号</th>
@@ -475,7 +484,7 @@ export function ReceiptsPage() {
                     <th className="px-5 py-4 text-right">发货数量</th>
                     <th className="px-5 py-4">预计到达</th>
                     <th className="px-5 py-4 text-right">订单金额</th>
-                    <th className="px-5 py-4 text-right">操作</th>
+                    <th className="sticky right-0 w-28 whitespace-nowrap bg-slate-50 px-5 py-4 text-right">操作</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -502,13 +511,15 @@ export function ReceiptsPage() {
                         <td className="px-5 py-5 text-right font-mono font-black text-slate-900">{d?.shippedQuantity ?? '—'}</td>
                         <td className="px-5 py-5 font-mono text-xs font-bold text-slate-600">{d?.estimatedArrival ?? o.expectedReceiptDate ?? '—'}</td>
                         <td className="px-5 py-5 text-right font-mono font-black text-slate-900">{currency(o.amount)}</td>
-                        <td className="px-5 py-5 text-right">
+                        <td className="sticky right-0 bg-white px-5 py-5 text-right">
                           <button
                             type="button"
                             onClick={() => startReceiving(o)}
-                            className="inline-flex h-8 items-center rounded-md bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700"
+                            disabled={!canReceive}
+                            title={canReceive ? '登记收货验收' : '当前账号仅可查看'}
+                            className="inline-flex h-8 shrink-0 items-center justify-center whitespace-nowrap rounded-md bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
                           >
-                            验收登记
+                            {canReceive ? '验收登记' : '仅可查看'}
                           </button>
                         </td>
                       </tr>

@@ -43,6 +43,7 @@ class ReceiptNotificationTests {
   private final TenantFeatureApplicationService tenantFeatureApplicationService =
       org.mockito.Mockito.mock(TenantFeatureApplicationService.class);
   private final ReceiptApplicationService receiptApplicationService = new ReceiptApplicationService(
+          TestOrderAccess.unrestricted(),
       purchaseOrderMapper,
       deliveryMapper,
       receiptMapper,

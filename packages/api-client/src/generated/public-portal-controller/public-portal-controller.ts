@@ -438,7 +438,3 @@ export function usePublicPortalGetAnnouncement<TData = Awaited<ReturnType<typeof
 
   return query;
 }
-
-
-
-

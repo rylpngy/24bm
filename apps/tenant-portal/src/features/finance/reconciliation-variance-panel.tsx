@@ -8,6 +8,7 @@ import {
   useBuyerFinanceActionVarianceHandlings,
 } from '@24bid/api-client';
 import { FeedbackNotice, MiniFact, StatusPill } from '@24bid/ui';
+import { financeErrorMessage } from './finance-feedback';
 
 const currency = (v?: number) =>
   v == null ? '—' : `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
@@ -22,6 +23,8 @@ export function ReconciliationVariancePanel({ focusInvoiceId }: { focusInvoiceId
   const resolve = useBuyerFinanceActionUpdateVarianceHandlingStatus();
   const approve = useBuyerFinanceActionApproveVarianceHandling();
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const onError = (error: unknown) => setActionError(financeErrorMessage(error));
 
   const varianceMatches = (matches.data?.data ?? []).filter(
     (m) => m.matchStatus === '金额差异' && (!focusInvoiceId || m.invoiceId === focusInvoiceId),
@@ -43,14 +46,16 @@ export function ReconciliationVariancePanel({ focusInvoiceId }: { focusInvoiceId
   const onCreate = (matchId: string) =>
     createHandling.mutate(
       { matchId },
-      { onSuccess: () => { setFeedback('差异处理已登记,完成核实后标记已处理。'); refresh(); } },
+      { onError, onSuccess: () => { setActionError(null); setFeedback('差异处理已登记,完成核实后标记已处理。'); refresh(); } },
     );
 
   const onResolve = (id: string) =>
     resolve.mutate(
       { varianceHandlingId: id, data: { status: '已处理', result: '已与供应商核实,按差异金额调整入账' } },
       {
+        onError,
         onSuccess: () => {
+          setActionError(null);
           setFeedback('差异核实已提交。超 ¥10,000 的差异将转财务经理签核,否则直接结案解除阻断。');
           refresh();
         },
@@ -64,7 +69,9 @@ export function ReconciliationVariancePanel({ focusInvoiceId }: { focusInvoiceId
         data: { approved, comment: approved ? '财务经理签核通过,差异结案' : '财务经理驳回,退回重新核实' },
       },
       {
+        onError,
         onSuccess: () => {
+          setActionError(null);
           setFeedback(approved ? '财务经理签核通过,付款阻断解除。' : '财务经理已驳回,退回待处理。');
           refresh();
         },
@@ -102,6 +109,12 @@ export function ReconciliationVariancePanel({ focusInvoiceId }: { focusInvoiceId
     );
   };
 
+  if (matches.isError || handlings.isError) {
+    return <FeedbackNotice tone="error" message={financeErrorMessage(
+      matches.error ?? handlings.error, '对账数据加载失败，请刷新重试。',
+    )} />;
+  }
+
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
       <h3 className="text-base font-black text-slate-950">三单金额差异 · 登记 · 核实闭环</h3>
@@ -109,9 +122,9 @@ export function ReconciliationVariancePanel({ focusInvoiceId }: { focusInvoiceId
         差异核实后标记已处理即可解除付款阻断;超 ¥10,000 的差异需财务经理签核。
       </p>
       <div className="mt-3" />
-      {feedback && (
+      {(actionError || feedback) && (
         <div className="mb-3">
-          <FeedbackNotice tone="success" message={feedback} />
+          <FeedbackNotice tone={actionError ? 'error' : 'success'} message={actionError ?? feedback!} />
         </div>
       )}
 

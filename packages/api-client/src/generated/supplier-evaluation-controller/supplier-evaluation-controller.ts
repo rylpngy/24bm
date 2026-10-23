@@ -325,7 +325,3 @@ export function useSupplierEvaluationAutoScore<TData = Awaited<ReturnType<typeof
 
   return query;
 }
-
-
-
-

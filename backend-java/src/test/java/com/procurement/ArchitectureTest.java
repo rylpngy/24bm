@@ -45,6 +45,14 @@ class ArchitectureTest {
           .that().resideInAPackage("..domain..")
           .should().dependOnClassesThat().resideInAPackage("..infrastructure..");
 
+  @ArchTest
+  static final ArchRule finance_must_not_use_legacy_approval_runtime =
+      noClasses()
+          .that().resideInAPackage("com.procurement.finance..")
+          .should().dependOnClassesThat().resideInAnyPackage(
+              "com.procurement.approval.application..",
+              "com.procurement.approval.infrastructure..");
+
   /**
    * 跨模块禁止直接复用别人 api 层的 DTO（同模块用自己的 api DTO 是正常约定，放行）。
    * 冻结现有违规（如 supplier 工作台聚合 order/sourcing 的 Response）。

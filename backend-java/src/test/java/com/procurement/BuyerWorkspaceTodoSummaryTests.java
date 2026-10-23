@@ -56,6 +56,8 @@ class BuyerWorkspaceTodoSummaryTests {
   private final BuyerTodoSummaryAssembler buyerTodoSummaryAssembler = new BuyerTodoSummaryAssembler();
   private final BuyerWorkspaceApplicationService buyerWorkspaceApplicationService =
       new BuyerWorkspaceApplicationService(
+          org.mockito.Mockito.mock(com.procurement.identity.application.PermissionService.class),
+          org.mockito.Mockito.mock(com.procurement.audit.application.AuditReadAccess.class),
           buyerSupplierApplicationService,
           materialApplicationService,
           buyerUserApplicationService,

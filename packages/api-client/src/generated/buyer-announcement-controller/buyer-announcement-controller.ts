@@ -113,7 +113,3 @@ export function useBuyerAnnouncementList<TData = Awaited<ReturnType<typeof buyer
 
   return query;
 }
-
-
-
-

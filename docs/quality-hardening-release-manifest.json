@@ -1,0 +1,1457 @@
+{
+  "schemaVersion": 1,
+  "branch": "codex/quality-hardening",
+  "sourceHead": "6005d23951e41624fdf2f22f726a70613483de42",
+  "targetMain": "5efcc9f7f6706daf4b6c7caff9902c512c4d5e1f",
+  "date": "2026-10-23",
+  "note": "Release candidate content inventory, refreshed after main synchronization and PR documentation. Manifest itself is also submitted. Excluded local artifacts are preserved, not deleted. No credentials or runtime data are bundled.",
+  "includedCount": 359,
+  "included": [
+    {
+      "path": ".editorconfig",
+      "sha256": "a7be3a6f7b3efc206e0978a3906ae2055b9a95fad422816e1e7c47fd621af512"
+    },
+    {
+      "path": ".github/workflows/verify.yml",
+      "sha256": "2791570f05e61a7d0cd7604f06cdc0d87da346c021457e334d4cc3db42870f20"
+    },
+    {
+      "path": "HANDOFF.md",
+      "sha256": "34966125e8cf2de5f094a55dda8ee23fef9886ddc1e297b568d6d4a2262eb275"
+    },
+    {
+      "path": "README.md",
+      "sha256": "d46749c807b6dea1c029e0b4c9521b1e2a7a426781e85d9a716c69cbf565d482"
+    },
+    {
+      "path": "apps/mall-portal/src/App.test.tsx",
+      "sha256": "055c11454e92f0377012e4b279db06574fc2dd27d573ff18bb86ca171b82dc3d"
+    },
+    {
+      "path": "apps/mall-portal/src/App.tsx",
+      "sha256": "2684ab07d9c9a775aa25c534aa202160f3e81b8ac37788bc84cf00d52f7575ff"
+    },
+    {
+      "path": "apps/mall-portal/src/features/cart/mall-cart-page.tsx",
+      "sha256": "2c66b7788189c47c33adcb131417a147b73f0aa70e743cde2d9261f2de6ddd46"
+    },
+    {
+      "path": "apps/mall-portal/src/features/cart/mall-checkout-page.tsx",
+      "sha256": "6a4054bbca5bf466ed9810a8471da293d4a888b6e42e555a0b79ec154463a59d"
+    },
+    {
+      "path": "apps/mall-portal/src/features/catalog/mall-category-page.tsx",
+      "sha256": "9a5b06b5508c762866092957773a3dadb03596c611662724cb3cf56d238acfcc"
+    },
+    {
+      "path": "apps/mall-portal/src/features/catalog/mall-product-detail-page.tsx",
+      "sha256": "8c248ac554657b3fc6f2bde3378406fdcbdfb1acc0ff391a55334906f52329e0"
+    },
+    {
+      "path": "apps/mall-portal/src/features/home/mall-home-page.tsx",
+      "sha256": "fc2a337e17c54bb81d08c70fbe7a4b1447c41086c3b5e0bff12a4c48663846d0"
+    },
+    {
+      "path": "apps/mall-portal/src/features/orders/mall-orders-page.tsx",
+      "sha256": "8cc26e6eefabb704748944efcf7eeaf6280a39ca7340475753287215cee6bc71"
+    },
+    {
+      "path": "apps/mall-portal/src/lib/use-mall-permissions.ts",
+      "sha256": "7ba787bb8b449c90eb61f033d9b79637ffc0daf91f90fd2477964c33f6e697af"
+    },
+    {
+      "path": "apps/platform-admin/src/App.tsx",
+      "sha256": "cb9321ef98ca6afa4f4d34725a355e91ca5c05d8d522d8a7a1f36f650d81901c"
+    },
+    {
+      "path": "apps/platform-admin/src/features/announcements/announcements-page.tsx",
+      "sha256": "8a409f513dd3724801fd772c0ab48eeac6955e90eff2433661f986b486abdbd7"
+    },
+    {
+      "path": "apps/platform-admin/src/features/login-gate.tsx",
+      "sha256": "ea1bcc5d0dca9a70ba803fa6da8d61a42d4f3663625f157d886667662d04a141"
+    },
+    {
+      "path": "apps/supplier-portal/src/App.tsx",
+      "sha256": "98deaeb239f45af6e21913b80e87f9f8adeb8806434b68af3ad9a7ce2b3e60cc"
+    },
+    {
+      "path": "apps/supplier-portal/src/features/login-gate.tsx",
+      "sha256": "d76345afb6e990a59f4905daaae584480fe9c3df89bf741397050e86b9b53a8f"
+    },
+    {
+      "path": "apps/supplier-portal/src/features/orders/orders-page.tsx",
+      "sha256": "e3b1f21ffb3bf7915c578a84ab06ab8098aa71bb16e6b03fbc65da94e3cb1a1e"
+    },
+    {
+      "path": "apps/supplier-portal/src/features/orders/orders-permissions.test.tsx",
+      "sha256": "efd864e6594e83b84122c2b6798b71a31b2bf1e0a5bd74de516e074f720f4821"
+    },
+    {
+      "path": "apps/supplier-portal/src/features/team/team-page.tsx",
+      "sha256": "7a7a2effb2fe13284a9c372b9dc897fb7730fb0853e549f38836d779b0693c4b"
+    },
+    {
+      "path": "apps/supplier-portal/src/features/team/team-permissions.test.tsx",
+      "sha256": "cceb3df6ec4196686b04129b64d825ccdfb6696eba3a2d3261b23b4d9ea4cee9"
+    },
+    {
+      "path": "apps/tenant-portal/src/App.test.tsx",
+      "sha256": "6fc4c991f0299c068df3fcb8e6630ed7fd9ed36bc5b19908a7d3c7d83e55418b"
+    },
+    {
+      "path": "apps/tenant-portal/src/App.tsx",
+      "sha256": "8a9d77e8e57f68feb2c62d03cc837de5adab4b1b765a7c10e5dd6b9f98e2572b"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/analytics/analytics-page.tsx",
+      "sha256": "a9fda38c9085b2476761c0979416afe2219ed7053633d26888e6f292a86114d9"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/analytics/governance-permissions.test.tsx",
+      "sha256": "3ceffd5e1b1cba87678a39f5b5acfd8cca459077fed087ad227447a9a031d6fb"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/attachments/owner-attachments.test.tsx",
+      "sha256": "c34dbe980e5605a58ad42f6f0008246487faee00398c2f922e1c9966199b3430"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/attachments/owner-attachments.tsx",
+      "sha256": "dd34640e9b9177f46389c3d8a896b422379ce3e1c5aec343615c22d2a3f25cec"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/audit/audit-page.tsx",
+      "sha256": "d57f1685f18722c724b6efe81f5b9a9531de4f318341d405653f6d82ca6fec1c"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/budgets/budgets-page.tsx",
+      "sha256": "2679ff3afebcd72b651bcbe85be25db88a683cf8922c91fba7ed34ab20106a59"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/contracts/contract-payment-reconciliation.test.ts",
+      "sha256": "a4235b07378b58abf2fb0814b2fec791b4b4e84539872e3bbd8d50481636ebad"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/contracts/contract-payment-reconciliation.ts",
+      "sha256": "4735aca58d12cb2ab09173c03e0126170dfb541e91444a68e5c2741aadb72f3a"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/contracts/contract-schedule-section.test.tsx",
+      "sha256": "67daea03b672ef4012e6333a48d00a154ce7a6e65c29d8fa7b65a48b1eb80cb7"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/contracts/contract-schedule-section.tsx",
+      "sha256": "fc259db6db2d735a55594d74ab91da1a6875bbaab4e439ba17a29b9e84feb063"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/demands/demand-detail.tsx",
+      "sha256": "a70c8528a50cad5e18f84dddbca1f45836c28eaa3c728b02c07cb4813e4ed8f0"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/demands/demand-format.ts",
+      "sha256": "e01649907f84c7875e2efd115256d4e194df528642b8c7d77f70140930a3ed75"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/demands/demands-navigation.test.tsx",
+      "sha256": "3f2597ecf0a558567ff9c2bfa1ee18fbc17b67df8e0e70b339488533e6cd2969"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/demands/demands-page.tsx",
+      "sha256": "6848164d56a2affa9a96108caad44af8ddd38dea278b12de7dfcd1f800fdcba1"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/finance/finance-exception-dashboard-panel.tsx",
+      "sha256": "9319ddca02b2361d5a100a3498c4e58fe0afabb2ee249e25d8d560c99da6f8d6"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/finance/finance-exception-dashboard.test.ts",
+      "sha256": "9d7175ca1b7577617d75e0cc4a3b5d2591705002b80b6c99b2796e56f547f5f0"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/finance/finance-exception-dashboard.ts",
+      "sha256": "56278f9c6669b40d75ef99ad5bfaa79ac8daef5fae08cd764cc7f964559de130"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/finance/finance-feedback.test.tsx",
+      "sha256": "c30273de4bf399c0cbf632116809aafe4430346f6ed0e2a383ad80614cb4e1e2"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/finance/finance-feedback.ts",
+      "sha256": "a7532175fd81982982ac7a42dfeb3e3f6471addeb8fe98538d2e55d18ad93bf7"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/finance/invoice-line-match-panel.tsx",
+      "sha256": "713917eaf46c4c53a03b70a10c4539fd3280f6c2b3451a86227685a12487e5a3"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/finance/invoices-page.tsx",
+      "sha256": "da989e9e6fe85554a42c80195417657c5c64c624f8e60515c97f8d0e895e28dc"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/finance/payment-batch-execution.test.ts",
+      "sha256": "5f97736af0d45dbfc05fd9c1ffb1352b37302b91d1a63e34037fcb78b0f45bb1"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/finance/payment-batch-execution.ts",
+      "sha256": "c082fe0470c728cf712027859b2159009d1bdecad815322685beb9c8778003a8"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/finance/payment-batches-page.tsx",
+      "sha256": "c8b696b5d01164a18ba471c86c7afe5ba9f7f0b3d015e021338d7c761b5c68d4"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/finance/payment-ledger-panel.test.tsx",
+      "sha256": "70edce036b1a0b5aaa55521aac976634bc1aa4eac9a44b3f1351bb7a403ad3ad"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/finance/payment-ledger-panel.tsx",
+      "sha256": "3dbfb876a505ad38dbce91f61911c0dada9be226162416eae53be2769c255f7a"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/finance/payment-reviews-page.test.tsx",
+      "sha256": "7f82d2dc1ac5bb0910925ba708b312912aade54f551db0b10448b1887bb0fecd"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/finance/payment-reviews-page.tsx",
+      "sha256": "bc9697b049ed1e38bb9d31542b2760c3e84d391b97a6cc4671ae13583acd6113"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/finance/reconciliation-variance-panel.tsx",
+      "sha256": "853abd61d6755fa677ffff4a2bc9888c896306ae84bfd08f86400cacd5201f02"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/ludong-poc/api.ts",
+      "sha256": "0d9899bcaf90f4c7c262e8eaee54c698b7378b61f3cd9a3afd20efeb58c5486f"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/mall/mall-page.tsx",
+      "sha256": "c8fc54f75c0a6463cffaac168dd18fda153899cb0e70651b64ef662c583f7125"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/mall/mall-permissions.test.tsx",
+      "sha256": "fecd33b6edf19355b0ebfbdb0c646d57ed672e425cc3ab734bf226d41d3809e7"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/orders/order-progress.test.tsx",
+      "sha256": "36b7d173497b943211807e9351037bbd73b04e13f44ec36bb746f36b4f0b428b"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/orders/orders-page.tsx",
+      "sha256": "cce2a16e96c0d467b941e49971aaad957bc8a1593b675b266010a8fa8ac4b594"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/procurement-plans/procurement-plan-form.tsx",
+      "sha256": "3a7ed1bdd76c75f75d1e123064e55039c61b866d6b87f7a076c019346b33a9ab"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/procurement-plans/procurement-plans-page.tsx",
+      "sha256": "b1d19b4ededc7630b46c467ce58e8e0f21204e4182d59329bcea4bc04ae4a743"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/receipts/receipts-page.tsx",
+      "sha256": "a58ab0fe43bb0f409f89157a8a9197e8f2dc3023f27fddb1d333004733b14831"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/receipts/receipts-permissions.test.tsx",
+      "sha256": "0cf256aeb6a22d398e668ca06f109914726d3ebcf7b7e90f4441d3c10201bce8"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/suppliers/supplier-admission-queue.tsx",
+      "sha256": "9c1994f6305acbf7419e54749dedf6cf2fabf74f62ff8371a1e77d802faf1e2a"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/suppliers/supplier-detail-page.tsx",
+      "sha256": "ef8be14c861507a1ec062a837378f26adb41a6f12e81c4e4dae05d7b8d9ea992"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/suppliers/supplier-list-permissions.test.tsx",
+      "sha256": "4363ff406c29cc580b16a6e9955d9ed1a3553a7b88cf29da758d9bd7efd3de40"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/suppliers/supplier-list-view.tsx",
+      "sha256": "21b4dcd3d0df34ccc1a4737e3b1d88c4e5516406b712243f7dafda83ec257d24"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/suppliers/supplier-private-profile.test.tsx",
+      "sha256": "b0561dc63092cca13758acf244a809a73241f019456a5300e47786f1205ad49d"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/suppliers/supplier-qualifications-tab.tsx",
+      "sha256": "daa62d3ce838cfabd00056b7ce957c40d9b0d3caf8f16bcb9380b78b85c5a6c6"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/suppliers/supplier-register-page.tsx",
+      "sha256": "26ab1e176669c82731cd4ce55927724a50592fb4cf266455fdda7d8dcc3c4db2"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/suppliers/suppliers-page.tsx",
+      "sha256": "effe55d79943cdfd96a7fe6c811719621c8c9e3e64d29f876c377a7e8a669030"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/tenders/tenders-page.tsx",
+      "sha256": "0ee565f20f10a0922ec3ecd5ad3390af5538351e129cb6902f98df1dbfa40159"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/tenders/tenders-permissions.test.tsx",
+      "sha256": "fae92e36561d59519753ed5a751f5dbb5a3b554922ea71598a383c98785f8719"
+    },
+    {
+      "path": "apps/tenant-portal/src/lib/page-error-boundary.test.tsx",
+      "sha256": "5781bdd70129c11e7ad77d61ede19ad09cb3de97235369ce0cdc56216e4f4557"
+    },
+    {
+      "path": "apps/tenant-portal/src/lib/page-error-boundary.tsx",
+      "sha256": "253cf0fde171aedd282466e912838bfe17c3c243dfa660dfc13586d0998df298"
+    },
+    {
+      "path": "apps/tenant-portal/src/lib/use-buyer-permissions.ts",
+      "sha256": "7e9bae26c1b3e96c3d9a9b1606394c23a3e3d340a8ee925d13f527ba6669bd38"
+    },
+    {
+      "path": "backend-java/archunit_frozen/e5957135-792e-454b-a86d-f8e0d8042cf2",
+      "sha256": "873c234a2f8f3ce3ec9b1a813e6b14422873af9933c3ce9d82eed96632d7468a"
+    },
+    {
+      "path": "backend-java/pom.xml",
+      "sha256": "c7bbe8bb27682a3592c05b38a213e8667822953948047dd5fbd1730ee36059a6"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/approval/application/ApprovalTaskApplicationService.java",
+      "sha256": "8a46749c76fcb8b7afa46c82dc29702e039312a0f55bc03153f5823e14fc93c0"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/attachment/api/AttachmentController.java",
+      "sha256": "09162fcc43bfb4a68681bc72861923866ec4d8dfb71242fdf8db3717033b872c"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/attachment/api/AttachmentIntegrityResponse.java",
+      "sha256": "ee83924e4a0b1a7f32fd492abc36c6a08ee3f5b8beb5255b621cb70422d3a413"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/attachment/application/AttachmentAccessService.java",
+      "sha256": "b9279825cab3b137e2155f89e641f686e4b19c656eabc2bef744dd3e33d91336"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/attachment/application/AttachmentApplicationService.java",
+      "sha256": "dcea83afbf83e3dd2ce16f66d8c0c927f94c6fb18643fab7e177d619ef3d7ede"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/attachment/application/AttachmentOwnerAccess.java",
+      "sha256": "a9a55931e85bec1cfbb3a411372a5659459bd46d162d0c5f776b544a826cf7b9"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/attachment/domain/AttachmentUploadTicket.java",
+      "sha256": "e649429dbf98129ee6dc45d5d86ea7d0ce11a161d34b18f307e06c373b64f71c"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/attachment/infrastructure/AttachmentMapper.java",
+      "sha256": "01fc1900387a1295aff4ba45553d6c896f01dc5a226a26cfd67553d98bf8e1aa"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/attachment/infrastructure/AttachmentUploadTicketMapper.java",
+      "sha256": "8ad3e3e9d332967430b46311dab47c3eb438703b272af26600b54dff25d36be8"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/audit/api/AuditLogController.java",
+      "sha256": "45c68b36455f44e8f9721b8b46410d0d67ce238dcaa1ba6a65bf1c8fb359fc59"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/audit/application/AuditReadAccess.java",
+      "sha256": "4ebb61bcb21adf01cf123f706b632cfa4c8b8436cc0f293b687b48ae074fb9f3"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/buyer/api/UpsertDepartmentBudgetRequest.java",
+      "sha256": "0441eb479d20e2dc37deae6ab0a3093ec7d9a9b17475644363cc4dd884457911"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/buyer/application/BudgetApplicationService.java",
+      "sha256": "08fd6aec298afc55864b622677870bcb52a711ebc3b97852bc41c0653db84710"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/buyer/application/BuyerAnalyticsApplicationService.java",
+      "sha256": "c44d148cba4658c6cda1b64495d91522b9f35fe4c6d784be1e51d3e70ffd642a"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/buyer/application/BuyerWorkspaceApplicationService.java",
+      "sha256": "0089b36aa86a2a54963728eb1c84f8392854c53953390a5ff17934cf5898136c"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/buyer/infrastructure/BuyerAnalyticsMapper.java",
+      "sha256": "0ccb9f56c03440e46acf3338841d82f5754c5aa77a033247ab14ec6670a4a992"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/buyer/infrastructure/DepartmentBudgetMapper.java",
+      "sha256": "e384dc615484ba143171970bd7d83d7278aefa7b04c713e06365b1707d8a7e32"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/common/OpenApiConfig.java",
+      "sha256": "f6600fab9653d74e19902014265fb56b4958728eb11e4bc51a8c07718969991a"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/common/data/ProcurementScopeSql.java",
+      "sha256": "dd6526806d25d7e85f7861c7e98cf4d77852155e2d2494fa057aca7976e4927a"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/common/storage/MinioObjectStorageService.java",
+      "sha256": "f63337b96648d76f6d0dbc54a4df6f2d7de0a2a52775166ca53272bc46ed2f6e"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/common/storage/StoredObjectMissingException.java",
+      "sha256": "da4883031522fbda42801bde0db85f29137260b7b3801633a8c1caaba8b91945"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/contract/api/ContractPaymentMilestoneResponse.java",
+      "sha256": "861ad67e52dcb34835116dca92b54f41e7b0b16e4f1b14d73b781e3f47acab47"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/contract/application/ContractAttachmentAccess.java",
+      "sha256": "132fa6377f7378fecc688b7cbce40a74f72381cf97eb985b32eb86b06a6e6c8d"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/contract/application/ContractInstallmentService.java",
+      "sha256": "cf8486452baa740e2dad0c17eaab7a7ff71bdb44e1d65e7a0bd1fa8747b199d6"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/contract/application/ContractPaymentPolicyService.java",
+      "sha256": "48725d90080998ba9dc530b1bbff777d78fcd28574255a2933c5a1af1cca748a"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/contract/application/ContractScheduleService.java",
+      "sha256": "52f6983c72c5fcb8acbf5a4116dea713953c8032a889104bd93c76752b2cfc8f"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/contract/infrastructure/ContractMapper.java",
+      "sha256": "6152f4871b9fe71d055037f4ca8c7ad051a70ac5f6771777ebe06ae405f55563"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/contract/infrastructure/ContractPaymentAllocationMapper.java",
+      "sha256": "7674209b39f3ab6530b1734385680e0997d42e0fbf6e803eb501c9cc0548ac95"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/contract/infrastructure/ContractPaymentMilestoneMapper.java",
+      "sha256": "c2bdfbff49f85b27b315e4d9a65de60274e40924bde9e109ea220519f30604fe"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/demand/api/PurchaseDemandController.java",
+      "sha256": "06629e3d155a4e46cae0b63822cad9ab1204735fdbb2ddf83eaef319fea69737"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/demand/api/PurchaseDemandPageResponse.java",
+      "sha256": "e9652edb75ed3d44eb0baf6db2cbfd3de9734b9072983cb2f041cb57dedca574"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/demand/application/DemandAttachmentAccess.java",
+      "sha256": "9ed6f310b66314b37fd9c86da62c7ddb3d007d80365711aba580de4f3b5b185f"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/demand/application/PurchaseDemandApplicationService.java",
+      "sha256": "b89f4c48dd277b67529caa43500ac48b6dfd29bb2f704421116704c1a1d7b161"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/demand/infrastructure/PurchaseDemandItemMapper.java",
+      "sha256": "326b647a1c3cd637a4c91af16c5e0c7423b6860ac9567402e281e33d62efa0fb"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/demand/infrastructure/PurchaseDemandMapper.java",
+      "sha256": "f7a98a08481d73fa7d5251d7322c724098b0a2cd71306ad30cb4477cd571c4c7"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/esign/application/EsignApplicationService.java",
+      "sha256": "9b554863d8d7fadfdf452911089b79d7c7bc7bd247bf8c02f0e82422b716d1ad"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/finance/api/BuyerFinanceActionController.java",
+      "sha256": "d36f808d7e198968aa9ae12fd5f83293a4521e309ef3df042ca9c373d5653d40"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/finance/api/BuyerFinanceReportController.java",
+      "sha256": "c035051cb31b4da56165cd8ebc47c1aaa2c049df9a16222fd7903761a7db3e08"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/finance/api/BuyerPaymentLedgerController.java",
+      "sha256": "4e4c0b6750e4916758229ccd3b476dfc50fccb7ee571f25069c7cc29762b1e64"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/finance/api/BuyerPaymentReviewController.java",
+      "sha256": "2119d01676433a43c2119324dce5c913b3bcc3cbd07f14ba999f5ea024367b94"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/finance/api/CreateInvoiceRequest.java",
+      "sha256": "c4c30300489505a6fe00e97267e48b38191be16311f1fd57dd031c8307101adc"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/finance/api/PaymentReviewNoteRequest.java",
+      "sha256": "7168dc9b21f6c06173b23cb4ee8cdba2140d94a799e0de9f598e7660f0b0d077"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/finance/api/RecordPaymentAmountRequest.java",
+      "sha256": "11e644dfa510a3a3f0d1fa88dde193bf3150ff5f45da042fc62032728f79837b"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/finance/api/ReversePaymentRequest.java",
+      "sha256": "5a7d18ad72acd1cf39b09654d2f6265dcbdaa468d36f32d7fe1ab0025a5dc7cb"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/finance/application/FinanceAccessService.java",
+      "sha256": "8779772ad908e9c717ac919291c108c7ef21ff0f35c0083a18f8270b5eca0f39"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/finance/application/FinanceActionApplicationService.java",
+      "sha256": "b85304831c1099e2d306b8e135779d6f393f3aad7f483fdd736888c6634364db"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/finance/application/FinanceReportApplicationService.java",
+      "sha256": "904c77c7617e0fa5e75faaa13401aeae9d6dc6840ac3fb7af1611326b8585e5e"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/finance/application/PaymentApplicationService.java",
+      "sha256": "fa6558e683591ab6fb467fb50cd6241c9a4ac718b980276a56e3f42d048c1f57"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/finance/application/PaymentArchiveExceptionApplicationService.java",
+      "sha256": "30b09b9bc267f96b64ff4b11accfb247673943c04a768086e81b56e1d7d24d4a"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/finance/application/PaymentAuthorizationService.java",
+      "sha256": "fb93e3acc907694c11c358ccad82fcd255aa99d71ecb9eb24294efec00e3837d"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/finance/application/PaymentBatchApplicationService.java",
+      "sha256": "d765fee4d928f040cecabcdabbc22eba64273203b3700d546227428b3764cbc3"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/finance/application/PaymentLedgerApplicationService.java",
+      "sha256": "47155959fea47834091e4c369c2fbaa0f6d7562bd8f10f2cd3d1aa745435b5e1"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/finance/application/PaymentReviewApplicationService.java",
+      "sha256": "e30f98a50afaa6d116279ed0057f092900d69bf1aa6e295fca6cac77b5b6fdaf"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/finance/domain/FinanceOrderSummary.java",
+      "sha256": "210a5f67d34138b4dc6ec4e0760f26de9145b0ebb0e8c70e60ba8286a64e5e8f"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/finance/domain/PaymentEntry.java",
+      "sha256": "c2ed4c04a733e9aae6a7114473e574ef0fafe84502cff4db5d4832753c9c9398"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/finance/domain/PaymentReviewNote.java",
+      "sha256": "fe0680d97738f3942c4ead28c97133b70ed012c5bd28995f85d914726749ef9a"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/finance/infrastructure/FinanceAccessMapper.java",
+      "sha256": "ea0a654e077ec003f5aeff2c509eb94ebc9a980a44afd4664216431b69dfb6cd"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/finance/infrastructure/FinanceReportMapper.java",
+      "sha256": "16054579821c1a5e28c1b409d1fcf0f053d83df8162b13cedd722e93c7001b79"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/finance/infrastructure/FinanceScopeSql.java",
+      "sha256": "dcd80a3279dc255c17e18387eab7a7b109e07abb90e85259ade08d4686e5442c"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/finance/infrastructure/InvoiceMapper.java",
+      "sha256": "bd61c555162181e15174ef5a4a370b54f837e60280ec0630f8c5bbf03f17e283"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/finance/infrastructure/InvoiceReconciliationMapper.java",
+      "sha256": "8396c9a6d9f6372eed096bed3408e5f269f0a45d1d01f719e8c2695500a627ba"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/finance/infrastructure/PaymentArchiveExceptionRequestMapper.java",
+      "sha256": "6be5e9dd43a35d121b42695b6f4a59a03ee909ab5ffe2dda968b60297f291b30"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/finance/infrastructure/PaymentBatchMapper.java",
+      "sha256": "8e8599d20c845ffa83f7a819a69a0b383053161c0ea4537232d399b17046362c"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/finance/infrastructure/PaymentBlockResolutionMapper.java",
+      "sha256": "ae321dff95ac526a4ef2fceeae1475ef8249143bee471df095894ba2ac811c7b"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/finance/infrastructure/PaymentEntryMapper.java",
+      "sha256": "d307694f9c3b36ee54e44b27dfc2f03bee1ce8f83b518a058ac92e78a527d938"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/finance/infrastructure/PaymentExecutionRecordMapper.java",
+      "sha256": "a3076b0a2a01e7997cee9b51541269043a00f838791d91cfec0f31625f1681fc"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/finance/infrastructure/PaymentRequestMapper.java",
+      "sha256": "114141520ecaac79223baf578d570b40624ccb3abaa4105069943131e04f87b2"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/finance/infrastructure/PaymentReviewMapper.java",
+      "sha256": "4eede5cfc7aea2095a9da3345173f4797420629fce9f9b24a9bcbcfa971b5e9f"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/finance/infrastructure/ThreeWayMatchMapper.java",
+      "sha256": "35cf51dc083a138c6532ebffdd5499feb6f47cc76bac645d120764b6d74b486b"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/finance/infrastructure/VarianceHandlingMapper.java",
+      "sha256": "fe13b71ad21bcddb6a444fd91de0ab8e835a562d432baf461c5cd51b3a5b17df"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/identity/SecurityConfig.java",
+      "sha256": "032742cbb6e4678473f0c3704b1c4c56987b4d299c1319374ac38d87ffdcc883"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/identity/api/SessionPermissionController.java",
+      "sha256": "60f8c1071039788346c87896a06690fd924754cdd0d9ff0b5b4dd6fc19079a9a"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/identity/application/AuthenticatedSessionService.java",
+      "sha256": "bf414f82ac7b211e84b3809b2bd9346e7adffd25b3db9634b39cc7be6d86e7d0"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/identity/application/AuthenticationApplicationService.java",
+      "sha256": "7f7d83e26c361e104efd216720c481afb6b6abb70bf98488f23f46df5b5ee870"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/identity/application/DataScopeService.java",
+      "sha256": "6977955ac71bd0915a7364a9fd02b7657f897de3ab9b916317493f5793b85964"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/identity/domain/AuthenticatedPrincipal.java",
+      "sha256": "c67c3a8426638bf8ee563ea1c38ce8149b953e0a4a7348689c0da0c238467838"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/identity/domain/AuthenticatedUser.java",
+      "sha256": "c6e96a3302419eafc756fc49124616d4047a847bda1c56cb607543a67f95148c"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/identity/domain/BuyerPermissionCatalog.java",
+      "sha256": "fd4414b67bfe0b815ebde836c0479ba003c076ed1a1d5a3ac221555632e4e409"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/identity/infrastructure/AuthenticationUserMapper.java",
+      "sha256": "0c052cdef8de9df7786d17cb0b992738e505ca32ef2ad3d7704d8905f3b7f3c1"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/identity/infrastructure/DataScopeMapper.java",
+      "sha256": "d01d8450c48662d849fefb3b13d9744bc60b67c30b3a6fcdc275a8ba41572561"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/identity/infrastructure/PermissionMapper.java",
+      "sha256": "597a1d2358e183641254d9ddf8356f134b264c32e955e306488f78180ebe3526"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/identity/security/JwtAuthenticationFilter.java",
+      "sha256": "c8686958329f71dbe768745dd9d737bbd78c61d0396b41d67b88b25378267fae"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/identity/security/JwtTokenService.java",
+      "sha256": "efdc03ab1329443b9e9de3a70f906ab124437d7de91c342f9fa824225e941cb0"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/identity/security/PortalPermissionPolicy.java",
+      "sha256": "b6d7bcce31964407957636a131eb9d6cca028e5601bfe4f1963d64998dfda8cc"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/ludongpoc/application/LudongAttachmentAccess.java",
+      "sha256": "259f2d3a497bf25644878de759cd72fae23c3e77c644913995468cefc26edf46"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/ludongpoc/application/LudongPocWorkflowCompletionHandler.java",
+      "sha256": "e44615cc18b290e04f3923c70123b1430b597fc0de1401877af6f85b75f3a122"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/mall/application/MallApplicationService.java",
+      "sha256": "f91050a7fc9ef33bf464df5482bd0e7da96122a771f2e3fc4d4c476f0f31e840"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/mall/application/MallServiceApplicationService.java",
+      "sha256": "aeb7f79b0c7fd2a766d20a44e85729ad3efa49b580a6a255220bec6e388215da"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/mall/infrastructure/MallCatalogMapper.java",
+      "sha256": "89397f490040f119affce9aba9932e25eb5759398bd06cf640cf511843a9ea91"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/mall/infrastructure/MallListingMapper.java",
+      "sha256": "e4f54818eabd5beed4bbee5ac8aa64ba498a755975cc9efb280b310688dde57e"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/mall/infrastructure/MallServiceMapper.java",
+      "sha256": "e5b0910dec634cb97f241515077fe31f7cb8484f1b7778f60cfbca573601e228"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/order/api/CreateDeliveryRequest.java",
+      "sha256": "0650e43a6e429c45fa3d6ad7945a771cd94a70ac78ad7d8cb26130d33c06f675"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/order/api/UpdateDeliveryRequest.java",
+      "sha256": "f51136122b35c9fa263c190c72ddff0be6852cbb1e32e5d6643aad9e0fe778b1"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/order/application/DeliveryApplicationService.java",
+      "sha256": "bad9c7574c92ea97d6ec3a15d1198e9eb83875af0368e2676db18d036cd58933"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/order/application/OrderAccessService.java",
+      "sha256": "f3813201a37bd59e1605e3c5a629287378ec9534095c6bd4cd99b5202b574ddf"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/order/application/PurchaseOrderApplicationService.java",
+      "sha256": "5d386b0a5585d7e52d5913a76342df0daf730e8a5ae03aae4fc7e2988b0eb5ce"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/order/application/ReceiptApplicationService.java",
+      "sha256": "9e68fbad3b6e0166f20c0c8aa6ab36f752711f053dbeafd8c679cf5c480bdbba"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/order/infrastructure/OrderAccessMapper.java",
+      "sha256": "7ae1cfef1cadbb73947d6ad893dfd8b0999a6a1881938bd11bdd0e3539df6f42"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/platform/api/PlatformAnnouncementController.java",
+      "sha256": "2f5bb6e97c4c29ef08762f9ddb48df8021e3dd99a7d610a02983e495384c79cb"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/platform/application/PlatformAnnouncementApplicationService.java",
+      "sha256": "fc7f606695b3407aa6ebad60e5382be980c4efcf39c3228091bcf9b986e478d8"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/platform/application/PlatformTenantApplicationService.java",
+      "sha256": "bfe7eb4700b27d6f603b220c94d68914bc2cabd74e93d9b9205cada650b3a87c"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/platform/infrastructure/PlatformAnnouncementMapper.java",
+      "sha256": "5c3d58e500811b1152b39d0b7c0988729b06a9a9893a03843242b8241eddccfc"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/sourcing/application/OrderAwardQueryService.java",
+      "sha256": "232ef13870f0e0bf1b877b61c3149efde3792a159d8ccdde91f8964ed3af15b1"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/sourcing/application/QuoteAttachmentAccess.java",
+      "sha256": "1a6bd6cbba40e613b148eaa3b70cf8ec2f21263ffb65c3064887fc9ea9f4555f"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/sourcing/application/RfqAnnouncementService.java",
+      "sha256": "9d64c860d9504153e36f24617c7fc54ea77e38208acc3fde940593183f670f5b"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/sourcing/application/RfqDemandLinkQueryService.java",
+      "sha256": "2b68925eaf9221f46038681d8ec0f0c36b716c745944ee276d285fee82c9260d"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/sourcing/domain/DemandRfqLink.java",
+      "sha256": "d6cbbd659f2d1d6549a690fc6af5924113ee37fff802a6842636864dd9c822c5"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/sourcing/infrastructure/RfqDemandMapper.java",
+      "sha256": "952aa5a9a6e20b4d1acfbc2415a234fb5998485540b7b1f62fcba96f07116d85"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/supplier/api/ChangeBuyerSupplierProfileRequest.java",
+      "sha256": "b6ba97b9616df8aae1d07fe42ca013af2c111d935693d626899df6c8b169355f"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/supplier/api/CreateBuyerSupplierRequest.java",
+      "sha256": "34d01f83beed9bf960a222111a6413c83107ff11279fad526fd228d3a7fe6093"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/supplier/application/BuyerSupplierApplicationService.java",
+      "sha256": "57eafc062c582d9be9f999facf7bcd75df4b12722e44622ea589e7ca63e87bfd"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/supplier/application/SupplierAttachmentAccess.java",
+      "sha256": "162bd9d2868f9b3af99446827bc41bf18b6b81fedcc599790df1c5d02eab46c8"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/supplier/application/SupplierUserApplicationService.java",
+      "sha256": "68be5d938cadf8bdd34617573d2dd3bda5f746bb0d3422b0b0cf5ed0f6723f3c"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/supplier/infrastructure/BuyerSupplierRelationMapper.java",
+      "sha256": "43ca55421493a0747af14928da901c62e10bb4d2d690004c9bdeba3547a72461"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/supplier/infrastructure/SupplierProfileMapper.java",
+      "sha256": "8fa4837285a1d01af15e842e1fd893a069421f4d92f4c46ccafa16cbfb99162a"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/supplier/infrastructure/SupplierUserMapper.java",
+      "sha256": "bd83cb29e0cc8e98704b91bfd37e11449c5f97da2108640993646ad8498ac992"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/tender/application/TenderApplicationService.java",
+      "sha256": "3076a11f8992314b2c40aa67d729cb20bb38c61499d2bf60827df54153fb7ead"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/tender/application/TenderAttachmentAccess.java",
+      "sha256": "de55f4a04bbd2748e8f66877b5e7bd919d28ee607c2fcf2fc61a4f68da2d9853"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/tender/application/TenderReadAccess.java",
+      "sha256": "bbed6b316999362024efa2661cfd12821a04a0d5ddfceae70ad1c04c04f016c3"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/tender/infrastructure/TenderMapper.java",
+      "sha256": "be4e3b1845c37537560b994ac500a9cf30115bd6feb39c764671707b8ecf6aba"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/workflow/application/UnifiedWorkflowApplicationService.java",
+      "sha256": "55f3c0bc30b827bc76b39a5150c33720c047150ceaac75ea3b3370802d480241"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/workflow/application/WorkflowBusinessCompletionHandler.java",
+      "sha256": "d8aa8a0d6c22e618f8393805dd92474113050281813a64e0a46b8c98d39475c3"
+    },
+    {
+      "path": "backend-java/src/main/resources/db/migration/V203__demand_number_sequences.sql",
+      "sha256": "c26b6b2bb6b1df1719c1f083fe4d5390b92e959c1248f53cf0594350cd13111d"
+    },
+    {
+      "path": "backend-java/src/main/resources/db/migration/V204__authentication_session_version.sql",
+      "sha256": "9bdf59ee9c527611903ad9c194122a6e9fbc819a4301306bc77269205f43a498"
+    },
+    {
+      "path": "backend-java/src/main/resources/db/migration/V205__attachment_upload_tickets.sql",
+      "sha256": "c800703ffd36155fd2947f68e9d4d9505fc9adeeaf7b63e4777662148fbf0644"
+    },
+    {
+      "path": "backend-java/src/main/resources/db/migration/V206__invoice_payment_ledger.sql",
+      "sha256": "f670ba2dccd3856c423d0c6d5a817b00fef04ce4810b9af3d21ac3279a037417"
+    },
+    {
+      "path": "backend-java/src/main/resources/db/migration/V207__payment_review_notes.sql",
+      "sha256": "b552f87ef5493017a73439fb7fc75786c92f58b0d032415ae240685af19fda89"
+    },
+    {
+      "path": "backend-java/src/main/resources/db/migration/V208__attachment_object_integrity.sql",
+      "sha256": "b4dbd394529db4f0ec701c9c75b818caa0cb87d3e67a69cafb273b7571e57912"
+    },
+    {
+      "path": "backend-java/src/main/resources/db/migration/V209__buyer_supplier_private_profile.sql",
+      "sha256": "86569e418c25a564a9b95c2ebee464a0281b2717c2577f4a2deb8b717cef6061"
+    },
+    {
+      "path": "backend-java/src/main/resources/db/migration/V210__supplier_default_roles.sql",
+      "sha256": "fa36a9f498494c22076b2825466f51967dc8ed425bce3b84602621de3f6ef339"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/ArchitectureTest.java",
+      "sha256": "f4b163743b66bae99bd25dcc1ff14946f22d2f7e60341468620a87ce730c1107"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/AttachmentIntegrityTests.java",
+      "sha256": "9db98dbb7dabe6f6d0f22c4feddf8137e9024e3f3423ae9f226a9891a2296063"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/AttachmentMetadataLifecycleTests.java",
+      "sha256": "f1ca039caa57f292ccd5a9f3e503c08acce970c6559037c466b06795c742277e"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/AttachmentOwnerAccessTests.java",
+      "sha256": "99e0033e8f813a9e061651931a19a378b91a8c3fcc7b2b46a2b5bb103b0fc2fa"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/AttachmentTenantIsolationTests.java",
+      "sha256": "0c2d134a58d27471d955a774c76c2de9ac24ce8bb7ee65df190181d3b1317bd0"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/AuthenticatedSessionServiceTests.java",
+      "sha256": "a09a78c9677b93ad3097d3ffe763f809fdecd0b4bb61fc9b5c1c92ec548505fb"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/BackendModuleArchitectureTests.java",
+      "sha256": "afbdfe671ce703e6b249e50038a0d6bf68f0724552b0c9233515bea3cfa962b2"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/BudgetApplicationServiceTests.java",
+      "sha256": "b858c99b6a495cbad7000e8bd8686e7405c000426a58ed3829f95f83dac17da8"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/BuyerAnalyticsApplicationServiceTests.java",
+      "sha256": "f53d45d4b7dfe6475a40df7327a5b1ad054d7a5816c7e9493c281a9177dba1ca"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/BuyerMasterDataAuditLogTests.java",
+      "sha256": "4ca7d9d2cf7cf061150456e8808efea145115a3dc011b9ae9e129891b33620ca"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/BuyerSupplierAdmissionApprovalStateTransitionTests.java",
+      "sha256": "0747a8e747be8e3c000cc7acb8f4fe6534a183f3af1bdb9169c3b62039863b69"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/BuyerWorkspaceTodoSummaryTests.java",
+      "sha256": "8d49374e689a3b88151c678d35d796cc5bb20d76c126eecb4595730defd4193f"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/ContractScheduleServiceTests.java",
+      "sha256": "eca0d1ca27a33bff45686540796410d6487ef60f3c2d42a6d1d72e05e283741c"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/DataScopeFailClosedTests.java",
+      "sha256": "c181f4c58c56c8bbf53a32404c5779f10adfbeb542be920a7f07940a6d59555f"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/DatabaseMigrationIT.java",
+      "sha256": "786a4a6fcea834de42d8e9fcfd34c6af7e8df0389ef38141bf9ce7f77b61de76"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/DeliveryNotificationTests.java",
+      "sha256": "7141b094fe11566542f06038128bfac2c387ab6a56a7ea32f204b64884e0d28e"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/DepartmentBudgetMapperSqlTests.java",
+      "sha256": "af4c3e6faa3a21f086566c7ed36230b638490197c4288f74ce8c52ec021553ba"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/FinanceActionPaymentBlockingTests.java",
+      "sha256": "d0d9c62bc0ffef33fc71dbef1e456dc6e3c31d26e5527fdf16b6dcfc7c5a9b3e"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/FinancePaymentNotificationTests.java",
+      "sha256": "d4f30336122bed46bf439fa412c56d8c8ef48d0861d66e81dcc1f7924e0b47c3"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/FinancePaymentStateTransitionTests.java",
+      "sha256": "a5f20b6360dce1e2efe9767d3113f35c0a5609f1ef0962215bd555ed1b617b1b"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/HttpSecurityContractTests.java",
+      "sha256": "d55f67dcbd67638c95d85f5525d2657e40d92cfdba14c3bc070cfeb80187373d"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/InvoicePaymentUpdateDetailTests.java",
+      "sha256": "3506bef48329ab57fa2dbdd6fcd9930169d604408a57f06b3ebb0c3b609324ea"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/LudongPocEmployeeReuseIT.java",
+      "sha256": "81e49adc380f15a467e3a6a1f807e666b91d11f4acb61b8fc2495df1a3c8cf48"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/OrderFinanceFeatureToggleTests.java",
+      "sha256": "3ee65a1c87e2e1420837c51e555b39158a8ea97c71ea6e466da6bcf48074f3f9"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/OrderFulfillmentStateTransitionTests.java",
+      "sha256": "7504f951605cbaa30bb21dd41aedc61d9c07ea9a359c252c890efbae76aba4d4"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/PaymentBatchDataScopeTests.java",
+      "sha256": "67ac8b7d1c3c24194fc6800927ac7d20fd792d907b19dcdfd0862ed223bc848c"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/PaymentBatchMapperSqlTests.java",
+      "sha256": "751c0076937b28aa664fc352563a487dcfbbf7e9b7098ca7c9443cd9e50b62eb"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/PlatformTenantOnboardingTests.java",
+      "sha256": "8f0ee641ad0913299a160d6a9b59fceac2832617f977a6560cd3e0ee44767d07"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/PortalPermissionPolicyTests.java",
+      "sha256": "97366985d20c0bb593fa2f3bd1af12be6843b87b92547532689b6c1a82ff1c65"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/PurchaseDemandApprovalStateTransitionTests.java",
+      "sha256": "56f1e026f730f0ff9b7fc9571ac04792b9699d99536253e431949de2c9b724a2"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/PurchaseDemandAuditLogTests.java",
+      "sha256": "500f5c784b5ec2e04a1906b313b155832153adbed90bb1bdd72fd6e83d277221"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/PurchaseDemandDepartmentValidationTests.java",
+      "sha256": "e378bfe5698a60a4cd0f273e31e459aa8c6240dfe0dabf6be879645d058f2b34"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/PurchaseDemandNotificationTests.java",
+      "sha256": "e9ed8605e94b64e529889a025086e8507fb06cd64218003af141500f30f931c9"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/PurchaseDemandUpdateDraftTests.java",
+      "sha256": "d78d0fdb90ec24a0e6aac2b8247ac0beb6939687923a4035c3ed20a121ae90ca"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/PurchaseOrderNotificationTests.java",
+      "sha256": "2c17b277455a1626f23805cefbeaa40248a91a96243d5a415a028f165f1f9ae3"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/PurchaseOrderUpdateExpectedReceiptTests.java",
+      "sha256": "d1331b93a7a5fd6207158a6e96a4d61f04cd07a92246cc6b2a839ba6ab6f1b1a"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/QualityHardeningIT.java",
+      "sha256": "0b93f0cb2866cb65ce20f1576af4339b2891eef660ff4db4faf3f17f9d1c8373"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/ReceiptNotificationTests.java",
+      "sha256": "73a14bf504add25ea44977410e155e81e9efc9e0c42c77b1527634e9be9c5968"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/SupplierSubmissionValidationTests.java",
+      "sha256": "d0857da675e52105292cc6ecb81795fd655845b00c8656a569735474b801f9c1"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/SupplierUserLifecycleTests.java",
+      "sha256": "860c3e250269752742dea6ea401beb4ee9f997872fc3f2dacccb2176b3437c7c"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/TestDataScopes.java",
+      "sha256": "50afec0dad01dbe833a19f4fe28f1630722495d616ad237e106b8b9250975d08"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/TestFinanceAccess.java",
+      "sha256": "1fbcef1e53b2cd7c2db184f6c5177589fccffe85adf726074175142d5494f605"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/TestOrderAccess.java",
+      "sha256": "66d9915d8e218aaf274b00ae02973c95ec1b9b282d2de0e759aa1bbc07a9d039"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/UnifiedWorkflowRuntimeIT.java",
+      "sha256": "6a293acb37e13ad18281139f83366862ee0528aa83e481ce81023a46e8206a1f"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/common/OpenApiConfigTests.java",
+      "sha256": "34436b5e3e974ea8798718fc9829265e05738298c2c5a06882f00fa1cffdb220"
+    },
+    {
+      "path": "docs/openapi/backend-openapi.json",
+      "sha256": "cfd6542034ce0335d50aad0cef6c35bfe77e91a0d3022ee8e8c76dbcd26adbcf"
+    },
+    {
+      "path": "docs/quality-hardening-2026-10-22.md",
+      "sha256": "d19d8759a4c8cdca11ea642fc96156661f39c62daef04a928880261d6a3180d5"
+    },
+    {
+      "path": "docs/quality-hardening-data-audit-2026-10-23.json",
+      "sha256": "87c93fbe4786621161fae19aeb8c9760f5ccc41866dd6bd5dc5c0d323c11ce4f"
+    },
+    {
+      "path": "docs/quality-hardening-data-audit-2026-10-23.md",
+      "sha256": "f784cf9ac3118df1a421a84ac301ab36767c3cf5dea7de404bde54f6991066ca"
+    },
+    {
+      "path": "docs/quality-hardening-release.md",
+      "sha256": "5af01b8a7918d698992643b6290b803e05e54b0c763779762b0a49efc7047dc7"
+    },
+    {
+      "path": "package.json",
+      "sha256": "846872cea417c35137bf60c75e5effb5caf41383fe4c1a81b8456c52eb347045"
+    },
+    {
+      "path": "packages/api-client/src/attachment-integrity.ts",
+      "sha256": "2fe1c182940fe340e4970a43f3d7dabda8aa4b3186c0e640b44eb974f2f5c2d9"
+    },
+    {
+      "path": "packages/api-client/src/backend-openapi-sync.test.ts",
+      "sha256": "435165016b2bbce86d678c3cce0ca5409a83cc1042a9dd408c6ce9d89a3f4a30"
+    },
+    {
+      "path": "packages/api-client/src/demand-queries.ts",
+      "sha256": "717512da1520d096365404a8d89f56efbe1d76f836899c0119d09ffeba120b18"
+    },
+    {
+      "path": "packages/api-client/src/generated/approval-inbox-controller/approval-inbox-controller.ts",
+      "sha256": "5c34476dc90ca7d9ae6052117c3a62120d1d245f6d3dc0c0ee0cf4fdccba2c67"
+    },
+    {
+      "path": "packages/api-client/src/generated/attachment-controller/attachment-controller.ts",
+      "sha256": "166f1ec8621c41bccf227bc9546ba7c33c01efd54226031b24ed2183570005cf"
+    },
+    {
+      "path": "packages/api-client/src/generated/auction-stream-controller/auction-stream-controller.ts",
+      "sha256": "afb9c97215ba2f003a50a7d23a56ea0d85608d025731e49acd5f0ebbce5ac601"
+    },
+    {
+      "path": "packages/api-client/src/generated/audit-log-controller/audit-log-controller.ts",
+      "sha256": "607a347e4134410802beaf1684f5cf7333926f317a0703cc86b966af8e1bca3a"
+    },
+    {
+      "path": "packages/api-client/src/generated/buyer-analytics-controller/buyer-analytics-controller.ts",
+      "sha256": "64710fbed1db592cb254f066b3e2c15ec2f17388b4dabe094288f72045586c58"
+    },
+    {
+      "path": "packages/api-client/src/generated/buyer-announcement-controller/buyer-announcement-controller.ts",
+      "sha256": "927b490b9da99a9f31480b1e2a002622bb3cf49b1ef4ec6326ddbe64fc6c34d9"
+    },
+    {
+      "path": "packages/api-client/src/generated/buyer-capability-controller/buyer-capability-controller.ts",
+      "sha256": "0f05f65944da87983bc47858601fd9ceb140c08c9989d788c4493c14a3cfefbd"
+    },
+    {
+      "path": "packages/api-client/src/generated/buyer-delivery-controller/buyer-delivery-controller.ts",
+      "sha256": "6b9347d795b8017ca1af589b7189a0a95ab017b6549291c5f231aabb298f409f"
+    },
+    {
+      "path": "packages/api-client/src/generated/buyer-finance-action-controller/buyer-finance-action-controller.ts",
+      "sha256": "f4edfa01c128e94b26761251ed654fcc36f5dda83d3db498fe67e1f8dd68825c"
+    },
+    {
+      "path": "packages/api-client/src/generated/buyer-invoice-reconciliation-controller/buyer-invoice-reconciliation-controller.ts",
+      "sha256": "f7c166b45c2d4f4e4691b214cbff8c5b20823dbe9ea3994df471a97fe3b5c5be"
+    },
+    {
+      "path": "packages/api-client/src/generated/buyer-notification-channel-controller/buyer-notification-channel-controller.ts",
+      "sha256": "083f024754272c82e4db28c4d9bacdd46bc3055d9eadf2285fd530127b6b3746"
+    },
+    {
+      "path": "packages/api-client/src/generated/buyer-notification-controller/buyer-notification-controller.ts",
+      "sha256": "92d75cf54da8c0e5ab3de46fb2361820396fc7a7e50965ffb8e9dfa9c6d911e4"
+    },
+    {
+      "path": "packages/api-client/src/generated/buyer-payment-controller/buyer-payment-controller.ts",
+      "sha256": "2e11f1552902e20c8775dfab21d4d9cad3e8b74cc2f4f72e861e5120a6ca78d9"
+    },
+    {
+      "path": "packages/api-client/src/generated/buyer-payment-ledger-controller/buyer-payment-ledger-controller.ts",
+      "sha256": "92c8848d4aa20e7c522a5601d68f9c7afc469fbcca8d4c2e152608bc31947f0e"
+    },
+    {
+      "path": "packages/api-client/src/generated/buyer-payment-review-controller/buyer-payment-review-controller.ts",
+      "sha256": "71a5929454b8ddabc93fa1d7e71a50b545888052b57ae5f1e0e0d4ce43c7a28a"
+    },
+    {
+      "path": "packages/api-client/src/generated/buyer-receipt-controller/buyer-receipt-controller.ts",
+      "sha256": "be0db4df70ac8ca3e61a87768c3ae0bbe44779f4e7c3a91b1329052be8723f24"
+    },
+    {
+      "path": "packages/api-client/src/generated/buyer-role-controller/buyer-role-controller.ts",
+      "sha256": "a93c6f44cbd76545da9f925a2d72927cd46a2a90395cdd4a86ec2bb84ea2d6a7"
+    },
+    {
+      "path": "packages/api-client/src/generated/buyer-supplier-controller/buyer-supplier-controller.ts",
+      "sha256": "651cb3060a6cc143dc87e0d5853216116eccc4bcf4ebd891a680f147d9decd04"
+    },
+    {
+      "path": "packages/api-client/src/generated/buyer-supplier-discovery-controller/buyer-supplier-discovery-controller.ts",
+      "sha256": "f32fe2c5d2d10a61b111c3dd602a3ab5c5f7782bb24f9ed13d0d8d5f1e148c99"
+    },
+    {
+      "path": "packages/api-client/src/generated/buyer-supplier-invitation-controller/buyer-supplier-invitation-controller.ts",
+      "sha256": "a716a2a9619a6cb3b8aca2a0e8382c657da66ff221f46d6810fcd01e7f1e82c5"
+    },
+    {
+      "path": "packages/api-client/src/generated/buyer-user-controller/buyer-user-controller.ts",
+      "sha256": "f15d7c78c2aea22f6131f02973a19e2d20988daef4a97365d8691758931beb87"
+    },
+    {
+      "path": "packages/api-client/src/generated/buyer-workspace-controller/buyer-workspace-controller.ts",
+      "sha256": "6f1230dd5b1ae6f3911195d67906c82b282ee1145ecaa633f682a0ceb8c5b0a6"
+    },
+    {
+      "path": "packages/api-client/src/generated/contract-schedule-controller/contract-schedule-controller.ts",
+      "sha256": "90878a2877d1d88168329a54ba2302f326dfbf4a0701dbfbea03bd2caf54e86e"
+    },
+    {
+      "path": "packages/api-client/src/generated/controllers.ts",
+      "sha256": "c1f88d80e73f635b7bb7f9f4ccb6959cf38186070eaea4caa1fcaec9fde65b9c"
+    },
+    {
+      "path": "packages/api-client/src/generated/department-controller/department-controller.ts",
+      "sha256": "5d5ed3cc8c7d59416bd173ffc8e481258decca277302398b987a3964792077ef"
+    },
+    {
+      "path": "packages/api-client/src/generated/dictionary-controller/dictionary-controller.ts",
+      "sha256": "e27d532e6c3774906cab9e9bd9a3651b6556daccbb8f7e8ea9695c870d36790d"
+    },
+    {
+      "path": "packages/api-client/src/generated/health-controller/health-controller.ts",
+      "sha256": "a853a0423cca2d30cc15a343d9d7ab3aa5665c66ccbe70a73f2a5ef0bf30178e"
+    },
+    {
+      "path": "packages/api-client/src/generated/material-controller/material-controller.ts",
+      "sha256": "9ee5911e94937af0148cf04def21345ae061c709ab252af69f22fbb0b5c03d54"
+    },
+    {
+      "path": "packages/api-client/src/generated/model/apiResponseAttachmentIntegrityResponse.ts",
+      "sha256": "e329c6e8c791a5e990d4ca6ae539e10da652d65a2d07e9728802c38edb25626e"
+    },
+    {
+      "path": "packages/api-client/src/generated/model/apiResponseDetail.ts",
+      "sha256": "a50792b4315a802e05d32224f5adf873fd94ee673d7423a7f3686b219bbadddd"
+    },
+    {
+      "path": "packages/api-client/src/generated/model/apiResponsePage.ts",
+      "sha256": "897cc8db935086cf3bc86302343a6c92824903ece621b4a4a51e24f3b7be7356"
+    },
+    {
+      "path": "packages/api-client/src/generated/model/apiResponsePaymentReviewNote.ts",
+      "sha256": "2272790ba67a052f028abf73468a1b946667f8ad88533ccea1ca0b99f0e5f91b"
+    },
+    {
+      "path": "packages/api-client/src/generated/model/apiResponsePurchaseDemandPageResponse.ts",
+      "sha256": "017690199aea315670c4087318f8204bea36e8ece874ff04a05367eced1b8629"
+    },
+    {
+      "path": "packages/api-client/src/generated/model/apiResponseSummary.ts",
+      "sha256": "8d5736cfd4e417a33ad4d8bbe49ec17b3dbda60443c7c53f5436b75607b2ce01"
+    },
+    {
+      "path": "packages/api-client/src/generated/model/attachmentIntegrityResponse.ts",
+      "sha256": "2437a08e496c4aaf74989e8852768705c11209863f3e26dfd6b723ba9b03bddb"
+    },
+    {
+      "path": "packages/api-client/src/generated/model/attachmentUploadSinkParams.ts",
+      "sha256": "0e421dc7bb19cbbecd2615c074cf061e7db57a427b761b426523b7b891b076c6"
+    },
+    {
+      "path": "packages/api-client/src/generated/model/balance.ts",
+      "sha256": "43da623457009ef9e2f2da3d56768d44d4c918c0c1eb76f9b452e3f89b21cbe5"
+    },
+    {
+      "path": "packages/api-client/src/generated/model/buyerPaymentReviewDetailParams.ts",
+      "sha256": "7d21dbf9560c6972e1b5b76da54584219dc60c8df2c2f78f42a9cbad6c8b9d2b"
+    },
+    {
+      "path": "packages/api-client/src/generated/model/buyerPaymentReviewListParams.ts",
+      "sha256": "1da8eab5dfbf24d91aeb7bd8e0f9dfb9223e614461a5169250e9d9e7c64f969f"
+    },
+    {
+      "path": "packages/api-client/src/generated/model/changeBuyerSupplierProfileRequest.ts",
+      "sha256": "1f9076e4b81fe7f658f670b2b910004ebf3dee8ebcd536785f10863afa86c4f9"
+    },
+    {
+      "path": "packages/api-client/src/generated/model/contractPaymentMilestoneResponse.ts",
+      "sha256": "06366c806c63e4852323ec697b929d936f9841ca109c67e1642991c582126182"
+    },
+    {
+      "path": "packages/api-client/src/generated/model/createInvoiceRequest.ts",
+      "sha256": "89c3ddf500e734ddbdc93999a894d5a51c223ccc700887fc422359e1b9085919"
+    },
+    {
+      "path": "packages/api-client/src/generated/model/detail.ts",
+      "sha256": "4e7f559690e11569329ddb476f99b2ff6f4619c1c6cdf654fbda2d61f71c0ed8"
+    },
+    {
+      "path": "packages/api-client/src/generated/model/index.ts",
+      "sha256": "374f81fb39a8e243f0a9c04a26f4aaf6a807a1eb1e3d4ffd313348352c34aa88"
+    },
+    {
+      "path": "packages/api-client/src/generated/model/page.ts",
+      "sha256": "022b399602fbf8dd56034a108513c404a4ff94fab1844c50bde07bf294455b41"
+    },
+    {
+      "path": "packages/api-client/src/generated/model/paymentEntry.ts",
+      "sha256": "599de5fb48bccf962e34916743be30c9da10e5c99044a7060b2816457f908814"
+    },
+    {
+      "path": "packages/api-client/src/generated/model/paymentReviewNote.ts",
+      "sha256": "5d000c2dd19fc1b3c311120d56b4c68ad4a05df264a35a0a6d51e9ac215023b3"
+    },
+    {
+      "path": "packages/api-client/src/generated/model/paymentReviewNoteRequest.ts",
+      "sha256": "1ea3b94b5747d6634861f9f3ef6334016036fcfe39210fb029a667a0660073f0"
+    },
+    {
+      "path": "packages/api-client/src/generated/model/purchaseDemandPageParams.ts",
+      "sha256": "dcc01b85c88b4da0b17edbf185450c429ddb94945beb110d2b36e3fc73d35ba7"
+    },
+    {
+      "path": "packages/api-client/src/generated/model/purchaseDemandPageResponse.ts",
+      "sha256": "f080e0b6e8ed1f2709a2c801b34cd770c574966e1681ed5a1b93337d2939cc73"
+    },
+    {
+      "path": "packages/api-client/src/generated/model/recordPaymentAmountRequest.ts",
+      "sha256": "caefd5e70b109429d1416e7044b11dc19995af80b5fdfe506105ef5f68522227"
+    },
+    {
+      "path": "packages/api-client/src/generated/model/reversePaymentRequest.ts",
+      "sha256": "c48f7bff828ae7ddda03e67e878d328811bcc19b1ee2c9425870ed9240498e5a"
+    },
+    {
+      "path": "packages/api-client/src/generated/model/row.ts",
+      "sha256": "ee0990ec735da8564caacd09bd3408e4f67f99dbe56eca170f4f1e55c02866a5"
+    },
+    {
+      "path": "packages/api-client/src/generated/model/summary.ts",
+      "sha256": "8211c7fe3a73fcf2db3e0cb876702956b4274247c457c1d76d3fa478e7ba72cd"
+    },
+    {
+      "path": "packages/api-client/src/generated/model/upsertDepartmentBudgetRequest.ts",
+      "sha256": "d7ef225092522a586cfb47f91a06d825422bb7032ffdd58576cc192a78cffa91"
+    },
+    {
+      "path": "packages/api-client/src/generated/platform-billing-controller/platform-billing-controller.ts",
+      "sha256": "7ed5453f0c35d22392878d8eb38fc772fe8eecdb04aca84963e72686901bd570"
+    },
+    {
+      "path": "packages/api-client/src/generated/platform-dictionary-controller/platform-dictionary-controller.ts",
+      "sha256": "9466fe4d6315671177902dc679b4cf1c917892c6fe92e4bf6b4256fd53e332fa"
+    },
+    {
+      "path": "packages/api-client/src/generated/platform-enterprise-controller/platform-enterprise-controller.ts",
+      "sha256": "b5d94fe56da375eb0be36345c9ad747584d374d3ea8d4607a929899dd507f2cb"
+    },
+    {
+      "path": "packages/api-client/src/generated/platform-overview-controller/platform-overview-controller.ts",
+      "sha256": "2a39df54da0eb4ad351c2c165864046a4b660fbe6b1bdc462192099f3bfe137c"
+    },
+    {
+      "path": "packages/api-client/src/generated/platform-supplier-controller/platform-supplier-controller.ts",
+      "sha256": "f7b0bd485e13e2900f3500ac12ddd220f5a7f8c7e06229ae5892ddb2f09ab7ff"
+    },
+    {
+      "path": "packages/api-client/src/generated/platform-tenant-controller/platform-tenant-controller.ts",
+      "sha256": "2c66d0d9f416cc10a259f4850ee6946806d2a38d22e5ff7c776b3c5a8e97e460"
+    },
+    {
+      "path": "packages/api-client/src/generated/platform-workspace-controller/platform-workspace-controller.ts",
+      "sha256": "160b2630e21f1e27c67c4e9268d002fb1d82d4cd4d3f72458069bb763a2b97af"
+    },
+    {
+      "path": "packages/api-client/src/generated/process-definition-controller/process-definition-controller.ts",
+      "sha256": "ffa47cb235fcfeb624bb2b8aef7a5ac7416e8187d8b1bc4bf183c46110bee3ee"
+    },
+    {
+      "path": "packages/api-client/src/generated/public-mall-controller/public-mall-controller.ts",
+      "sha256": "277744ac605de2d7fc1fb1c974290a0cd4134472f2d998907250a61c41e0f0af"
+    },
+    {
+      "path": "packages/api-client/src/generated/public-opportunity-controller/public-opportunity-controller.ts",
+      "sha256": "23d4362df273f3be882650463b1e86dea845cbf356cea9131a6db6d03a90e486"
+    },
+    {
+      "path": "packages/api-client/src/generated/public-portal-controller/public-portal-controller.ts",
+      "sha256": "b17db982bf01e27a06aeb986b06a20f5325b05d91e7c1e80ce0ab9dcc28edaa9"
+    },
+    {
+      "path": "packages/api-client/src/generated/public-procurement-announcement-controller/public-procurement-announcement-controller.ts",
+      "sha256": "b811ff289229c2bc7e32cb51aa34945bee05f47aa9fc1ba086d8dd9592d5a999"
+    },
+    {
+      "path": "packages/api-client/src/generated/purchase-demand-controller/purchase-demand-controller.ts",
+      "sha256": "c64c35b1c0cd401621e3d3549c742b4144bc40346145ea7252eaeaf0ba4ec065"
+    },
+    {
+      "path": "packages/api-client/src/generated/rfq-controller/rfq-controller.ts",
+      "sha256": "1a6763630950c804578aeea702d1b98a97b3b0906fab4d3c42499683a52c5ce1"
+    },
+    {
+      "path": "packages/api-client/src/generated/session-permission-controller/session-permission-controller.ts",
+      "sha256": "c4aa37bb93da8e42f07ee06fa30f7b0df6c08c4b58e1e287abb55e7d624da764"
+    },
+    {
+      "path": "packages/api-client/src/generated/supplier-announcement-controller/supplier-announcement-controller.ts",
+      "sha256": "b55a26812a29a06c8143a75140b93380409adae7c15fc8e0b90d8a420c05d800"
+    },
+    {
+      "path": "packages/api-client/src/generated/supplier-delivery-controller/supplier-delivery-controller.ts",
+      "sha256": "c23cd18f46cfc31fd6f7680040cb657e05bf871d794c5108c1d582eeeae282a4"
+    },
+    {
+      "path": "packages/api-client/src/generated/supplier-evaluation-controller/supplier-evaluation-controller.ts",
+      "sha256": "1d4e1688c6980772af3657cb80fd14f38e6f69efa865af329550858c88cfa278"
+    },
+    {
+      "path": "packages/api-client/src/generated/supplier-fulfillment-controller/supplier-fulfillment-controller.ts",
+      "sha256": "d65652e96198a5ff8ad277d4fa9e8c0f6c72838b3deabbcb4adb78c36bf73e3d"
+    },
+    {
+      "path": "packages/api-client/src/generated/supplier-invoice-reconciliation-controller/supplier-invoice-reconciliation-controller.ts",
+      "sha256": "f0f00a42619e67a6a9bf606e68c7f481f082fd74fa2eb20c407466580d9f85c6"
+    },
+    {
+      "path": "packages/api-client/src/generated/supplier-mall-controller/supplier-mall-controller.ts",
+      "sha256": "04cac15e1929b02c49067a87b6c21d7cee73c7746b553efc4c43217f57db706d"
+    },
+    {
+      "path": "packages/api-client/src/generated/supplier-notification-controller/supplier-notification-controller.ts",
+      "sha256": "751813d8f4a9788935f022688979d4afba21ac5977fe8471ae6657fcbdf01016"
+    },
+    {
+      "path": "packages/api-client/src/generated/supplier-order-controller/supplier-order-controller.ts",
+      "sha256": "f7115e5ac65c5ca03c838fc75a8a82130a7f25781df7f7cbfd76d9c4e6e7d841"
+    },
+    {
+      "path": "packages/api-client/src/generated/supplier-qualification-controller/supplier-qualification-controller.ts",
+      "sha256": "d456ef52479827ee93badc3c510847565853a484b27dac6d2b62c5668a01dae2"
+    },
+    {
+      "path": "packages/api-client/src/generated/supplier-quote-controller/supplier-quote-controller.ts",
+      "sha256": "4419176f64ee2d028cc962a283035bf23bd4a733baebec566ad35b703beca058"
+    },
+    {
+      "path": "packages/api-client/src/generated/supplier-quote-list-controller/supplier-quote-list-controller.ts",
+      "sha256": "0a0bae64978c54aca4db2f8de0416da373fc16c1c23f6f7eed3e87cc75d71020"
+    },
+    {
+      "path": "packages/api-client/src/generated/supplier-receivable-controller/supplier-receivable-controller.ts",
+      "sha256": "e71b737b15f94c00fb77c8cdae23261263d6074e776f315cb70a0d2267adfd1b"
+    },
+    {
+      "path": "packages/api-client/src/generated/supplier-tender-controller/supplier-tender-controller.ts",
+      "sha256": "a0e87a53f84aa1ee5ab396d4859421a2674d037b84550211eca778a25588441c"
+    },
+    {
+      "path": "packages/api-client/src/generated/supplier-workspace-controller/supplier-workspace-controller.ts",
+      "sha256": "7098dfd431da4f68f59233c4ed1abdf7788bedd699b0d86d747fc0a965be3e72"
+    },
+    {
+      "path": "packages/api-client/src/generated/unified-workflow-controller/unified-workflow-controller.ts",
+      "sha256": "7f629ea8c3047e214012506052e04459206a8bb59ce675dd88ee8b68534df2c6"
+    },
+    {
+      "path": "packages/api-client/src/index.ts",
+      "sha256": "ad767170dd0d188b8966892c63c92f106a3a04850ff9ace0b804ae496e1e63cd"
+    },
+    {
+      "path": "packages/api-client/src/payment-ledger.ts",
+      "sha256": "117829252e0b83108d2c3bd167e82818014c9f2b72adf0793d36801b528739b4"
+    },
+    {
+      "path": "packages/api-client/src/payment-reviews.ts",
+      "sha256": "0ea71b3e6362468e976fedfec29ce194e775a06ee9190ec6b37b76886c261335"
+    },
+    {
+      "path": "packages/api-client/src/session-permissions.ts",
+      "sha256": "b7a8bcb1f48316349eb75e3eb09c9bee67470a239b5baab444fb02e67a413294"
+    },
+    {
+      "path": "packages/api-client/src/workflow-runtime.ts",
+      "sha256": "29eaae8ee62f9113216bfadc18cb9fe936e851619b1d53853675af3daf2c9152"
+    },
+    {
+      "path": "packages/shared/src/navigation-permissions.test.ts",
+      "sha256": "eb71b5ddf5cc875ebf33c7a7084850af878f4f34aad21ea9fe852ffb7e9ded73"
+    },
+    {
+      "path": "packages/shared/src/navigation.ts",
+      "sha256": "bd26137935a7727ce78f4b63d6fd006546efe387d0aa580eb2dba998a0a747c5"
+    },
+    {
+      "path": "scripts/check-integration-results.py",
+      "sha256": "721fa6688f067b221d91b0d7f4e5f4e11bfeb934d67d55bcde2b539163ddbdd0"
+    },
+    {
+      "path": "scripts/data-audit-checks.mjs",
+      "sha256": "4f390ee874407094a29e27abec972900007df0216949abdc7bf0ec338bcb9d51"
+    },
+    {
+      "path": "scripts/data-audit-checks.test.mjs",
+      "sha256": "f34c2863be1bdbfec621bf1120f9139a65518091246458d0a4dd696273130610"
+    },
+    {
+      "path": "scripts/data-audit.mjs",
+      "sha256": "0dd8de15c70cc12b13cf8b2522eff7a1ca63de543f70fff0a2cb4e02be058c30"
+    },
+    {
+      "path": "scripts/e2e-procurement-loop.sh",
+      "sha256": "cd705028810c49847bfe447fc771c7463b0d6dfc041dae5e17225c3a8905aef3"
+    },
+    {
+      "path": "scripts/procurement-loop-acceptance.mjs",
+      "sha256": "688b6dd3430ff9cf11a1b9e7be3b419a43646ead118f98d8c576dc435110abf6"
+    }
+  ],
+  "excludedFileCount": 572,
+  "excludedGroups": {
+    ".codex-build": 456,
+    ".tmp": 45,
+    "artifacts": 44,
+    "assets": 2,
+    "output": 7,
+    "outputs": 2,
+    "scripts": 16
+  }
+}

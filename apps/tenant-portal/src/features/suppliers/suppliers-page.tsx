@@ -1,4 +1,5 @@
 import { useEffect, useState, type ElementType } from 'react';
+import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
 import { BadgeCheck, Boxes, Gauge, Mail, Search, ShieldCheck } from 'lucide-react';
 import { useBuyerSupplierList } from '@24bid/api-client';
 import { cn } from '@24bid/ui';
@@ -25,9 +26,11 @@ interface SubItem {
 
 // SRM 模块工作台:左侧竖向二级菜单(粘性)+ 右侧子页;360 详情钻取替换内容区。
 export function SuppliersPage() {
+  const { can } = useBuyerPermissions();
   const [sub, setSub] = useState<SubId>('list');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [registering, setRegistering] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   const query = useBuyerSupplierList();
   const all = query.data?.data ?? [];
@@ -39,7 +42,7 @@ export function SuppliersPage() {
   }, [all, selectedId]);
 
   // 供应商登记独立页(详细建档)。
-  if (registering) {
+  if (registering && can('buyer:supplier:manage')) {
     return <SupplierRegisterPage onBack={() => setRegistering(false)} />;
   }
 
@@ -47,7 +50,10 @@ export function SuppliersPage() {
   if (selectedId) {
     const fresh = all.find((s) => s.id === selectedId);
     if (fresh) {
-      return <SupplierDetailPage supplier={fresh} onBack={() => setSelectedId(null)} />;
+      if (editing && can('buyer:supplier:manage')) {
+        return <SupplierRegisterPage key={fresh.id} supplier={fresh} onBack={() => setEditing(false)} />;
+      }
+      return <SupplierDetailPage supplier={fresh} onEdit={() => setEditing(true)} onBack={() => { setEditing(false); setSelectedId(null); }} />;
     }
   }
 
@@ -66,7 +72,7 @@ export function SuppliersPage() {
       {/* 图标式二级菜单:窄栏仅占左侧一列图标宽度,悬停展开名称与说明,内容区保持原样式 */}
       <aside className="relative z-30 mb-4 lg:mb-0 lg:self-start lg:sticky lg:top-4">
         <nav className="flex gap-1 rounded-lg border border-slate-200 bg-white p-1.5 shadow-sm shadow-slate-200/50 lg:flex-col">
-          {items.map((item) => {
+          {items.filter((item) => !['invitation', 'sourcing'].includes(item.id) || can('buyer:supplier:manage')).map((item) => {
             const isActive = sub === item.id;
             return (
               <button
@@ -104,8 +110,8 @@ export function SuppliersPage() {
         {sub === 'admission' && <SupplierAdmissionQueue onOpen={setSelectedId} />}
         {sub === 'performance' && <SupplierPerformanceBoard onOpen={setSelectedId} />}
         {sub === 'qualifications' && <SupplierQualificationsBoard onOpen={setSelectedId} />}
-        {sub === 'sourcing' && <SupplierSourcingView />}
-        {sub === 'invitation' && <SupplierInvitationsView />}
+        {sub === 'sourcing' && can('buyer:supplier:manage') && <SupplierSourcingView />}
+        {sub === 'invitation' && can('buyer:supplier:manage') && <SupplierInvitationsView />}
       </div>
     </div>
   );

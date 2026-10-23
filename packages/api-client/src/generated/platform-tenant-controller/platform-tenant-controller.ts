@@ -582,7 +582,3 @@ export function usePlatformTenantPlanChanges<TData = Awaited<ReturnType<typeof p
 
   return query;
 }
-
-
-
-

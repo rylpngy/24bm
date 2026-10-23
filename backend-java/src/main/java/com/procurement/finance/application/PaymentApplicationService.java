@@ -36,6 +36,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PaymentApplicationService {
+  private final FinanceAccessService financeAccess;
+  private final PaymentAuthorizationService paymentAuthorization;
   private final InvoiceMapper invoiceMapper;
   private final InvoiceReconciliationMapper invoiceReconciliationMapper;
   private final ThreeWayMatchMapper threeWayMatchMapper;
@@ -59,7 +61,11 @@ public class PaymentApplicationService {
       TenantFeatureApplicationService tenantFeatureApplicationService,
       NotificationApplicationService notificationApplicationService,
       InvoicePaymentStatusTransition invoicePaymentStatusTransition,
-      InvoiceLineItemMapper invoiceLineItemMapper) {
+      InvoiceLineItemMapper invoiceLineItemMapper,
+      FinanceAccessService financeAccess,
+      PaymentAuthorizationService paymentAuthorization) {
+    this.financeAccess = financeAccess;
+    this.paymentAuthorization = paymentAuthorization;
     this.invoiceMapper = invoiceMapper;
     this.invoiceReconciliationMapper = invoiceReconciliationMapper;
     this.threeWayMatchMapper = threeWayMatchMapper;
@@ -75,24 +81,29 @@ public class PaymentApplicationService {
 
   public List<InvoiceResponse> listCurrentTenantInvoices() {
     String tenantId = TenantAccessGuard.requireTenantId("payment APIs");
-    return invoiceMapper.listByTenant(tenantId).stream()
+    // The workspace aggregates multiple modules; unavailable finance data stays empty.
+    if (!financeAccess.canRead()) return List.of();
+    var scope = financeAccess.readScope();
+    return invoiceMapper.listVisible(tenantId, null, null, null, scope).stream()
         .map(this::toResponse)
         .toList();
   }
 
   public List<InvoiceResponse> listCurrentTenantInvoices(String paymentStatus, String supplierId, String orderId) {
     String tenantId = TenantAccessGuard.requireTenantId("payment APIs");
-    return invoiceMapper.listByTenantFiltered(
+    var scope = financeAccess.readScope();
+    return invoiceMapper.listVisible(
             tenantId,
             blankToNull(paymentStatus),
             blankToNull(supplierId),
-            blankToNull(orderId))
+            blankToNull(orderId), scope)
         .stream()
         .map(this::toResponse)
         .toList();
   }
 
   public List<AuditLogResponse> listCurrentTenantPaymentAuditLogs(String invoiceId) {
+    financeAccess.requireInvoice(invoiceId, "buyer:invoice:read");
     return auditLogApplicationService.listCurrentTenantTargetActions(
         AuditTargetType.INVOICE,
         invoiceId,
@@ -105,11 +116,12 @@ public class PaymentApplicationService {
       String supplierId,
       String orderId) {
     String tenantId = TenantAccessGuard.requireTenantId("payment APIs");
-    return invoiceReconciliationMapper.listByTenantFiltered(
+    var scope = financeAccess.readScope();
+    return invoiceReconciliationMapper.listVisible(
             tenantId,
             blankToNull(stage),
             blankToNull(supplierId),
-            blankToNull(orderId))
+            blankToNull(orderId), scope)
         .stream()
         .map(this::toReconciliationResponse)
         .toList();
@@ -117,7 +129,7 @@ public class PaymentApplicationService {
 
   @Transactional
   public InvoiceResponse register(String invoiceId, RegisterPaymentRequest request) {
-    return applyPaymentStatus(invoiceId, request.paymentStatus());
+    return applyPaymentStatus(invoiceId, request.paymentStatus(), request.releaseEvidenceNo(), request.releaseRemark());
   }
 
   @Transactional
@@ -126,7 +138,12 @@ public class PaymentApplicationService {
   }
 
   private InvoiceResponse applyPaymentStatus(String invoiceId, String paymentStatus) {
+    return applyPaymentStatus(invoiceId, paymentStatus, null, null);
+  }
+
+  private InvoiceResponse applyPaymentStatus(String invoiceId, String paymentStatus, String evidence, String remark) {
     String tenantId = TenantAccessGuard.requireTenantId("payment APIs");
+    financeAccess.requireInvoice(invoiceId, "buyer:payment:register");
     tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
     Invoice invoice = invoiceMapper.findByTenantAndId(tenantId, invoiceId);
     if (invoice == null) {
@@ -136,6 +153,36 @@ public class PaymentApplicationService {
     invoicePaymentStatusTransition.requireTransition(invoice.paymentStatus(), paymentStatus, invoiceId);
     requireInvoiceAmountMatchesOrder(tenantId, invoice);
     requireSupplierPayable(tenantId, invoice);
+    var approvedRequest = paymentAuthorization.requireReady(invoice, paymentStatus);
+
+    InvoiceResponse response = writePaymentStatus(invoice, paymentStatus);
+    paymentAuthorization.recordPayment(invoice, approvedRequest, evidence, remark);
+    return response;
+  }
+
+  public void validateAmountPayment(Invoice invoice) {
+    financeAccess.requireInvoice(invoice.id(), "buyer:payment:register");
+    requireFinanceEnabled(invoice.tenantId());
+    requireInvoiceAmountMatchesOrder(invoice.tenantId(), invoice);
+    requireSupplierPayable(invoice.tenantId(), invoice);
+  }
+
+  public void requireFinanceEnabled(String tenantId) {
+    tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
+  }
+
+  @Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)
+  public InvoiceResponse syncAmountPayment(Invoice invoice, java.math.BigDecimal balance, boolean reversal) {
+    return writePaymentStatus(invoice, PaymentAuthorizationService.status(balance, invoice.amount()), reversal);
+  }
+
+  private InvoiceResponse writePaymentStatus(Invoice invoice, String paymentStatus) {
+    return writePaymentStatus(invoice, paymentStatus, false);
+  }
+
+  private InvoiceResponse writePaymentStatus(Invoice invoice, String paymentStatus, boolean reversal) {
+    String tenantId = invoice.tenantId();
+    String invoiceId = invoice.id();
 
     int updated = invoiceMapper.updatePaymentStatus(
         tenantId,
@@ -145,7 +192,7 @@ public class PaymentApplicationService {
     if (updated == 0) {
       throw new IllegalStateException("Invoice status changed before payment could be recorded: " + invoiceId);
     }
-    auditLogApplicationService.recordTenantAction(
+    if (!reversal) auditLogApplicationService.recordTenantAction(
         InvoicePaymentStatus.PAID.equals(paymentStatus)
             ? InvoiceAuditAction.PAID
             : InvoiceAuditAction.PARTIAL_PAID,
@@ -154,10 +201,10 @@ public class PaymentApplicationService {
     notificationApplicationService.notifyActiveSupplierUsers(
         tenantId,
         invoice.supplierId(),
-        InvoicePaymentStatus.PAID.equals(paymentStatus)
+        reversal ? "付款登记已冲销" : InvoicePaymentStatus.PAID.equals(paymentStatus)
             ? NotificationTitle.INVOICE_PAID
             : NotificationTitle.INVOICE_PARTIAL_PAID,
-        "采购方已登记发票 " + invoice.invoiceNo() + " 的付款状态：" + paymentStatus + "。");
+        (reversal ? "采购方已冲销发票 " : "采购方已登记发票 ") + invoice.invoiceNo() + " 的付款状态：" + paymentStatus + "。");
     InvoiceResponse response = toResponse(invoiceMapper.findByTenantAndId(tenantId, invoiceId));
     invoiceReconciliationMapper.updateStageByInvoice(
         tenantId,

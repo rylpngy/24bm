@@ -1,6 +1,7 @@
 package com.procurement.buyer.infrastructure;
 
 import com.procurement.buyer.domain.DepartmentBudget;
+import com.procurement.identity.domain.DataScope;
 import java.math.BigDecimal;
 import java.util.List;
 import org.apache.ibatis.annotations.Insert;
@@ -30,18 +31,38 @@ public interface DepartmentBudgetMapper {
              coalesce((select sum(m.amount) from contract_payment_milestones m
                        join contracts c on c.id = m.contract_id and c.tenant_id = m.tenant_id
                        join purchase_orders po on po.id = c.related_order_id and po.tenant_id = c.tenant_id
-                       join rfq_demands rd on rd.rfq_id = po.rfq_id and rd.tenant_id = po.tenant_id
-                       join purchase_demands pd on pd.id = rd.demand_id and pd.tenant_id = rd.tenant_id
                        where m.tenant_id = b.tenant_id and m.status = '已付'
-                         and pd.department_id = b.department_id
-                         and to_char(pd.created_at, 'YYYY') = b.period), 0)
+                         and exists (select 1 from rfq_demands rd
+                           join purchase_demands pd on pd.id = rd.demand_id and pd.tenant_id = rd.tenant_id
+                           where rd.rfq_id = po.rfq_id and rd.tenant_id = po.tenant_id
+                             and pd.department_id = b.department_id and to_char(pd.created_at, 'YYYY') = b.period)
+                         and not exists (select 1 from rfq_demands rd
+                           left join purchase_demands pd on pd.id = rd.demand_id and pd.tenant_id = rd.tenant_id
+                           where rd.rfq_id = po.rfq_id and rd.tenant_id = po.tenant_id
+                             and (pd.department_id is null or pd.department_id != b.department_id
+                               or to_char(pd.created_at, 'YYYY') != b.period))), 0)
                as disbursed
       from department_budgets b
-      left join departments d on d.id = b.department_id
+      join departments d on d.id = b.department_id and d.tenant_id = b.tenant_id
       """;
 
-  @Select(BUDGET_SELECT + " where b.tenant_id = #{tenantId} order by b.period desc, b.department_id")
-  List<DepartmentBudget> listByTenant(@Param("tenantId") String tenantId);
+  @Select("<script>" + BUDGET_SELECT + """
+       where b.tenant_id = #{tenantId}
+       <if test="scope.restricted">
+         <choose>
+           <when test="scope.requesterId == null and scope.departmentIds != null and !scope.departmentIds.isEmpty()">
+             and b.department_id in
+             <foreach collection="scope.departmentIds" item="dept" open="(" separator="," close=")">#{dept}</foreach>
+           </when>
+           <otherwise>and false</otherwise>
+         </choose>
+       </if>
+       order by b.period desc, b.department_id</script>
+      """)
+  List<DepartmentBudget> listByTenant(@Param("tenantId") String tenantId, @Param("scope") DataScope scope);
+
+  @Select("select exists(select 1 from departments where tenant_id = #{tenantId} and id = #{departmentId} and status = 'active')")
+  boolean activeDepartmentExists(@Param("tenantId") String tenantId, @Param("departmentId") String departmentId);
 
   @Select(BUDGET_SELECT + " where b.tenant_id = #{tenantId} and b.id = #{id}")
   DepartmentBudget findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);

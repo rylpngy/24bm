@@ -38,6 +38,15 @@ public interface ThreeWayMatchMapper {
       @Param("orderId") String orderId,
       @Param("invoiceId") String invoiceId);
 
+  default List<ThreeWayMatch> listByTenantFiltered(
+      @Param("tenantId") String tenantId,
+      @Param("matchStatus") String matchStatus,
+      @Param("supplierId") String supplierId,
+      @Param("orderId") String orderId,
+      @Param("invoiceId") String invoiceId) {
+    return listVisible(tenantId, matchStatus, supplierId, orderId, invoiceId, com.procurement.identity.domain.DataScope.unrestricted());
+  }
+
   @Select("""
       <script>
       select id, tenant_id, invoice_id, supplier_id, order_id, order_amount, receipt_status,
@@ -57,15 +66,19 @@ public interface ThreeWayMatchMapper {
         <if test="invoiceId != null and invoiceId != ''">
         and invoice_id = #{invoiceId}
         </if>
+      and order_id in (
+      """ + FinanceScopeSql.ORDERS + """
+      )
       order by updated_at desc, created_at desc
       </script>
       """)
-  List<ThreeWayMatch> listByTenantFiltered(
+  List<ThreeWayMatch> listVisible(
       @Param("tenantId") String tenantId,
       @Param("matchStatus") String matchStatus,
       @Param("supplierId") String supplierId,
       @Param("orderId") String orderId,
-      @Param("invoiceId") String invoiceId);
+      @Param("invoiceId") String invoiceId,
+      @Param("scope") com.procurement.identity.domain.DataScope scope);
 
   @Select("""
       select id, tenant_id, invoice_id, supplier_id, order_id, order_amount, receipt_status,

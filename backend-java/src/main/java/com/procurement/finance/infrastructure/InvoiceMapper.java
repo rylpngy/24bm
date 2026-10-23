@@ -13,12 +13,27 @@ import org.apache.ibatis.annotations.Update;
 public interface InvoiceMapper {
 
   @Select("""
+      select id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status, reconciliation_note,
+             created_at, updated_at, invoice_code, invoice_date, tax_rate
+      from invoices where tenant_id=#{tenantId} and id=#{id} for update
+      """)
+  Invoice lockByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
+
+  @Select("""
       select id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status, reconciliation_note, created_at, updated_at, invoice_code, invoice_date, tax_rate
       from invoices
       where tenant_id = #{tenantId}
       order by created_at desc
       """)
   List<Invoice> listByTenant(@Param("tenantId") String tenantId);
+
+  default List<Invoice> listByTenantFiltered(
+      @Param("tenantId") String tenantId,
+      @Param("paymentStatus") String paymentStatus,
+      @Param("supplierId") String supplierId,
+      @Param("orderId") String orderId) {
+    return listVisible(tenantId, paymentStatus, supplierId, orderId, com.procurement.identity.domain.DataScope.unrestricted());
+  }
 
   @Select("""
       <script>
@@ -34,14 +49,18 @@ public interface InvoiceMapper {
         <if test="orderId != null and orderId != ''">
         and order_id = #{orderId}
         </if>
+      and order_id in (
+      """ + FinanceScopeSql.ORDERS + """
+      )
       order by created_at desc
       </script>
       """)
-  List<Invoice> listByTenantFiltered(
+  List<Invoice> listVisible(
       @Param("tenantId") String tenantId,
       @Param("paymentStatus") String paymentStatus,
       @Param("supplierId") String supplierId,
-      @Param("orderId") String orderId);
+      @Param("orderId") String orderId,
+      @Param("scope") com.procurement.identity.domain.DataScope scope);
 
   @Select("""
       select id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status, reconciliation_note, created_at, updated_at, invoice_code, invoice_date, tax_rate

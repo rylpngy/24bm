@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { FeedbackNotice } from '@24bid/ui';
+import { financeErrorMessage } from './finance-feedback';
 import {
   useBuyerFinanceActionCreateVarianceFromMatchLine,
   useBuyerFinanceActionThreeWayMatchLines,
@@ -45,6 +47,9 @@ export function InvoiceLineMatchPanel({ invoiceId }: { invoiceId: string }) {
   if (query.isLoading) {
     return <p className="mt-2 px-1 text-xs font-bold text-slate-400">加载行级对账…</p>;
   }
+  if (query.isError) {
+    return <FeedbackNotice tone="error" message={financeErrorMessage(query.error, '行级对账加载失败，请刷新重试。')} />;
+  }
   if (lines.length === 0) {
     return (
       <p className="mt-2 px-1 text-xs font-bold text-slate-400">
@@ -55,6 +60,7 @@ export function InvoiceLineMatchPanel({ invoiceId }: { invoiceId: string }) {
 
   return (
     <div className="mt-2 overflow-x-auto rounded-lg border border-slate-200 bg-white">
+      {createVariance.isError && <FeedbackNotice tone="error" message={financeErrorMessage(createVariance.error)} />}
       <table className="w-full min-w-[640px] text-left text-xs">
         <thead className="bg-slate-50 text-[11px] font-black text-slate-400">
           <tr>

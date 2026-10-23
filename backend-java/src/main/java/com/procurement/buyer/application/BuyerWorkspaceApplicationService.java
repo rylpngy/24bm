@@ -28,6 +28,8 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class BuyerWorkspaceApplicationService {
+  private final com.procurement.identity.application.PermissionService permissions;
+  private final com.procurement.audit.application.AuditReadAccess auditAccess;
   private static final int AUDIT_LOG_LIMIT = 50;
   private static final int NOTIFICATION_LIMIT = 50;
 
@@ -45,6 +47,8 @@ public class BuyerWorkspaceApplicationService {
   private final BuyerTodoSummaryAssembler buyerTodoSummaryAssembler;
 
   public BuyerWorkspaceApplicationService(
+      com.procurement.identity.application.PermissionService permissions,
+      com.procurement.audit.application.AuditReadAccess auditAccess,
       BuyerSupplierApplicationService buyerSupplierApplicationService,
       MaterialApplicationService materialApplicationService,
       BuyerUserApplicationService buyerUserApplicationService,
@@ -57,6 +61,8 @@ public class BuyerWorkspaceApplicationService {
       AuditLogApplicationService auditLogApplicationService,
       NotificationApplicationService notificationApplicationService,
       BuyerTodoSummaryAssembler buyerTodoSummaryAssembler) {
+    this.permissions = permissions;
+    this.auditAccess = auditAccess;
     this.buyerSupplierApplicationService = buyerSupplierApplicationService;
     this.materialApplicationService = materialApplicationService;
     this.buyerUserApplicationService = buyerUserApplicationService;
@@ -72,9 +78,11 @@ public class BuyerWorkspaceApplicationService {
   }
 
   public BuyerWorkspaceResponse load() {
-    List<BuyerSupplierResponse> suppliers = buyerSupplierApplicationService.listCurrentTenantSuppliers();
+    List<BuyerSupplierResponse> suppliers = permissions.currentUserHas("buyer:supplier:read")
+        ? buyerSupplierApplicationService.listCurrentTenantSuppliers() : List.of();
     List<MaterialResponse> materials = materialApplicationService.listCurrentTenantMaterials();
-    List<BuyerUserResponse> users = buyerUserApplicationService.listCurrentTenantUsers();
+    List<BuyerUserResponse> users = permissions.currentUserHas("buyer:role:manage")
+        ? buyerUserApplicationService.listCurrentTenantUsers() : List.of();
     List<PurchaseDemandResponse> demands = purchaseDemandApplicationService.listCurrentTenantDemands();
     List<RfqResponse> rfqs = rfqApplicationService.listCurrentTenantRfqs();
     List<PurchaseOrderResponse> orders = purchaseOrderApplicationService.listCurrentTenantOrders();
@@ -84,7 +92,8 @@ public class BuyerWorkspaceApplicationService {
     List<PendingApprovalTaskResponse> recentApprovals = approvalInboxApplicationService.listRecentReviewed();
     List<NotificationResponse> notifications =
         notificationApplicationService.listCurrentUserNotifications(NOTIFICATION_LIMIT);
-    List<AuditLogResponse> auditLogs = auditLogApplicationService.listCurrentTenantAuditLogs(AUDIT_LOG_LIMIT);
+    List<AuditLogResponse> auditLogs = auditAccess.allowed()
+        ? auditLogApplicationService.listCurrentTenantAuditLogs(AUDIT_LOG_LIMIT) : List.of();
 
     return new BuyerWorkspaceResponse(
         buyerTodoSummaryAssembler.summarize(rfqs, orders, invoices, pendingApprovals),

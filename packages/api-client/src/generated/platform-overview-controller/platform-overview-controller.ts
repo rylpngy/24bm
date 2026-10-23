@@ -200,7 +200,3 @@ export function usePlatformOverviewBusinessMetrics<TData = Awaited<ReturnType<ty
 
   return query;
 }
-
-
-
-
