@@ -6,6 +6,8 @@
 
 ## 当前目标
 
+SRM交付已提交并推送至 `codex/srm-lifecycle-delivery`，功能提交 `c2f8b988`，草稿PR：https://github.com/rylpngy/24bid/pull/108 。后续先检查CI与审查，确认后再合并和安排原系统升级；目前未合并、原5173和原数据不变。客户文档及本机备份仍未提交，继续保留。
+
 冻结质量整改1至16轮，完成代码审查和可复现交付，不继续无限扩张整改范围。先读 `docs/quality-hardening-release.md`，详细历轮证据见 `docs/quality-hardening-2026-10-22.md`。
 
 ## 关键事实

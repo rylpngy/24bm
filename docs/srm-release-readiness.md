@@ -2,6 +2,8 @@
 
 更新日期：2026-10-23。本文件汇总九轮SRM增量，逐轮证据见 `srm-delivery.md`。
 
+交付分支：`codex/srm-lifecycle-delivery`；功能提交：`c2f8b988`；草稿PR：https://github.com/rylpngy/24bid/pull/108 。CI结果尚未确认，不自动合并或部署。
+
 ## 本批交付范围
 
 | 模块 | 已实现及验证 | 边界 |
