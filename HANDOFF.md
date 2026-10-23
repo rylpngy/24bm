@@ -1,5 +1,7 @@
 # 24Bid 当前交付接手说明
 
+最新状态（2026-10-23）：当前工作分支 `codex/srm-phase-one-acceptance`，基于PR111的90561d5a。PR111已通过CI及ready检查，具体SHA合并确认已向用户发出，尚无确认结果；不得用直接API绕过pr_land工具。原服务仍PR110，未替换数据。本轮修复连续审批待办刷新竞态，185前端测试、采购方构建和隔离SRM业务回归通过；修改在本分支单独交付，尚未发布。验收及后续范围以 `docs/srm-phase-one-acceptance.md` 为准，下文均为历史过程记录。
+
 更新：2026-10-23。当前交付分支 `codex/srm-unsettled-business`，从已合并PR109的 `origin/main` 创建，本机工作区 `/Users/epl/.codex/worktrees/6166/24Bid`。
 
 发布收尾更新：PR https://github.com/rylpngy/24bid/pull/107 已合并，main合并提交 `3829fa1d`。原系统本地服务已恢复，保留原有数据；这不代表已发布到客户生产环境。本工作区在该版基础上开始SRM增量，尚未发布的改动以git状态为准。
