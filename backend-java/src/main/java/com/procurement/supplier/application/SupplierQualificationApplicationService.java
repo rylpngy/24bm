@@ -26,14 +26,17 @@ public class SupplierQualificationApplicationService {
   private final SupplierQualificationMapper supplierQualificationMapper;
   private final SupplierQualificationStatusTransition supplierQualificationStatusTransition;
   private final ObjectStorageService objectStorageService;
+  private final QualificationNotificationService notifications;
 
   public SupplierQualificationApplicationService(
       SupplierQualificationMapper supplierQualificationMapper,
       SupplierQualificationStatusTransition supplierQualificationStatusTransition,
-      ObjectStorageService objectStorageService) {
+      ObjectStorageService objectStorageService,
+      QualificationNotificationService notifications) {
     this.supplierQualificationMapper = supplierQualificationMapper;
     this.supplierQualificationStatusTransition = supplierQualificationStatusTransition;
     this.objectStorageService = objectStorageService;
+    this.notifications = notifications;
   }
 
   // ── E-1 证照自助上传 ─────────────────────────────────────
@@ -123,6 +126,7 @@ public class SupplierQualificationApplicationService {
         TenantAccessGuard.requireUserId("supplier qualification APIs"));
     supplierQualificationMapper.supersedeReviews(id);
     supplierQualificationMapper.enqueueReviews(supplierId, replacement.id(), id);
+    notifications.reviewCreated(supplierId, replacement.id());
     return replacement;
   }
 
@@ -158,6 +162,7 @@ public class SupplierQualificationApplicationService {
     if (supplierQualificationMapper.decideReview(tenantId, id, Boolean.TRUE.equals(request.approved()) ? "approved" : "rejected", request.comment().trim(), actor) != 1) {
       throw new IllegalStateException("该复核已办理或资质已更新，请刷新");
     }
+    notifications.reviewCompleted(tenantId, id);
   }
 
   private static void requireOwnKey(String storageKey, String supplierId) {

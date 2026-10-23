@@ -17,7 +17,10 @@ public class PermissionService {
   }
 
   public boolean currentUserHas(String required) {
-    String userId = TenantContext.userId();
+    return userHas(TenantContext.userId(), required);
+  }
+
+  public boolean userHas(String userId, String required) {
     if (userId == null) {
       return false;
     }

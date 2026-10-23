@@ -23008,6 +23008,9 @@
               "type": "object"
             }
           },
+          "formSchema": {
+            "type": "string"
+          },
           "businessSnapshot": {
             "type": "object",
             "additionalProperties": {

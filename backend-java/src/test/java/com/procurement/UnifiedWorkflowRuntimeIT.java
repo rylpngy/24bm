@@ -176,6 +176,14 @@ class UnifiedWorkflowRuntimeIT {
         tasks.getFirst().taskId(), new CompleteWorkflowTaskRequest("approve", "金额和业务说明已核验"));
 
     assertThat(history.status()).isEqualTo("approved");
+    assertThat(history.formSchema()).contains("申请说明");
+    processDefinitionApplicationService.updateProcess(created.id(), new UpdateProcessDefinitionRequest(
+        "新版采购需求审批", "修改字段标签", "draft",
+        formSchema().replace("申请说明", "新版申请说明"), flowSchema(), ApprovalBusinessType.PURCHASE_DEMAND));
+    processDefinitionApplicationService.publishProcess(created.id());
+    var historical = unifiedWorkflowApplicationService.getCurrentTenantHistory(history.workflowInstanceId());
+    assertThat(historical.definitionVersionId()).isEqualTo(published.activeVersionId());
+    assertThat(historical.formSchema()).isEqualTo(history.formSchema()).doesNotContain("新版申请说明");
     assertThat(history.events()).extracting(event -> event.action())
         .contains("created", "claimed", "approved");
     assertThat(history.events()).filteredOn(event -> "approved".equals(event.action()))

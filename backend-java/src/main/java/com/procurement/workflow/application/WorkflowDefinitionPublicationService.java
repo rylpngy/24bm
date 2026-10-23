@@ -76,6 +76,10 @@ public class WorkflowDefinitionPublicationService {
     return workflowDefinitionVersionMapper.listByTenantAndProcessDefinition(tenantId, processDefinitionId);
   }
 
+  public WorkflowDefinitionVersion findVersion(String tenantId, String versionId) {
+    return workflowDefinitionVersionMapper.findByTenantAndId(tenantId, versionId);
+  }
+
   public WorkflowDefinitionVersion findPublishedVersion(String tenantId, String businessType) {
     WorkflowBusinessTypeCatalog.requireSupported(businessType);
     return workflowDefinitionVersionMapper.findPublishedByTenantAndBusinessType(tenantId, businessType);
