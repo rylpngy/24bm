@@ -3848,6 +3848,66 @@
         }
       }
     },
+    "/api/v1/supplier/performance-tasks/{taskId}/response": {
+      "post": {
+        "tags": [
+          "supplier-performance-task-controller"
+        ],
+        "operationId": "SupplierPerformanceTask_respond",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Response"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePerformanceTaskResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/supplier/orders/{orderId}/invoices": {
       "post": {
         "tags": [
@@ -7262,6 +7322,318 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseBuyerSupplierResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/suppliers/{relationId}/performance-tasks": {
+      "get": {
+        "tags": [
+          "buyer-performance-task-controller"
+        ],
+        "operationId": "BuyerPerformanceTask_list",
+        "parameters": [
+          {
+            "name": "relationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListPerformanceTaskResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "buyer-performance-task-controller"
+        ],
+        "operationId": "BuyerPerformanceTask_create",
+        "parameters": [
+          {
+            "name": "relationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Create"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePerformanceTaskResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/suppliers/{relationId}/performance-tasks/{taskId}/review": {
+      "post": {
+        "tags": [
+          "buyer-performance-task-controller"
+        ],
+        "operationId": "BuyerPerformanceTask_review",
+        "parameters": [
+          {
+            "name": "relationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Review"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePerformanceTaskResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/suppliers/{relationId}/performance-tasks/{taskId}/request-remediation": {
+      "post": {
+        "tags": [
+          "buyer-performance-task-controller"
+        ],
+        "operationId": "BuyerPerformanceTask_remediation",
+        "parameters": [
+          {
+            "name": "relationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Remediation"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePerformanceTaskResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/suppliers/{relationId}/performance-tasks/{taskId}/evaluate": {
+      "post": {
+        "tags": [
+          "buyer-performance-task-controller"
+        ],
+        "operationId": "BuyerPerformanceTask_evaluate",
+        "parameters": [
+          {
+            "name": "relationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Evaluate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePerformanceTaskResponse"
                 }
               }
             }
@@ -13396,6 +13768,46 @@
         }
       }
     },
+    "/api/v1/supplier/performance-tasks": {
+      "get": {
+        "tags": [
+          "supplier-performance-task-controller"
+        ],
+        "operationId": "SupplierPerformanceTask_list",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListPerformanceTaskResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/supplier/orders": {
       "get": {
         "tags": [
@@ -15565,6 +15977,56 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseListSupplierQualificationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/suppliers/{relationId}/performance-assignees": {
+      "get": {
+        "tags": [
+          "buyer-performance-task-controller"
+        ],
+        "operationId": "BuyerPerformanceTask_assignees",
+        "parameters": [
+          {
+            "name": "relationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListAssignee"
                 }
               }
             }
@@ -22226,6 +22688,111 @@
           }
         }
       },
+      "Response": {
+        "required": [
+          "expectedVersion",
+          "response"
+        ],
+        "type": "object",
+        "properties": {
+          "response": {
+            "maxLength": 10000,
+            "minLength": 0,
+            "type": "string"
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ApiResponsePerformanceTaskResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PerformanceTaskResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "Event": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "actorName": {
+            "type": "string"
+          },
+          "comment": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PerformanceTaskResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "relationId": {
+            "type": "string"
+          },
+          "supplierName": {
+            "type": "string"
+          },
+          "buyerName": {
+            "type": "string"
+          },
+          "period": {
+            "type": "string"
+          },
+          "assigneeId": {
+            "type": "string"
+          },
+          "assigneeName": {
+            "type": "string"
+          },
+          "dueDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "status": {
+            "type": "string"
+          },
+          "evaluationId": {
+            "type": "string"
+          },
+          "totalScore": {
+            "type": "number"
+          },
+          "requirement": {
+            "type": "string"
+          },
+          "response": {
+            "type": "string"
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Event"
+            }
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "CreateInvoiceRequest": {
         "required": [
           "invoiceNo"
@@ -23805,6 +24372,95 @@
             "minimum": 0,
             "exclusiveMinimum": false,
             "type": "number"
+          }
+        }
+      },
+      "Create": {
+        "required": [
+          "assigneeId",
+          "dueDate",
+          "period"
+        ],
+        "type": "object",
+        "properties": {
+          "period": {
+            "type": "string"
+          },
+          "assigneeId": {
+            "type": "string"
+          },
+          "dueDate": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "Review": {
+        "required": [
+          "approved",
+          "comment",
+          "expectedVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "approved": {
+            "type": "boolean"
+          },
+          "comment": {
+            "maxLength": 10000,
+            "minLength": 0,
+            "type": "string"
+          },
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "Remediation": {
+        "required": [
+          "dueDate",
+          "requirement"
+        ],
+        "type": "object",
+        "properties": {
+          "requirement": {
+            "maxLength": 10000,
+            "minLength": 0,
+            "type": "string"
+          },
+          "dueDate": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "Evaluate": {
+        "required": [
+          "comment",
+          "deliveryScore",
+          "priceScore",
+          "qualityScore",
+          "serviceScore"
+        ],
+        "type": "object",
+        "properties": {
+          "qualityScore": {
+            "type": "number"
+          },
+          "deliveryScore": {
+            "type": "number"
+          },
+          "priceScore": {
+            "type": "number"
+          },
+          "serviceScore": {
+            "type": "number"
+          },
+          "comment": {
+            "maxLength": 10000,
+            "minLength": 0,
+            "type": "string"
           }
         }
       },
@@ -27028,6 +27684,23 @@
           }
         }
       },
+      "ApiResponseListPerformanceTaskResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PerformanceTaskResponse"
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
       "ApiResponseListPurchaseOrderResponse": {
         "type": "object",
         "properties": {
@@ -28770,6 +29443,34 @@
           "derivedDeliveryScore": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "ApiResponseListAssignee": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Assignee"
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "Assignee": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
           }
         }
       },

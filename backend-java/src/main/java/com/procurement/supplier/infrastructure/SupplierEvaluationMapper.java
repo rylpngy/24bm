@@ -7,9 +7,30 @@ import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Options;
 
 @Mapper
 public interface SupplierEvaluationMapper {
+
+  // Serialize task reservations and free-form evaluations for the same buyer/supplier relation.
+  @Select("select id from buyer_supplier_relations where tenant_id=#{tenantId} and id=#{relationId} for update")
+  @Options(flushCache = Options.FlushCachePolicy.TRUE)
+  String lockRelation(@Param("tenantId") String tenantId, @Param("relationId") String relationId);
+
+  @Select("""
+      select id from supplier_performance_tasks
+      where tenant_id=#{tenantId} and supplier_id=#{supplierId} and period=#{period}
+        and status='assigned'
+      """)
+  String assignedTaskId(@Param("tenantId") String tenantId, @Param("supplierId") String supplierId,
+      @Param("period") String period);
+
+  @Select("""
+      select count(*) from supplier_evaluations
+      where tenant_id=#{tenantId} and supplier_id=#{supplierId} and upper(btrim(period, #{whitespace}))=#{period}
+      """)
+  int countNormalizedPeriod(@Param("tenantId") String tenantId, @Param("supplierId") String supplierId,
+      @Param("period") String period, @Param("whitespace") String whitespace);
 
   @Insert("""
       insert into supplier_evaluations (
@@ -47,12 +68,4 @@ public interface SupplierEvaluationMapper {
   List<SupplierEvaluation> listBySupplier(
       @Param("tenantId") String tenantId, @Param("supplierId") String supplierId);
 
-  @Select("""
-      select count(*) from supplier_evaluations
-      where tenant_id = #{tenantId} and supplier_id = #{supplierId} and period = #{period}
-      """)
-  int countByPeriod(
-      @Param("tenantId") String tenantId,
-      @Param("supplierId") String supplierId,
-      @Param("period") String period);
 }

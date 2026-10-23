@@ -10,6 +10,7 @@ import com.procurement.supplier.api.SupplierEvaluationResponse;
 import com.procurement.supplier.domain.BuyerSupplierRelation;
 import com.procurement.supplier.domain.SupplierCooperationTier;
 import com.procurement.supplier.domain.SupplierEvaluation;
+import com.procurement.supplier.domain.SupplierEvaluationPeriod;
 import com.procurement.supplier.domain.SupplierFulfillmentMetrics;
 import com.procurement.supplier.domain.SupplierPerformanceScoring;
 import com.procurement.supplier.infrastructure.BuyerSupplierRelationMapper;
@@ -77,17 +78,48 @@ public class SupplierEvaluationApplicationService {
   @Transactional
   public SupplierEvaluationResponse createEvaluation(
       String relationId, CreateSupplierEvaluationRequest request) {
+    return createEvaluation(relationId, request, null);
+  }
+
+  // Only the assignment service calls this within its row-locked, authorized transaction.
+  SupplierEvaluationResponse createAssignedEvaluation(
+      String relationId, String taskId, CreateSupplierEvaluationRequest request) {
+    return createEvaluation(relationId, request, taskId);
+  }
+
+  void requireAvailableTaskPeriod(String relationId, String period) {
+    period = SupplierEvaluationPeriod.normalize(period);
+    String tenantId = TenantAccessGuard.requireTenantId("buyer supplier evaluation APIs");
+    BuyerSupplierRelation relation = requireRelation(tenantId, relationId);
+    evaluationMapper.lockRelation(tenantId, relationId);
+    if (evaluationMapper.countNormalizedPeriod(tenantId, relation.supplierId(), period,
+        SupplierEvaluationPeriod.STRIP_CHARACTERS) > 0) {
+      throw new IllegalStateException("该供应商本周期已有考核记录，不能创建考核任务");
+    }
+  }
+
+  private SupplierEvaluationResponse createEvaluation(
+      String relationId, CreateSupplierEvaluationRequest request, String taskId) {
+    String period = SupplierEvaluationPeriod.normalize(request.period());
     String tenantId = TenantAccessGuard.requireTenantId("buyer supplier evaluation APIs");
     String userId = TenantAccessGuard.requireUserId("buyer supplier evaluation APIs");
     BuyerSupplierRelation relation = requireRelation(tenantId, relationId);
+
+    evaluationMapper.lockRelation(tenantId, relationId);
+    String assignedTaskId = evaluationMapper.assignedTaskId(tenantId, relation.supplierId(), period);
+    if ((taskId == null && assignedTaskId != null)
+        || (taskId != null && !taskId.equals(assignedTaskId))) {
+      throw new IllegalStateException("该周期已有指定考核任务，请由任务负责人通过任务提交考核");
+    }
 
     SupplierPerformanceScoring.requireValidScore(request.qualityScore(), "质量");
     SupplierPerformanceScoring.requireValidScore(request.deliveryScore(), "交付");
     SupplierPerformanceScoring.requireValidScore(request.priceScore(), "价格");
     SupplierPerformanceScoring.requireValidScore(request.serviceScore(), "服务");
 
-    if (evaluationMapper.countByPeriod(tenantId, relation.supplierId(), request.period()) > 0) {
-      throw new IllegalStateException("该周期已存在考核单: " + request.period());
+    if (evaluationMapper.countNormalizedPeriod(tenantId, relation.supplierId(), period,
+        SupplierEvaluationPeriod.STRIP_CHARACTERS) > 0) {
+      throw new IllegalStateException("该周期已存在考核单: " + period);
     }
 
     BigDecimal total = SupplierPerformanceScoring.totalScore(
@@ -99,7 +131,7 @@ public class SupplierEvaluationApplicationService {
         id,
         tenantId,
         relation.supplierId(),
-        request.period(),
+        period,
         request.qualityScore(),
         request.deliveryScore(),
         request.priceScore(),
@@ -110,7 +142,7 @@ public class SupplierEvaluationApplicationService {
         userId);
 
     audit.recordCurrentTenantAction("supplier_evaluation.created", AuditTargetType.BUYER_SUPPLIER_RELATION,
-        relationId, "考核单=" + id + "，周期=" + request.period() + "，综合分=" + total + "，建议层级=" + suggestedTier);
+        relationId, "考核单=" + id + "，周期=" + period + "，综合分=" + total + "，建议层级=" + suggestedTier);
 
     return evaluationMapper.listBySupplier(tenantId, relation.supplierId()).stream()
         .filter(e -> e.id().equals(id))

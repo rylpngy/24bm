@@ -74,6 +74,7 @@ export const supplierAdminModules: AdminNavigationModule[] = [
   { id: 'reconciliations', label: '对账单', desc: '订单-发票对账与差异' },
   { id: 'profile', label: '企业档案', desc: '企业能力与资质信息' },
   { id: 'qualifications', label: '资质认证', desc: '证照档案与有效期' },
+  { id: 'performance-tasks', label: '整改反馈', desc: '' },
   { id: 'team', label: '员工管理', desc: '成员账号与启停' },
 ];
 
@@ -106,6 +107,7 @@ const portalModulePermissions: Record<string, Record<string, string>> = {
     orders: 'supplier:order:read', deliveries: 'supplier:delivery:read', shelf: 'supplier:mall:read',
     invoices: 'supplier:invoice:read', reconciliations: 'supplier:invoice:read',
     profile: 'supplier:profile:read', qualifications: 'supplier:qualification:read', team: 'supplier:user:read',
+    'performance-tasks': 'supplier:profile:read',
   },
 };
 
