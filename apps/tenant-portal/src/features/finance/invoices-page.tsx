@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, ArrowLeft, Banknote, ClipboardCheck, Info, Receipt, Scale } from 'lucide-react';
 import {
@@ -77,7 +77,7 @@ export function InvoicesPage() {
   const [subpage, setSubpage] = useState<'none' | 'variance' | 'batches' | 'reviews'>(() => new URLSearchParams(window.location.search).get('financeView') === 'reviews' ? 'reviews' : 'none');
   const [feedback, setFeedback] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(() => new URLSearchParams(window.location.search).get('recordId'));
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState('全部');
   const [page, setPage] = useState(1);
@@ -121,11 +121,6 @@ export function InvoicesPage() {
   const pageCount = Math.max(1, Math.ceil(invoices.length / PAGE_SIZE));
   const safePage = Math.min(page, pageCount);
   const pageItems = invoices.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
-
-  useEffect(() => {
-    const recordId = new URLSearchParams(window.location.search).get('recordId');
-    if (!selectedId && recordId && allInvoices.some((item) => item.id === recordId)) setSelectedId(recordId);
-  }, [allInvoices, selectedId]);
 
   const refresh = () =>
     queryClient.invalidateQueries({

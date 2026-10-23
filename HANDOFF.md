@@ -1,10 +1,14 @@
 # 24Bid 当前交付接手说明
 
-更新：2026-10-23。当前交付分支 `codex/srm-review-notifications`，从已合并PR108的 `origin/main` 创建，本机工作区 `/Users/epl/.codex/worktrees/6166/24Bid`。
+更新：2026-10-23。当前交付分支 `codex/srm-unsettled-business`，从已合并PR109的 `origin/main` 创建，本机工作区 `/Users/epl/.codex/worktrees/6166/24Bid`。
 
 发布收尾更新：PR https://github.com/rylpngy/24bid/pull/107 已合并，main合并提交 `3829fa1d`。原系统本地服务已恢复，保留原有数据；这不代表已发布到客户生产环境。本工作区在该版基础上开始SRM增量，尚未发布的改动以git状态为准。
 
 ## 当前目标
+
+当前交付增量：供应商退出被未结业务拦截后可查看订单/发票分页明细并打开详情；按订单/财务读取权限独立控制，支持重新核查。订单支持recordId直达，并修复发票详情返回后自动重开的缺陷。48文件179测试、采购方构建及5197桌面/移动浏览器验证通过，含订单/发票新窗口详情和返回。仅前端修改，无数据库迁移。当前批次准备PR，未部署；原5173仍为下述PR109固定版本，未修改原数据。下一步检查本批PR CI并安排备份后的固定构建发布，不使用验收库替换原库。下方其他“未提交/未合并”均为历史过程记录。
+
+最新部署状态（2026-10-23）：PR #109 三项CI全部通过，已合并为 `170ecc84e3df3212dec1144f5d724b9e7b74944f`。原系统本地四端5173/5174/5175/5176及8080已切换至 `/Users/epl/.codex/deployments/24bid-base/170ecc84e3df` 固定构建；144张表数据摘要零差异，5个附件未变化，4用户/2租户/6订单/3发票保留，四端浏览器验收通过。备份在 `/Users/epl/.codex/deployments/24bid-base/srm-backup-1792741804218`。提醒任务显式关闭，无验收数据导入、无真实审批配置修改。旧构建dea6389c保留。部署证据与回退方式见新构建目录RESTORATION.md；此段为合并后的本机记录，尚未另行提交，下方“未合并部署”为历史状态。
 
 交付更新：本批已提交功能提交 `a501956d` 并创建PR https://github.com/rylpngy/24bid/pull/109 ，尚未合并部署。2026-10-23本轮复跑前端174测试、采购方预览构建、Java743单测及QualificationNotificationIT/UnifiedWorkflowRuntimeIT通过；后续以GitHub最新提交CI结果为准。原系统服务及数据未修改。
 

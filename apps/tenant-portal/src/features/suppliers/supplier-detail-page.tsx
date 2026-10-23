@@ -427,8 +427,8 @@ function AdmissionActionBar({ supplier }: { supplier: BuyerSupplierResponse }) {
             onError: (e) => { setStatusTarget(null); setFeedback({ tone: 'error', message: (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? '状态调整失败，请刷新后重试。' }); },
           });
         }} />
+      <SupplierExitActions id={id} status={supplier.status} supplierId={supplier.supplierId} />
       <div className="sticky bottom-4 z-30 rounded-lg border border-slate-200 bg-white/95 px-5 py-4 shadow-lg shadow-slate-300/40 backdrop-blur">
-        <SupplierExitActions id={id} status={supplier.status} />
         {feedback && (
           <div className="mb-3">
             <FeedbackNotice tone={feedback.tone} message={feedback.message} />
