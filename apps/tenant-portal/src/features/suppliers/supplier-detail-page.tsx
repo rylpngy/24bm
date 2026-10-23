@@ -3,7 +3,6 @@ import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
-  Award,
   Banknote,
   Building2,
   CalendarDays,
@@ -40,6 +39,7 @@ import { SupplierAdmissionSubmitDialog } from './supplier-admission-submit-dialo
 import { WorkflowStatusPanel } from '../workflow/workflow-instance-panel';
 import { SupplierAdmissionReviewDialog } from './supplier-admission-review-dialog';
 import { SupplierExitActions } from './supplier-exit-actions';
+import { SupplierEvaluationPanel } from './supplier-evaluation-panel';
 
 type TabId = 'orders' | 'finance' | 'performance' | 'products' | 'qualifications';
 
@@ -208,7 +208,7 @@ export function SupplierDetailPage({
 
           {tab === 'orders' && <OrdersTab orders={orders} loading={ordersQuery.isLoading} />}
           {tab === 'finance' && <FinanceTab orders={orders} />}
-          {tab === 'performance' && <PerformanceTab supplier={supplier} score={score} />}
+          {id && <div hidden={tab !== 'performance'}><SupplierEvaluationPanel key={id} relationId={id} supplierId={supplierId} /></div>}
           {tab === 'products' && <ProductsTab supplier={supplier} />}
           {tab === 'qualifications' && id && (
             <SupplierQualificationsTab relationId={id} supplierId={supplier.supplierId} />
@@ -539,37 +539,6 @@ function HistoryOverview({
   );
 }
 
-function PerformanceTab({ supplier, score }: { supplier: BuyerSupplierResponse; score: number }) {
-  // 仅展示台账中的真实评分维度:综合评分与最近实测;分项维度待考核体系产生真实数据后展示。
-  const lastEvaluation = supplier.lastEvaluationScore;
-  return (
-    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-      <div>
-        <PanelTitle icon={Award} title="绩效评估(考核台账)" />
-        <p className="mt-1 text-sm font-bold text-slate-500">
-          数据来源:供应商绩效台账与最近实测考核;发起新考核请在「绩效考核」看板操作。
-        </p>
-      </div>
-
-      <div className="mt-6 grid gap-3 sm:grid-cols-3">
-        <MetricTile label="综合绩效评分" value={String(score)} strong />
-        <MetricTile label="最近实测评分" value={lastEvaluation != null ? String(lastEvaluation) : '—'} strong />
-        <MetricTile
-          label="评分等级"
-          value={gradeFromScore(score)}
-          strong
-        />
-      </div>
-      {lastEvaluation != null && (
-        <p className="mt-4 rounded-lg bg-slate-50 p-4 text-sm font-bold leading-6 text-slate-600">
-          最近实测 {lastEvaluation} 分,较综合评分{lastEvaluation >= score ? '持平或提升' : `低 ${Math.round((score - lastEvaluation) * 10) / 10} 分`};
-          综合评分由历史考核与履约自动评分联动更新。
-        </p>
-      )}
-    </section>
-  );
-}
-
 function OrdersTab({ orders, loading }: { orders: PurchaseOrderResponse[]; loading: boolean }) {
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
@@ -775,14 +744,6 @@ function buildTrend(orders: PurchaseOrderResponse[]): TrendPoint[] {
     .sort(([a], [b]) => a.localeCompare(b))
     .slice(-6)
     .map(([label, value]) => ({ label: label.slice(5) + '月', value }));
-}
-
-function gradeFromScore(score: number) {
-  if (score >= 95) return 'A+';
-  if (score >= 90) return 'A';
-  if (score >= 85) return 'B+';
-  if (score >= 80) return 'B';
-  return 'C';
 }
 
 function fallbackScore(supplier: BuyerSupplierResponse) {
