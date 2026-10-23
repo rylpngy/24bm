@@ -61,15 +61,16 @@ export function SupplierExitActions({ id, status, supplierId }: { id: string; st
         </ul>
         <p className="break-words text-sm font-bold">已核验发票剩余金额：{risk.remainingInvoiceAmount === null ? '待核对' : `¥${risk.remainingInvoiceAmount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</p>
         <p className="text-xs text-slate-500">不含未开票及待核验金额，不代表全部应付款。</p>
-        {risk.uninvoicedOrderCount > 0 && <p className="text-sm text-amber-800">未足额开票订单（含未开票及部分开票）：请采购及财务负责人在订单、发票模块逐笔核对开票覆盖情况；此处仅列核查数量。</p>}
-        {risk.paymentVerificationRequiredCount > 0 && <p className="text-sm text-amber-800">付款待核验：请财务负责人在发票及付款台账核对付款记录；此处仅列核查数量。</p>}
+        {risk.uninvoicedOrderCount > 0 && <p className="text-sm text-amber-800">未足额开票订单（含未开票及部分开票）：请按明细中的异常原因和处理岗位核对开票覆盖情况，处理后重新核查退出条件。</p>}
+        {risk.paymentVerificationRequiredCount > 0 && <p className="text-sm text-amber-800">付款待核验：请按明细中的异常原因由财务岗位核对付款记录，处理后重新核查退出条件。</p>}
         {risk.openAfterSalesCount > 0 && <p className="text-sm text-amber-800">未结售后：请在采购商城的售后处理页签核对处理进度。</p>}
         {risk.blocked && ![risk.unreceivedOrderCount, risk.unpaidInvoiceCount, risk.unarchivedContractCount, risk.openAfterSalesCount, risk.uninvoicedOrderCount, risk.paymentVerificationRequiredCount].some(Boolean)
           && <p role="alert" className="text-sm text-amber-800">服务端仍标记为不可退出，请联系业务负责人核查。</p>}
       </section>
-      {supplierId && isSupplierExitBlocked(risk) && <SupplierUnsettledBusiness key={supplierId} supplierId={supplierId}
+      {supplierId && isSupplierExitBlocked(risk) && <SupplierUnsettledBusiness key={`${id}:${supplierId}`} relationId={id} supplierId={supplierId}
         orderCount={risk.unreceivedOrderCount} invoiceCount={risk.unpaidInvoiceCount}
-        contractCount={risk.unarchivedContractCount} afterSalesCount={risk.openAfterSalesCount} />}
+        contractCount={risk.unarchivedContractCount} afterSalesCount={risk.openAfterSalesCount}
+        uninvoicedCount={risk.uninvoicedOrderCount} verificationCount={risk.paymentVerificationRequiredCount} />}
     </>}
     {status === '退出审批中' && <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
       <span>{tasks.isError ? '审批任务加载失败，请刷新重试。' : task ? '当前退出审批由您办理。' : '退出审批中，暂停新增订单。请展开审批信息查看办理进度。'}</span>

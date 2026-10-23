@@ -20,6 +20,7 @@ export * from './workflow-runtime';
 export * from './performance-tasks';
 export * from './supplier-team-roles';
 export * from './supplier-exit-risk';
+export * from './supplier-exit-items';
 export * from './performance-evidence';
 export * from './demand-queries';
 export * from './payment-ledger';

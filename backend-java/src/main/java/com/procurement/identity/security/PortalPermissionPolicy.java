@@ -51,6 +51,8 @@ public final class PortalPermissionPolicy {
       if (segments[0].equals("orders") && segments.length >= 3 && segments[2].equals("receipts")) module = "receipt";
       if (segments[0].equals("suppliers") && segments.length >= 3 && segments[2].equals("approval")) return "buyer:workflow:review";
       if (segments[0].equals("suppliers") && segments.length >= 3 && segments[2].equals("exit-risk")) return "buyer:supplier:manage";
+      if (segments[0].equals("suppliers") && segments.length == 3 && segments[2].equals("exit-items")
+          && (method.equals("GET") || method.equals("HEAD"))) return "buyer:supplier:read";
       if (segments[0].equals("suppliers") && segments.length >= 4 && segments[1].equals("qualification-reviews") && segments[3].equals("review")) return "buyer:workflow:review";
       return "buyer:" + module + (method.equals("GET") || method.equals("HEAD") ? ":read" : ":manage");
     }
