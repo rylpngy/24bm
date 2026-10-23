@@ -238,6 +238,7 @@ import org.springframework.test.web.servlet.MvcResult;
     SupplierAnnouncementController.class,
     BuyerSupplierController.class,
     com.procurement.supplier.api.SupplierExitController.class,
+    com.procurement.supplier.api.SupplierExitItemsController.class,
     BuyerSupplierDiscoveryController.class,
     BuyerSupplierInvitationController.class,
     SupplierEvaluationController.class,
@@ -430,6 +431,9 @@ class HttpSecurityContractTests {
   private com.procurement.supplier.application.SupplierExitApplicationService supplierExitApplicationService;
 
   @MockBean
+  private com.procurement.supplier.application.SupplierExitItemsService supplierExitItemsService;
+
+  @MockBean
   private com.procurement.supplier.application.SupplierDiscoveryApplicationService supplierDiscoveryApplicationService;
 
   @MockBean
@@ -572,6 +576,30 @@ class HttpSecurityContractTests {
 
   @MockBean
   private com.procurement.audit.application.AuditReadAccess auditReadAccess;
+
+  @Test
+  void exitItemsRequireBuyerPortalAndSupplierRead() throws Exception {
+    String supplierToken = loginAndExtractToken("""
+        {"account":"supplier","password":"demo123456","scope":"SUPPLIER","supplierId":"ent-supplier-sunrise"}
+        """);
+    String buyerToken = loginAndExtractToken("""
+        {"account":"buyer","password":"demo123456","scope":"BUYER","tenantId":"tenant-acme"}
+        """);
+    String path = "/api/v1/buyer/suppliers/r/exit-items";
+    mockMvc.perform(get(path).param("kind","uninvoiced")).andExpect(status().isForbidden());
+    mockMvc.perform(get(path).param("kind","uninvoiced").header("Authorization","Bearer " + supplierToken))
+        .andExpect(status().isForbidden());
+    when(portalPermissions.currentUserHas("buyer:supplier:read")).thenReturn(false);
+    mockMvc.perform(get(path).param("kind","uninvoiced").header("Authorization","Bearer " + buyerToken))
+        .andExpect(status().isForbidden());
+    org.mockito.Mockito.verifyNoInteractions(supplierExitItemsService);
+    when(portalPermissions.currentUserHas("buyer:supplier:read")).thenReturn(true);
+    when(supplierExitItemsService.list("r","uninvoiced",1,10)).thenReturn(
+        new com.procurement.supplier.api.SupplierExitItemsPage(List.of(),0,1,10));
+    mockMvc.perform(get(path).param("kind","uninvoiced").header("Authorization","Bearer " + buyerToken))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.success").value(true))
+        .andExpect(jsonPath("$.data.pageSize").value(10));
+  }
 
   @Test
   void performanceTaskRoutesEnforcePortalAndPermissionBoundaries() throws Exception {

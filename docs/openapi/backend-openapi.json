@@ -16622,6 +16622,84 @@
         }
       }
     },
+    "/api/v1/buyer/suppliers/{relationId}/exit-items": {
+      "get": {
+        "tags": [
+          "supplier-exit-items-controller"
+        ],
+        "operationId": "SupplierExitItems_list",
+        "parameters": [
+          {
+            "name": "relationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseSupplierExitItemsPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/suppliers/{relationId}/auto-score": {
       "get": {
         "tags": [
@@ -30227,6 +30305,103 @@
           },
           "unpaidInvoiceFaceAmount": {
             "type": "number"
+          },
+          "unarchivedContractCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "openAfterSalesCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "uninvoicedOrderCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "paymentVerificationRequiredCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "remainingInvoiceAmount": {
+            "type": "number"
+          },
+          "blocked": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ApiResponseSupplierExitItemsPage": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/SupplierExitItemsPage"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "SupplierExitItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "orderId": {
+            "type": "string"
+          },
+          "invoiceId": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "invoicedAmount": {
+            "type": "number"
+          },
+          "paidAmount": {
+            "type": "number"
+          },
+          "remainingAmount": {
+            "type": "number"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "handlerLabel": {
+            "type": "string"
+          }
+        }
+      },
+      "SupplierExitItemsPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SupplierExitItem"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },

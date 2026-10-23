@@ -13,17 +13,29 @@ import org.apache.ibatis.annotations.Update;
 public interface BuyerSupplierRelationMapper {
 
   @Select("select id from buyer_supplier_relations where tenant_id = #{tenantId} and id = #{id} for update")
+  @org.apache.ibatis.annotations.Options(flushCache = org.apache.ibatis.annotations.Options.FlushCachePolicy.TRUE)
   String lockRelation(@Param("tenantId") String tenantId, @Param("id") String id);
 
-  @Select("""
-      select
-        (select count(*) from purchase_orders where tenant_id = #{tenantId}
-          and supplier_id = #{supplierId} and status != '已收货') as unreceived_order_count,
-        (select count(*) from invoices where tenant_id = #{tenantId}
-          and supplier_id = #{supplierId} and payment_status != '已付款') as unpaid_invoice_count,
-        (select coalesce(sum(amount), 0) from invoices where tenant_id = #{tenantId}
-          and supplier_id = #{supplierId} and payment_status != '已付款') as unpaid_invoice_face_amount
+  @Select(SupplierExitRiskSql.CTE + """
+      , risks as (
+        select
+          (select count(*) from scoped_orders where status is distinct from '已收货') as unreceived_order_count,
+          count(*) filter (where payment_status <> '已付款' or verification or paid < amount) as unpaid_invoice_count,
+          coalesce(sum(amount) filter (where payment_status <> '已付款' or verification or paid < amount), 0) as unpaid_invoice_face_amount,
+          (select count(*) from scoped_contracts where archive_status is distinct from '已归档') as unarchived_contract_count,
+          (select count(*) from mall_after_sales where tenant_id = #{tenantId} and supplier_id = #{supplierId}
+            and (status is null or status not in ('已完成', '已拒绝'))) as open_after_sales_count,
+          (select count(*) from uninvoiced) as uninvoiced_order_count,
+          count(*) filter (where verification) as payment_verification_required_count,
+          case when count(*) filter (where verification) > 0 then null
+            else coalesce(sum(amount - paid), 0) end as remaining_invoice_amount
+        from checked
+      ) select *, (unreceived_order_count > 0 or unpaid_invoice_count > 0 or
+        unarchived_contract_count > 0 or open_after_sales_count > 0 or uninvoiced_order_count > 0 or
+        payment_verification_required_count > 0 or remaining_invoice_amount is null or
+        remaining_invoice_amount > 0) as blocked from risks
       """)
+  @org.apache.ibatis.annotations.Options(flushCache = org.apache.ibatis.annotations.Options.FlushCachePolicy.TRUE)
   com.procurement.supplier.api.SupplierExitRiskResponse exitRisk(
       @Param("tenantId") String tenantId, @Param("supplierId") String supplierId);
 
