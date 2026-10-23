@@ -6,6 +6,8 @@
 
 ## 当前目标
 
+最新增量：跨供应商到期台账已实现，SQL按采购租户查询、筛选和分页，显式权限校验；OpenAPI同步，无迁移。184前端测试、Java全量单测与QualificationLedgerIT、5197桌面/移动浏览器通过。仍在codex/srm-qualification-ledger分支，原5173固定PR110未变。与上一轮证照分类一并交付，下一步检查PR CI后再安排原库备份发布。
+
 当前开发分支为 `codex/srm-qualification-ledger`：资质管理直达证照页，当前/历史证照分类、有效期筛选及分页、供应商深链接返回修复已完成。49文件182测试与5197桌面/移动浏览器通过；尚未合并部署，5173保留PR110。后续跨供应商到期台账应做服务端权限过滤，不将单个供应商筛选描述为全局能力。详见docs/srm-delivery.md最新段。
 
 最新发布（2026-10-23）：PR #110 三项CI通过，已合并为 `cf51cce8bd36374f438fbc7a981b23df6aae69be`，原系统四端已更新至固定目录 `/Users/epl/.codex/deployments/24bid-base/cf51cce8bd36`。144张表摘要零差异、5附件不变；四端登录和5173未结业务桌面/移动页面通过。备份 `/Users/epl/.codex/deployments/24bid-base/srm-backup-1792744243009`，旧170ecc84构建保留回退。无迁移、无验收数据导入。下一步按SRM剩余业务缺口推进；本段以下未提交/未部署为历史记录。本机发布证据见固定目录RESTORATION.md，尚非客户生产部署。

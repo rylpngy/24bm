@@ -15732,6 +15732,85 @@
         }
       }
     },
+    "/api/v1/buyer/suppliers/qualification-ledger": {
+      "get": {
+        "tags": [
+          "qualification-ledger-controller"
+        ],
+        "operationId": "QualificationLedger_list",
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "all"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 8
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseQualificationLedgerPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/suppliers/discover": {
       "get": {
         "tags": [
@@ -28784,6 +28863,73 @@
             "type": "boolean"
           },
           "basis": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseQualificationLedgerPage": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/QualificationLedgerPage"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "QualificationLedgerPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QualificationLedgerRow"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "QualificationLedgerRow": {
+        "type": "object",
+        "properties": {
+          "relationId": {
+            "type": "string"
+          },
+          "supplierName": {
+            "type": "string"
+          },
+          "relationStatus": {
+            "type": "string"
+          },
+          "qualificationId": {
+            "type": "string"
+          },
+          "qualificationType": {
+            "type": "string"
+          },
+          "certificateNo": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date"
+          },
+          "expiryState": {
             "type": "string"
           }
         }
