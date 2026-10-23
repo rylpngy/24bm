@@ -78,4 +78,5 @@ export type { ConfirmDialogProps } from './components/confirm-dialog';
 export { FormErrorSummary } from './components/form-error-summary';
 export type { FormErrorSummaryProps } from './components/form-error-summary';
 export { SectionCard, ApprovalTimeline } from './components/section-card';
+export { EvidencePanel } from './components/evidence-panel';
 export type { ApprovalTimelineNode } from './components/section-card';

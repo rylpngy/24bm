@@ -1,5 +1,7 @@
 # 24Bid 当前交付接手说明
 
+最新开发（2026-10-23）：codex/srm-remediation-evidence基于PR113的5965fa2c新增整改佐证材料。供应商按轮次上传、提交后冻结、采购方仅看已提交轮次、双端认证下载及SHA256核验已实现。760项Java、9项集成、233项前端、七包类型与双端构建、真实HTTP/浏览器两轮材料闭环通过。V215仅应用隔离8095，5197/5198可验收；原5173/8080保持ec0cc1ed和原数据。PR113三项CI通过但仍待具体版本合并确认；本批独立提交、尚未发布。详见docs/superpowers/plans/2026-10-23-srm-remediation-evidence.md，下一步按依赖顺序交付PR113及本批，不清库、不替换原数据。
+
 最新开发（2026-10-23）：codex/srm-performance-notifications已完成绩效任务六类事件的权限过滤站内通知，采购方首页补通知分页/已读/刷新，供应商首页展示现有通知。758项Java单测、8项集成、230项前端、采购方构建及隔离两端HTTP/浏览器通过。原5173/8080仍固定ec0cc1ed，通知增量未合并发布，无数据库迁移。下一步本批PR/CI交付，再推进整改佐证附件；不能把隔离5197/5198与原服务混淆。详细边界见docs/superpowers/plans/2026-10-23-srm-performance-notifications.md。
 
 最新发布（2026-10-23）：用户确认PR112精确提交bbb381503a79d3f69ef6e27c88567008fdb7f77e后，已按merge合并为ec0cc1ed8a052c85ffe5f3b7f90dedceddc9b05c。原系统5173-5176与8080已更新至固定目录 `/Users/epl/.codex/deployments/24bid-base/ec0cc1ed8a05`。原库143张业务表原字段摘要无变化，迁移历史完整保留并仅新增V213/V214；5附件一致。四端真实登录、绩效任务入口及供应商整改反馈桌面/移动只读验收通过。备份为srm-backup-1792754274285；未导入验收库数据。发布证据及回退约束见固定目录RESTORATION.md。当前开发分支codex/srm-performance-notifications的通知代码尚未提交、未发布，须独立验收交付；下方原服务PR111等为历史状态。

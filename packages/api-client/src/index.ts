@@ -18,6 +18,7 @@ export { createAppQueryClient } from './query-client';
 
 export * from './workflow-runtime';
 export * from './performance-tasks';
+export * from './performance-evidence';
 export * from './demand-queries';
 export * from './payment-ledger';
 export * from './payment-reviews';

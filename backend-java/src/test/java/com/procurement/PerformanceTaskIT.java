@@ -36,6 +36,8 @@ class PerformanceTaskIT {
   @Autowired org.springframework.transaction.PlatformTransactionManager transactions;
   @Autowired com.procurement.supplier.application.PerformanceTaskNotificationService notices;
   @Autowired com.procurement.supplier.infrastructure.PerformanceTaskMapper tasks;
+  @Autowired com.procurement.supplier.application.PerformanceEvidenceService evidence;
+  @org.springframework.boot.test.mock.mockito.MockBean com.procurement.common.storage.ObjectStorageService storage;
   final LocalDate due = LocalDate.now().plusDays(10);
 
   @BeforeEach void seed() {
@@ -52,6 +54,45 @@ class PerformanceTaskIT {
   void buyer(String user) { TenantContext.set("pta", null, user); }
   void supplier() { TenantContext.set(null, "pts", "ptsu"); }
   Evaluate scores() { return new Evaluate(new BigDecimal("80"),new BigDecimal("90"),new BigDecimal("70"),new BigDecimal("60"),"Evaluation comment"); }
+
+  @Test void evidenceIsRoundBoundImmutableAndTenantScoped() {
+    var task = service.create("ptra", new Create("2041-Q1", "ptu", due));
+    service.evaluate("ptra", task.id(), scores());
+    var requested = service.requestRemediation("ptra", task.id(), new Remediation("Evidence needed", due));
+    supplier();
+    byte[] file = "%PDF-1.4 evidence".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    var item = evidence.upload(task.id(), requested.version(), "proof.pdf", file);
+    assertThat(evidence.upload(task.id(), requested.version(), "proof.pdf", file).id()).isEqualTo(item.id());
+    assertThat(item.round()).isEqualTo(1);
+    org.mockito.Mockito.when(storage.get(org.mockito.ArgumentMatchers.anyString())).thenReturn(new com.procurement.common.storage.ObjectStorageService.StoredObject(file, "application/pdf"));
+    assertThat(evidence.downloadSupplier(task.id(), item.id()).data()).isEqualTo(file);
+    buyer("ptu");
+    assertThat(evidence.listBuyer("ptra", task.id())).isEmpty();
+    assertThatThrownBy(() -> evidence.downloadBuyer("ptra", task.id(), item.id())).isInstanceOf(IllegalArgumentException.class);
+    supplier();
+    var submitted = service.respond(task.id(), new Response("Done", requested.version()));
+    assertThatThrownBy(() -> evidence.upload(task.id(), requested.version(), "late.pdf", file)).isInstanceOf(IllegalStateException.class);
+    buyer("ptu");
+    assertThat(evidence.listBuyer("ptra", task.id())).hasSize(1);
+    assertThat(evidence.downloadBuyer("ptra", task.id(), item.id()).data()).isEqualTo(file);
+    var next = service.review("ptra", task.id(), new Review(false, "More evidence", submitted.version()));
+    supplier();
+    assertThatThrownBy(() -> evidence.upload(task.id(), requested.version(), "stale.pdf", file)).isInstanceOf(IllegalStateException.class);
+    assertThat(evidence.upload(task.id(), next.version(), "second.pdf", file).round()).isEqualTo(2);
+    assertThat(evidence.listSupplier(task.id())).hasSize(2);
+    buyer("ptu");
+    assertThat(evidence.listBuyer("ptra", task.id())).hasSize(1);
+    TenantContext.set("ptb", null, "ptbu");
+    assertThatThrownBy(() -> evidence.listBuyer("ptrb", task.id())).isInstanceOf(IllegalArgumentException.class);
+    TenantContext.set(null, "ptother", "ptou");
+    assertThatThrownBy(() -> evidence.downloadSupplier(task.id(), item.id())).isInstanceOf(IllegalArgumentException.class);
+    supplier();
+    org.mockito.Mockito.when(storage.get(org.mockito.ArgumentMatchers.anyString())).thenReturn(new com.procurement.common.storage.ObjectStorageService.StoredObject(new byte[]{1}, "application/pdf"));
+    assertThatThrownBy(() -> evidence.downloadSupplier(task.id(), item.id())).isInstanceOf(IllegalStateException.class);
+    assertThatThrownBy(() -> evidence.upload(task.id(), next.version(), "script.html", file)).isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> evidence.upload(task.id(), next.version(), "empty.pdf", new byte[0])).isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> evidence.upload(task.id(), next.version(), "large.pdf", new byte[10 * 1024 * 1024 + 1])).isInstanceOf(IllegalArgumentException.class);
+  }
 
   @Test void lifecycleNotifiesOnlyAuthorizedRecipientsAndKeepsRoundsDistinct() {
     var task = service.create("ptra", new Create("2040-Q1", "ptu", due));

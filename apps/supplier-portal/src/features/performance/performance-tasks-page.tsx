@@ -1,8 +1,8 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ClipboardCheck, RefreshCw } from 'lucide-react';
-import { type PerformanceTask, listSupplierPerformanceTasks, respondPerformanceTask } from '@24bid/api-client';
-import { FeedbackNotice, Pagination, Panel, StatusPill } from '@24bid/ui';
+import { type PerformanceTask, listSupplierPerformanceTasks, respondPerformanceTask, usePerformanceEvidence } from '@24bid/api-client';
+import { EvidencePanel, FeedbackNotice, Pagination, Panel, StatusPill } from '@24bid/ui';
 
 const buttonClass = 'inline-flex min-h-9 shrink-0 items-center justify-center whitespace-nowrap rounded-md border border-slate-200 px-3 text-sm font-bold text-blue-700 disabled:opacity-50';
 const statusNames: Record<string, string> = { assigned: '待考核', evaluated: '已考核', remediation_requested: '待整改', remediation_submitted: '待复核', closed: '已关闭' };
@@ -44,13 +44,15 @@ export function PerformanceTasksPage({ canManage = false, canRead = true }: { ca
 function ResponseDetail({ task, canManage, refreshing, refreshError, refresh, onPendingChange, onComplete }: { task: PerformanceTask; canManage: boolean; refreshing: boolean; refreshError: boolean; refresh: (updated?: PerformanceTask) => Promise<unknown>; onPendingChange: (pending: boolean) => void; onComplete: () => void }) {
   // Keep the concurrency token tied to the round that opened this draft.
   const [expectedVersion] = useState(task.version);
+  const evidence = usePerformanceEvidence(task.id, expectedVersion);
   const staleDraft = expectedVersion !== task.version;
   const [response, setResponse] = useState('');
   const lock = useRef(false);
   const canRespond = canManage && task.status === 'remediation_requested';
   const mutation = useMutation({ mutationFn: () => respondPerformanceTask(task.id, { response: response.trim(), expectedVersion }),
     onSuccess: async result => { await refresh(result.data); onComplete(); }, onSettled: () => { lock.current = false; onPendingChange(false); } });
-  const submitDisabled = refreshing || refreshError || mutation.isPending || staleDraft;
+  const submitDisabled = refreshing || refreshError || mutation.isPending || staleDraft || evidence.busy;
+  useEffect(() => { onPendingChange(evidence.busy || mutation.isPending); }, [evidence.busy, mutation.isPending]);
   return <section aria-label="整改任务详情" className="mt-5 border-t border-slate-200 pt-5">
     <h2 className="break-words text-base font-bold">{task.buyerName} · {task.period}</h2>
     {staleDraft && <div role="alert" className="mt-3"><FeedbackNotice tone="error" message="任务已更新，草稿已保留，请重新打开任务后提交。" /></div>}
@@ -61,6 +63,7 @@ function ResponseDetail({ task, canManage, refreshing, refreshError, refresh, on
       <button type="submit" disabled={!response.trim() || submitDisabled} className={`${buttonClass} mt-3`}>{mutation.isPending ? '提交中…' : '提交整改反馈'}</button>
     </form>}
     {mutation.isError && <div role="alert" className="mt-3"><FeedbackNotice tone="error" message={(mutation.error as { response?: { data?: { message?: string } } })?.response?.data?.message ?? '提交失败，填写内容已保留，请重试。'} /></div>}
+    <EvidencePanel {...evidence} canUpload={canRespond && !refreshing && !refreshError && !staleDraft && !mutation.isPending} />
     <h3 className="mt-5 text-sm font-bold">任务历史</h3>
     <ol className="mt-2 space-y-3">{task.history.map((event, index) => <li key={index} className="break-words text-sm"><p className="text-xs text-slate-500">{event.createdAt} · {event.actorName} · {actionNames[event.action] ?? event.action}</p><p className="mt-1 whitespace-pre-wrap">{event.comment}</p></li>)}</ol>
   </section>;

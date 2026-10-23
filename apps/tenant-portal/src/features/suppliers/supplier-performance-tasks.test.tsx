@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({ manage: true, read: true, userId: 'assignee', 
 vi.mock('../../lib/use-buyer-permissions', () => ({ useBuyerPermissions: () => ({ can: (p: string) => p.endsWith(':manage') ? mocks.manage : mocks.read }) }));
 vi.mock('../../lib/auth-store', () => ({ useAuthStore: (select: (s: unknown) => unknown) => select({ session: { userId: mocks.userId } }) }));
 vi.mock('@24bid/api-client', () => ({
+  usePerformanceEvidence: () => ({ files: [], loading: false, busy: false, error: '', upload: vi.fn(), download: vi.fn(), refresh: vi.fn() }),
   listBuyerPerformanceTasks: mocks.list,
   listPerformanceAssignees: async () => ({ data: [{ id: 'assignee', displayName: '张评审' }] }),
   createPerformanceTask: mocks.create, evaluatePerformanceTask: mocks.evaluate,
