@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+cd "${MISE_PROJECT_ROOT:?MISE_PROJECT_ROOT 未设置}"
+pnpm typecheck
+exec pnpm exec vitest run

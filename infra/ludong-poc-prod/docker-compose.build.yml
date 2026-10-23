@@ -1,0 +1,19 @@
+services:
+  app:
+    build:
+      context: ../../backend-java
+      dockerfile: Dockerfile
+      args:
+        MAVEN_IMAGE: docker.m.daocloud.io/library/maven:3.9-eclipse-temurin-21
+        JRE_IMAGE: docker.m.daocloud.io/library/eclipse-temurin:21-jre
+
+  portal:
+    build:
+      context: ../..
+      dockerfile: infra/ludong-poc-prod/Dockerfile.portal
+      args:
+        NODE_IMAGE: docker.m.daocloud.io/library/node:22-alpine
+        NGINX_IMAGE: docker.m.daocloud.io/library/nginx:1.27-alpine
+        VITE_JAVA_API_BASE_URL: "/"
+        VITE_KEYCLOAK_URL: ""
+        VITE_SELF_LOGIN: "true"

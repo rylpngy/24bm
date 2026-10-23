@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+ROOT=$(git -C "${MISE_PROJECT_ROOT:?MISE_PROJECT_ROOT 未设置}" rev-parse --show-toplevel)
+RELEASE_COMPONENT=frontend
+RELEASE_SERVICE=portal
+RELEASE_ENV_KEY=PORTAL_IMAGE_TAG
+RELEASE_IMAGE_REPOSITORY=24bid/ludong-portal
+export RELEASE_COMPONENT RELEASE_SERVICE RELEASE_ENV_KEY RELEASE_IMAGE_REPOSITORY
+# shellcheck source=../../../.mise/lib/release-common.sh
+source "$ROOT/.mise/lib/release-common.sh"
+release_main "$@"

@@ -1,0 +1,6 @@
+[tools]
+node = "22.22.2"
+"npm:pnpm" = "9.15.0"
+
+[env]
+RELEASE_COMPONENT = "frontend"
