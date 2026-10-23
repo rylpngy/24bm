@@ -13,17 +13,62 @@ import org.apache.ibatis.annotations.Update;
 public interface BuyerSupplierRelationMapper {
 
   @Select("select id from buyer_supplier_relations where tenant_id = #{tenantId} and id = #{id} for update")
+  @org.apache.ibatis.annotations.Options(flushCache = org.apache.ibatis.annotations.Options.FlushCachePolicy.TRUE)
   String lockRelation(@Param("tenantId") String tenantId, @Param("id") String id);
 
   @Select("""
-      select
-        (select count(*) from purchase_orders where tenant_id = #{tenantId}
-          and supplier_id = #{supplierId} and status != '已收货') as unreceived_order_count,
-        (select count(*) from invoices where tenant_id = #{tenantId}
-          and supplier_id = #{supplierId} and payment_status != '已付款') as unpaid_invoice_count,
-        (select coalesce(sum(amount), 0) from invoices where tenant_id = #{tenantId}
-          and supplier_id = #{supplierId} and payment_status != '已付款') as unpaid_invoice_face_amount
+      with scoped_orders as (
+        select * from purchase_orders where tenant_id = #{tenantId} and supplier_id = #{supplierId}
+      ), scoped_invoices as (
+        select * from invoices where tenant_id = #{tenantId} and
+          (supplier_id = #{supplierId} or order_id in (select id from scoped_orders))
+      ), scoped_contracts as (
+        select * from contracts where tenant_id = #{tenantId} and supplier_id = #{supplierId}
+      ), milestone_balances as (
+        select m.*, coalesce((select sum(a.amount) from contract_payment_allocations a
+          where a.tenant_id = #{tenantId} and a.milestone_id = m.id), 0) as paid
+        from contract_payment_milestones m join scoped_contracts c on c.id = m.contract_id
+        where m.tenant_id = #{tenantId}
+      ), schedules as (
+        select contract_id, sum(amount) as amount, sum(paid) as paid,
+          bool_or(amount is null or paid < 0 or paid > amount or status is distinct from
+            case when paid = 0 then '待付' when paid = amount then '已付' else '部分已付' end) as invalid
+        from milestone_balances group by contract_id
+      ), balances as (
+        select i.*, coalesce((select sum(e.amount) from invoice_payment_entries e
+          where e.tenant_id = #{tenantId} and e.invoice_id = i.id), 0) as paid
+        from scoped_invoices i
+      ), checked as (
+        select i.*, (i.paid < 0 or i.paid > i.amount or i.payment_status is distinct from
+          case when i.paid = 0 then '待付款' when i.paid = i.amount then '已付款' else '部分付款' end
+          or i.supplier_id <> #{supplierId} or not exists (select 1 from scoped_orders o
+            where o.id = i.order_id and o.amount = i.amount)
+          or (select count(*) from scoped_invoices other where other.order_id = i.order_id) <> 1
+          or (c.id is not null and c.amount is distinct from i.amount)
+          or coalesce(s.invalid, false) or (s.contract_id is not null and
+            (s.paid <> i.paid or s.amount <> i.amount))) as verification
+        from balances i left join scoped_contracts c on c.related_order_id = i.order_id
+        left join schedules s on s.contract_id = c.id
+      ), risks as (
+        select
+          (select count(*) from scoped_orders where status is distinct from '已收货') as unreceived_order_count,
+          count(*) filter (where payment_status <> '已付款' or verification or paid < amount) as unpaid_invoice_count,
+          coalesce(sum(amount) filter (where payment_status <> '已付款' or verification or paid < amount), 0) as unpaid_invoice_face_amount,
+          (select count(*) from scoped_contracts where archive_status is distinct from '已归档') as unarchived_contract_count,
+          (select count(*) from mall_after_sales where tenant_id = #{tenantId} and supplier_id = #{supplierId}
+            and (status is null or status not in ('已完成', '已拒绝'))) as open_after_sales_count,
+          (select count(*) from scoped_orders o where o.amount < 0 or
+            coalesce((select sum(i.amount) from scoped_invoices i where i.order_id = o.id), 0) < o.amount) as uninvoiced_order_count,
+          count(*) filter (where verification) as payment_verification_required_count,
+          case when count(*) filter (where verification) > 0 then null
+            else coalesce(sum(amount - paid), 0) end as remaining_invoice_amount
+        from checked
+      ) select *, (unreceived_order_count > 0 or unpaid_invoice_count > 0 or
+        unarchived_contract_count > 0 or open_after_sales_count > 0 or uninvoiced_order_count > 0 or
+        payment_verification_required_count > 0 or remaining_invoice_amount is null or
+        remaining_invoice_amount > 0) as blocked from risks
       """)
+  @org.apache.ibatis.annotations.Options(flushCache = org.apache.ibatis.annotations.Options.FlushCachePolicy.TRUE)
   com.procurement.supplier.api.SupplierExitRiskResponse exitRisk(
       @Param("tenantId") String tenantId, @Param("supplierId") String supplierId);
 

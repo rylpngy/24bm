@@ -431,7 +431,7 @@ function AdmissionActionBar({ supplier }: { supplier: BuyerSupplierResponse }) {
           });
         }} />
       <SupplierExitActions id={id} status={supplier.status} supplierId={supplier.supplierId} />
-      <div className="sticky bottom-4 z-30 rounded-lg border border-slate-200 bg-white/95 px-5 py-4 shadow-lg shadow-slate-300/40 backdrop-blur">
+      <div className="z-30 rounded-lg border border-slate-200 bg-white/95 px-5 py-4 shadow-lg shadow-slate-300/40 backdrop-blur sm:sticky sm:bottom-4">
         {feedback && (
           <div className="mb-3">
             <FeedbackNotice tone={feedback.tone} message={feedback.message} />

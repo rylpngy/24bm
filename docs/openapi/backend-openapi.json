@@ -30227,6 +30227,28 @@
           },
           "unpaidInvoiceFaceAmount": {
             "type": "number"
+          },
+          "unarchivedContractCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "openAfterSalesCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "uninvoicedOrderCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "paymentVerificationRequiredCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "remainingInvoiceAmount": {
+            "type": "number"
+          },
+          "blocked": {
+            "type": "boolean"
           }
         }
       },

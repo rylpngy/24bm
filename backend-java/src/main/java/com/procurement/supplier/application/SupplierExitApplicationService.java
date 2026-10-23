@@ -76,8 +76,8 @@ public class SupplierExitApplicationService implements WorkflowBusinessCompletio
 
   private void requireSettled(String tenant, BuyerSupplierRelation relation) {
     var risk = relations.exitRisk(tenant, relation.supplierId());
-    if (risk.unreceivedOrderCount() > 0 || risk.unpaidInvoiceCount() > 0) {
-      throw new IllegalStateException("仍有未收货订单或未付清发票，请先处理未结业务后再退出");
+    if (risk == null || risk.blocked()) {
+      throw new IllegalStateException("仍有未结业务或待核实款项，请完成订单、合同、售后及付款清理后再退出");
     }
   }
 

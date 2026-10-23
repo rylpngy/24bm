@@ -87,4 +87,31 @@ class SupplierExitTests {
         .isInstanceOf(IllegalStateException.class);
     new BuyerSupplierManualStatusTransition().requireTransition("已退出", "待准入", "rel");
   }
+
+  @Test void eachClearanceBlockerPreventsSubmissionAndApprovedCompletion() {
+    var risks = java.util.List.of(
+        new SupplierExitRiskResponse(0,0,BigDecimal.ZERO,1,0,0,0,BigDecimal.ZERO,true),
+        new SupplierExitRiskResponse(0,0,BigDecimal.ZERO,0,1,0,0,BigDecimal.ZERO,true),
+        new SupplierExitRiskResponse(0,0,BigDecimal.ZERO,0,0,1,0,BigDecimal.ZERO,true),
+        new SupplierExitRiskResponse(0,0,BigDecimal.ZERO,0,0,0,1,null,true),
+        new SupplierExitRiskResponse(0,0,BigDecimal.ZERO,0,0,0,0,BigDecimal.TEN,true));
+    for (var risk : risks) {
+      when(relations.exitRisk("tenant","supplier")).thenReturn(risk);
+      status("已准入");
+      assertThatThrownBy(() -> service.submit("rel",new SubmitSupplierExitRequest("结束",null)))
+          .isInstanceOf(IllegalStateException.class);
+      status("退出审批中");
+      assertThatThrownBy(() -> service.onCompleted(instance(),new WorkflowCompletion(true,"reviewer","同意")))
+          .isInstanceOf(IllegalStateException.class);
+    }
+    verifyNoInteractions(workflow,audit,notices);
+    verify(relations,never()).updateStatus(anyString(),anyString(),anyString(),anyString());
+  }
+
+  @Test void missingRiskFailsClosed() {
+    when(relations.exitRisk("tenant","supplier")).thenReturn(null);
+    assertThatThrownBy(() -> service.submit("rel",new SubmitSupplierExitRequest("结束",null)))
+        .isInstanceOf(IllegalStateException.class);
+    verifyNoInteractions(workflow);
+  }
 }
