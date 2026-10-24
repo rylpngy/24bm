@@ -128,6 +128,45 @@ class UnifiedWorkflowRuntimeIT {
   }
 
   @Test
+  void globalLedgerPaginatesAllVisibleRecordsBeforeLimitAndCountsProcessedOnce() {
+    TenantContext.set(TENANT_ID, null, REVIEWER_ID);
+    var definition = demandProcess();
+    processDefinitionApplicationService.updateProcess(definition.id(), new UpdateProcessDefinitionRequest(
+        "Ledger pagination", "", "draft", formSchema(), flowSchema(), ApprovalBusinessType.PURCHASE_DEMAND));
+    var version = processDefinitionApplicationService.publishProcess(definition.id()).activeVersionId();
+    String prefix = "ledger-" + java.util.UUID.randomUUID();
+    // Ended ledger fixtures test SQL volume, not 480 simulated Flowable executions.
+    for (int index = 0; index < 480; index++) {
+      boolean visible = index < 240;
+      String id = prefix + "-" + String.format("%03d", index);
+      jdbcTemplate.update("""
+          insert into workflow_business_instances (id, tenant_id, business_type, business_id, definition_version_id,
+            flowable_process_instance_id, status, initiator_id, department_id, form_data, business_snapshot, updated_at)
+          values (?, ?, 'purchase_demand', ?, ?, ?, 'approved', ?, ?, '{}'::jsonb, '{}'::jsonb,
+            current_timestamp + (? * interval '1 second'))
+          """, id, TENANT_ID, id, version, id, visible ? REQUESTER_ID : OUTSIDER_ID,
+          visible ? DEPARTMENT_ID : OTHER_DEPARTMENT_ID, index);
+    }
+    var page = unifiedWorkflowApplicationService.pageCurrentTenantInstances("all", 11, 20, prefix);
+    assertThat(page.total()).isEqualTo(240);
+    assertThat(page.items()).hasSize(20);
+    assertThat(page.items().getFirst().businessId()).isEqualTo(prefix + "-039");
+    assertThat(unifiedWorkflowApplicationService.pageCurrentTenantInstances("all", 1, 20, prefix + "-000").total()).isEqualTo(1);
+    assertThat(unifiedWorkflowApplicationService.pageCurrentTenantInstances("all", 13, 20, prefix).items()).isEmpty();
+    assertThat(unifiedWorkflowApplicationService.pageCurrentTenantInstances("all", 1, 20, "%" + prefix).total()).isZero();
+    for (String action : List.of("approved", "rejected")) jdbcTemplate.update("""
+        insert into workflow_task_events (id, tenant_id, workflow_instance_id, action, actor_id)
+        values (?, ?, ?, ?, ?)
+        """, java.util.UUID.randomUUID().toString(), TENANT_ID, prefix + "-000", action, REVIEWER_ID);
+    assertThat(unifiedWorkflowApplicationService.pageCurrentTenantInstances("processed", 1, 20, prefix).total()).isEqualTo(1);
+    TenantContext.set(TENANT_ID, null, REQUESTER_ID);
+    assertThat(unifiedWorkflowApplicationService.pageCurrentTenantInstances("initiated", 12, 20, prefix).items()).hasSize(20);
+    assertThat(unifiedWorkflowApplicationService.pageCurrentTenantInstances("all", 1, 20, prefix).total()).isEqualTo(240);
+    TenantContext.set(TENANT_ID, null, OUTSIDER_ID);
+    assertThat(unifiedWorkflowApplicationService.pageCurrentTenantInstances("all", 1, 20, prefix + "-000").total()).isZero();
+  }
+
+  @Test
   void purchaseDemandUsesPublishedFlowableVersionWithRoleDataScopeAndBusinessCallback() {
     TenantContext.set(TENANT_ID, null, REVIEWER_ID);
     ProcessDefinitionResponse created = demandProcess();
@@ -160,12 +199,16 @@ class UnifiedWorkflowRuntimeIT {
     // 即使属于候选角色，外部部门用户也不能越过工作流实例的数据范围。
     TenantContext.set(TENANT_ID, null, OUTSIDER_ID);
     assertThat(unifiedWorkflowApplicationService.listCurrentUserTasks()).isEmpty();
+    assertThat(unifiedWorkflowApplicationService.pageCurrentTenantInstances("pending", 1, 20, "").total()).isZero();
     assertThatThrownBy(() -> unifiedWorkflowApplicationService.completeCurrentUserTask(
         submitted.id(), new CompleteWorkflowTaskRequest("approve", "越权办理")))
         .isInstanceOf(PermissionDeniedException.class);
 
     TenantContext.set(TENANT_ID, null, REVIEWER_ID);
     List<UnifiedWorkflowTaskResponse> tasks = unifiedWorkflowApplicationService.listCurrentUserTasks();
+    var pendingPage = unifiedWorkflowApplicationService.pageCurrentTenantInstances("pending", 1, 20, DEMAND_ID);
+    assertThat(pendingPage.total()).isEqualTo(1);
+    assertThat(pendingPage.items().getFirst().currentTask().taskId()).isEqualTo(tasks.getFirst().taskId());
     assertThat(tasks).singleElement().satisfies(task -> {
       assertThat(task.businessType()).isEqualTo(ApprovalBusinessType.PURCHASE_DEMAND);
       assertThat(task.businessId()).isEqualTo(DEMAND_ID);

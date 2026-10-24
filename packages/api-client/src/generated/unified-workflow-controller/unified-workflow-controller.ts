@@ -33,6 +33,7 @@ import type {
   ApiResponseWorkflowPublishedFormResponse,
   CompleteWorkflowTaskRequest,
   UnifiedWorkflowBusinessInstancesParams,
+  UnifiedWorkflowInstancePageParams,
   UnifiedWorkflowInstancesParams,
   WithdrawPurchaseDemandWorkflowRequest
 } from '.././model';
@@ -409,6 +410,93 @@ export function useUnifiedWorkflowHistory<TData = Awaited<ReturnType<typeof unif
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getUnifiedWorkflowHistoryQueryOptions(workflowInstanceId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const unifiedWorkflowInstancePage = (
+    params?: UnifiedWorkflowInstancePageParams,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseWorkflowBusinessInstancePage>(
+      {url: `/api/v1/buyer/workflow/instances/page`, method: 'GET',
+        params, signal
+    },
+      );
+    }
+
+
+
+
+export const getUnifiedWorkflowInstancePageQueryKey = (params?: UnifiedWorkflowInstancePageParams,) => {
+    return [
+    `/api/v1/buyer/workflow/instances/page`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+
+export const getUnifiedWorkflowInstancePageQueryOptions = <TData = Awaited<ReturnType<typeof unifiedWorkflowInstancePage>>, TError = ErrorType<ApiResponseVoid>>(params?: UnifiedWorkflowInstancePageParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof unifiedWorkflowInstancePage>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getUnifiedWorkflowInstancePageQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof unifiedWorkflowInstancePage>>> = ({ signal }) => unifiedWorkflowInstancePage(params, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof unifiedWorkflowInstancePage>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type UnifiedWorkflowInstancePageQueryResult = NonNullable<Awaited<ReturnType<typeof unifiedWorkflowInstancePage>>>
+export type UnifiedWorkflowInstancePageQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useUnifiedWorkflowInstancePage<TData = Awaited<ReturnType<typeof unifiedWorkflowInstancePage>>, TError = ErrorType<ApiResponseVoid>>(
+ params: undefined |  UnifiedWorkflowInstancePageParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof unifiedWorkflowInstancePage>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof unifiedWorkflowInstancePage>>,
+          TError,
+          Awaited<ReturnType<typeof unifiedWorkflowInstancePage>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUnifiedWorkflowInstancePage<TData = Awaited<ReturnType<typeof unifiedWorkflowInstancePage>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: UnifiedWorkflowInstancePageParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof unifiedWorkflowInstancePage>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof unifiedWorkflowInstancePage>>,
+          TError,
+          Awaited<ReturnType<typeof unifiedWorkflowInstancePage>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUnifiedWorkflowInstancePage<TData = Awaited<ReturnType<typeof unifiedWorkflowInstancePage>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: UnifiedWorkflowInstancePageParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof unifiedWorkflowInstancePage>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useUnifiedWorkflowInstancePage<TData = Awaited<ReturnType<typeof unifiedWorkflowInstancePage>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: UnifiedWorkflowInstancePageParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof unifiedWorkflowInstancePage>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getUnifiedWorkflowInstancePageQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

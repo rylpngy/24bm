@@ -305,6 +305,20 @@ export interface WorkflowBusinessInstancesPage {
   pageSize: number;
 }
 
+export const listUnifiedWorkflowInstancesPage = (
+  view: WorkflowLedgerView, page: number, pageSize: number, keyword: string, signal?: AbortSignal,
+) => customInstance<ApiEnvelope<WorkflowBusinessInstancesPage>>({
+  url: '/api/v1/buyer/workflow/instances/page', method: 'GET',
+  params: { view, page, pageSize, keyword }, signal,
+});
+
+export function useWorkflowInstancesLedgerPage(view: WorkflowLedgerView, page: number, pageSize: number, keyword: string) {
+  return useQuery({
+    queryKey: ['/api/v1/buyer/workflow/instances/page', view, page, pageSize, keyword],
+    queryFn: ({ signal }) => listUnifiedWorkflowInstancesPage(view, page, pageSize, keyword, signal),
+  });
+}
+
 export function useWorkflowBusinessInstances(businessType: string, businessId: string, page = 1) {
   return useQuery({
     queryKey: ['/api/v1/buyer/workflow/instances/business', businessType, businessId, 'instances', page],
