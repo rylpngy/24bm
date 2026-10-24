@@ -27,6 +27,7 @@ export * from './demand-queries';
 export * from './payment-ledger';
 export * from './payment-reviews';
 export * from './attachment-integrity';
+export * from './supplier-period-performance';
 export * from './session-permissions';
 
 export * from './generated/model';

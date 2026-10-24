@@ -1,13 +1,14 @@
 import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   useSupplierEvaluationConfirmTier,
   useSupplierEvaluationCreateEvaluation,
   useSupplierEvaluationListEvaluations,
-  useSupplierFulfillmentFulfillmentMetrics,
+  getSupplierPeriodFulfillment,
 } from '@24bid/api-client';
 import { suggestTier } from '@24bid/shared';
 import { FeedbackNotice, MiniFact, PrimaryActionButton, StatusPill } from '@24bid/ui';
+import { currentPerformanceQuarter, isPerformancePeriod } from './performance-period';
 import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
 
 const DIMENSIONS = [
@@ -34,19 +35,22 @@ export function SupplierEvaluationPanel({
     priceScore: '',
     serviceScore: '',
   });
-  const [period, setPeriod] = useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-Q${Math.floor(now.getMonth() / 3) + 1}`;
-  });
+  const [period, setPeriod] = useState(currentPerformanceQuarter);
   const [comment, setComment] = useState('');
   const [selectedEvaluation, setSelectedEvaluation] = useState('');
   const [feedback, setFeedback] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
 
   const history = useSupplierEvaluationListEvaluations(relationId);
-  const metrics = useSupplierFulfillmentFulfillmentMetrics(supplierId ?? '', {
-    query: { enabled: !!supplierId },
+  const validPeriod = isPerformancePeriod(period);
+  const metrics = useQuery({
+    queryKey: ['/api/v1/buyer/suppliers', supplierId, 'fulfillment-metrics', period.trim()],
+    queryFn: ({ signal }) => getSupplierPeriodFulfillment(supplierId!, period.trim(), signal),
+    enabled: !!supplierId && validPeriod,
   });
-  const fulfillment = metrics.data?.data;
+  const periodMatches = metrics.data?.data?.period === period.trim();
+  const fulfillment = validPeriod && !metrics.isError && !metrics.isFetching && periodMatches ? metrics.data?.data : undefined;
+  const qualityAvailable = !!fulfillment && fulfillment.totalReceived > 0 && fulfillment.derivedQualityScore != null;
+  const deliveryAvailable = !!fulfillment && fulfillment.scheduledReceiptCount > 0 && fulfillment.derivedDeliveryScore != null;
   const create = useSupplierEvaluationCreateEvaluation();
   const confirm = useSupplierEvaluationConfirmTier();
 
@@ -64,7 +68,6 @@ export function SupplierEvaluationPanel({
 
   const evaluations = history.data?.data ?? [];
   const saved = evaluations.find(e => e.id === selectedEvaluation);
-  const validPeriod = /^\d{4}-(Q[1-4]|0[1-9]|1[0-2])$/.test(period.trim()) || /^\d{4}$/.test(period.trim());
   const duplicate = evaluations.some(e => e.period === period.trim());
   const canSubmit = canWrite && validPeriod && validScores && comment.trim().length > 0 && !duplicate && !history.isLoading && !history.isError;
   const failed = (error: unknown) => setFeedback({ tone: 'error', message: (error as { response?: { data?: { message?: string } } })?.response?.data?.message ?? '操作失败，请重试。' });
@@ -83,47 +86,36 @@ export function SupplierEvaluationPanel({
       {feedback && <div className="mt-3"><FeedbackNotice {...feedback} /></div>}
       {history.isError && <FeedbackNotice tone="error" message="考核历史加载失败，暂不能提交或调级。" />}
 
-      {fulfillment && (fulfillment.receiptCount ?? 0) > 0 && (
-        <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50/50 p-3">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <p className="text-xs font-black text-emerald-800">累计履约参考（非所选考核周期统计）</p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={!canWrite || create.isPending}
-                onClick={() =>
-                  setScores((s) => ({
-                    ...s,
-                    qualityScore: fulfillment.derivedQualityScore ?? s.qualityScore,
-                    deliveryScore: fulfillment.derivedDeliveryScore ?? s.deliveryScore,
-                  }))
-                }
-                className="inline-flex h-7 items-center rounded-md border border-emerald-300 bg-white px-3 text-[11px] font-black text-emerald-700 hover:bg-emerald-50"
-              >
-                回填质量/交付
-              </button>
+      {supplierId && <section className="mt-3 border-y border-emerald-200 py-3">
+        <p className="text-xs font-black text-emerald-800">所选周期履约参考</p>
+        <p className="mt-1 text-xs text-slate-500">按收货登记时间归属周期</p>
+        {!validPeriod ? <p className="mt-2 text-xs text-slate-500">请输入有效周期后查看。</p>
+          : metrics.isError ? <><FeedbackNotice tone="error" message="履约参考加载失败，请重试。" />
+            <button type="button" onClick={() => void metrics.refetch()} disabled={metrics.isFetching} className="mt-2 min-h-9 rounded-md border px-3 text-xs">重试履约参考</button></>
+          : metrics.isPending || metrics.isFetching ? <p className="mt-2 text-xs text-slate-500">正在加载所选周期履约参考…</p>
+          : !periodMatches ? <><FeedbackNotice tone="error" message="履约参考周期不一致，请刷新。" />
+            <button type="button" onClick={() => void metrics.refetch()} className="mt-2 min-h-9 rounded-md border px-3 text-xs">刷新履约参考</button></>
+          : !fulfillment || fulfillment.receiptCount === 0 ? <p className="mt-2 text-xs text-slate-500">所选周期暂无验收样本。</p>
+          : <>
+            <p className="mt-1 break-words text-xs text-slate-500">{fulfillment.period} · {fulfillment.startDate} 至 {fulfillment.endDateExclusive}（结束日期不含）</p>
+            <div className="mt-2 grid gap-2 sm:grid-cols-2">
+              <MiniFact label="合格率" value={fulfillment.qualifiedRate == null ? '无数量样本' : `${fulfillment.qualifiedRate}%`} />
+              <MiniFact label="本期已登记收货准时率" value={fulfillment.onTimeRate == null ? '无预计日期样本' : `${fulfillment.onTimeRate}%`} />
+              <MiniFact label="有预计日期 / 总验收" value={`${fulfillment.scheduledReceiptCount} / ${fulfillment.receiptCount}`} />
+              <MiniFact label="收货数量 / 合格数量" value={`${fulfillment.totalReceived} / ${fulfillment.totalQualified}`} />
             </div>
-          </div>
-          <div className="mt-2 grid gap-2 sm:grid-cols-4">
-            <MiniFact
-              label="实测质量分(合格率)"
-              value={fulfillment.qualifiedRate != null ? `${fulfillment.qualifiedRate}` : '—'}
-            />
-            <MiniFact
-              label="实测交付分(准时率)"
-              value={fulfillment.onTimeRate != null ? `${fulfillment.onTimeRate}` : '—'}
-            />
-            <MiniFact
-              label="验收单 / 准时"
-              value={`${fulfillment.receiptCount} / ${fulfillment.onTimeCount}`}
-            />
-            <MiniFact
-              label="收货 / 合格"
-              value={`${fulfillment.totalReceived} / ${fulfillment.totalQualified}`}
-            />
-          </div>
-        </div>
-      )}
+            <button type="button" disabled={!canWrite || create.isPending || (!qualityAvailable && !deliveryAvailable)}
+              onClick={() => {
+                if (!canWrite || create.isPending || !fulfillment) return;
+                setScores(current => ({ ...current,
+                  qualityScore: qualityAvailable ? fulfillment.derivedQualityScore! : current.qualityScore,
+                  deliveryScore: deliveryAvailable ? fulfillment.derivedDeliveryScore! : current.deliveryScore,
+                }));
+              }} className="mt-2 inline-flex min-h-9 items-center rounded-md border border-emerald-300 bg-white px-3 text-xs font-bold text-emerald-700 disabled:opacity-50">
+              回填质量/交付
+            </button>
+          </>}
+      </section>}
 
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <div>
@@ -132,7 +124,12 @@ export function SupplierEvaluationPanel({
             aria-label="考核周期"
             disabled={!canWrite || create.isPending}
             value={period}
-            onChange={(e) => setPeriod(e.target.value)}
+            onChange={(e) => {
+              setPeriod(e.target.value);
+              setScores({ qualityScore: '', deliveryScore: '', priceScore: '', serviceScore: '' });
+              setComment('');
+              setFeedback(null);
+            }}
             className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
           />
           <p className="mt-1 text-xs text-slate-500">年度 YYYY、季度 YYYY-Q1 至 Q4、月份 YYYY-MM</p>

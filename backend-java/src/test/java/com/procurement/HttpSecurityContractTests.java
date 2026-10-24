@@ -3573,6 +3573,46 @@ class HttpSecurityContractTests {
   }
 
   @Test
+  void supplierPeriodMetricsRoutesBindPeriodAndRequireBuyerRole() throws Exception {
+    String buyerToken = loginAndExtractToken("""
+        {"account":"buyer","password":"demo123456","scope":"BUYER","tenantId":"tenant-acme"}
+        """);
+    String supplierToken = loginAndExtractToken("""
+        {"account":"supplier","password":"demo123456","scope":"SUPPLIER","supplierId":"ent-supplier-sunrise"}
+        """);
+    when(supplierFulfillmentMetricsService.performanceComparison("2001-Q4")).thenReturn(List.of());
+    when(supplierFulfillmentMetricsService.metricsForSupplier("supplier", "2001-Q4"))
+        .thenReturn(new com.procurement.supplier.api.SupplierFulfillmentMetricsResponse(
+            "supplier", 2, 1, 50, 10, 0, 0, 0, 50, "2001-Q4",
+            java.time.LocalDate.of(2001, 10, 1), java.time.LocalDate.of(2002, 1, 1), 2));
+    mockMvc.perform(get("/api/v1/buyer/suppliers/supplier/fulfillment-metrics")
+            .param("period", "2001-Q4").header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.period").value("2001-Q4"))
+        .andExpect(jsonPath("$.data.startDate").value("2001-10-01"))
+        .andExpect(jsonPath("$.data.endDateExclusive").value("2002-01-01"))
+        .andExpect(jsonPath("$.data.scheduledReceiptCount").value(2))
+        .andExpect(jsonPath("$.data.qualifiedRate").value(0));
+    mockMvc.perform(get("/api/v1/buyer/suppliers/supplier/fulfillment-metrics")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk());
+    org.mockito.Mockito.verify(supplierFulfillmentMetricsService).metricsForSupplier("supplier", null);
+    mockMvc.perform(get("/api/v1/buyer/suppliers/performance-comparison")
+            .param("period", "2001-Q4").header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data").isArray());
+    mockMvc.perform(get("/api/v1/buyer/suppliers/performance-comparison")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isBadRequest());
+    for (String path : List.of("/api/v1/buyer/suppliers/performance-comparison",
+        "/api/v1/buyer/suppliers/supplier/fulfillment-metrics")) {
+      mockMvc.perform(get(path).param("period", "2001-Q4")
+              .header("Authorization", "Bearer " + supplierToken))
+          .andExpect(status().isForbidden());
+    }
+  }
+
+  @Test
   void buyerMasterDataApisRequireBuyerRoleAndExposeSupplierCatalogAndUserEntries() throws Exception {
     String supplierToken = loginAndExtractToken("""
         {

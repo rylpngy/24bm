@@ -16302,6 +16302,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -16942,6 +16950,56 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseQualificationLedgerPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/suppliers/performance-comparison": {
+      "get": {
+        "tags": [
+          "supplier-fulfillment-controller"
+        ],
+        "operationId": "SupplierFulfillment_performanceComparison",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListSupplierPerformanceComparisonResponse"
                 }
               }
             }
@@ -30367,6 +30425,21 @@
           "derivedDeliveryScore": {
             "type": "integer",
             "format": "int32"
+          },
+          "period": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDateExclusive": {
+            "type": "string",
+            "format": "date"
+          },
+          "scheduledReceiptCount": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -30653,6 +30726,96 @@
           },
           "expiryState": {
             "type": "string"
+          }
+        }
+      },
+      "ApiResponseListSupplierPerformanceComparisonResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SupplierPerformanceComparisonResponse"
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "SupplierPerformanceComparisonResponse": {
+        "type": "object",
+        "properties": {
+          "relationId": {
+            "type": "string"
+          },
+          "supplierId": {
+            "type": "string"
+          },
+          "supplierName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "level": {
+            "type": "string"
+          },
+          "cooperationTier": {
+            "type": "string"
+          },
+          "evaluationId": {
+            "type": "string"
+          },
+          "qualityScore": {
+            "type": "number"
+          },
+          "deliveryScore": {
+            "type": "number"
+          },
+          "priceScore": {
+            "type": "number"
+          },
+          "serviceScore": {
+            "type": "number"
+          },
+          "totalScore": {
+            "type": "number"
+          },
+          "evaluatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "receiptCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "onTimeCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "onTimeRate": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalReceived": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalQualified": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "qualifiedRate": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "scheduledReceiptCount": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
