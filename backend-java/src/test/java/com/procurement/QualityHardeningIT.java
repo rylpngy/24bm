@@ -1159,36 +1159,46 @@ class QualityHardeningIT {
     assertThat(result.path("statusDistribution").isEmpty() ? 0 : result.path("statusDistribution").get(0).path("orderCount").asInt()).isEqualTo(orders);
   }
 
+  private Map<String,Object> budgetDraftBody(String dept,String period,Object amount) {
+    return Map.of("departmentId",dept,"period",period,"kind","initial","targetAmount",amount,"title","年度预算","reason","采购预算编制");
+  }
+
+  // Payment-query fixtures are not budget approvals; lifecycle approval is covered independently.
+  private void seedBudgetFixture(String dept,String period,int amount) {
+    jdbc.update("insert into department_budgets(id,tenant_id,department_id,period,total_amount) values (?,?,?,?,?)",
+        "budget-fixture-"+UUID.randomUUID(),tenant,dept,period,amount);
+  }
+
   @Test
   void budgetsRequireDepartmentAuthorityAndRecordTheRealActor() throws Exception {
     String token = login();
-    var body = Map.<String, Object>of("departmentId", department, "period", "2026", "totalAmount", 5000);
+    var body = Map.<String, Object>of("departmentId", department, "period", "2026", "kind", "initial", "targetAmount", 5000,"title","年度预算","reason","年度采购预算编制");
     buyerRead(token, "budgets", 403);
-    financeCall(token, "POST", "/api/v1/buyer/budgets", body, 403);
+    financeCall(token, "POST", "/api/v1/buyer/budgets/requests", body, 403);
     jdbc.update("update roles set permissions='[\"buyer:budget:read\",\"buyer:budget:manage\"]'::jsonb where id=?", role);
     assertThat(buyerRead(token, "budgets", 200).isEmpty()).isTrue();
-    financeCall(token, "POST", "/api/v1/buyer/budgets", body, 403);
+    financeCall(token, "POST", "/api/v1/buyer/budgets/requests", body, 403);
     jdbc.update("update roles set data_scope='department' where id=?", role);
-    var saved = financeCall(token, "POST", "/api/v1/buyer/budgets", body, 200);
+    var saved = financeCall(token, "POST", "/api/v1/buyer/budgets/requests", body, 200);
     assertThat(saved.path("departmentId").asText()).isEqualTo(department);
-    assertThat(buyerRead(token, "budgets", 200).size()).isEqualTo(1);
-    assertThat(jdbc.queryForObject("select actor_id from audit_logs where target_id=? and action='department_budget.updated'", String.class, saved.path("id").asText())).isEqualTo(user);
+    assertThat(buyerRead(token, "budgets", 200).size()).isEqualTo(0);
+    assertThat(jdbc.queryForObject("select actor_id from audit_logs where target_id=? and action='budget.request_created'", String.class, saved.path("id").asText())).isEqualTo(user);
     String otherDept = "other-" + department;
     jdbc.update("insert into departments(id,tenant_id,name,status) values (?,?,'Other','active')", otherDept, tenant);
-    financeCall(token, "POST", "/api/v1/buyer/budgets", Map.of("departmentId", otherDept, "period", "2026", "totalAmount", 1), 403);
-    financeCall(token, "POST", "/api/v1/buyer/budgets", Map.of("departmentId", department, "period", "invalid", "totalAmount", 1), 400);
+    financeCall(token, "POST", "/api/v1/buyer/budgets/requests", budgetDraftBody(otherDept,"2026",1), 403);
+    financeCall(token, "POST", "/api/v1/buyer/budgets/requests", budgetDraftBody(department,"invalid",1), 400);
     jdbc.update("update roles set data_scope='all' where id=?", role);
-    financeCall(token, "POST", "/api/v1/buyer/budgets", Map.of("departmentId", "foreign-or-missing", "period", "2026", "totalAmount", 1), 400);
+    financeCall(token, "POST", "/api/v1/buyer/budgets/requests", budgetDraftBody("foreign-or-missing","2026",1), 400);
     String foreignTenant = "budget-foreign-" + tenant;
     String foreignDept = "foreign-" + department;
     jdbc.update("insert into tenants(id,name,plan,status) values (?,'Foreign','starter','active')", foreignTenant);
     jdbc.update("insert into departments(id,tenant_id,name,status) values (?,?,'Foreign','active')", foreignDept, foreignTenant);
-    financeCall(token, "POST", "/api/v1/buyer/budgets", Map.of("departmentId", foreignDept, "period", "2026", "totalAmount", 1), 400);
-    financeCall(token, "POST", "/api/v1/buyer/budgets", Map.of("departmentId", otherDept, "period", "2026", "totalAmount", 1), 200);
-    assertThat(buyerRead(token, "budgets", 200).size()).isEqualTo(2);
+    financeCall(token, "POST", "/api/v1/buyer/budgets/requests", budgetDraftBody(foreignDept,"2026",1), 400);
+    financeCall(token, "POST", "/api/v1/buyer/budgets/requests", budgetDraftBody(otherDept,"2026",1), 200);
+    assertThat(buyerRead(token, "budgets/requests", 200).path("items").size()).isEqualTo(2);
     jdbc.update("update roles set data_scope='department',permissions='[\"buyer:budget:read\"]'::jsonb where id=?", role);
-    assertThat(buyerRead(token, "budgets", 200).size()).isEqualTo(1);
-    financeCall(token, "POST", "/api/v1/buyer/budgets", body, 403);
+    assertThat(buyerRead(token, "budgets/requests", 200).path("items").size()).isEqualTo(1);
+    financeCall(token, "POST", "/api/v1/buyer/budgets/requests", body, 403);
   }
 
   @Test
@@ -1202,7 +1212,7 @@ class QualityHardeningIT {
     jdbc.update("insert into rfq_demands(id,tenant_id,rfq_id,demand_id) values (?,?,?,?)", duplicate, tenant, "r-" + item, duplicate);
     String token = login();
     String period = jdbc.queryForObject("select to_char(current_date,'YYYY')", String.class);
-    financeCall(token, "POST", "/api/v1/buyer/budgets", Map.of("departmentId", department, "period", period, "totalAmount", 5000), 200);
+    seedBudgetFixture(department,period,5000);
     // No contract or milestone is required; two linked demands must not multiply either ledger entry.
     jdbc.update("insert into invoice_payment_entries(id,tenant_id,invoice_id,idempotency_key,amount,evidence_no,created_by) values (?,?,?,'budget-first',600,'bank-first',?)",
         "paid-first-" + user, tenant, item, user);
@@ -1219,7 +1229,7 @@ class QualityHardeningIT {
     // Explicit positive demand budgets provide a 1200:600 allocation, not exclusion of the whole project.
     assertThat(buyerRead(token, "budgets", 200).get(0).path("disbursed").decimalValue()).isEqualByComparingTo("1200");
     jdbc.update("update roles set data_scope='all' where id=?", role);
-    financeCall(token, "POST", "/api/v1/buyer/budgets", Map.of("departmentId", other, "period", period, "totalAmount", 5000), 200);
+    seedBudgetFixture(other,period,5000);
     var byDepartment = new java.util.HashMap<String, com.fasterxml.jackson.databind.JsonNode>();
     buyerRead(token, "budgets", 200).forEach(row -> byDepartment.put(row.path("departmentId").asText(), row));
     assertThat(byDepartment.get(department).path("disbursed").decimalValue()).isEqualByComparingTo("1200");
@@ -1264,9 +1274,9 @@ class QualityHardeningIT {
     buyerRead(token, "audit-logs", 403);
     assertThat(buyerRead(token, "workspace", 200).path("auditLogs").isEmpty()).isTrue();
     jdbc.update("update roles set data_scope='all' where id=?", role);
-    var saved = financeCall(token, "POST", "/api/v1/buyer/budgets", Map.of("departmentId", department, "period", "2026", "totalAmount", 10), 200);
+    var saved = financeCall(token, "POST", "/api/v1/buyer/budgets/requests", budgetDraftBody(department,"2026",10), 200);
     assertThat(buyerRead(token, "audit-logs", 200).toString()).contains(saved.path("id").asText());
-    assertThat(buyerRead(token, "audit-logs/target?targetType=department_budget&targetId=" + saved.path("id").asText(), 200).size()).isEqualTo(1);
+    assertThat(buyerRead(token, "audit-logs/target?targetType=budget_request&targetId=" + saved.path("id").asText(), 200).size()).isEqualTo(1);
     String foreignTenant = "audit-foreign-" + tenant;
     jdbc.update("insert into tenants(id,name,plan,status) values (?,'Foreign','starter','active')", foreignTenant);
     jdbc.update("insert into audit_logs(id,tenant_id,actor_id,action,target_type,target_id) values (?,?,?,'department_budget.updated','department_budget','foreign')", "audit-foreign-" + user, foreignTenant, user);

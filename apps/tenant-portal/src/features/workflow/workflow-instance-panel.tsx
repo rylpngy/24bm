@@ -191,6 +191,9 @@ function displayValue(value: unknown): string {
 
 function fieldLabel(key: string) {
   const labels: Record<string, string> = {
+    departmentId: '部门', period: '预算年度', kind: '申请类型', baseAmount: '原生效额度',
+    targetAmount: '申请额度或例外占用上限', reason: '申请依据', targetType: '例外业务类型', targetId: '例外业务编号',
+    occupiedAtSubmission: '提交时已有占用', remainingAtSubmission: '提交时可用余额', controlMode: '提交时控制模式', exceptionValidityDays: '例外有效天数',
     title: '标题', budget: '预算', priority: '优先级', purpose: '用途', expectedDeliveryDate: '期望交付日期',
     supplierId: '供应商编号', supplierName: '供应商名称', rfqId: '询价编号', quoteId: '报价编号',
     exitReason: '退出原因', unreceivedOrderCount: '未收货订单数', unpaidInvoiceCount: '未付清发票数',
@@ -203,6 +206,8 @@ function fieldLabel(key: string) {
 export function workflowBusinessHref(history: Pick<WorkflowInstanceHistory, 'businessType' | 'businessId' | 'businessSnapshot'>) {
   const snapshot = history.businessSnapshot ?? {};
   const target: Record<string, { module: string; id: unknown }> = {
+    budget_change: { module: 'budgets', id: history.businessId },
+    budget_exception: { module: 'budgets', id: history.businessId },
     purchase_demand: { module: 'demands', id: history.businessId },
     buyer_supplier_admission: { module: 'suppliers', id: history.businessId },
     buyer_supplier_exit: { module: 'suppliers', id: history.businessId },

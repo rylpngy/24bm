@@ -35,13 +35,13 @@ public interface DepartmentBudgetMapper {
                           where pe.tenant_id = i.tenant_id and pe.invoice_id = i.id)
         group by po.tenant_id, po.rfq_id
       ), demand_weights as (
-        select rd.tenant_id, rd.rfq_id, pd.department_id, to_char(pd.created_at, 'YYYY') as period,
+        select rd.tenant_id, rd.rfq_id, pd.department_id, to_char(pd.created_at at time zone 'Asia/Shanghai', 'YYYY') as period,
                sum(pd.budget) as weight,
                bool_and(pd.id is not null and pd.department_id is not null and pd.created_at is not null
                         and pd.budget is not null and pd.budget > 0) as valid
         from rfq_demands rd
         left join purchase_demands pd on pd.id = rd.demand_id and pd.tenant_id = rd.tenant_id
-        group by rd.tenant_id, rd.rfq_id, pd.department_id, to_char(pd.created_at, 'YYYY')
+        group by rd.tenant_id, rd.rfq_id, pd.department_id, to_char(pd.created_at at time zone 'Asia/Shanghai', 'YYYY')
       ), ranked_weights as (
         select w.*, p.amount, sum(w.weight) over project as total_weight,
                bool_and(w.valid) over project as all_valid,
@@ -66,11 +66,11 @@ public interface DepartmentBudgetMapper {
              b.total_amount as total_amount,
              coalesce((select sum(pd.budget) from purchase_demands pd
                        where pd.tenant_id = b.tenant_id and pd.department_id = b.department_id
-                         and pd.status = '已通过' and to_char(pd.created_at, 'YYYY') = b.period), 0)
+                         and pd.status = '已通过' and to_char(pd.created_at at time zone 'Asia/Shanghai', 'YYYY') = b.period), 0)
                as committed,
              coalesce((select sum(pd.budget) from purchase_demands pd
                        where pd.tenant_id = b.tenant_id and pd.department_id = b.department_id
-                         and pd.status = '审批中' and to_char(pd.created_at, 'YYYY') = b.period), 0)
+                         and pd.status = '审批中' and to_char(pd.created_at at time zone 'Asia/Shanghai', 'YYYY') = b.period), 0)
                as pending,
              case when exists (
                select 1 from unverified_rfqs u join demand_weights w

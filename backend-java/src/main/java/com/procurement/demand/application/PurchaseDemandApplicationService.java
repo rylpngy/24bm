@@ -61,6 +61,9 @@ public class PurchaseDemandApplicationService {
   private final PermissionService permissionService;
   private UnifiedWorkflowApplicationService unifiedWorkflowApplicationService;
   private NumberingApplicationService numbering;
+  private com.procurement.buyer.application.BudgetControlService budgetControl;
+  @Autowired
+  void setBudgetControlService(com.procurement.buyer.application.BudgetControlService control) { this.budgetControl=control; }
 
   public PurchaseDemandApplicationService(
       PurchaseDemandMapper purchaseDemandMapper,
@@ -258,6 +261,7 @@ public class PurchaseDemandApplicationService {
   public ApprovalTaskResponse submit(String demandId, Map<String, Object> formData) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer demand APIs");
     permissionService.require("buyer:demand:create");
+    if(budgetControl!=null) budgetControl.lock(tenantId);
     // Serialize profile edits before reading approval amount/department and building its immutable snapshot.
     // This path starts a new workflow only; it never locks an existing workflow instance in reverse callback order.
     PurchaseDemand demand = purchaseDemandMapper.findByTenantAndIdForUpdate(tenantId, demandId);
@@ -276,6 +280,7 @@ public class PurchaseDemandApplicationService {
       throw new IllegalStateException("Purchase demand changed before submission: " + demandId);
     }
     Map<String, Object> snapshot = new LinkedHashMap<>();
+    if(budgetControl!=null) budgetControl.checkDemand(tenantId,demandId,demand.departmentId(),demand.createdAt());
     snapshot.put("title", demand.title());
     snapshot.put("budget", demand.budget());
     snapshot.put("priority", demand.priority());

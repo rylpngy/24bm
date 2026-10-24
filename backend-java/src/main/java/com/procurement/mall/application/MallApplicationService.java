@@ -39,6 +39,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class MallApplicationService {
+  private com.procurement.buyer.application.BudgetControlService budgetControl;
+  @org.springframework.beans.factory.annotation.Autowired
+  void setBudgetControlService(com.procurement.buyer.application.BudgetControlService control) { this.budgetControl=control; }
+  private void lockBudget() {
+    if(budgetControl!=null) budgetControl.lock(TenantAccessGuard.requireTenantId("mall budget control"));
+  }
   private final MallListingMapper mallListingMapper;
   private final MallCatalogMapper mallCatalogMapper;
   private final MallCartMapper mallCartMapper;
@@ -157,6 +163,7 @@ public class MallApplicationService {
   // 目录直购:在架商品 × 数量 → 商城锚点 RFQ(方式=商城,已定标) + 采购订单(含单行明细)。
   @Transactional
   public MallOrderResponse createDirectOrder(CreateMallOrderRequest request) {
+    lockBudget();
     return purchaseControls.idempotent("direct",request.idempotencyKey(),request,
         () -> List.of(createDirectOrderInternal(request))).getFirst();
   }
@@ -210,6 +217,7 @@ public class MallApplicationService {
    */
   @Transactional
   public List<MallOrderResponse> checkoutServerCart(CheckoutCartRequest request) {
+    lockBudget();
     return purchaseControls.idempotent("cart",request.idempotencyKey(),request,
         () -> checkoutServerCartInternal(request));
   }
@@ -266,6 +274,7 @@ public class MallApplicationService {
   // 购物车结算:逐项校验在架与数量,按供应商合并成单(每供应商一张锚点 RFQ + 多行订单)。
   @Transactional
   public List<MallOrderResponse> checkoutCart(CreateMallCartRequest request) {
+    lockBudget();
     return purchaseControls.idempotent("batch",request.idempotencyKey(),request,
         () -> checkoutCartInternal(request));
   }

@@ -25,6 +25,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PurchaseOrderApplicationService {
+  private com.procurement.buyer.application.BudgetControlService budgetControl;
+  @org.springframework.beans.factory.annotation.Autowired
+  void setBudgetControlService(com.procurement.buyer.application.BudgetControlService control) { this.budgetControl=control; }
   private final OrderAccessService access;
   private final OrderAwardQueryService awards;
   private final PurchaseOrderMapper purchaseOrderMapper;
@@ -168,6 +171,7 @@ public class PurchaseOrderApplicationService {
   @Transactional
   public PurchaseOrderResponse createFromAward(CreatePurchaseOrderRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer order APIs");
+    if(budgetControl!=null) budgetControl.lock(tenantId);
     tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.ORDER);
     AwardDecision award = awards.findApproved(tenantId, request.awardId());
     if (award == null) {
@@ -199,6 +203,7 @@ public class PurchaseOrderApplicationService {
         PurchaseOrderStatus.PENDING_SUPPLIER_CONFIRMATION,
         request.expectedReceiptDate());
     // 从中标报价复制行项明细,贯通「报价→订单」行级追溯。
+    if(budgetControl!=null) budgetControl.recordOrder(tenantId,orderId,award.rfqId());
     orderLineItemApplicationService.copyFromQuote(tenantId, orderId, award.quoteId());
     auditLogApplicationService.recordTenantAction(
         PurchaseOrderAuditAction.CREATED,
@@ -269,6 +274,7 @@ public class PurchaseOrderApplicationService {
       java.time.LocalDate expectedReceiptDate,
       java.util.List<DirectOrderLine> lines) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer order APIs");
+    if(budgetControl!=null) budgetControl.lock(tenantId);
     tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.ORDER);
     requireAdmittedSupplier(tenantId, supplierId);
     String orderId = newId("po");
@@ -280,6 +286,7 @@ public class PurchaseOrderApplicationService {
         amount,
         PurchaseOrderStatus.PENDING_SUPPLIER_CONFIRMATION,
         expectedReceiptDate);
+    if(budgetControl!=null) budgetControl.recordOrder(tenantId,orderId,rfqId);
     int sortNo=0;
     for (DirectOrderLine line : lines) {
       if(line.sourceSkuId()==null) {
@@ -312,6 +319,7 @@ public class PurchaseOrderApplicationService {
       java.time.LocalDate expectedReceiptDate,
       String lineDescription) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer order APIs");
+    if(budgetControl!=null) budgetControl.lock(tenantId);
     tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.ORDER);
     requireAdmittedSupplier(tenantId, supplierId);
     String orderId = newId("po");
@@ -323,6 +331,7 @@ public class PurchaseOrderApplicationService {
         amount,
         PurchaseOrderStatus.PENDING_SUPPLIER_CONFIRMATION,
         expectedReceiptDate);
+    if(budgetControl!=null) budgetControl.recordOrder(tenantId,orderId,rfqId);
     orderLineItemApplicationService.addDirectLine(
         tenantId, orderId, lineDescription, "项", java.math.BigDecimal.ONE, amount);
     auditLogApplicationService.recordTenantAction(

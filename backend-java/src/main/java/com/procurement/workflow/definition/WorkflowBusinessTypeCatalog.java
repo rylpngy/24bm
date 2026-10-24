@@ -7,6 +7,7 @@ import java.util.Set;
 // 受控业务类型目录。避免流程配置把任意字符串接入业务回调。
 public final class WorkflowBusinessTypeCatalog {
   public static final List<String> TYPES = List.of(
+      "budget_change", "budget_exception",
       ApprovalBusinessType.LUDONG_PROJECT_APPLICATION,
       ApprovalBusinessType.PURCHASE_DEMAND,
       ApprovalBusinessType.BUYER_SUPPLIER_ADMISSION,
