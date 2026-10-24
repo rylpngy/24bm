@@ -15,7 +15,8 @@ public final class PortalPermissionPolicy {
       Map.entry("qualifications", "qualification"), Map.entry("users", "user"),
       Map.entry("notifications", "notification"), Map.entry("announcements", "announcement"),
       // Supplier remediation is part of profile collaboration, not buyer evaluation administration.
-      Map.entry("performance-tasks", "profile"), Map.entry("esign-records", "esign"));
+      Map.entry("performance-tasks", "profile"), Map.entry("cooperation-invitations", "profile"),
+      Map.entry("esign-records", "esign"));
 
   private PortalPermissionPolicy() {}
 

@@ -2,7 +2,9 @@ package com.procurement.supplier.application;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantAccessGuard;
+import com.procurement.identity.application.PermissionService;
 import com.procurement.supplier.api.CreateSupplierInvitationRequest;
 import com.procurement.supplier.api.RespondSupplierInvitationRequest;
 import com.procurement.supplier.api.SupplierInvitationResponse;
@@ -21,24 +23,39 @@ public class SupplierInvitationApplicationService {
   private final SupplierInvitationMapper invitationMapper;
   private final BuyerSupplierRelationMapper relationMapper;
   private final ObjectMapper objectMapper;
+  private final PermissionService permissions;
+  private final AuditLogApplicationService audit;
 
   public SupplierInvitationApplicationService(
       SupplierInvitationMapper invitationMapper,
       BuyerSupplierRelationMapper relationMapper,
-      ObjectMapper objectMapper) {
+      ObjectMapper objectMapper,
+      PermissionService permissions,
+      AuditLogApplicationService audit) {
     this.invitationMapper = invitationMapper;
     this.relationMapper = relationMapper;
     this.objectMapper = objectMapper;
+    this.permissions = permissions;
+    this.audit = audit;
   }
 
   public List<SupplierInvitationResponse> listInvitations() {
     String tenantId = TenantAccessGuard.requireTenantId("supplier invitation APIs");
+    permissions.require("buyer:supplier:read");
     return invitationMapper.listByTenant(tenantId).stream().map(this::toResponse).toList();
+  }
+
+  public List<SupplierInvitationResponse> listSupplierInvitations() {
+    String supplierId = TenantAccessGuard.requireSupplierId("供应商合作邀请");
+    permissions.require("supplier:profile:read");
+    return invitationMapper.listBySupplier(supplierId).stream().map(this::toResponse).toList();
   }
 
   // ====== Excel 批量导入:每行生成一条待回复邀请(供应商名称必填,库内待回复重名跳过)======
 
   public byte[] importTemplate() {
+    TenantAccessGuard.requireTenantId("供应商邀请");
+    permissions.require("buyer:supplier:read");
     return com.procurement.common.excel.ExcelSheets.template(
         "供应商邀请导入模板",
         List.of("供应商名称*", "联系方式", "主营品类", "备注"),
@@ -48,6 +65,8 @@ public class SupplierInvitationApplicationService {
   @Transactional
   public com.procurement.common.api.ImportResultResponse importInvitations(byte[] content) {
     String tenantId = TenantAccessGuard.requireTenantId("supplier invitation APIs");
+    permissions.require("buyer:supplier:manage");
+    TenantAccessGuard.requireUserId("供应商邀请");
     List<List<String>> rows = com.procurement.common.excel.ExcelSheets.readFirstSheet(content, 501);
     if (rows.size() <= 1) {
       throw new IllegalArgumentException("文件中没有数据行,请按模板填写后再导入");
@@ -86,6 +105,9 @@ public class SupplierInvitationApplicationService {
           blankToNull(cells.size() > 2 ? cells.get(2) : null),
           blankToNull(cells.size() > 3 ? cells.get(3) : null),
           SupplierInvitationStatus.PENDING);
+      audit.recordTenantAction(
+          tenantId, "supplier_invitation.create", "supplier_invitation", id,
+          "采购方导入线下邀请记录，未发送平台邀请");
       pendingNames.add(name);
       success++;
     }
@@ -95,35 +117,83 @@ public class SupplierInvitationApplicationService {
   @Transactional
   public SupplierInvitationResponse createInvitation(CreateSupplierInvitationRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("supplier invitation APIs");
+    permissions.require("buyer:supplier:manage");
+    TenantAccessGuard.requireUserId("供应商邀请");
+    String supplierId = blankToNull(request.supplierId());
+    String supplierName = supplierId == null
+        ? blankToNull(request.supplierName())
+        : invitationMapper.findSupplierName(supplierId);
+    if (supplierName == null) {
+      throw new IllegalArgumentException("供应商名称不能为空，绑定企业须为有效供应商企业");
+    }
     String id = "inv-" + UUID.randomUUID();
     invitationMapper.insert(
         id,
         tenantId,
-        blankToNull(request.supplierId()),
-        request.supplierName(),
+        supplierId,
+        supplierName,
         blankToNull(request.contact()),
         blankToNull(request.category()),
         blankToNull(request.note()),
         SupplierInvitationStatus.PENDING);
+    audit.recordTenantAction(
+        tenantId, "supplier_invitation.create", "supplier_invitation", id,
+        supplierId == null ? "采购方创建线下邀请记录，未发送平台邀请" : "采购方向平台供应商发起合作邀请");
     return toResponse(invitationMapper.findByTenantAndId(tenantId, id));
   }
 
   @Transactional
   public SupplierInvitationResponse respond(String id, RespondSupplierInvitationRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("supplier invitation APIs");
-    SupplierInvitation invitation = invitationMapper.findByTenantAndId(tenantId, id);
+    permissions.require("buyer:supplier:manage");
+    TenantAccessGuard.requireUserId("供应商邀请");
+    String target = target(request);
+    SupplierInvitation invitation = invitationMapper.lockByTenantAndId(tenantId, id);
     if (invitation == null) {
       throw new IllegalArgumentException("邀请单不存在: " + id);
     }
+    if (invitation.supplierId() != null && !SupplierInvitationStatus.WITHDRAWN.equals(target)) {
+      throw new IllegalArgumentException("已绑定平台供应商的邀请须由供应商接受或拒绝，采购方仅可撤回");
+    }
+    return complete(invitation, request.action(), target, "采购方");
+  }
+
+  @Transactional
+  public SupplierInvitationResponse respondSupplier(String id, RespondSupplierInvitationRequest request) {
+    String supplierId = TenantAccessGuard.requireSupplierId("供应商合作邀请");
+    permissions.require("supplier:profile:manage");
+    TenantAccessGuard.requireUserId("供应商合作邀请");
+    String target = target(request);
+    if (SupplierInvitationStatus.WITHDRAWN.equals(target)) {
+      throw new IllegalArgumentException("供应商仅可接受或拒绝合作邀请");
+    }
+    SupplierInvitation invitation = invitationMapper.lockBySupplierAndId(supplierId, id);
+    if (invitation == null) {
+      throw new IllegalArgumentException("未找到本企业的合作邀请");
+    }
+    return complete(invitation, request.action(), target, "供应商");
+  }
+
+  private String target(RespondSupplierInvitationRequest request) {
+    if (request == null || request.action() == null) {
+      throw new IllegalArgumentException("请选择邀请办理动作");
+    }
+    return SupplierInvitationStatus.resolveTarget(request.action());
+  }
+
+  private SupplierInvitationResponse complete(
+      SupplierInvitation invitation, String action, String target, String actorSide) {
     SupplierInvitationStatus.requirePending(invitation.status());
-    String target = SupplierInvitationStatus.resolveTarget(request.action());
-    invitationMapper.respond(tenantId, id, target);
+    String tenantId = invitation.tenantId();
+    String id = invitation.id();
+    if (invitationMapper.respond(tenantId, id, target) != 1) {
+      throw new IllegalStateException("邀请状态已变化，请刷新后重试");
+    }
 
     // 接受且关联已知供应商、且尚未在私域库 → 桥接为待准入。
     if (SupplierInvitationStatus.bridgesToAdmission(target)
-        && invitation.supplierId() != null
-        && relationMapper.countByTenantSupplier(tenantId, invitation.supplierId()) == 0) {
-      relationMapper.insert(
+        && invitation.supplierId() != null) {
+      relationMapper.insertIfAbsent(
           "bsr-" + UUID.randomUUID(),
           tenantId,
           invitation.supplierId(),
@@ -131,6 +201,9 @@ public class SupplierInvitationApplicationService {
           "普通",
           writeCategories(invitation.category()));
     }
+    audit.recordTenantAction(
+        tenantId, "supplier_invitation." + action, "supplier_invitation", id,
+        actorSide + "办理邀请：" + target + (invitation.supplierId() == null ? "（线下反馈记录）" : ""));
     return toResponse(invitationMapper.findByTenantAndId(tenantId, id));
   }
 
@@ -145,7 +218,8 @@ public class SupplierInvitationApplicationService {
         i.status(),
         i.supplierId() != null,
         i.createdAt(),
-        i.respondedAt());
+        i.respondedAt(),
+        i.buyerName());
   }
 
   private String writeCategories(String category) {

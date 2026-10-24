@@ -14,4 +14,5 @@ public record SupplierInvitation(
     String status,
     OffsetDateTime createdAt,
     OffsetDateTime updatedAt,
-    OffsetDateTime respondedAt) {}
+    OffsetDateTime respondedAt,
+    String buyerName) {}

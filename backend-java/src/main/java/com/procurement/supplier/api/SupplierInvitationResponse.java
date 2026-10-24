@@ -13,4 +13,11 @@ public record SupplierInvitationResponse(
     String status,
     boolean linkedToKnownSupplier,
     OffsetDateTime createdAt,
-    OffsetDateTime respondedAt) {}
+    OffsetDateTime respondedAt,
+    String buyerName) {
+  public SupplierInvitationResponse(String id, String supplierId, String supplierName, String contact,
+      String category, String note, String status, boolean linkedToKnownSupplier,
+      OffsetDateTime createdAt, OffsetDateTime respondedAt) {
+    this(id,supplierId,supplierName,contact,category,note,status,linkedToKnownSupplier,createdAt,respondedAt,null);
+  }
+}

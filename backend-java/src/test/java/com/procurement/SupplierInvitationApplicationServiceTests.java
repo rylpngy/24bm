@@ -1,133 +1,107 @@
 package com.procurement;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.procurement.common.tenant.TenantContext;
+import com.procurement.audit.application.AuditLogApplicationService;
+import com.procurement.common.tenant.*;
+import com.procurement.identity.application.PermissionService;
 import com.procurement.supplier.application.SupplierInvitationApplicationService;
-import com.procurement.supplier.api.RespondSupplierInvitationRequest;
-import com.procurement.supplier.api.SupplierInvitationResponse;
+import com.procurement.supplier.api.*;
 import com.procurement.supplier.domain.SupplierInvitation;
-import com.procurement.supplier.infrastructure.BuyerSupplierRelationMapper;
-import com.procurement.supplier.infrastructure.SupplierInvitationMapper;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
+import com.procurement.supplier.infrastructure.*;
+import java.util.List;
+import org.junit.jupiter.api.*;
 
-// 邀请管理:状态机(仅待回复可处理)+ 接受桥接私域待准入(关联已知供应商且未在库)。
 class SupplierInvitationApplicationServiceTests {
-
-  private final SupplierInvitationMapper invitationMapper = mock(SupplierInvitationMapper.class);
-  private final BuyerSupplierRelationMapper relationMapper = mock(BuyerSupplierRelationMapper.class);
-  private final SupplierInvitationApplicationServiceHarness harness =
-      new SupplierInvitationApplicationServiceHarness(invitationMapper, relationMapper);
-
-  @AfterEach
-  void clear() {
-    TenantContext.clear();
+  final SupplierInvitationMapper invitations = mock(SupplierInvitationMapper.class);
+  final BuyerSupplierRelationMapper relations = mock(BuyerSupplierRelationMapper.class);
+  final PermissionService permissions = mock(PermissionService.class);
+  final AuditLogApplicationService audit = mock(AuditLogApplicationService.class);
+  final SupplierInvitationApplicationService service = new SupplierInvitationApplicationService(
+      invitations,relations,new ObjectMapper(),permissions,audit);
+  SupplierInvitation pending(String supplierId) {
+    return new SupplierInvitation("inv","tenant",supplierId,"真实供应商",null,"设备","合作邀请","待回复",null,null,null,"采购企业");
   }
-
-  private SupplierInvitation pending(String supplierId) {
-    return new SupplierInvitation(
-        "inv-1", "tenant-acme", supplierId, "远景智能装备有限公司",
-        "zhang@yuanjing.com", "智能制造", "邀请补资料", "待回复", null, null, null);
+  @BeforeEach void setup() {
+    TenantContext.set("tenant",null,"buyer");
+    when(invitations.respond(anyString(),anyString(),anyString())).thenReturn(1);
+    when(invitations.findByTenantAndId("tenant","inv")).thenReturn(pending("supplier"));
   }
+  @AfterEach void clear() { TenantContext.clear(); }
 
-  @Test
-  void acceptWithKnownSupplierBridgesToAdmission() {
-    TenantContext.set("tenant-acme", null, "buyer-user");
-    when(invitationMapper.findByTenantAndId("tenant-acme", "inv-1"))
-        .thenReturn(pending("ent-supplier-newapply"));
-    when(relationMapper.countByTenantSupplier("tenant-acme", "ent-supplier-newapply")).thenReturn(0);
-
-    harness.service().respond("inv-1", new RespondSupplierInvitationRequest("accept"));
-
-    verify(invitationMapper).respond("tenant-acme", "inv-1", "已接受");
-    verify(relationMapper).insert(any(), eq("tenant-acme"), eq("ent-supplier-newapply"),
-        eq("待准入"), eq("普通"), any());
+  @Test void buyerCannotAcceptOrDeclineBoundSupplier() {
+    when(invitations.lockByTenantAndId("tenant","inv")).thenReturn(pending("supplier"));
+    for(String action : List.of("accept","decline")) {
+      assertThatThrownBy(() -> service.respond("inv",new RespondSupplierInvitationRequest(action)))
+          .isInstanceOf(IllegalArgumentException.class);
+    }
+    verify(invitations,never()).respond(any(),any(),any());
+    verifyNoInteractions(relations,audit);
   }
-
-  @Test
-  void acceptDoesNotDuplicateExistingRelation() {
-    TenantContext.set("tenant-acme", null, "buyer-user");
-    when(invitationMapper.findByTenantAndId("tenant-acme", "inv-1"))
-        .thenReturn(pending("ent-supplier-newapply"));
-    when(relationMapper.countByTenantSupplier("tenant-acme", "ent-supplier-newapply")).thenReturn(1);
-
-    harness.service().respond("inv-1", new RespondSupplierInvitationRequest("accept"));
-
-    verify(relationMapper, never()).insert(any(), any(), any(), any(), any(), any());
+  @Test void buyerCanWithdrawBoundInvitationAndAudit() {
+    when(invitations.lockByTenantAndId("tenant","inv")).thenReturn(pending("supplier"));
+    service.respond("inv",new RespondSupplierInvitationRequest("withdraw"));
+    verify(invitations).respond("tenant","inv","已撤回");
+    verify(audit).recordTenantAction(eq("tenant"),eq("supplier_invitation.withdraw"),eq("supplier_invitation"),eq("inv"),anyString());
+    verifyNoInteractions(relations);
   }
-
-  @Test
-  void acceptExternalSupplierDoesNotBridge() {
-    TenantContext.set("tenant-acme", null, "buyer-user");
-    when(invitationMapper.findByTenantAndId("tenant-acme", "inv-1")).thenReturn(pending(null));
-
-    harness.service().respond("inv-1", new RespondSupplierInvitationRequest("accept"));
-
-    verify(invitationMapper).respond("tenant-acme", "inv-1", "已接受");
-    verify(relationMapper, never()).insert(any(), any(), any(), any(), any(), any());
+  @Test void offlineAcceptanceNeverCreatesRelation() {
+    when(invitations.lockByTenantAndId("tenant","inv")).thenReturn(pending(null));
+    service.respond("inv",new RespondSupplierInvitationRequest("accept"));
+    verify(invitations).respond("tenant","inv","已接受");
+    verifyNoInteractions(relations);
   }
-
-  @Test
-  void withdrawTransitionsWithoutBridging() {
-    TenantContext.set("tenant-acme", null, "buyer-user");
-    when(invitationMapper.findByTenantAndId("tenant-acme", "inv-1"))
-        .thenReturn(pending("ent-supplier-newapply"));
-
-    harness.service().respond("inv-1", new RespondSupplierInvitationRequest("withdraw"));
-
-    verify(invitationMapper).respond("tenant-acme", "inv-1", "已撤回");
-    verify(relationMapper, never()).insert(any(), any(), any(), any(), any(), any());
+  @Test void supplierAcceptanceUsesLockedInvitationTenantAndInsertOnlyRelation() {
+    TenantContext.set(null,"supplier","supplier-user");
+    when(invitations.lockBySupplierAndId("supplier","inv")).thenReturn(pending("supplier"));
+    service.respondSupplier("inv",new RespondSupplierInvitationRequest("accept"));
+    verify(permissions).require("supplier:profile:manage");
+    verify(invitations).respond("tenant","inv","已接受");
+    verify(relations).insertIfAbsent(anyString(),eq("tenant"),eq("supplier"),eq("待准入"),eq("普通"),eq("[\"设备\"]"));
+    verify(audit).recordTenantAction(eq("tenant"),eq("supplier_invitation.accept"),eq("supplier_invitation"),eq("inv"),anyString());
+    verify(relations,never()).updateStatus(any(),any(),any(),any());
   }
-
-  @Test
-  void respondingToNonPendingInvitationIsRejected() {
-    TenantContext.set("tenant-acme", null, "buyer-user");
-    when(invitationMapper.findByTenantAndId("tenant-acme", "inv-1")).thenReturn(
-        new SupplierInvitation("inv-1", "tenant-acme", null, "蓝海办公",
-            null, null, null, "已接受", null, null, null));
-
-    assertThatThrownBy(() ->
-        harness.service().respond("inv-1", new RespondSupplierInvitationRequest("accept")))
+  @Test void supplierCannotWithdrawOrRespondToForeignInvitation() {
+    TenantContext.set(null,"supplier","supplier-user");
+    assertThatThrownBy(() -> service.respondSupplier("inv",new RespondSupplierInvitationRequest("withdraw")))
+        .isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> service.respondSupplier("foreign",new RespondSupplierInvitationRequest("accept")))
+        .isInstanceOf(IllegalArgumentException.class);
+    verify(invitations,never()).respond(any(),any(),any());
+  }
+  @Test void failedCompareAndSetCannotCreateRelationOrAudit() {
+    TenantContext.set(null,"supplier","supplier-user");
+    when(invitations.lockBySupplierAndId("supplier","inv")).thenReturn(pending("supplier"));
+    when(invitations.respond("tenant","inv","已接受")).thenReturn(0);
+    assertThatThrownBy(() -> service.respondSupplier("inv",new RespondSupplierInvitationRequest("accept")))
         .isInstanceOf(IllegalStateException.class);
+    verifyNoInteractions(relations,audit);
   }
-
-  @Test
-  void invalidActionIsRejected() {
-    TenantContext.set("tenant-acme", null, "buyer-user");
-    when(invitationMapper.findByTenantAndId("tenant-acme", "inv-1")).thenReturn(pending(null));
-
-    assertThatThrownBy(() ->
-        harness.service().respond("inv-1", new RespondSupplierInvitationRequest("explode")))
+  @Test void supplierListRequiresReadAndReturnsBuyerName() {
+    TenantContext.set(null,"supplier","supplier-user");
+    when(invitations.listBySupplier("supplier")).thenReturn(List.of(pending("supplier")));
+    assertThat(service.listSupplierInvitations().getFirst().buyerName()).isEqualTo("采购企业");
+    verify(permissions).require("supplier:profile:read");
+    doThrow(new PermissionDeniedException("无权查看")).when(permissions).require("supplier:profile:read");
+    assertThatThrownBy(service::listSupplierInvitations).isInstanceOf(PermissionDeniedException.class);
+    doThrow(new PermissionDeniedException("无权办理")).when(permissions).require("supplier:profile:manage");
+    assertThatThrownBy(() -> service.respondSupplier("inv",new RespondSupplierInvitationRequest("accept")))
+        .isInstanceOf(PermissionDeniedException.class);
+  }
+  @Test void createUsesPlatformSupplierNameAndRejectsNonSupplier() {
+    when(invitations.findSupplierName("supplier")).thenReturn("真实供应商");
+    when(invitations.findByTenantAndId(eq("tenant"),anyString())).thenReturn(pending("supplier"));
+    service.createInvitation(new CreateSupplierInvitationRequest("supplier","伪造名称",null,null,null));
+    verify(invitations).insert(anyString(),eq("tenant"),eq("supplier"),eq("真实供应商"),isNull(),isNull(),isNull(),eq("待回复"));
+    assertThatThrownBy(() -> service.createInvitation(new CreateSupplierInvitationRequest("buyer-enterprise","伪造",null,null,null)))
         .isInstanceOf(IllegalArgumentException.class);
   }
-
-  @Test
-  void mapsLinkedFlagFromSupplierId() {
-    TenantContext.set("tenant-acme", null, "buyer-user");
-    when(invitationMapper.listByTenant("tenant-acme")).thenReturn(java.util.List.of(
-        pending("ent-supplier-newapply"),
-        pending(null)));
-
-    java.util.List<SupplierInvitationResponse> list = harness.service().listInvitations();
-
-    assertThat(list.get(0).linkedToKnownSupplier()).isTrue();
-    assertThat(list.get(1).linkedToKnownSupplier()).isFalse();
-  }
-
-  // 用真 ObjectMapper 组装服务。
-  private record SupplierInvitationApplicationServiceHarness(
-      SupplierInvitationMapper invitationMapper, BuyerSupplierRelationMapper relationMapper) {
-    SupplierInvitationApplicationService service() {
-      return new SupplierInvitationApplicationService(invitationMapper, relationMapper, new ObjectMapper());
-    }
+  @Test void completedAndInvalidActionsAreRejected() {
+    when(invitations.lockByTenantAndId("tenant","inv")).thenReturn(new SupplierInvitation(
+        "inv","tenant",null,"供应商",null,null,null,"已接受",null,null,null,"采购企业"));
+    assertThatThrownBy(() -> service.respond("inv",new RespondSupplierInvitationRequest("accept"))).isInstanceOf(IllegalStateException.class);
+    assertThatThrownBy(() -> service.respond("inv",new RespondSupplierInvitationRequest("explode"))).isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> service.respond("inv",new RespondSupplierInvitationRequest(null))).isInstanceOf(IllegalArgumentException.class);
   }
 }

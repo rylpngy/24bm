@@ -23,6 +23,8 @@ class PortalPermissionPolicyTests {
   }
   @Test
   void readsDoNotGrantMutations() {
+    assertThat(required("supplier", "GET", "cooperation-invitations")).isEqualTo("supplier:profile:read");
+    assertThat(required("supplier", "POST", "cooperation-invitations/i/respond")).isEqualTo("supplier:profile:manage");
     assertThat(required("supplier", "GET", "orders")).isEqualTo("supplier:order:read");
     assertThat(required("supplier", "POST", "orders/one/confirm")).isEqualTo("supplier:order:manage");
     assertThat(required("platform", "POST", "announcements")).isEqualTo("platform:announcement:manage");
