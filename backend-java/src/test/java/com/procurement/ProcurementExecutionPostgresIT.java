@@ -38,6 +38,7 @@ class ProcurementExecutionPostgresIT {
   @Autowired com.procurement.identity.infrastructure.DataScopeMapper roleScopes;
   @Autowired com.procurement.identity.application.DataScopeService scopes;
   @Autowired com.procurement.order.application.OrderAccessService orderAccess;
+  @Autowired com.procurement.buyer.application.BudgetControlService budget;
   @MockBean AttachmentApplicationService attachments;
   @MockBean UnifiedWorkflowApplicationService workflow;
   @MockBean com.procurement.common.storage.ObjectStorageService storage;
@@ -74,11 +75,15 @@ class ProcurementExecutionPostgresIT {
   @AfterEach void clear() { TenantContext.clear(); }
 
   @Test void realSqlAggregatesWithoutFanoutAndArchivesAreImmutableStaleAndIdempotent() throws Exception {
+    String period=java.time.Year.now(java.time.ZoneId.of("Asia/Shanghai")).toString();
+    assertThat(budget.position(tenant,"dep",period).committed()).isEqualByComparingTo("150");
     var progress=execution.get(rfq);
     assertThat(progress.canArchive()).isTrue();
     assertThat(progress.budgetAmount()).isEqualByComparingTo("150");
     assertThat(progress.paidAmount()).isEqualByComparingTo("100");
     var first=execution.archive(rfq,"Snapshot");
+    assertThat(budget.position(tenant,"dep",period).committed()).isEqualByComparingTo("100");
+    assertThat(budget.position(tenant,"dep",period).releasedAmount()).isEqualByComparingTo("50");
     String snapshot=jdbc.queryForObject("select snapshot::text from procurement_execution_archives where id=?",String.class,first.id());
     assertThat(snapshot).contains("Research equipment","Research instrument","expectedDeliveryDate","demandItems");
     assertThat(execution.archive(rfq,"Retry").id()).isEqualTo(first.id());

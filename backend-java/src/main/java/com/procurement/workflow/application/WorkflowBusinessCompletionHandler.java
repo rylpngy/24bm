@@ -14,6 +14,8 @@ public interface WorkflowBusinessCompletionHandler {
     return false;
   }
 
+  default boolean requiresIndependentApprover() { return false; }
+
   void onCompleted(WorkflowBusinessInstance instance, WorkflowCompletion completion);
 
   default void onCancelled(WorkflowBusinessInstance instance, String actorId, String reason) {

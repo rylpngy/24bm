@@ -5,6 +5,7 @@ export * from './attachment-controller/attachment-controller';
 export * from './auction-stream-controller/auction-stream-controller';
 export * from './audit-log-controller/audit-log-controller';
 export * from './auth-controller/auth-controller';
+export * from './budget-lifecycle-controller/budget-lifecycle-controller';
 export * from './buyer-analytics-controller/buyer-analytics-controller';
 export * from './buyer-announcement-controller/buyer-announcement-controller';
 export * from './buyer-budget-controller/buyer-budget-controller';

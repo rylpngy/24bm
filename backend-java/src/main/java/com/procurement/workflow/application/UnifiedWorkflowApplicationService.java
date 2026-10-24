@@ -207,6 +207,23 @@ public class UnifiedWorkflowApplicationService {
     auditLogApplicationService.recordTenantAction(tenantId, "workflow.cancelled", "purchase_demand", instance.businessId(), comment);
   }
 
+  @Transactional
+  public void withdrawBudgetRequest(String workflowInstanceId,String reason) {
+    String tenant=TenantAccessGuard.requireTenantId("budget withdrawal");
+    String actor=TenantAccessGuard.requireUserId("budget withdrawal");
+    permissionService.require("buyer:budget:manage");
+    if(reason==null || reason.isBlank() || reason.length()>1000) throw new IllegalArgumentException("撤回原因必填且不得超过1000字");
+    var instance=workflowBusinessInstanceMapper.findByTenantAndIdForUpdate(tenant,workflowInstanceId);
+    if(instance==null || !java.util.Set.of("budget_change","budget_exception").contains(instance.businessType())) throw new IllegalArgumentException("预算审批实例不存在");
+    if(!actor.equals(instance.initiatorId()) || !isVisible(instance,dataScopeService.currentUserDataScope())) throw new PermissionDeniedException("仅有权查看的发起人可撤回本人预算申请");
+    if(!WorkflowInstanceStatus.PROCESSING.equals(instance.status())) throw new IllegalStateException("只能撤回审批中的预算申请");
+    runtimeService.deleteProcessInstance(instance.flowableProcessInstanceId(),reason.strip());
+    if(workflowBusinessInstanceMapper.complete(tenant,instance.id(),WorkflowInstanceStatus.CANCELLED,actor)!=1) throw new IllegalStateException("审批状态已变化");
+    workflowTaskEventMapper.insert("workflow-task-event-"+UUID.randomUUID(),tenant,instance.id(),null,null,null,"cancelled",actor,reason.strip());
+    requireCompletionHandler(instance.businessType()).onCancelled(instance,actor,reason.strip());
+    auditLogApplicationService.recordTenantAction(tenant,"workflow.cancelled",instance.businessType(),instance.businessId(),reason.strip());
+  }
+
   public List<UnifiedWorkflowTaskResponse> listCurrentUserTasks() {
     String tenantId = TenantAccessGuard.requireTenantId("unified workflow APIs");
     String userId = TenantAccessGuard.requireUserId("unified workflow APIs");
@@ -229,6 +246,7 @@ public class UnifiedWorkflowApplicationService {
       if (instance == null || !isVisible(instance, dataScope) || !canHandle(task, userId, roleGroups)) {
         continue;
       }
+      if (initiatorHandlingBlocked(instance,userId)) continue;
       tasks.add(toTaskResponse(task, instance));
     }
     return tasks;
@@ -295,6 +313,9 @@ public class UnifiedWorkflowApplicationService {
       throw new IllegalArgumentException("Workflow task is not part of an active tenant workflow: " + taskId);
     }
     WorkflowBusinessCompletionHandler businessHandler = requireCompletionHandler(instance.businessType());
+    if(businessHandler.requiresIndependentApprover() && userId.equals(instance.initiatorId())) {
+      throw new PermissionDeniedException("预算申请与审批须职责分离，请由其他有权审批人办理");
+    }
     if (businessHandler.requiresBusinessProjection() && !businessProjectionEnabled) {
       throw new IllegalStateException("该流程任务必须通过业务审批入口办理，以同步保存节点表单");
     }
@@ -625,6 +646,12 @@ public class UnifiedWorkflowApplicationService {
     }
   }
 
+  private boolean initiatorHandlingBlocked(WorkflowBusinessInstance instance,String userId) {
+    return userId.equals(instance.initiatorId()) && completionHandlers.stream()
+        .filter(handler -> handler.businessType().equals(instance.businessType()))
+        .anyMatch(WorkflowBusinessCompletionHandler::requiresIndependentApprover);
+  }
+
   private boolean canHandle(Task task, String userId, List<String> roleGroups) {
     if (task.getAssignee() != null && !task.getAssignee().isBlank()) {
       return userId.equals(task.getAssignee());
@@ -848,7 +875,7 @@ public class UnifiedWorkflowApplicationService {
             tenantId, groupId.substring(prefix.length())));
       }
     }
-    recipients.removeIf(userId -> !isVisible(
+    recipients.removeIf(userId -> initiatorHandlingBlocked(instance,userId) || !isVisible(
         instance, dataScopeService.userDataScope(tenantId, userId)));
     notificationApplicationService.notifyTenantUsers(
         tenantId,
@@ -1020,6 +1047,8 @@ public class UnifiedWorkflowApplicationService {
   private static String workflowBusinessName(String businessType) {
     return switch (businessType) {
       case "purchase_demand" -> "采购需求";
+      case "budget_change" -> "预算编制与调整";
+      case "budget_exception" -> "超预算例外";
       case "buyer_supplier_admission" -> "供应商准入";
       case "buyer_supplier_exit" -> "供应商退出";
       case "rfq_award" -> "询价定标";

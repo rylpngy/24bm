@@ -30,6 +30,7 @@ export * from './payment-reviews';
 export * from './attachment-integrity';
 export * from './supplier-period-performance';
 export * from './session-permissions';
+export * from './budget-runtime';
 
 export * from './generated/model';
 export * from './generated/controllers';

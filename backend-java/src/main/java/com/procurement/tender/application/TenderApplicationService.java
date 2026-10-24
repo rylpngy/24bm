@@ -62,6 +62,9 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class TenderApplicationService {
+  private com.procurement.buyer.application.BudgetControlService budgetControl;
+  @org.springframework.beans.factory.annotation.Autowired
+  void setBudgetControlService(com.procurement.buyer.application.BudgetControlService control) { this.budgetControl=control; }
   private static final String AUDIT_TARGET = "tender";
 
   private final TenderMapper tenderMapper;
@@ -320,6 +323,7 @@ public class TenderApplicationService {
   @Transactional
   public TenderResponse executeTender(String tenderId, ExecuteTenderRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer tender APIs");
+    if(budgetControl!=null) budgetControl.lock(tenantId);
     Tender tender = requireTenderForUpdate(tenantId, tenderId);
     permissions.require("buyer:order:manage");
     if (TenderPolicy.STATUS_AWARDED.equals(tender.status()) && tender.executionOrderId() != null) {

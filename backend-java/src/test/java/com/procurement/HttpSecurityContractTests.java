@@ -281,6 +281,7 @@ import org.springframework.test.web.servlet.MvcResult;
     BuyerWorkspaceController.class,
     BuyerAnalyticsController.class,
     BuyerBudgetController.class,
+    com.procurement.buyer.api.BudgetLifecycleController.class,
     SupplierWorkspaceController.class,
     AttachmentController.class,
     BuyerNotificationController.class,
@@ -319,6 +320,24 @@ import org.springframework.test.web.servlet.MvcResult;
     "procurement.security.jwt-expires-in-seconds=7200"
 })
 class HttpSecurityContractTests {
+  @Test
+  void budgetLifecycleRequiresAuthenticatedBuyerPortal() throws Exception {
+    String supplierToken = loginAndExtractToken("""
+        {"account":"supplier","password":"demo123456","scope":"SUPPLIER","supplierId":"ent-supplier-sunrise"}
+        """);
+    for (String path : List.of("positions", "departments", "policy", "requests", "ledger", "unassigned-orders")) {
+      mockMvc.perform(get("/api/v1/buyer/budgets/" + path)).andExpect(status().isForbidden());
+      mockMvc.perform(get("/api/v1/buyer/budgets/" + path).header("Authorization", "Bearer " + supplierToken))
+          .andExpect(status().isForbidden());
+    }
+    org.mockito.Mockito.verifyNoInteractions(budgetLifecycleService);
+    String buyerToken = loginAndExtractToken("""
+        {"account":"buyer","password":"demo123456","scope":"BUYER","tenantId":"tenant-acme"}
+        """);
+    when(budgetLifecycleService.positions()).thenReturn(List.of());
+    mockMvc.perform(get("/api/v1/buyer/budgets/positions").header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.data").isEmpty());
+  }
   @Test
   void tenantConfigurationCatalogReadDoesNotGrantCombinedConfigurationWrite() throws Exception {
     String token = loginAndExtractToken("""
@@ -610,6 +629,8 @@ class HttpSecurityContractTests {
 
   @MockBean
   private com.procurement.buyer.application.BudgetApplicationService budgetApplicationService;
+  @MockBean
+  private com.procurement.buyer.application.BudgetLifecycleService budgetLifecycleService;
 
   @MockBean
   private SupplierWorkspaceApplicationService supplierWorkspaceApplicationService;

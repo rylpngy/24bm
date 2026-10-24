@@ -42,19 +42,29 @@ try {
   const departments = [];
   for (const name of ['采购部门A', '采购部门B']) departments.push(await api('buyer/departments', b, { name }));
   const year = new Date().getFullYear().toString();
-  for (const d of departments) await api('buyer/budgets', b, { departmentId: d.id, period: year, totalAmount: 10000 });
   const material = await api('buyer/materials', b, { code: `MAT-${runId}`, name: '采购闭环设备', category: '通用采购', unit: '台', referencePrice: 400 });
   const role = (await api('buyer/roles', b)).find(r => r.permissions.includes('buyer:*')); assert.ok(role);
-  for (const businessType of ['buyer_supplier_admission', 'purchase_demand', 'rfq_award', 'contract_approval', 'payment_request', 'payment_batch']) {
+  const budgetReviewerAccount = `budget-review-${runId}@example.com`;
+  await api('buyer/users', b, { name: '预算审批人', email: budgetReviewerAccount, status: 'active', departmentId: departments[0].id, roleId: role.id, initialPassword: password });
+  const budgetReviewer = await login(budgetReviewerAccount, 'BUYER', { tenantId: runId });
+  for (const businessType of ['buyer_supplier_admission', 'purchase_demand', 'rfq_award', 'contract_approval', 'payment_request', 'payment_batch', 'budget_change', 'budget_exception']) {
     const definition = await api('buyer/process-definitions', b, { name: `闭环审批 ${businessType}`, businessType, icon: 'file-text' });
     await api(`buyer/process-definitions/${definition.id}`, b, { name: definition.name, businessType, status: 'draft', formSchema: '{"fields":[]}',
       flowSchema: JSON.stringify({ steps: [{ id: 'review', type: 'approver', title: '业务审核', assignment: { type: 'role', roleId: role.id } }] }) }, 'PUT');
     await api(`buyer/process-definitions/${definition.id}/publish`, b, {});
   }
   const relation = await api('buyer/suppliers', b, { supplierId, status: '待准入', level: '普通', categories: ['通用采购'] });
+  for (const d of departments) {
+    const application = await api('buyer/budgets/requests', b, { departmentId: d.id, period: year, kind: 'initial', targetAmount: 10000, title: '年度采购预算', reason: '隔离验收的年度采购计划' });
+    await api(`buyer/budgets/requests/${application.id}/submit`, b, { formData: {} });
+    await decide(budgetReviewer.accessToken, 'budget_change', application.id);
+  }
+  check('department budgets require separate real reviewer approval before becoming effective');
   await api(`buyer/suppliers/${relation.id}/submit`, b, { formData: {} }); await decide(b, 'buyer_supplier_admission', relation.id);
   const body = (i, quantity, budget) => ({ title: `采购需求 ${runId}-${i}`, departmentId: departments[i].id, budget, purpose: '真实隔离验收', lineItems: [{ materialId: material.id, quantity }] });
-  let demand1 = await api('buyer/demands', b, body(0, 3, 1200));
+  const firstDemandBudget = Number(process.env.ACCEPTANCE_FIRST_DEMAND_BUDGET ?? 1200);
+  assert.ok(Number.isFinite(firstDemandBudget) && firstDemandBudget >= 1200);
+  let demand1 = await api('buyer/demands', b, body(0, 3, firstDemandBudget));
   const attachmentBody = { ownerType: 'purchase_demand', ownerId: demand1.id, fileName: '采购论证材料.txt', visibility: 'buyer_internal' };
   const ticket = await api('buyer/attachments/upload-ticket', b, attachmentBody);
   const attachmentBytes = Buffer.from(`采购项目归档验收原件 ${runId}`, 'utf8');
@@ -64,7 +74,7 @@ try {
   report.records.attachmentId = attachment.id;
   await api(`buyer/demands/${demand1.id}/submit`, b, { formData: {} });
   const rejected = await decide(b, 'purchase_demand', demand1.id, 'reject');
-  demand1 = await api(`buyer/demands/${demand1.id}`, b, { ...body(0, 3, 1200), purpose: '按意见补正' }, 'PUT');
+  demand1 = await api(`buyer/demands/${demand1.id}`, b, { ...body(0, 3, firstDemandBudget), purpose: '按意见补正' }, 'PUT');
   await api(`buyer/demands/${demand1.id}/submit`, b, { formData: {} });
   const resubmitted = await decide(b, 'purchase_demand', demand1.id); assert.notEqual(resubmitted.workflowInstanceId, rejected.workflowInstanceId);
   const demand2 = await api('buyer/demands', b, body(1, 2, 600));
@@ -156,8 +166,13 @@ try {
   check('unresolved rejected receipt cannot pass amount-only matching; prepared for real UI disposition review');
   report.records.demandIds = [demand1.id, demand2.id]; report.records.batchNo = batchNo; report.downloadDirectory = output;
   report.budgets = await api('buyer/budgets', b);
-  assert.equal(report.budgets.find(x => x.departmentId === departments[0].id).disbursed, 1200);
-  assert.equal(report.budgets.find(x => x.departmentId === departments[1].id).disbursed, 600);
+  const allocatedFirst = Math.round(1800 * firstDemandBudget / (firstDemandBudget + 600) * 100) / 100;
+  assert.equal(report.budgets.find(x => x.departmentId === departments[0].id).disbursed, allocatedFirst);
+  assert.equal(report.budgets.find(x => x.departmentId === departments[1].id).disbursed, 1800 - allocatedFirst);
+  report.budgetPositions = await api('buyer/budgets/positions', b);
+  const release = report.budgetPositions.reduce((sum, row) => sum + row.releasedAmount, 0);
+  assert.equal(Math.round(release * 100), Math.round((firstDemandBudget + 600 - 1800) * 100));
+  check('real archived project releases unused demand reservation without deducting payment twice');
   check('cross-department net payment is allocated explicitly without omission or double counting');
   report.passed = true;
 } catch (error) { report.error = error.message; process.exitCode = 1; }

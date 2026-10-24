@@ -296,6 +296,8 @@ public class WorkflowDefinitionPublicationService {
   private static String workflowName(String businessType) {
     return switch (businessType) {
       case "purchase_demand" -> "采购需求";
+      case "budget_change" -> "预算编制与调整";
+      case "budget_exception" -> "超预算例外";
       case "buyer_supplier_admission" -> "供应商准入";
       case "buyer_supplier_exit" -> "供应商退出";
       case "rfq_award" -> "询价定标";

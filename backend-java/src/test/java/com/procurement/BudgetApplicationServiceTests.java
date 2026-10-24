@@ -78,35 +78,18 @@ class BudgetApplicationServiceTests {
   @Test
   void upsertReusesExistingIdWhenPresent() {
     TenantContext.set("tenant-1", null, "buyer-user");
-    when(mapper.findId("tenant-1", "dept-it", "2026")).thenReturn("budget-it-2026");
-    when(mapper.findByTenantAndId("tenant-1", "budget-it-2026")).thenReturn(
-        new DepartmentBudget(
-            "budget-it-2026", "dept-it", "信息化部", "2026",
-            new BigDecimal("500000"), BigDecimal.ZERO, BigDecimal.ZERO, new java.math.BigDecimal("0")));
-
-    DepartmentBudgetResponse r = service.upsertBudget(
-        new UpsertDepartmentBudgetRequest("dept-it", "2026", new BigDecimal("500000")));
-
-    verify(mapper).upsert(
-        eq("budget-it-2026"), eq("tenant-1"), eq("dept-it"), eq("2026"),
-        eq(new BigDecimal("500000")));
-    assertThat(r.totalAmount()).isEqualByComparingTo("500000");
+    org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.upsertBudget(
+        new UpsertDepartmentBudgetRequest("dept-it", "2026", new BigDecimal("500000"))))
+        .hasMessageContaining("提交审批");
+    org.mockito.Mockito.verify(mapper,org.mockito.Mockito.never()).upsert(any(),any(),any(),any(),any());
   }
 
   @Test
   void upsertGeneratesIdWhenNew() {
     TenantContext.set("tenant-1", null, "buyer-user");
-    when(mapper.findId("tenant-1", "dept-new", "2026")).thenReturn(null, "budget-generated");
-    when(mapper.findByTenantAndId(eq("tenant-1"), any())).thenReturn(
-        new DepartmentBudget(
-            "budget-generated", "dept-new", "新部门", "2026",
-            new BigDecimal("100000"), BigDecimal.ZERO, BigDecimal.ZERO, new java.math.BigDecimal("0")));
-
-    service.upsertBudget(
-        new UpsertDepartmentBudgetRequest("dept-new", "2026", new BigDecimal("100000")));
-
-    verify(mapper).upsert(
-        org.mockito.ArgumentMatchers.startsWith("budget-"),
-        eq("tenant-1"), eq("dept-new"), eq("2026"), eq(new BigDecimal("100000")));
+    org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.upsertBudget(
+        new UpsertDepartmentBudgetRequest("dept-new", "2026", new BigDecimal("100000"))))
+        .hasMessageContaining("提交审批");
+    org.mockito.Mockito.verify(mapper,org.mockito.Mockito.never()).upsert(any(),any(),any(),any(),any());
   }
 }

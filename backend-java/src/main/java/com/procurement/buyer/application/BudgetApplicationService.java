@@ -18,6 +18,10 @@ public class BudgetApplicationService {
   private final com.procurement.identity.application.PermissionService permissions;
   private final com.procurement.identity.application.DataScopeService scopes;
   private final com.procurement.audit.application.AuditLogApplicationService audit;
+  private BudgetControlService control;
+
+  @org.springframework.beans.factory.annotation.Autowired
+  void setBudgetControlService(BudgetControlService control) { this.control=control; }
 
   public BudgetApplicationService(DepartmentBudgetMapper budgetMapper,
       com.procurement.identity.application.PermissionService permissions,
@@ -29,6 +33,7 @@ public class BudgetApplicationService {
     this.audit = audit;
   }
 
+  @org.springframework.transaction.annotation.Transactional(readOnly=true,isolation=org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
   public List<DepartmentBudgetResponse> listBudgets() {
     String tenantId = TenantAccessGuard.requireTenantId("budget APIs");
     permissions.require("buyer:budget:read");
@@ -39,22 +44,12 @@ public class BudgetApplicationService {
   public DepartmentBudgetResponse upsertBudget(UpsertDepartmentBudgetRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("budget APIs");
     permissions.require("buyer:budget:manage");
-    var scope = scopes.currentUserDataScope();
-    if (scope.restricted() && (scope.requesterId() != null || !scope.departmentIds().contains(request.departmentId()))) {
+    var scope=scopes.currentUserDataScope();
+    if(scope.restricted() && (scope.requesterId()!=null || !scope.departmentIds().contains(request.departmentId()))) {
       throw new com.procurement.common.tenant.PermissionDeniedException("当前数据范围不允许维护该部门预算");
     }
-    if (!budgetMapper.activeDepartmentExists(tenantId, request.departmentId())) {
-      throw new IllegalArgumentException("请选择本企业的有效部门");
-    }
-    String existingId =
-        budgetMapper.findId(tenantId, request.departmentId(), request.period());
-    String id = existingId != null ? existingId : "budget-" + UUID.randomUUID();
-    budgetMapper.upsert(
-        id, tenantId, request.departmentId(), request.period(), request.totalAmount());
-    String savedId = budgetMapper.findId(tenantId, request.departmentId(), request.period());
-    audit.recordCurrentTenantAction("department_budget.updated", "department_budget", savedId,
-        "期间:" + request.period() + ";预算总额:" + request.totalAmount().toPlainString());
-    return toResponse(budgetMapper.findByTenantAndId(tenantId, savedId));
+    if(!budgetMapper.activeDepartmentExists(tenantId,request.departmentId())) throw new IllegalArgumentException("请选择本企业有效部门");
+    throw new IllegalStateException("直接修改生效预算已停用，请在预算编制/调整中创建申请并提交审批");
   }
 
   private DepartmentBudgetResponse toResponse(DepartmentBudget b) {
@@ -62,6 +57,10 @@ public class BudgetApplicationService {
     BigDecimal committed = b.committed() == null ? BigDecimal.ZERO : b.committed();
     BigDecimal pending = b.pending() == null ? BigDecimal.ZERO : b.pending();
     BigDecimal disbursed = b.disbursed();
+    if(control!=null) {
+      var position=control.position(com.procurement.common.tenant.TenantAccessGuard.requireTenantId("budget APIs"),b.departmentId(),b.period());
+      committed=position.committed();pending=position.pending();disbursed=position.paidAmount();
+    }
     BigDecimal occupied = committed.add(pending);
     BigDecimal remaining = total.subtract(occupied);
     Integer occupancyPercent =

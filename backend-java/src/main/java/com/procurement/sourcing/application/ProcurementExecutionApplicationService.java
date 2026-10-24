@@ -25,6 +25,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ProcurementExecutionApplicationService {
+  private com.procurement.buyer.application.BudgetControlService budgetControl;
+  @org.springframework.beans.factory.annotation.Autowired
+  void setBudgetControlService(com.procurement.buyer.application.BudgetControlService control) { this.budgetControl=control; }
   @Transactional(readOnly=true, isolation=Isolation.REPEATABLE_READ,
       propagation=org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
   public com.procurement.common.ai.AiContracts.Snapshot captureAiEvidence(String rfqId) {
@@ -109,6 +112,7 @@ public class ProcurementExecutionApplicationService {
 
   @Transactional
   public ArchiveSummary archive(String rfqId,String remark) {
+    if(budgetControl!=null) budgetControl.lock(TenantAccessGuard.requireTenantId("budget settlement"));
     String tenant=authorize(rfqId,true);
     if (remark==null || remark.isBlank() || remark.length()>1000) throw new IllegalArgumentException("归档备注必填，长度须为1至1000字");
     if (mapper.lockRfq(tenant,rfqId)==null) throw new IllegalArgumentException("采购项目不存在");
@@ -118,7 +122,10 @@ public class ProcurementExecutionApplicationService {
     if (!result.blockers().isEmpty()) throw new IllegalStateException("采购项目尚不可归档：" + String.join("；",result.blockers()));
     String hash=ProcurementExecutionArchiveWriter.hash(captured.snapshot());
     var prior=mapper.archives(tenant,rfqId).stream().filter(a -> a.sha256().equals(hash)).findFirst();
-    if (prior.isPresent()) return summary(prior.get(),false);
+    if (prior.isPresent()) {
+      if(budgetControl!=null) budgetControl.settleProject(tenant,rfqId,prior.get().id(),result.orderAmount(),result.paidAmount());
+      return summary(prior.get(),false);
+    }
     byte[] zip=ProcurementExecutionArchiveWriter.write(captured.snapshot(),captured.files(),json);
     var recheck=capture(tenant,rfqId,true);
     if (!hash.equals(ProcurementExecutionArchiveWriter.hash(recheck.snapshot()))) throw new IllegalStateException("归档期间业务数据或附件发生变化，请重试");
@@ -126,6 +133,7 @@ public class ProcurementExecutionApplicationService {
         captured.snapshot().toString(),hash,TenantAccessGuard.requireUserId("procurement execution archive"),
         OffsetDateTime.now(),remark==null?"":remark,zip);
     mapper.insert(archive);
+    if(budgetControl!=null) budgetControl.settleProject(tenant,rfqId,archive.id(),result.orderAmount(),result.paidAmount());
     return summary(archive,false);
   }
 
