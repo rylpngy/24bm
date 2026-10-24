@@ -13872,6 +13872,245 @@
         }
       }
     },
+    "/api/v1/buyer/identity-bindings": {
+      "get": {
+        "tags": [
+          "external-identity-controller"
+        ],
+        "operationId": "externalIdentityList",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 10
+            }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": ""
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseExternalIdentityBindingPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "external-identity-controller"
+        ],
+        "operationId": "externalIdentityCreate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExternalIdentityCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseExternalIdentityBinding"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/identity-bindings/{id}/status": {
+      "post": {
+        "tags": [
+          "external-identity-controller"
+        ],
+        "operationId": "externalIdentityStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExternalIdentityChangeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseExternalIdentityBinding"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/identity-bindings/{id}/member": {
+      "post": {
+        "tags": [
+          "external-identity-controller"
+        ],
+        "operationId": "externalIdentityRemap",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExternalIdentityRemapRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseExternalIdentityBinding"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/esign-records": {
       "get": {
         "tags": [
@@ -22994,6 +23233,46 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseListInvoiceReconciliationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/identity-bindings/readiness": {
+      "get": {
+        "tags": [
+          "external-identity-controller"
+        ],
+        "operationId": "externalIdentityReadiness",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseExternalIdentityReadiness"
                 }
               }
             }
@@ -32907,6 +33186,144 @@
           }
         }
       },
+      "ExternalIdentityCreateRequest": {
+        "required": [
+          "reason",
+          "subject",
+          "userId"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "maxLength": 80,
+            "minLength": 0,
+            "type": "string"
+          },
+          "subject": {
+            "maxLength": 255,
+            "minLength": 0,
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 1000,
+            "minLength": 0,
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseExternalIdentityBinding": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ExternalIdentityBinding"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ExternalIdentityBinding": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "issuer": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "validAfter": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "name": {
+            "type": "string"
+          },
+          "employeeNo": {
+            "type": "string"
+          },
+          "userStatus": {
+            "type": "string"
+          }
+        }
+      },
+      "ExternalIdentityChangeRequest": {
+        "required": [
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "revision": {
+            "minimum": 1,
+            "type": "integer",
+            "format": "int32"
+          },
+          "reason": {
+            "maxLength": 1000,
+            "minLength": 0,
+            "type": "string"
+          }
+        }
+      },
+      "ExternalIdentityRemapRequest": {
+        "required": [
+          "reason",
+          "userId"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "maxLength": 80,
+            "minLength": 0,
+            "type": "string"
+          },
+          "revision": {
+            "minimum": 1,
+            "type": "integer",
+            "format": "int32"
+          },
+          "reason": {
+            "maxLength": 1000,
+            "minLength": 0,
+            "type": "string"
+          }
+        }
+      },
       "CreateDepartmentRequest": {
         "required": [
           "name"
@@ -37831,6 +38248,94 @@
           "adoptionRate": {
             "type": "number",
             "format": "double"
+          }
+        }
+      },
+      "ApiResponseExternalIdentityBindingPage": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ExternalIdentityBindingPage"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ExternalIdentityBindingPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExternalIdentityBinding"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ApiResponseExternalIdentityReadiness": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ExternalIdentityReadiness"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ExternalIdentityReadiness": {
+        "type": "object",
+        "properties": {
+          "externalEnabled": {
+            "type": "boolean"
+          },
+          "issuerConfigured": {
+            "type": "boolean"
+          },
+          "audienceConfigured": {
+            "type": "boolean"
+          },
+          "strictMapping": {
+            "type": "boolean"
+          },
+          "selfIssuedAccepted": {
+            "type": "boolean"
+          },
+          "issuer": {
+            "type": "string"
+          },
+          "totalBindings": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "activeBindings": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "pendingItems": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },

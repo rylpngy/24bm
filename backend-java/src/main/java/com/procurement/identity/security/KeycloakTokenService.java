@@ -22,6 +22,12 @@ public class KeycloakTokenService {
   private final String issuer;
   private final String audience;
   private volatile JwtDecoder decoder;
+  private com.procurement.identity.application.ExternalIdentityService identities;
+
+  @Autowired(required=false)
+  public void setExternalIdentities(com.procurement.identity.application.ExternalIdentityService identities) {
+    this.identities = identities;
+  }
 
   @Autowired
   public KeycloakTokenService(
@@ -63,6 +69,10 @@ public class KeycloakTokenService {
   // 验签并映射为 AuthenticatedPrincipal;失败抛异常由调用方回退处理。
   public AuthenticatedPrincipal parse(String token) {
     Jwt jwt = decoder().decode(token);
+    if (identities != null) {
+      var mapped = identities.resolve(jwt);
+      if (mapped != null) return mapped;
+    }
     String userId = stringClaim(jwt, "userId", jwt.getSubject());
     String displayName = stringClaim(jwt, "displayName", userId);
     String scope = stringClaim(jwt, "authScope", null);

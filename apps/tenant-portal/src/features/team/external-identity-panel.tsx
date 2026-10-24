@@ -1,0 +1,41 @@
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Plus, RefreshCw, Search, X } from 'lucide-react';
+import { externalBindings, identityReadiness, createExternalBinding, changeExternalBinding, remapExternalBinding, useBuyerUserList, type ExternalBinding } from '@24bid/api-client';
+import { ConfirmDialog, FeedbackNotice, Pagination } from '@24bid/ui';
+import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
+
+const button='inline-flex h-9 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 disabled:opacity-50';
+const field='h-10 w-full min-w-0 rounded-md border border-slate-200 bg-white px-3 text-sm';
+function errorText(e: unknown) { return (e as {response?:{data?:{message?:string}}}).response?.data?.message || '操作失败，请刷新后重试。'; }
+export function ExternalIdentityPanel() {
+  const { can }=useBuyerPermissions();
+  if(!can('buyer:role:manage'))return <FeedbackNotice tone="error" message="无统一身份管理权限。" />;
+  return <IdentityPanel />;
+}
+function IdentityPanel() {
+  const client=useQueryClient(),users=useBuyerUserList();
+  const[page,setPage]=useState(1),[search,setSearch]=useState(''),[keyword,setKeyword]=useState('');
+  const[form,setForm]=useState(false),[userId,setUserId]=useState(''),[subject,setSubject]=useState(''),[reason,setReason]=useState('');
+  const[editing,setEditing]=useState<ExternalBinding|null>(null);
+  const[target,setTarget]=useState<ExternalBinding|null>(null),[busy,setBusy]=useState(false),[feedback,setFeedback]=useState<{tone:'success'|'error';message:string}|null>(null);
+  const readiness=useQuery({queryKey:['identity-readiness'],queryFn:identityReadiness});
+  const list=useQuery({queryKey:['external-bindings',page,keyword],queryFn:()=>externalBindings(page,keyword)});
+  const state=readiness.data,ready=state?.externalEnabled&&state.issuerConfigured;
+  const refresh=()=>client.invalidateQueries({predicate:q=>['external-bindings','identity-readiness'].includes(String(q.queryKey[0]))});
+  return <section aria-label="统一身份接入" className="space-y-4">
+    <header className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-sm font-bold text-slate-900">统一身份接入</h2><div className="flex gap-2"><button type="button" className={button} title="刷新接入状态" aria-label="刷新接入状态" disabled={busy} onClick={()=>void refresh()}><RefreshCw size={14}/></button><button type="button" className={button} disabled={busy||!ready||readiness.isError} onClick={()=>{setEditing(null);setForm(true);setUserId('');setSubject('');setReason('');setFeedback(null);}}><Plus size={14}/>新增映射</button></div></header>
+    {feedback&&<FeedbackNotice {...feedback}/>}
+    {readiness.isError?<FeedbackNotice tone="error" message="身份接入状态加载失败，请刷新重试。"/>:state&&<div className="border-b border-slate-200 pb-4"><dl className="grid gap-3 text-sm sm:grid-cols-3"><div><dt className="text-xs text-slate-500">可信身份源</dt><dd className="mt-1 break-all font-semibold">{state.issuer||'尚未配置'}</dd></div><div><dt className="text-xs text-slate-500">账号校验</dt><dd className="mt-1 font-semibold">{state.strictMapping?'严格映射':'兼容现有账号'}</dd></div><div><dt className="text-xs text-slate-500">映射 / 可用成员</dt><dd className="mt-1 font-semibold">{state.totalBindings} / {state.activeBindings}</dd></div></dl><details className="mt-3 text-xs text-slate-600"><summary className="cursor-pointer font-bold">待完成接入事项（{state.pendingItems.length}）</summary><ul className="mt-2 list-inside list-disc space-y-1">{state.pendingItems.map(x=><li key={x}>{x}</li>)}</ul></details></div>}
+    {form&&<form aria-label={editing?'重新绑定成员':'新增身份映射'} className="grid gap-3 border-b border-slate-200 pb-4 sm:grid-cols-2" onSubmit={e=>{e.preventDefault();if(busy)return;setBusy(true);const action=editing?remapExternalBinding(editing.id,{userId,revision:editing.revision,reason:reason.trim()}):createExternalBinding({userId,subject:subject.trim(),reason:reason.trim()});void action.then(()=>{setForm(false);setPage(1);setFeedback({tone:'success',message:editing?'成员已重新绑定，请重新登录验证。':'映射已创建，请使用新签发令牌登录验证。'});return refresh();}).catch(e=>setFeedback({tone:'error',message:errorText(e)})).finally(()=>setBusy(false));}}>
+      <label className="space-y-1 text-xs font-bold">本地成员 *<select aria-label="映射成员" required disabled={busy||users.isError} className={field} value={userId} onChange={e=>setUserId(e.target.value)}><option value="">请选择</option>{users.data?.data?.filter(u=>u.status==='active').map(u=><option key={u.id} value={u.id}>{u.name} · {u.employeeNo||u.email||u.id}</option>)}</select></label>
+      <label className="space-y-1 text-xs font-bold">外部账号标识（sub） *<input aria-label="外部账号标识" required maxLength={255} disabled={busy||Boolean(editing)} className={field} value={subject} onChange={e=>setSubject(e.target.value)}/></label>
+      <label className="space-y-1 text-xs font-bold sm:col-span-2">绑定依据 *<textarea aria-label="绑定依据" required maxLength={1000} disabled={busy} className="min-h-20 w-full rounded-md border border-slate-200 p-3 text-sm font-normal" value={reason} onChange={e=>setReason(e.target.value)}/></label>
+      {users.isError&&<FeedbackNotice tone="error" message="成员加载失败，不能提交映射。"/>}
+      <div className="flex justify-end gap-2 sm:col-span-2"><button type="button" className={button} disabled={busy} onClick={()=>setForm(false)}><X size={14}/>取消</button><button type="submit" className={button} disabled={busy||!ready||users.isError}>保存映射</button></div>
+    </form>}
+    <form className="flex flex-wrap gap-2" onSubmit={e=>{e.preventDefault();setPage(1);setKeyword(search.trim());}}><input aria-label="搜索身份映射" placeholder="姓名、工号、外部账号" maxLength={255} className={field+' sm:max-w-80'} value={search} onChange={e=>setSearch(e.target.value)}/><button type="submit" className={button}><Search size={14}/>搜索</button></form>
+    {list.isError?<FeedbackNotice tone="error" message="账号映射加载失败，请刷新重试。"/>:list.isLoading?<p className="text-sm text-slate-500">正在加载账号映射…</p>:<><div className="overflow-x-auto"><table className="w-full min-w-[920px] table-fixed text-left text-sm"><thead className="bg-slate-50 text-xs text-slate-500"><tr><th className="w-44 p-3">本地成员</th><th className="p-3">外部账号</th><th className="w-28 p-3">状态</th><th className="w-40 p-3">变更依据</th><th className="w-52 p-3 text-right">操作</th></tr></thead><tbody className="divide-y divide-slate-100">{list.data?.items.map(r=><tr key={r.id}><td className="p-3"><p className="truncate font-bold">{r.name}</p><p className="truncate text-xs text-slate-500">{r.employeeNo||'未设置工号'}</p></td><td className="p-3"><p className="truncate font-mono text-xs" title={r.subject}>{r.subject}</p><p className="mt-1 truncate text-xs text-slate-500" title={r.issuer}>{r.issuer}</p></td><td className="whitespace-nowrap p-3">{r.userStatus!=='active'?'成员已停用':r.enabled?'已启用':'已停用'}</td><td className="truncate p-3 text-xs" title={r.reason}>{r.reason}</td><td className="p-3"><div className="flex justify-end gap-2"><button type="button" className={button} disabled={busy} onClick={()=>{setEditing(r);setForm(true);setUserId('');setSubject(r.subject);setReason('');setFeedback(null);}}>重新绑定</button><button type="button" className={button} disabled={busy||(!r.enabled&&r.userStatus!=='active')} onClick={()=>setTarget(r)}>{r.enabled?'停用':'启用'}</button></div></td></tr>)}{!list.data?.items.length&&<tr><td colSpan={5} className="p-8 text-center text-slate-500">暂无账号映射。</td></tr>}</tbody></table></div><Pagination page={page} pageSize={10} total={list.data?.total||0} onPageChange={setPage}/></>}
+    <ConfirmDialog open={Boolean(target)} title={target?.enabled?'停用身份映射':'启用身份映射'} message={target?.enabled?'停用后，该外部账号将立即失去系统访问权限，本地账号和历史单据不会删除。':'重新启用后需要重新登录获取新令牌。'} input={{label:'变更原因',placeholder:'请输入依据',minLength:1}} confirmLabel="确认变更" busy={busy} onCancel={()=>setTarget(null)} onConfirm={reason=>{if(!target||busy)return;setBusy(true);void changeExternalBinding(target.id,{enabled:!target.enabled,revision:target.revision,reason}).then(()=>{setTarget(null);setFeedback({tone:'success',message:'身份映射状态已更新。'});return refresh();}).catch(e=>setFeedback({tone:'error',message:errorText(e)})).finally(()=>setBusy(false));}}/>
+  </section>;
+}

@@ -2,6 +2,10 @@
 
 ## 当前状态（2026-10-24，以本节为准）
 
+最新已合并并发布的原系统为PR128/main `3e93657756fe9838dc4f6aff22e1d70ee04f92b5`，固定目录`/Users/epl/.codex/deployments/24bid-base/3e93657756fe`，170表/130迁移/5附件。第二批SRM已完成双端业务、CI、四端只读验收与发布后摘要核对。下方PR127及更早内容均为历史。
+
+第三批当前分支`codex/identity-integration-readiness`，仅推进不依赖客户环境的统一身份接入准备：issuer+sub显式映射本地成员、严格模式、启停/重绑及旧令牌失效、权限实时读取、配置状态及前端管理。V233只新增空映射表，不自动关联原账号，不切prod或改变原认证参数。指南见`docs/identity-integration-guide.md`，计划见`docs/identity-integration-readiness-plan.md`。正式SSO/HR同步、外部供应链/财务/支付/模型及客户容量仍待环境，不能将本地RSA/Keycloak验证写成客户联调已完成。候选版本的实际合并/发布以GitHub及固定发布目录RESTORATION.md为准。
+
 最新原系统为PR127/main `0f62ee09ed8d24aa51e3b583a15ff1ebb8a8b2a1`，固定目录`/Users/epl/.codex/deployments/24bid-base/0f62ee09ed8d`，168表/5附件，预算仍预警。下方PR126等为历史。
 
 第二批既定范围为SRM业务深化，分支`codex/srm-qualification-workflow-closeout`。新增资质变更统一多级审批、补件任务及双端回复/闭合、到期阶段通知、供应商关系Excel导入、错误反馈和成员空岗位修复。V232只新增2表，不改原行。全量回归及9项本批数据库定向、真实HTTP7组、双端桌面/手机已通过。指南与结果见`docs/srm-business-deepening-guide.md`、`docs/srm-business-deepening-result.md`；写入验收在`srm_deepening_1792850182387`/8095/5197—5198及独立桶，不是原系统。原数据新备份`srm-backup-1792850090236`。本段为开发交付快照，合并与部署实际状态以GitHub和固定目录RESTORATION.md为准，不将等待交付冒称已发布。
