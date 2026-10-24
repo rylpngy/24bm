@@ -54,7 +54,7 @@ export function SuppliersPage() {
 
   const items: SubItem[] = [
     { id: 'list', label: '供应商列表', desc: '私域档案与合作状态', icon: Boxes },
-    { id: 'sourcing', label: '智能寻源', desc: '全网匹配候选供应商', icon: Search },
+    { id: 'sourcing', label: '智能寻源', desc: '检索平台供应商目录', icon: Search },
     { id: 'invitation', label: '邀请管理', desc: '入驻邀请与进度', icon: Mail },
     { id: 'admission', label: '准入审批', desc: '资质核验与准入', icon: ShieldCheck, badge: admissionCount || undefined },
     { id: 'performance', label: '绩效看板', desc: '交付与报价表现', icon: Gauge },
