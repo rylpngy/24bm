@@ -34,6 +34,7 @@ public class SeedFlywayRunner {
           .dataSource(dataSource)
           .locations(locations.split(","))
           .table("flyway_seed_history")
+          .callbacks(new LegacyFulfillmentSeedCallback())
           // 种子链跑在业务 schema 已就绪的非空库上:以 0 为基线初始化自己的历史表,
           // 全部种子版本(V1xx/V2xx)> 0,首次即完整应用。
           .baselineOnMigrate(true)
