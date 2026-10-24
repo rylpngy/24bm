@@ -11,6 +11,7 @@ import com.procurement.identity.api.UpdateRoleDataScopeRequest;
 import com.procurement.identity.api.UpdateRolePermissionsRequest;
 import com.procurement.identity.domain.BuyerPermissionCatalog;
 import com.procurement.identity.domain.BuyerRole;
+import com.procurement.identity.domain.BuyerRolePolicy;
 import com.procurement.identity.domain.DataScope;
 import com.procurement.identity.infrastructure.BuyerRoleMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -29,6 +30,7 @@ public class BuyerRoleApplicationService {
   private final BuyerRoleMapper buyerRoleMapper;
   private final PermissionService permissionService;
   private final ApplicationEventPublisher eventPublisher;
+  private final BuyerAdministrationGuard administrationGuard;
 
   public BuyerRoleApplicationService(
       BuyerRoleMapper buyerRoleMapper,
@@ -37,6 +39,7 @@ public class BuyerRoleApplicationService {
     this.buyerRoleMapper = buyerRoleMapper;
     this.permissionService = permissionService;
     this.eventPublisher = eventPublisher;
+    this.administrationGuard = new BuyerAdministrationGuard(buyerRoleMapper);
   }
 
   public List<BuyerRoleResponse> listCurrentTenantRoles() {
@@ -49,6 +52,7 @@ public class BuyerRoleApplicationService {
   @Transactional
   public BuyerRoleResponse createRole(CreateBuyerRoleRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer role APIs");
+    administrationGuard.lockAndCount(tenantId);
     permissionService.require("buyer:role:manage");
     String name = request.name().trim();
     requireRoleNameAvailable(tenantId, name, null);
@@ -64,6 +68,7 @@ public class BuyerRoleApplicationService {
   @Transactional
   public BuyerRoleResponse updateRole(String roleId, UpdateBuyerRoleRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer role APIs");
+    int administrators = administrationGuard.lockAndCount(tenantId);
     permissionService.require("buyer:role:manage");
     BuyerRole current = requireBuyerRole(tenantId, roleId);
     requireMutableRole(current);
@@ -72,6 +77,7 @@ public class BuyerRoleApplicationService {
     List<String> permissions = normalizeAndValidatePermissions(request.permissions());
     requireValidDataScope(request.dataScope());
     buyerRoleMapper.updateDetails(tenantId, roleId, name, writePermissions(permissions), request.dataScope());
+    administrationGuard.requireAdministratorPreserved(tenantId, administrators);
     eventPublisher.publishEvent(
         new DomainAuditEvent("buyer_role.updated", "buyer_role", roleId, "角色资料更新: " + name));
     return toResponse(buyerRoleMapper.findBuyerRoleByTenantAndId(tenantId, roleId));
@@ -80,6 +86,7 @@ public class BuyerRoleApplicationService {
   @Transactional
   public void deleteRole(String roleId) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer role APIs");
+    int administrators = administrationGuard.lockAndCount(tenantId);
     permissionService.require("buyer:role:manage");
     BuyerRole role = requireBuyerRole(tenantId, roleId);
     if (isBuiltInRole(role)) {
@@ -89,6 +96,7 @@ public class BuyerRoleApplicationService {
       throw new IllegalStateException("该角色仍有关联成员，请先为成员分配其他角色");
     }
     buyerRoleMapper.deleteBuyerRole(tenantId, roleId);
+    administrationGuard.requireAdministratorPreserved(tenantId, administrators);
     eventPublisher.publishEvent(
         new DomainAuditEvent("buyer_role.deleted", "buyer_role", roleId, "删除角色: " + role.name()));
   }
@@ -110,6 +118,7 @@ public class BuyerRoleApplicationService {
   @Transactional
   public BuyerRoleResponse updateRolePermissions(String roleId, UpdateRolePermissionsRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer role APIs");
+    int administrators = administrationGuard.lockAndCount(tenantId);
     permissionService.require("buyer:role:manage");
     BuyerRole role = requireBuyerRole(tenantId, roleId);
     requireMutableRole(role);
@@ -121,6 +130,7 @@ public class BuyerRoleApplicationService {
     List<String> merged =
         java.util.stream.Stream.concat(preserved.stream(), submitted.stream()).distinct().toList();
     buyerRoleMapper.updatePermissions(tenantId, roleId, writePermissions(merged));
+    administrationGuard.requireAdministratorPreserved(tenantId, administrators);
     eventPublisher.publishEvent(
         new DomainAuditEvent("buyer_role.permissions_updated", "buyer_role", roleId));
     return toResponse(buyerRoleMapper.findBuyerRoleByTenantAndId(tenantId, roleId));
@@ -130,6 +140,7 @@ public class BuyerRoleApplicationService {
   @Transactional
   public BuyerRoleResponse updateRoleDataScope(String roleId, UpdateRoleDataScopeRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer role APIs");
+    administrationGuard.lockAndCount(tenantId);
     permissionService.require("buyer:role:manage");
     requireValidDataScope(request.dataScope());
     BuyerRole role = requireBuyerRole(tenantId, roleId);
@@ -166,7 +177,8 @@ public class BuyerRoleApplicationService {
         role.name(),
         parsePermissions(role.permissionsJson()),
         role.dataScope(),
-        isBuiltInRole(role));
+        isBuiltInRole(role),
+        BuyerRolePolicy.isProtectedOwner(role.id(), role.tenantId()));
   }
 
   private BuyerRole requireBuyerRole(String tenantId, String roleId) {
@@ -200,13 +212,13 @@ public class BuyerRoleApplicationService {
   }
 
   private void requireMutableRole(BuyerRole role) {
-    if ("role-buyer-owner".equals(role.id())) {
+    if (BuyerRolePolicy.isProtectedOwner(role.id(), role.tenantId())) {
       throw new IllegalStateException("采购管理员是系统保护角色，不可修改权限或数据范围");
     }
   }
 
   private boolean isBuiltInRole(BuyerRole role) {
-    return role.id() != null && role.id().startsWith("role-buyer-");
+    return BuyerRolePolicy.isBuiltIn(role.id(), role.tenantId());
   }
 
   private List<String> parsePermissions(String permissionsJson) {

@@ -53,7 +53,9 @@ export function App() {
       {activeModuleId === 'overview' ? (
         <OverviewPage onNavigate={selectModule} />
       ) : activeModuleId === 'tenants' ? (
-        <TenantsPage />
+        <TenantsPage canManage={hasPermission(granted, 'platform:tenant:manage')}
+          canReadUsage={hasPermission(granted, 'platform:billing:read')}
+          canCreateSupplier={hasPermission(granted, 'platform:supplier:manage')} />
       ) : activeModuleId === 'reviews' ? (
         <EnterpriseReviewsPage />
       ) : activeModuleId === 'mall' ? (
@@ -63,7 +65,7 @@ export function App() {
       ) : activeModuleId === 'announcements' ? (
         <AnnouncementsPage canManage={hasPermission(granted, 'platform:announcement:manage')} />
       ) : activeModuleId === 'settings' ? (
-        <DictionariesPage />
+        <DictionariesPage canManage={hasPermission(granted, 'platform:dictionary:manage')} />
       ) : (
         <Panel title={activeModule?.label ?? '模块'} icon={Construction} subtitle="后续切片实现">
           <FeedbackNotice

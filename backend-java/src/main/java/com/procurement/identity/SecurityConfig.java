@@ -60,7 +60,8 @@ public class SecurityConfig {
             .requestMatchers("/api/v1/buyer/orders/**", "/api/v1/buyer/receipts/**", "/api/v1/buyer/deliveries/**",
                 "/api/v1/buyer/suppliers/**", "/api/v1/buyer/supplier-invitations/**",
                 "/api/v1/buyer/analytics/**", "/api/v1/buyer/budgets/**", "/api/v1/buyer/audit-logs/**",
-                "/api/v1/buyer/mall/**", "/api/v1/buyer/tenders/**")
+                "/api/v1/buyer/mall/**", "/api/v1/buyer/tenders/**",
+                "/api/v1/buyer/ai/**", "/api/v1/buyer/numbering-rules/**")
                 .access(portalAccess("buyer", "BUYER_OWNER", "BUYER_REQUESTER", "BUYER_FINANCE"))
             .requestMatchers("/api/v1/buyer/**").hasAnyRole("BUYER_OWNER", "BUYER_REQUESTER", "BUYER_FINANCE")
             .requestMatchers("/api/v1/supplier/**").access(portalAccess("supplier", "SUPPLIER_SALES"))

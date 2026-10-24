@@ -50,11 +50,8 @@ import com.procurement.tender.infrastructure.TenderPrequalificationMapper;
 import com.procurement.tender.infrastructure.TenderMapper;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Locale;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -65,7 +62,6 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class TenderApplicationService {
-  private static final DateTimeFormatter NO_DATE = DateTimeFormatter.ofPattern("yyyyMMdd");
   private static final String AUDIT_TARGET = "tender";
 
   private final TenderMapper tenderMapper;
@@ -83,6 +79,19 @@ public class TenderApplicationService {
   private final TenantCapabilityApplicationService tenantCapabilityApplicationService;
   private final com.procurement.identity.application.PermissionService permissions;
   private final com.procurement.identity.application.DataScopeService scopes;
+  private com.procurement.numbering.application.NumberingApplicationService numbering;
+
+  @org.springframework.beans.factory.annotation.Autowired
+  void setNumberingApplicationService(com.procurement.numbering.application.NumberingApplicationService numbering) {
+    this.numbering = numbering;
+  }
+
+  private String nextTenderNumber() {
+    return numbering == null
+        ? com.procurement.numbering.application.NumberingApplicationService.defaultNumber(
+            "tender", null, tenderMapper::allocateSequence)
+        : numbering.nextTenderNumber(tenderMapper::allocateSequence);
+  }
 
   public TenderApplicationService(
       TenderMapper tenderMapper,
@@ -137,9 +146,7 @@ public class TenderApplicationService {
     requireTenderType(request.tenderType());
     tenderMapper.lockTenantNumbering(tenantId);
     String id = "tender-" + UUID.randomUUID();
-    String prefix = "ZB" + LocalDate.now().format(NO_DATE);
-    String tenderNo = prefix
-        + String.format(Locale.ROOT, "%03d", tenderMapper.countByTenantAndNoPrefix(tenantId, prefix) + 1);
+    String tenderNo = nextTenderNumber();
     tenderMapper.insert(
         id, tenantId, tenderNo, request.title(), request.tenderType(), request.budget(),
         TenderPolicy.STATUS_DRAFTING, request.documentHtml(), request.evaluationMethod(),
@@ -378,9 +385,7 @@ public class TenderApplicationService {
     tenantCapabilityApplicationService.requireMethodEnabled(tenantId, ProcurementMethodCatalog.TENDER.code());
     tenderMapper.lockTenantNumbering(tenantId);
     String id = "tender-" + UUID.randomUUID();
-    String prefix = "ZB" + LocalDate.now().format(NO_DATE);
-    String tenderNo = prefix
-        + String.format(Locale.ROOT, "%03d", tenderMapper.countByTenantAndNoPrefix(tenantId, prefix) + 1);
+    String tenderNo = nextTenderNumber();
     tenderMapper.insert(
         id, tenantId, tenderNo, origin.title() + "(重招)", origin.tenderType(), origin.budget(),
         TenderPolicy.STATUS_DRAFTING, origin.documentHtml(), origin.evaluationMethod(),

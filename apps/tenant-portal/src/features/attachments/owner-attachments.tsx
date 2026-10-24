@@ -10,6 +10,7 @@ import {
   useAttachmentList,
 } from '@24bid/api-client';
 import { FeedbackNotice } from '@24bid/ui';
+import { AiReviewButton } from '../ai/ai-review-button';
 
 // 通用附件面板:按 ownerType/ownerId 复用(合同附件、供应商资质、报价单影像等)。
 // 上传服务端代收落 MinIO → 落元数据 → 列表 → 流式下载。
@@ -153,7 +154,8 @@ export function OwnerAttachments({
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
               <span className="min-w-0 break-words text-xs font-black text-slate-700">{a.fileName}</span>
-              <div className="ml-auto flex shrink-0 gap-2">
+              <div className="ml-auto flex flex-wrap gap-2">
+                <AiReviewButton subjectType="attachment" subjectId={a.id ?? ''} />
                 <button type="button" disabled={checking !== null} onClick={() => a.id && onCheck(a.id)} className="inline-flex h-8 items-center gap-1 whitespace-nowrap rounded-md border border-slate-200 px-2 text-xs font-bold text-slate-700 disabled:opacity-50"><ShieldCheck size={13} />{checking === a.id ? '核验中…' : '核验'}</button>
               <button
                 type="button"

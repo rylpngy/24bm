@@ -7,6 +7,7 @@ import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -28,6 +29,20 @@ public class PlatformTenantController {
   @GetMapping("/{tenantId}")
   public ApiResponse<TenantResponse> get(@PathVariable String tenantId) {
     return ApiResponse.ok(platformTenantApplicationService.getTenant(tenantId));
+  }
+
+  @GetMapping("/configuration-catalog")
+  public ApiResponse<TenantConfigurationCatalogResponse> configurationCatalog() {
+    return ApiResponse.ok(new TenantConfigurationCatalogResponse(
+        com.procurement.platform.domain.TenantPlanCatalog.all(),
+        com.procurement.tenant.domain.TenantFeatureKey.all(),
+        com.procurement.tenant.domain.ProcurementMethodCatalog.all()));
+  }
+
+  @PutMapping("/{tenantId}/configuration")
+  public ApiResponse<TenantResponse> updateConfiguration(@PathVariable String tenantId,
+      @Valid @RequestBody UpdateTenantConfigurationRequest request) {
+    return ApiResponse.ok(platformTenantApplicationService.updateConfiguration(tenantId, request));
   }
 
   @PostMapping

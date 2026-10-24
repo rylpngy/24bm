@@ -6,9 +6,9 @@ import {
   type DepartmentResponse,
   useBuyerUserCreate,
   useBuyerUserUpdate,
-  useBuyerUserUpdateRoles,
 } from '@24bid/api-client';
 import { FeedbackNotice } from '@24bid/ui';
+import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
 
 interface MemberDraft {
   name: string;
@@ -59,7 +59,13 @@ function createDraft(
 }
 
 /** 采购方成员新建/维护弹窗，供组织架构与团队管理共用。 */
-export function BuyerMemberEditorDialog({
+export function BuyerMemberEditorDialog(props: BuyerMemberEditorDialogProps) {
+  const { can } = useBuyerPermissions();
+  if (!can('buyer:role:manage')) return null;
+  return <MemberEditor {...props} />;
+}
+
+function MemberEditor({
   open,
   member,
   defaultDepartmentId,
@@ -71,7 +77,6 @@ export function BuyerMemberEditorDialog({
 }: BuyerMemberEditorDialogProps) {
   const create = useBuyerUserCreate();
   const update = useBuyerUserUpdate();
-  const updateRoles = useBuyerUserUpdateRoles();
   const [draft, setDraft] = useState<MemberDraft>(() => createDraft(member, defaultDepartmentId, roles));
   const [localError, setLocalError] = useState<string | null>(null);
   const isEdit = Boolean(member?.id);
@@ -88,7 +93,7 @@ export function BuyerMemberEditorDialog({
 
   if (!open) return null;
 
-  const busy = create.isPending || update.isPending || updateRoles.isPending;
+  const busy = create.isPending || update.isPending;
   const inputClass =
     'h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50 disabled:text-slate-400';
   const set = (patch: Partial<MemberDraft>) => setDraft((current) => ({ ...current, ...patch }));
@@ -117,21 +122,14 @@ export function BuyerMemberEditorDialog({
       email: draft.email.trim() || undefined,
       departmentId: draft.departmentId,
       roleId: draft.roleIds[0],
+      roleIds: draft.roleIds,
     };
-    const finish = async (saved: BuyerUserResponse | undefined, mode: 'create' | 'update') => {
+    const finish = (saved: BuyerUserResponse | undefined, mode: 'create' | 'update') => {
       if (!saved?.id) {
         setLocalError('成员已保存，但返回结果缺少成员编号。');
         return;
       }
-      try {
-        const response = await updateRoles.mutateAsync({
-          userId: saved.id,
-          data: { roleIds: draft.roleIds },
-        });
-        onSaved(response.data ?? saved, mode);
-      } catch (error) {
-        setLocalError(errorMessage(error, '成员资料已保存，但多角色授权失败，请重试。'));
-      }
+      onSaved(saved, mode);
     };
     if (isEdit && member?.id) {
       update.mutate(

@@ -139,6 +139,20 @@ public interface PlatformTenantMapper {
       """)
   PlatformTenant findById(@Param("tenantId") String tenantId);
 
+  @Select("""
+      select id, name, plan, status, enabled_features::text as enabled_features_json, user_limit
+      from tenants where id = #{tenantId} for update
+      """)
+  PlatformTenant lockById(@Param("tenantId") String tenantId);
+
+  @Update("""
+      update tenants set plan = #{plan}, user_limit = #{userLimit},
+        enabled_features = #{enabledFeaturesJson}::jsonb, updated_at = now()
+      where id = #{tenantId}
+      """)
+  int updateConfiguration(@Param("tenantId") String tenantId, @Param("plan") String plan,
+      @Param("userLimit") Integer userLimit, @Param("enabledFeaturesJson") String enabledFeaturesJson);
+
   @Update("""
       update tenants
       set enabled_features = #{enabledFeaturesJson}::jsonb,

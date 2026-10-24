@@ -2,6 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { buyerAdminModules, hasPermission, platformNavigation, supplierNavigation, visiblePortalModules } from './navigation';
 
 describe('navigation permission matching', () => {
+  it('separates enterprise numbering governance from AI policy administration', () => {
+    expect(buyerAdminModules.find(m => m.id === 'numbering-rules')?.requiredPermission).toBe('buyer:role:manage');
+    expect(buyerAdminModules.find(m => m.id === 'ai-policies')?.requiredPermission).toBe('buyer:ai:manage');
+    expect(hasPermission(['buyer:ai:read'], 'buyer:ai:manage')).toBe(false);
+    expect(hasPermission(['buyer:analytics:read'], 'buyer:role:manage')).toBe(false);
+  });
   it('reserves public catalog review for full platform reviewers', () => {
     expect(visiblePortalModules(platformNavigation, ['platform:*']).map(m => m.id)).toContain('mall');
     expect(visiblePortalModules(platformNavigation, ['platform:enterprise:manage']).map(m => m.id)).not.toContain('mall');

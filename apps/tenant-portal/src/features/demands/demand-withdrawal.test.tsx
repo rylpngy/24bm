@@ -6,6 +6,7 @@ import { DemandDetail } from './demand-detail';
 const state = vi.hoisted(() => ({ initiator: 'requester', user: 'requester', status: 'processing', post: vi.fn() }));
 vi.mock('../../lib/auth-store', () => ({ useAuthStore: (selector: (value: unknown) => unknown) => selector({ session: { userId: state.user } }) }));
 vi.mock('@24bid/api-client', () => ({
+  useSessionPermissions: () => ({ data: { data: { permissions: [] } } }),
   useMaterialList: () => ({ data: { data: [] } }), usePurchaseDemandList: () => ({}),
   useAuditLogListTargetActions: () => ({ data: { data: [] } }), useWorkflowPurchaseDemandSubmit: () => ({}),
   useWorkflowBusinessHistory: () => ({ data: { data: { workflowInstanceId: 'wf-1', initiatorId: state.initiator, status: state.status } } }),

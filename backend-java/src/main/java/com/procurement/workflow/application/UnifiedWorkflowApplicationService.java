@@ -380,6 +380,12 @@ public class UnifiedWorkflowApplicationService {
     return new WorkflowCompletionResult(history.status(), actedAt, outcome.reusedTasks());
   }
 
+  public void requireCurrentTenantInstanceReadAccess(String workflowInstanceId) {
+    String tenantId = TenantAccessGuard.requireTenantId("unified workflow read authorization");
+    permissionService.require("buyer:workflow:read");
+    requireVisibleInstance(tenantId, workflowInstanceId);
+  }
+
   public WorkflowInstanceHistoryResponse getCurrentTenantHistory(String workflowInstanceId) {
     String tenantId = TenantAccessGuard.requireTenantId("unified workflow APIs");
     permissionService.require("buyer:workflow:read");

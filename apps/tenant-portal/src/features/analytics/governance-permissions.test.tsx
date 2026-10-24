@@ -7,7 +7,7 @@ import { AnalyticsPage } from './analytics-page';
 
 const state = vi.hoisted(() => ({ manage: false, export: false, error: false }));
 vi.mock('../../lib/use-buyer-permissions', () => ({
-  useBuyerPermissions: () => ({ can: (permission: string) => permission === 'buyer:budget:manage' ? state.manage : state.export }),
+  useBuyerPermissions: () => ({ can: (permission: string) => permission === 'buyer:analytics:read' ? true : permission === 'buyer:budget:manage' ? state.manage : state.export }),
 }));
 vi.mock('@24bid/api-client', () => ({
   useBuyerBudgetBudgets: () => ({ isError: state.error, data: { data: [{ id: 'b', departmentName: 'Restricted budget', totalAmount: 9000 }] } }),

@@ -53,6 +53,24 @@ class ArchitectureTest {
               "com.procurement.approval.application..",
               "com.procurement.approval.infrastructure..");
 
+  @ArchTest
+  static final ArchRule generic_ai_must_not_depend_on_school_business =
+      noClasses().that().resideInAnyPackage("com.procurement.ai..", "com.procurement.common.ai..")
+          .should().dependOnClassesThat().resideInAPackage("com.procurement.ludongpoc..");
+
+  @ArchTest
+  static final ArchRule shared_ai_contracts_must_remain_business_neutral =
+      noClasses().that().resideInAPackage("com.procurement.common.ai..")
+          .should().dependOnClassesThat().resideInAnyPackage(
+              "com.procurement.ai..", "com.procurement.identity..", "com.procurement.demand..",
+              "com.procurement.supplier..", "com.procurement.sourcing..", "com.procurement.attachment..");
+
+  @ArchTest
+  static final ArchRule generic_ai_must_not_operate_business_workflows =
+      noClasses().that().resideInAPackage("com.procurement.ai..")
+          .should().dependOnClassesThat().resideInAnyPackage(
+              "com.procurement.workflow.application..", "com.procurement.approval.application..");
+
   /**
    * 跨模块禁止直接复用别人 api 层的 DTO（同模块用自己的 api DTO 是正常约定，放行）。
    * 冻结现有违规（如 supplier 工作台聚合 order/sourcing 的 Response）。

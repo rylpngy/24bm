@@ -30,11 +30,12 @@ import {
 import { useBuyerAnalyticsProcurement, useBuyerWorkspaceLoad } from '@24bid/api-client';
 import { MiniFact, Panel, ShellState, StatusPill, cn } from '@24bid/ui';
 import { BuyerNotifications } from './buyer-notifications';
+import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
 
 const currency = (v: number, compact = false) =>
-  compact
+  compact && Math.abs(v) >= 10000
     ? `¥${(v / 10000).toLocaleString('zh-CN', { maximumFractionDigits: 1 })}万`
-    : `¥${v.toLocaleString('zh-CN', { maximumFractionDigits: 0 })}`;
+    : `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const shortDate = (value?: string) => value?.slice(0, 10) ?? '待定';
 
@@ -232,12 +233,16 @@ function SpendBar({
 }
 
 export function DashboardPage({ onNavigate }: { onNavigate: (moduleId: string) => void }) {
-  const ws = useBuyerWorkspaceLoad();
-  const analytics = useBuyerAnalyticsProcurement();
-  const categorySpend = analytics.data?.data?.categorySpend;
-  const monthlySpend = analytics.data?.data?.monthlySpend;
-  const biddingSavings = analytics.data?.data?.biddingSavings;
-  const data = ws.data?.data;
+  const { can } = useBuyerPermissions();
+  const canReadAnalytics = can('buyer:analytics:read');
+  const ws = useBuyerWorkspaceLoad({ query: { staleTime: 60_000, refetchInterval: 60_000 } });
+  const year = new Intl.DateTimeFormat('en', { timeZone: 'Asia/Shanghai', year: 'numeric' }).format(new Date());
+  const analytics = useBuyerAnalyticsProcurement({ fromDate: `${year}-01-01`, toDate: `${year}-12-31` }, { query: { enabled: canReadAnalytics, staleTime: 60_000, refetchInterval: 60_000 } });
+  const statistics = canReadAnalytics && !analytics.isError && !analytics.isStale ? analytics.data?.data : undefined;
+  const categorySpend = statistics?.categoryDemandEstimate;
+  const monthlySpend = statistics?.monthlySpend;
+  const biddingSavings = statistics?.biddingSavings;
+  const data = !ws.isError && !ws.isStale ? ws.data?.data : undefined;
 
   const view = useMemo(() => {
     const demands = data?.demands ?? [];
@@ -247,24 +252,20 @@ export function DashboardPage({ onNavigate }: { onNavigate: (moduleId: string) =
     const suppliers = data?.suppliers ?? [];
     const pendingApprovals = data?.pendingApprovals ?? [];
 
-    const totalSpend = orders.reduce((sum, order) => sum + (order.amount ?? 0), 0);
-    const approvedBudget = demands
-      .filter((demand) => demand.status === '已通过')
-      .reduce((sum, demand) => sum + (demand.budget ?? 0), 0);
-    const budgetRate = approvedBudget > 0 ? Math.min(99, Math.round((totalSpend / approvedBudget) * 100)) : 0;
+    const totalSpend = statistics?.totalSpend ?? 0;
     const activeRfqs = rfqs.filter((rfq) => ['报价中', '定标审批中'].includes(rfq.status ?? '')).length;
     const activeProjects = rfqs.filter((rfq) => rfq.status !== '已关闭').length + orders.filter((order) => order.status !== '已收货').length;
     const admittedSuppliers = suppliers.filter((supplier) => supplier.status === '已准入').length;
     const pendingPaymentAmount = invoices
       .filter((invoice) => invoice.paymentStatus === '待付款')
       .reduce((sum, invoice) => sum + (invoice.amount ?? 0), 0);
-    // 节约成本 = 比价节支(后端按报价对比真实聚合),不再用系数编造。
-    const saving = Math.max(0, Math.round(biddingSavings ?? 0));
+    // 当前轮有效定标的最高可比报价差额，不是付款或审计节约额。
+    const saving = biddingSavings ?? 0;
 
-    // 支出趋势 = 后端月度订单聚合(真实数据),不再使用写死基线。
-    const trend = (monthlySpend ?? []).slice(-6).map((m) => ({
+    // 后端补齐本年自然月，金额保留原始精度供提示框显示。
+    const trend = (monthlySpend ?? []).map((m) => ({
       month: m.period ?? '',
-      actual: Math.round((m.totalAmount ?? 0) / 1000),
+      actual: (m.totalAmount ?? 0) / 1000,
       orders: m.orderCount ?? 0,
     }));
 
@@ -319,7 +320,7 @@ export function DashboardPage({ onNavigate }: { onNavigate: (moduleId: string) =
       })),
     ].slice(0, 4);
 
-    // 品类支出来自后端聚合(需求行项 × 物料参考价,按物料分类),替代此前的前端硬编码启发式。
+    // 需求参考金额估算是独立总体，不推测历史订单品类。
     const spendTones = ['bg-blue-600', 'bg-emerald-500', 'bg-amber-500', 'bg-violet-500'];
     const spendDistribution = (categorySpend ?? []).slice(0, 4).map((c, index) => ({
       label: c.category ?? '其他',
@@ -342,7 +343,6 @@ export function DashboardPage({ onNavigate }: { onNavigate: (moduleId: string) =
 
     return {
       totalSpend,
-      budgetRate,
       activeRfqs,
       activeProjects,
       admittedSuppliers,
@@ -358,11 +358,18 @@ export function DashboardPage({ onNavigate }: { onNavigate: (moduleId: string) =
       receivingOrderCount,
       deadlineWatch,
     };
-  }, [data, categorySpend, monthlySpend, biddingSavings]);
+  }, [data, categorySpend, monthlySpend, biddingSavings, statistics?.totalSpend]);
 
   if (ws.isLoading) {
     return <ShellState variant="loading" title="正在加载采购人首页" desc="拉取采购概览、待办与风险预警…" />;
   }
+  if (ws.isError || !ws.data?.data) return <ShellState variant="error" title="采购工作台加载失败" desc="请稍后重试。" />;
+  if (ws.isStale) return <ShellState variant="loading" title="正在刷新采购工作台" desc="正在获取当前授权范围的业务数据。" />;
+  const statisticsState = !canReadAnalytics
+    ? <ShellState variant="error" title="暂无采购统计权限" desc="请联系企业管理员核对权限。" />
+    : analytics.isError
+      ? <ShellState variant="error" title="采购统计加载失败" desc="未展示缓存统计，请稍后重试。" />
+      : !statistics ? <ShellState variant="loading" title="正在加载采购统计" desc="正在获取本年度授权订单统计。" /> : null;
 
   return (
     <Panel title="首页看板" icon={BarChart3} subtitle="采购金额、待办、履约进度">
@@ -443,25 +450,26 @@ export function DashboardPage({ onNavigate }: { onNavigate: (moduleId: string) =
             <ActionTile icon={FilePlus2} title="发起立项" desc="创建采购需求" module="demands" tone="bg-blue-50 text-blue-600" onNavigate={onNavigate} />
             <ActionTile icon={Search} title="供应商寻源" desc="全网智能匹配" module="suppliers" tone="bg-violet-50 text-violet-600" onNavigate={onNavigate} />
             <ActionTile icon={Truck} title="订单跟踪" desc="查看物流状态" module="orders" tone="bg-orange-50 text-orange-600" onNavigate={onNavigate} />
-            <ActionTile icon={BarChart3} title="数据分析" desc="查看支出报表" module="analytics" tone="bg-emerald-50 text-emerald-600" onNavigate={onNavigate} />
+            <ActionTile icon={BarChart3} title="数据分析" desc="查看订单金额报表" module="analytics" tone="bg-emerald-50 text-emerald-600" onNavigate={onNavigate} />
           </div>
         </div>
 
+        {statisticsState}
         <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
-          <KpiCard
+          {statistics && <KpiCard
             icon={WalletCards}
-            label="本年度累计支出"
+            label="本年度订单金额"
             value={currency(view.totalSpend, true)}
-            desc={`预算执行率 ${view.budgetRate}%`}
-            trend={`订单 ${analytics.data?.data?.orderCount ?? '—'} 单`}
+            desc="按本年创建日期，不代表已付款"
+            trend={`订单 ${statistics.orderCount ?? '—'} 单`}
             tone="bg-blue-50 text-blue-600"
-          />
+          />}
           <KpiCard
             icon={Users}
             label="活跃供应商"
             value={String(view.admittedSuppliers)}
             desc={`供应商总数 ${(data?.suppliers ?? []).length} 家`}
-            trend={`头部集中度 ${analytics.data?.data?.topSupplierSharePercent ?? '—'}%`}
+            trend={statistics ? `头部集中度 ${statistics.topSupplierSharePercent ?? '—'}%` : '统计不可用'}
             tone="bg-indigo-50 text-indigo-600"
           />
           <KpiCard
@@ -472,19 +480,19 @@ export function DashboardPage({ onNavigate }: { onNavigate: (moduleId: string) =
             trend={`${view.pendingCount} 项待审批`}
             tone="bg-violet-50 text-violet-600"
           />
-          <KpiCard
+          {statistics && <KpiCard
             icon={ShieldCheck}
-            label="累计节约成本"
+            label="本年最高可比报价差额"
             value={currency(view.saving, true)}
-            desc="按定标价与最高报价差额聚合"
-            trend={view.totalSpend > 0 ? `占支出 ${((view.saving / view.totalSpend) * 100).toFixed(1)}%` : '—'}
+            desc="当前轮有效定标，非审计节约额"
+            trend="不以订单金额计算节约率"
             tone="bg-emerald-50 text-emerald-600"
-          />
+          />}
         </div>
 
         <div className="grid gap-4 xl:grid-cols-[1fr_22rem]">
-          <Card className="p-4">
-          <SectionHeader icon={TrendingUp} title="采购支出趋势" subtitle="近 6 个月订单支出(千元) · 来源:采购分析聚合" />
+          {statistics && <Card className="p-4">
+          <SectionHeader icon={TrendingUp} title="本年度订单金额趋势" subtitle="按上海创建月聚合（千元），含零订单月份" />
           <div className="mt-5 h-72">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={view.trend} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
@@ -499,13 +507,13 @@ export function DashboardPage({ onNavigate }: { onNavigate: (moduleId: string) =
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 700 }} />
                 <Tooltip
                   contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12, fontWeight: 700 }}
-                  formatter={(value) => [`${value}k`, '']}
+                  formatter={(value) => [currency(Number(value) * 1000), '订单金额']}
                 />
                 <Area type="monotone" dataKey="actual" stroke="#2563eb" fill="url(#dashboardSpend)" strokeWidth={3} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
-          </Card>
+          </Card>}
 
           <Card className="p-4">
           <SectionHeader
@@ -587,8 +595,8 @@ export function DashboardPage({ onNavigate }: { onNavigate: (moduleId: string) =
             </div>
             </Card>
 
-            <Card className="p-4">
-            <SectionHeader icon={Clock3} title="支出分布 (本月)" />
+            {statistics && <Card className="p-4">
+            <SectionHeader icon={Clock3} title="本年需求参考金额估算" subtitle="独立需求总体，非订单品类金额" />
             <div className="mt-5 space-y-4">
               {view.spendDistribution.map((item) => (
                 <SpendBar
@@ -598,7 +606,7 @@ export function DashboardPage({ onNavigate }: { onNavigate: (moduleId: string) =
                 />
               ))}
             </div>
-            </Card>
+            </Card>}
           </div>
         </div>
 

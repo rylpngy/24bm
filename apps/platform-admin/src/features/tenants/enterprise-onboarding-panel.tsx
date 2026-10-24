@@ -37,7 +37,8 @@ function Field({
 
 // 企业开通:平台侧创建采购租户 / 供应商企业 + 初始管理员;
 // 成功后展示 Keycloak 建号清单(OIDC 身份在 Keycloak,claim 必须与库内 ID 对齐)。
-export function EnterpriseOnboardingPanel({ embedded = false }: { embedded?: boolean } = {}) {
+export function EnterpriseOnboardingPanel({ embedded = false, canCreateSupplier = false }:
+  { embedded?: boolean; canCreateSupplier?: boolean } = {}) {
   const queryClient = useQueryClient();
   const createTenant = usePlatformTenantCreate();
   const createSupplier = usePlatformSupplierCreate();
@@ -62,6 +63,7 @@ export function EnterpriseOnboardingPanel({ embedded = false }: { embedded?: boo
     && form.adminEmail.trim() && form.adminPassword.length >= 8;
 
   const onSubmit = () => {
+    if (kind === 'supplier' && !canCreateSupplier) return;
     setFeedback(null);
     setClaimGuide(null);
     if (kind === 'buyer') {
@@ -139,7 +141,7 @@ export function EnterpriseOnboardingPanel({ embedded = false }: { embedded?: boo
                 { id: 'buyer', label: '采购租户', icon: Building2 },
                 { id: 'supplier', label: '供应商企业', icon: Store },
               ] as const
-            ).map((t) => (
+            ).filter(t => t.id === 'buyer' || canCreateSupplier).map((t) => (
               <button
                 key={t.id}
                 type="button"

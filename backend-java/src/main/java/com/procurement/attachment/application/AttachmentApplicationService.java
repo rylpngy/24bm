@@ -104,6 +104,15 @@ public class AttachmentApplicationService {
         createdAt.plusMinutes(15));
   }
 
+  public void requireCurrentTenantReadAccess(String attachmentId) {
+    String tenant=TenantAccessGuard.requireTenantId("attachment read authorization");
+    var attachment=attachmentMapper.findByTenantAndId(tenant,attachmentId);
+    if(attachment==null || !AttachmentStatus.ACTIVE.equals(attachment.status()))
+      throw new IllegalArgumentException("Attachment not found in tenant scope");
+    requireAttachmentStorageKey(tenant,attachment);
+    access.requireAccess(attachment.ownerType(),attachment.ownerId(),false);
+  }
+
   public AttachmentDownloadLinkResponse createCurrentTenantDownloadLink(String attachmentId) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer attachment APIs");
     Attachment attachment = attachmentMapper.findByTenantAndId(tenantId, attachmentId);

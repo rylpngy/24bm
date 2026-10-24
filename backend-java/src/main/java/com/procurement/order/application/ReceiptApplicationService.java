@@ -94,7 +94,7 @@ public class ReceiptApplicationService {
       throw new IllegalArgumentException("Purchase order not found in tenant scope: " + orderId);
     }
     purchaseOrderStatusTransition.requireReceipt(order.status(), orderId);
-    tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.ORDER);
+    tenantFeatureApplicationService.requireHistoricalFulfillment(tenantId, TenantFeatureKey.ORDER);
     purchaseOrderStatusTransition.requireShippedDelivery(
         deliveryMapper.countByTenantOrderAndStatus(tenantId, orderId, PurchaseOrderStatus.SHIPPED),
         orderId);

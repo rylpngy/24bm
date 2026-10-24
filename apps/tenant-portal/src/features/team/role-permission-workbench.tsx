@@ -12,6 +12,7 @@ import {
   useBuyerUserList,
 } from '@24bid/api-client';
 import { ConfirmDialog, FeedbackNotice, cn } from '@24bid/ui';
+import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
 
 interface Feedback {
   tone: 'success' | 'error' | 'info';
@@ -41,11 +42,13 @@ function errorMessage(error: unknown, fallback: string) {
 }
 
 function isProtectedRole(role: BuyerRoleResponse | undefined) {
-  return role?.id === 'role-buyer-owner';
+  return Boolean((role as (BuyerRoleResponse & { protectedRole?: boolean }) | undefined)?.protectedRole)
+    || role?.id === 'role-buyer-owner'
+    || Boolean(role?.tenantId && role.id === `role-${role.tenantId}-buyer-owner`);
 }
 
 function isBuiltInRole(role: BuyerRoleResponse | undefined) {
-  return Boolean(role?.builtIn || role?.id?.startsWith('role-buyer-'));
+  return Boolean(isProtectedRole(role) || role?.builtIn || role?.id?.startsWith('role-buyer-'));
 }
 
 function permissionKind(point: string) {
@@ -55,6 +58,12 @@ function permissionKind(point: string) {
 }
 
 export function RolePermissionWorkbench() {
+  const { can } = useBuyerPermissions();
+  if (!can('buyer:role:manage')) return <FeedbackNotice tone="error" message="仅企业全权管理员可配置角色权限。" />;
+  return <RoleConfiguration />;
+}
+
+function RoleConfiguration() {
   const queryClient = useQueryClient();
   const rolesQuery = useBuyerRoleList();
   const catalogQuery = useBuyerRolePermissionCatalog();
@@ -117,7 +126,7 @@ export function RolePermissionWorkbench() {
 
   const refresh = () =>
     queryClient.invalidateQueries({
-      predicate: (query) => /^\/api\/v1\/buyer\/(roles|users)/.test(String(query.queryKey[0] || '')),
+      predicate: (query) => /^\/api\/v1\/(buyer\/(roles|users)|auth\/permissions)/.test(String(query.queryKey[0] || '')),
     });
 
   const togglePermission = (permission: string) => {
@@ -311,6 +320,9 @@ export function RolePermissionWorkbench() {
                     </div>
                     <span className="rounded-md bg-blue-50 px-2 py-1 text-xs font-black text-blue-700">{draftPermissions.length} 项</span>
                   </div>
+                  {(draftPermissions.includes('buyer:role:manage') || draftPermissions.includes('buyer:*')) && (
+                    <div className="mb-3"><FeedbackNotice tone="info" message="企业全权管理员可管理组织、成员、角色、数据范围与配置，并可授予全部权限。" /></div>
+                  )}
                   <div className="space-y-4">
                     {groups.map((group) => {
                       const groupPoints = points.filter((point) => point.group === group);

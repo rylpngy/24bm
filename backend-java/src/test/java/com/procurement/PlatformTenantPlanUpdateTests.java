@@ -31,21 +31,21 @@ class PlatformTenantPlanUpdateTests {
 
   @Test
   void updateTenantPlanChangesPlanAndUserLimitAndRecordsAuditLog() {
-    when(platformTenantMapper.updatePlan("tenant-acme", "pro", 120)).thenReturn(1);
+    when(platformTenantMapper.updatePlan("tenant-acme", "Growth", 120)).thenReturn(1);
     when(platformTenantMapper.findById("tenant-acme"))
         .thenReturn(new PlatformTenant(
             "tenant-acme",
             "Acme 采购公司",
-            "pro",
+            "Growth",
             "active",
             "[\"rfq\",\"order\"]",
             120));
 
     platformTenantApplicationService.updateTenantPlan(
         "tenant-acme",
-        new UpdateTenantPlanRequest("pro", 120));
+        new UpdateTenantPlanRequest("Growth", 120));
 
-    verify(platformTenantMapper).updatePlan("tenant-acme", "pro", 120);
+    verify(platformTenantMapper).updatePlan("tenant-acme", "Growth", 120);
     verify(auditLogApplicationService).recordTenantAction(
         "tenant-acme",
         "tenant.plan_updated",
@@ -55,13 +55,13 @@ class PlatformTenantPlanUpdateTests {
 
   @Test
   void updateTenantPlanRejectsUnknownTenantBeforeWritingAuditLog() {
-    when(platformTenantMapper.updatePlan("tenant-missing", "pro", 120)).thenReturn(0);
+    when(platformTenantMapper.updatePlan("tenant-missing", "Growth", 120)).thenReturn(0);
 
     assertThrows(
         IllegalArgumentException.class,
         () -> platformTenantApplicationService.updateTenantPlan(
             "tenant-missing",
-            new UpdateTenantPlanRequest("pro", 120)));
+            new UpdateTenantPlanRequest("Growth", 120)));
 
     verify(auditLogApplicationService, never()).recordTenantAction(
         "tenant-missing",

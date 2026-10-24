@@ -12,6 +12,19 @@ import org.apache.ibatis.annotations.Update;
 
 @Mapper
 public interface TenderMapper {
+  @Select(value = """
+      insert into tender_number_sequences (prefix, last_value)
+      select #{prefix}, coalesce(
+        (select last_value from tender_number_sequences where prefix = #{prefix}),
+        (select max(substring(tender_no from length(#{prefix}) + 1)::bigint)
+         from tenders where starts_with(tender_no, #{prefix})
+           and substring(tender_no from length(#{prefix}) + 1) ~ '^[0-9]{1,18}$'),
+        0) + 1
+      on conflict (prefix) do update set last_value = tender_number_sequences.last_value + 1
+      returning last_value
+      """, affectData = true)
+  long allocateSequence(@Param("prefix") String prefix);
+
 
   String COLUMNS = """
       id, tenant_id, tender_no, title, tender_type, budget, status, document_html,

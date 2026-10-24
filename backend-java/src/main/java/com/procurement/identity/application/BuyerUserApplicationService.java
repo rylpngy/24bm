@@ -13,6 +13,7 @@ import com.procurement.identity.api.UpdateBuyerUserRolesRequest;
 import com.procurement.identity.domain.BuyerUser;
 import com.procurement.identity.domain.BuyerUserAuditAction;
 import com.procurement.identity.domain.BuyerUserStatusTransition;
+import com.procurement.identity.domain.BuyerRoleAssignments;
 import com.procurement.identity.infrastructure.BuyerUserMapper;
 import com.procurement.organization.infrastructure.DepartmentMapper;
 import com.procurement.tenant.application.TenantEntitlementApplicationService;
@@ -32,6 +33,7 @@ public class BuyerUserApplicationService {
   private final PasswordEncoder passwordEncoder;
   private final BuyerUserStatusTransition buyerUserStatusTransition;
   private final PermissionService permissionService;
+  private final BuyerAdministrationGuard administrationGuard;
 
   public BuyerUserApplicationService(
       BuyerUserMapper buyerUserMapper,
@@ -48,6 +50,7 @@ public class BuyerUserApplicationService {
     this.passwordEncoder = passwordEncoder;
     this.buyerUserStatusTransition = buyerUserStatusTransition;
     this.permissionService = permissionService;
+    this.administrationGuard = new BuyerAdministrationGuard(buyerUserMapper);
   }
 
   public List<BuyerUserResponse> listCurrentTenantUsers() {
@@ -69,10 +72,13 @@ public class BuyerUserApplicationService {
   @Transactional
   public BuyerUserResponse createUser(CreateBuyerUserRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer user APIs");
+    administrationGuard.lockAndCount(tenantId);
     requireTeamManagement();
+    buyerUserStatusTransition.requireSupportedTarget(request.status());
     tenantEntitlementApplicationService.requireUserCapacity(tenantId, buyerUserMapper.countByTenant(tenantId));
     requireActiveDepartment(tenantId, request.departmentId());
-    requireBuyerRole(tenantId, request.roleId());
+    List<String> roles = BuyerRoleAssignments.resolve(request.roleIds(), request.roleId());
+    roles.forEach(role -> requireBuyerRole(tenantId, role));
     String employeeNo = normalizeEmployeeNo(request.employeeNo());
     requireUniqueEmployeeNo(tenantId, employeeNo, null);
     String userId = "user-" + UUID.randomUUID();
@@ -87,7 +93,11 @@ public class BuyerUserApplicationService {
         passwordEncoder.encode(request.initialPassword()),
         employeeNo,
         request.jobTitle() == null ? "" : request.jobTitle());
-    buyerUserMapper.assignRole(userId, request.roleId());
+    if (request.roleIds() == null) {
+      buyerUserMapper.assignRole(userId, roles.getFirst());
+    } else {
+      buyerUserMapper.assignRoles(userId, roles);
+    }
     auditLogApplicationService.recordTenantAction(BuyerUserAuditAction.CREATED, AuditTargetType.BUYER_USER, userId);
     return toResponse(buyerUserMapper.findByTenantAndId(tenantId, userId));
   }
@@ -100,10 +110,12 @@ public class BuyerUserApplicationService {
   @Transactional
   public BuyerUserResponse updateUser(String userId, UpdateBuyerUserRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer user APIs");
+    int administrators = administrationGuard.lockAndCount(tenantId);
     requireTeamManagement();
     requireBuyerUser(tenantId, userId);
     requireActiveDepartment(tenantId, request.departmentId());
-    requireBuyerRole(tenantId, request.roleId());
+    List<String> roles = BuyerRoleAssignments.resolve(request.roleIds(), request.roleId());
+    roles.forEach(role -> requireBuyerRole(tenantId, role));
 
     BuyerUser current = buyerUserMapper.findByTenantAndId(tenantId, userId);
     String name = request.name().trim();
@@ -113,7 +125,7 @@ public class BuyerUserApplicationService {
     requireUniqueEmployeeNo(tenantId, employeeNo, userId);
     String jobTitle = blankToNull(request.jobTitle());
     boolean departmentChanged = !Objects.equals(current.departmentId(), request.departmentId());
-    boolean roleChanged = !Objects.equals(current.roleId(), request.roleId());
+    boolean roleChanged = !Objects.equals(current.roleId(), roles.getFirst());
 
     buyerUserMapper.updateDetails(
         tenantId,
@@ -124,19 +136,24 @@ public class BuyerUserApplicationService {
         request.departmentId(),
         employeeNo,
         jobTitle);
-    if (roleChanged) {
-      buyerUserMapper.replaceRole(tenantId, userId, request.roleId());
+    if (request.roleIds() != null) {
+      buyerUserMapper.deleteBuyerRoles(tenantId, userId);
+      buyerUserMapper.assignRoles(userId, roles);
+    } else if (roleChanged) {
+      buyerUserMapper.replaceRole(tenantId, userId, roles.getFirst());
     }
     if (departmentChanged) {
       departmentMapper.clearManagerByUserIdExceptDepartment(tenantId, userId, request.departmentId());
     }
+    administrationGuard.requireAdministratorPreserved(tenantId, administrators);
 
     auditLogApplicationService.recordTenantAction(
         tenantId,
         BuyerUserAuditAction.UPDATED,
         AuditTargetType.BUYER_USER,
         userId,
-        updateDetail(current, name, request.departmentId(), request.roleId()));
+        updateDetail(current, name, request.departmentId(), roles.getFirst())
+            + (request.roleIds() == null ? "" : "；角色授权: " + roles.stream().map(role -> roleLabel(tenantId, role)).toList()));
     return toResponse(buyerUserMapper.findByTenantAndId(tenantId, userId));
   }
 
@@ -153,12 +170,14 @@ public class BuyerUserApplicationService {
   @Transactional
   public BuyerUserResponse changeUserRole(String userId, ChangeBuyerUserRoleRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer user APIs");
+    int administrators = administrationGuard.lockAndCount(tenantId);
     requireTeamManagement();
     requireBuyerUser(tenantId, userId);
     requireBuyerRole(tenantId, request.roleId());
     BuyerUser current = buyerUserMapper.findByTenantAndId(tenantId, userId);
     String detail = "角色: " + roleLabel(tenantId, current.roleId()) + " → " + roleLabel(tenantId, request.roleId());
     buyerUserMapper.replaceRole(tenantId, userId, request.roleId());
+    administrationGuard.requireAdministratorPreserved(tenantId, administrators);
     auditLogApplicationService.recordTenantAction(
         tenantId, BuyerUserAuditAction.ROLE_CHANGED, AuditTargetType.BUYER_USER, userId, detail);
     return toResponse(buyerUserMapper.findByTenantAndId(tenantId, userId));
@@ -167,12 +186,14 @@ public class BuyerUserApplicationService {
   @Transactional
   public BuyerUserResponse updateUserRoles(String userId, UpdateBuyerUserRolesRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer user APIs");
+    int administrators = administrationGuard.lockAndCount(tenantId);
     requireTeamManagement();
     requireBuyerUser(tenantId, userId);
-    List<String> roleIds = request.roleIds().stream().distinct().toList();
+    List<String> roleIds = BuyerRoleAssignments.resolve(request.roleIds(), null);
     roleIds.forEach(roleId -> requireBuyerRole(tenantId, roleId));
     buyerUserMapper.deleteBuyerRoles(tenantId, userId);
     buyerUserMapper.assignRoles(userId, roleIds);
+    administrationGuard.requireAdministratorPreserved(tenantId, administrators);
     auditLogApplicationService.recordTenantAction(
         tenantId,
         BuyerUserAuditAction.ROLE_CHANGED,
@@ -185,6 +206,7 @@ public class BuyerUserApplicationService {
   @Transactional
   public BuyerUserResponse changeUserStatus(String userId, ChangeBuyerUserStatusRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer user APIs");
+    int administrators = administrationGuard.lockAndCount(tenantId);
     requireTeamManagement();
     requireBuyerUser(tenantId, userId);
     buyerUserStatusTransition.requireSupportedTarget(request.status());
@@ -194,6 +216,7 @@ public class BuyerUserApplicationService {
     if ("inactive".equals(request.status())) {
       departmentMapper.clearManagerByUserId(tenantId, userId);
     }
+    administrationGuard.requireAdministratorPreserved(tenantId, administrators);
     auditLogApplicationService.recordTenantAction(
         tenantId, BuyerUserAuditAction.STATUS_CHANGED, AuditTargetType.BUYER_USER, userId, detail);
     return toResponse(buyerUserMapper.findByTenantAndId(tenantId, userId));

@@ -41,6 +41,7 @@ import { SupplierAdmissionReviewDialog } from './supplier-admission-review-dialo
 import { SupplierExitActions } from './supplier-exit-actions';
 import { SupplierEvaluationPanel } from './supplier-evaluation-panel';
 import { SupplierPerformanceTasks } from './supplier-performance-tasks';
+import { AiReviewButton } from '../ai/ai-review-button';
 
 type TabId = 'orders' | 'finance' | 'performance' | 'products' | 'qualifications';
 
@@ -129,6 +130,7 @@ export function SupplierDetailPage({
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
+            <AiReviewButton subjectType="supplier" subjectId={id} />
             {onEdit && can('buyer:supplier:manage') && <button type="button" onClick={onEdit}
               className="inline-flex h-10 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 hover:bg-slate-50">
               <Pencil size={16} />编辑私域资料

@@ -10,4 +10,5 @@ export interface DictionaryTypeSummaryResponse {
   type?: string;
   entryCount?: number;
   activeCount?: number;
+  extensible?: boolean;
 }

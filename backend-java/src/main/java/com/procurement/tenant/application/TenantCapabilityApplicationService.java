@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.procurement.tenant.domain.ProcurementMethodCatalog;
+import com.procurement.tenant.domain.TenantFeatureKey;
 import com.procurement.tenant.infrastructure.TenantFeatureMapper;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -41,7 +42,26 @@ public class TenantCapabilityApplicationService {
   }
 
   public List<ProcurementMethodCatalog.MethodDefinition> enabledMethods(String tenantId) {
-    return ProcurementMethodCatalog.enabledMethods(enabledFeatures(tenantId));
+    return effectiveMethods(enabledFeatures(tenantId));
+  }
+
+  public static List<ProcurementMethodCatalog.MethodDefinition> effectiveMethods(List<String> features) {
+    return ProcurementMethodCatalog.enabledMethods(features).stream()
+        .filter(m -> features.contains(TenantFeatureKey.RFQ)
+            || m.equals(ProcurementMethodCatalog.MALL) || m.equals(ProcurementMethodCatalog.TENDER))
+        .toList();
+  }
+
+  public static List<String> newBusinessModuleIds(List<String> features) {
+    var modules = new java.util.ArrayList<>(effectiveMethods(features).stream()
+        .flatMap(m -> m.moduleIds().stream()).distinct().toList());
+    if (features.contains(TenantFeatureKey.ORDER)) modules.add("orders");
+    if (features.contains(TenantFeatureKey.FINANCE)) modules.add("invoices");
+    return List.copyOf(modules);
+  }
+
+  public static List<String> historicalModuleIds() {
+    return List.of("rfqs", "auctions", "tenders", "mall", "orders", "receipts", "invoices");
   }
 
   /** 立项入口门禁:方式未开通即拒绝,前端藏起来不算数。 */

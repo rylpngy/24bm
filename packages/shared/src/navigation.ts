@@ -31,7 +31,7 @@ export interface AdminRoleNavigation {
 
 export const buyerAdminModules: AdminNavigationModule[] = [
   { id: 'dashboard', label: '首页看板', desc: '采购金额、待办、履约进度' },
-  { id: 'analytics', label: '采购分析', desc: '支出趋势、集中度、节支洞察', requiredPermission: 'buyer:analytics:read' },
+  { id: 'analytics', label: '采购分析', desc: '订单趋势、供应商集中度与报价差额', requiredPermission: 'buyer:analytics:read' },
   { id: 'budgets', label: '预算管理', desc: '部门预算池、占用、超预算预警', requiredPermission: 'buyer:budget:read' },
   { id: 'demands', label: '采购需求', desc: '需求列表、审批提交、转采购计划', requiredPermission: 'buyer:demand:read' },
   { id: 'procurement-plans', label: '采购计划', desc: '需求合并、方案审批、执行进度', requiredPermission: 'buyer:rfq:read' },
@@ -49,6 +49,8 @@ export const buyerAdminModules: AdminNavigationModule[] = [
   { id: 'process-engine', label: '流程引擎', desc: '可视化配置审批流与表单', requiredPermission: 'buyer:role:manage' },
   { id: 'org', label: '组织架构', desc: '部门树、负责人、成员', requiredPermission: 'buyer:role:manage' },
   { id: 'team', label: '团队与权限', desc: '角色权限矩阵与成员', requiredPermission: 'buyer:role:manage' },
+  { id: 'numbering-rules', label: '编码规则', desc: '需求与招标项目自动编号', requiredPermission: 'buyer:role:manage' },
+  { id: 'ai-policies', label: 'AI制度依据', desc: '企业制度版本与辅助评审依据', requiredPermission: 'buyer:ai:manage' },
   { id: 'audit', label: '审计日志', desc: '最近操作留痕', requiredPermission: 'buyer:audit:read' },
 ];
 

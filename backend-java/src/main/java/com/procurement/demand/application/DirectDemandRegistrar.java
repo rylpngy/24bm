@@ -8,12 +8,11 @@ import com.procurement.demand.domain.PurchaseDemandStatus;
 import com.procurement.demand.infrastructure.PurchaseDemandItemMapper;
 import com.procurement.demand.infrastructure.PurchaseDemandMapper;
 import com.procurement.organization.infrastructure.DepartmentMapper;
+import com.procurement.numbering.application.NumberingApplicationService;
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Locale;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,12 +20,16 @@ import org.springframework.transaction.annotation.Transactional;
 // 独立于 PurchaseDemandApplicationService,避免 sourcing↔demand 应用服务互相依赖成环。
 @Service
 public class DirectDemandRegistrar {
-  private static final DateTimeFormatter DEMAND_DATE_FORMAT = DateTimeFormatter.BASIC_ISO_DATE;
-
   private final PurchaseDemandMapper purchaseDemandMapper;
   private final PurchaseDemandItemMapper purchaseDemandItemMapper;
   private final DepartmentMapper departmentMapper;
   private final AuditLogApplicationService auditLogApplicationService;
+  private NumberingApplicationService numbering;
+
+  @Autowired
+  void setNumberingApplicationService(NumberingApplicationService numbering) {
+    this.numbering = numbering;
+  }
 
   public DirectDemandRegistrar(
       PurchaseDemandMapper purchaseDemandMapper,
@@ -56,7 +59,9 @@ public class DirectDemandRegistrar {
     if (!departmentMapper.existsActiveByTenantAndId(tenantId, departmentId)) {
       throw new IllegalArgumentException("归口部门不存在或已停用: " + departmentId);
     }
-    String demandId = nextDemandId(tenantId, departmentId);
+    String demandId = numbering == null
+        ? NumberingApplicationService.defaultNumber("demand", departmentId, purchaseDemandMapper::allocateSequence)
+        : numbering.nextDemandNumber(departmentId, purchaseDemandMapper::allocateSequence);
     purchaseDemandMapper.insert(
         demandId,
         tenantId,
@@ -92,25 +97,4 @@ public class DirectDemandRegistrar {
     return demandId;
   }
 
-  private String nextDemandId(String tenantId, String departmentId) {
-    String prefix = departmentAbbreviation(departmentId) + LocalDate.now().format(DEMAND_DATE_FORMAT);
-    int nextSeq = purchaseDemandMapper.countByTenantAndIdPrefix(tenantId, prefix) + 1;
-    return prefix + String.format(Locale.ROOT, "%03d", nextSeq);
-  }
-
-  private static String departmentAbbreviation(String departmentId) {
-    return switch (departmentId) {
-      case "dept-it" -> "IT";
-      case "dept-finance" -> "FIN";
-      case "dept-admin" -> "ADM";
-      case "dept-purchase" -> "PUR";
-      case "dept-hq" -> "HQ";
-      default -> {
-        String normalized = departmentId == null ? "GEN" : departmentId.replace("dept-", "");
-        yield normalized.length() > 3
-            ? normalized.substring(0, 3).toUpperCase(Locale.ROOT)
-            : normalized.toUpperCase(Locale.ROOT);
-      }
-    };
-  }
 }

@@ -54,6 +54,12 @@ info:
     description: 多租户采购协同管理 SaaS 后端
 
 procurement:
+  ai:
+    # External requests require explicit enablement and all three provider settings.
+    enabled: ${PROCUREMENT_AI_ENABLED:false}
+    endpoint: ${PROCUREMENT_AI_ENDPOINT:}
+    api-key: ${PROCUREMENT_AI_API_KEY:}
+    model: ${PROCUREMENT_AI_MODEL:}
   ludong-poc:
     ai-review:
       # 可选 OpenAI 兼容 chat/completions 接口。未配置时使用本地采购规则模型，不影响审批办理。

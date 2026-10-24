@@ -8,4 +8,5 @@
 
 export type DictionaryListParams = {
 type: string;
+includeInactive?: boolean;
 };

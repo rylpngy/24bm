@@ -13,7 +13,10 @@ class OpenApiConfigTests {
   void extractedFinanceControllerRetainsItsPublishedOperationIds() throws Exception {
     var controller = new BuyerFinanceReportController(mock(FinanceReportApplicationService.class));
     for (String method : new String[] {"exportInvoices", "exportReconciliation", "exportProcurementAnalytics"}) {
-      var handler = new HandlerMethod(controller, BuyerFinanceReportController.class.getMethod(method, String.class));
+      Class<?>[] parameters = method.equals("exportProcurementAnalytics")
+          ? new Class<?>[]{String.class, java.time.LocalDate.class, java.time.LocalDate.class, String.class, String.class}
+          : new Class<?>[]{String.class};
+      var handler = new HandlerMethod(controller, BuyerFinanceReportController.class.getMethod(method, parameters));
       var result = new OpenApiConfig().operationIdCustomizer().customize(new Operation(), handler);
       assertThat(result.getOperationId()).isEqualTo("BuyerFinanceAction_" + method);
     }

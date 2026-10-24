@@ -4,12 +4,17 @@ import com.procurement.organization.domain.Department;
 import java.util.List;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
 @Mapper
 public interface DepartmentMapper {
+
+  @Select("select id from tenants where id = #{tenantId} for update")
+  @Options(useCache = false, flushCache = Options.FlushCachePolicy.TRUE)
+  String lockAdministrationTenant(@Param("tenantId") String tenantId);
 
   @Select("""
       select d.id, d.tenant_id, d.name, d.parent_id, d.status, d.description,

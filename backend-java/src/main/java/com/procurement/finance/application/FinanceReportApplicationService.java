@@ -4,8 +4,10 @@ import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.finance.api.FinanceReport;
 import com.procurement.finance.domain.Invoice;
 import com.procurement.finance.domain.ThreeWayMatch;
-import com.procurement.finance.infrastructure.FinanceReportMapper;
 import com.procurement.finance.infrastructure.FinanceReportRenderer;
+import com.procurement.finance.infrastructure.ProcurementAnalyticsReportRenderer;
+import com.procurement.buyer.application.BuyerAnalyticsReportQuery;
+import java.time.LocalDate;
 import com.procurement.finance.infrastructure.InvoiceMapper;
 import com.procurement.finance.infrastructure.ThreeWayMatchMapper;
 import java.math.BigDecimal;
@@ -13,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
 
 @Service
 @Transactional(readOnly = true)
@@ -20,14 +23,15 @@ public class FinanceReportApplicationService {
   private final FinanceAccessService access;
   private final InvoiceMapper invoiceMapper;
   private final ThreeWayMatchMapper threeWayMatchMapper;
-  private final FinanceReportMapper reportMapper;
+  private final BuyerAnalyticsReportQuery analytics;
 
   public FinanceReportApplicationService(FinanceAccessService access, InvoiceMapper invoiceMapper,
-      ThreeWayMatchMapper threeWayMatchMapper, FinanceReportMapper reportMapper) {
+      ThreeWayMatchMapper threeWayMatchMapper,
+      BuyerAnalyticsReportQuery analytics) {
     this.access = access;
     this.invoiceMapper = invoiceMapper;
     this.threeWayMatchMapper = threeWayMatchMapper;
-    this.reportMapper = reportMapper;
+    this.analytics = analytics;
   }
 
   // ============ 报表导出(发票清单 / 对账单 / 采购分析)============
@@ -81,22 +85,25 @@ public class FinanceReportApplicationService {
     return render("三单匹配对账单", "reconciliation", headers, rows, format);
   }
 
-  // 采购分析:按订单状态汇总订单数与金额(含合计行)。
+  @Transactional(propagation = Propagation.NOT_SUPPORTED)
   public FinanceReport exportProcurementAnalytics(String format) {
-    String tenantId = TenantAccessGuard.requireTenantId("report APIs");
+    return exportProcurementAnalytics(format, null, null, null, null);
+  }
+
+  @Transactional(propagation = Propagation.NOT_SUPPORTED)
+  public FinanceReport exportProcurementAnalytics(String format, LocalDate fromDate, LocalDate toDate,
+      String supplierId, String status) {
+    TenantAccessGuard.requireTenantId("report APIs");
     access.requireScope("buyer:analytics:read");
-    var scope = access.requireScope("buyer:report:export");
-    BigDecimal total = BigDecimal.ZERO;
-    long totalCount = 0;
-    List<String> headers = List.of("订单状态", "订单数", "订单金额合计");
-    List<List<String>> rows = new ArrayList<>();
-    for (var summary : reportMapper.summarizeOrders(tenantId, scope)) {
-      rows.add(List.of(summary.status(), String.valueOf(summary.orderCount()), money(summary.amount())));
-      total = total.add(summary.amount());
-      totalCount += summary.orderCount();
+    access.requireScope("buyer:report:export");
+    if (!"xlsx".equalsIgnoreCase(format) && !"pdf".equalsIgnoreCase(format)) {
+      throw new IllegalArgumentException("仅支持 xlsx 或 pdf 导出格式");
     }
-    rows.add(List.of("合计", String.valueOf(totalCount), money(total)));
-    return render("采购分析汇总", "procurement-analytics", headers, rows, format);
+    // Another bean's proxied REQUIRES_NEW method owns the repeatable-read snapshot and read permission.
+    var result = analytics.procurementAnalytics(fromDate, toDate, supplierId, status);
+    boolean pdf = "pdf".equalsIgnoreCase(format);
+    return new FinanceReport(pdf ? ProcurementAnalyticsReportRenderer.toPdf(result) : ProcurementAnalyticsReportRenderer.toXlsx(result),
+        "procurement-analytics." + (pdf ? "pdf" : "xlsx"), pdf ? FinanceReport.PDF_CONTENT_TYPE : FinanceReport.XLSX_CONTENT_TYPE);
   }
 
   private FinanceReport render(

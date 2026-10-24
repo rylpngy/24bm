@@ -6,6 +6,23 @@ import org.junit.jupiter.api.Test;
 
 class PortalPermissionPolicyTests {
   @Test
+  void aiAndNumberingRoutesHaveExplicitPermissionsAndFailClosed() {
+    assertThat(required("buyer", "GET", "ai/reviews")).isEqualTo("buyer:ai:read");
+    assertThat(required("buyer", "GET", "ai/reviews/run1")).isEqualTo("buyer:ai:read");
+    assertThat(required("buyer", "POST", "ai/reviews")).isEqualTo("buyer:ai:use");
+    assertThat(required("buyer", "POST", "ai/reviews/run1/feedback")).isEqualTo("buyer:ai:use");
+    assertThat(required("buyer", "GET", "ai/policies")).isEqualTo("buyer:ai:manage");
+    assertThat(required("buyer", "POST", "ai/policies")).isEqualTo("buyer:ai:manage");
+    assertThat(required("buyer", "POST", "ai/policies/p1/publish")).isEqualTo("buyer:ai:manage");
+    assertThat(required("buyer", "POST", "ai/policies/p1/retire")).isEqualTo("buyer:ai:manage");
+    assertThat(required("buyer", "GET", "ai/unknown")).isEqualTo("buyer:*");
+    assertThat(required("buyer", "DELETE", "ai/reviews/run1")).isEqualTo("buyer:*");
+    assertThat(required("buyer", "GET", "numbering-rules")).isEqualTo("buyer:role:manage");
+    assertThat(required("buyer", "PUT", "numbering-rules/demand")).isEqualTo("buyer:role:manage");
+    assertThat(required("buyer", "POST", "numbering-rules/demand/preview")).isEqualTo("buyer:role:manage");
+    assertThat(required("buyer", "DELETE", "numbering-rules/demand")).isEqualTo("buyer:*");
+  }
+  @Test
   void mallCheckoutNotesRequireOrderReadRatherThanCatalogReadOrPurchase() {
     for (String scope : java.util.List.of("buyer", "supplier")) {
       assertThat(required(scope, "GET", "mall/orders/o/checkout-note")).isEqualTo(scope + ":order:read");

@@ -29,6 +29,13 @@ public final class PortalPermissionPolicy {
       return isRead(method) ? scope + ":order:read" : scope + ":*";
     }
     if (scope.equals("buyer")) {
+      if (segments[0].equals("ai")) return buyerAiPermission(method, segments);
+      if (segments[0].equals("numbering-rules")) {
+        boolean supported = segments.length == 1 && isRead(method)
+            || segments.length == 2 && method.equals("PUT")
+            || segments.length == 3 && segments[2].equals("preview") && method.equals("POST");
+        return supported ? "buyer:role:manage" : "buyer:*";
+      }
       if (segments[0].equals("rfqs")) return buyerRfqPermission(method, segments);
       if (segments[0].equals("auction-stream")) {
         return segments.length == 1 && isRead(method) ? "buyer:rfq:read" : "buyer:*";
@@ -83,6 +90,22 @@ public final class PortalPermissionPolicy {
 
   private static boolean isRead(String method) {
     return method.equals("GET") || method.equals("HEAD");
+  }
+
+  private static String buyerAiPermission(String method, String[] segments) {
+    if (segments.length >= 2 && segments[1].equals("policies")) {
+      boolean supported = segments.length == 2 && (isRead(method) || method.equals("POST"))
+          || segments.length == 3 && isRead(method)
+          || segments.length == 4 && method.equals("POST")
+              && java.util.Set.of("publish", "retire").contains(segments[3]);
+      return supported ? "buyer:ai:manage" : "buyer:*";
+    }
+    if (segments.length >= 2 && segments[1].equals("reviews")) {
+      if (isRead(method) && (segments.length == 2 || segments.length == 3)) return "buyer:ai:read";
+      if (method.equals("POST") && (segments.length == 2
+          || segments.length == 4 && segments[3].equals("feedback"))) return "buyer:ai:use";
+    }
+    return "buyer:*";
   }
 
   private static String buyerRfqPermission(String method, String[] segments) {

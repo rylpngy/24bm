@@ -83,7 +83,7 @@ public class PaymentArchiveExceptionApplicationService {
     String tenantId = TenantAccessGuard.requireTenantId("payment archive exception request APIs");
     String userId = TenantAccessGuard.requireUserId("payment archive exception request APIs");
     permissionService.require("buyer:payment:register");
-    tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
+    tenantFeatureApplicationService.requireHistoricalFulfillment(tenantId, TenantFeatureKey.FINANCE);
     financeAccess.requireBatch(request.paymentBatchNo(), "buyer:payment:register");
     requirePaymentBatchArchived(tenantId, request.paymentBatchNo());
     String approvalStatus = ApprovalStatus.PENDING;
@@ -125,7 +125,7 @@ public class PaymentArchiveExceptionApplicationService {
       ReviewPaymentArchiveExceptionRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("payment archive exception request APIs");
     String userId = TenantAccessGuard.requireUserId("payment archive exception request APIs");
-    tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
+    tenantFeatureApplicationService.requireHistoricalFulfillment(tenantId, TenantFeatureKey.FINANCE);
     PaymentArchiveExceptionRequest archiveExceptionRequest =
         paymentArchiveExceptionRequestMapper.findByTenantAndId(tenantId, requestId);
     if (archiveExceptionRequest == null) {
@@ -161,7 +161,7 @@ public class PaymentArchiveExceptionApplicationService {
     String tenantId = TenantAccessGuard.requireTenantId("payment archive exception request APIs");
     String userId = TenantAccessGuard.requireUserId("payment archive exception request APIs");
     permissionService.require("buyer:payment:register");
-    tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
+    tenantFeatureApplicationService.requireHistoricalFulfillment(tenantId, TenantFeatureKey.FINANCE);
     PaymentArchiveExceptionRequest archiveExceptionRequest =
         paymentArchiveExceptionRequestMapper.findByTenantAndId(tenantId, requestId);
     if (archiveExceptionRequest == null) {
@@ -197,7 +197,7 @@ public class PaymentArchiveExceptionApplicationService {
     String tenantId = TenantAccessGuard.requireTenantId("payment archive exception request APIs");
     String userId = TenantAccessGuard.requireUserId("payment archive exception request APIs");
     permissionService.require("buyer:payment:register");
-    tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
+    tenantFeatureApplicationService.requireHistoricalFulfillment(tenantId, TenantFeatureKey.FINANCE);
     PaymentArchiveExceptionRequest archiveExceptionRequest =
         paymentArchiveExceptionRequestMapper.findByTenantAndId(tenantId, requestId);
     if (archiveExceptionRequest == null) {

@@ -49,7 +49,7 @@ public class ReceiptDispositionReviewApplicationService {
     Receipt initial = requireReceipt(tenant, receiptId);
     access.requireOrder(initial.orderId(), "buyer:receipt:manage");
     permissions.require("buyer:workflow:review");
-    features.requireEnabled(tenant, TenantFeatureKey.ORDER);
+    features.requireHistoricalFulfillment(tenant, TenantFeatureKey.ORDER);
     if (request == null || !Set.of(ReceiptInspection.CONCESSION, "维持退货换货").contains(request.decision() == null ? "" : request.decision())) {
       throw new IllegalArgumentException("须明确选择让步接收或维持退货换货");
     }

@@ -52,6 +52,8 @@ class OrderFinanceFeatureToggleTests {
   private final TenantFeatureMapper tenantFeatureMapper = org.mockito.Mockito.mock(TenantFeatureMapper.class);
   private final TenantFeatureApplicationService tenantFeatureApplicationService =
       new TenantFeatureApplicationService(tenantFeatureMapper, new ObjectMapper());
+  private final com.procurement.finance.application.PaymentAuthorizationService authorization =
+      org.mockito.Mockito.mock(com.procurement.finance.application.PaymentAuthorizationService.class);
 
   private final PurchaseOrderApplicationService purchaseOrderApplicationService = new PurchaseOrderApplicationService(
           TestOrderAccess.unrestricted(),
@@ -87,7 +89,7 @@ class OrderFinanceFeatureToggleTests {
       new InvoicePaymentStatusTransition(),
           org.mockito.Mockito.mock(com.procurement.finance.infrastructure.InvoiceLineItemMapper.class),
       TestFinanceAccess.unrestricted(),
-      org.mockito.Mockito.mock(com.procurement.finance.application.PaymentAuthorizationService.class));
+      authorization);
 
   @AfterEach
   void clearTenantContext() {
@@ -143,7 +145,7 @@ class OrderFinanceFeatureToggleTests {
   }
 
   @Test
-  void buyerPaymentRejectsTenantWithoutFinanceFeatureBeforeLoadingInvoice() {
+  void existingInvoicePaymentStillChecksInvoiceScopeWhenFinanceIsOff() {
     TenantContext.set("tenant-1", null, "buyer-user");
     when(tenantFeatureMapper.findEnabledFeaturesJson("tenant-1"))
         .thenReturn("[\"rfq\",\"order\"]");
@@ -151,12 +153,60 @@ class OrderFinanceFeatureToggleTests {
     assertThatThrownBy(() -> paymentApplicationService.register(
         "invoice-1",
         new RegisterPaymentRequest("已付款")))
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("本企业未开通该功能模块(finance)");
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Invoice not found in tenant scope");
 
-    verify(invoiceMapper, never()).findByTenantAndId(
-        org.mockito.ArgumentMatchers.anyString(),
-        org.mockito.ArgumentMatchers.anyString());
+    verify(invoiceMapper).findByTenantAndId("tenant-1", "invoice-1");
+  }
+
+  @Test
+  void supplierCanConfirmExistingOrderAfterModuleShutdown() {
+    TenantContext.set(null, "supplier-1", "supplier-user");
+    when(tenantFeatureMapper.findEnabledFeaturesJson("tenant-1")).thenReturn("[]");
+    when(purchaseOrderMapper.findBySupplierAndId("supplier-1", "po-1"))
+        .thenReturn(order("po-1", "tenant-1", "supplier-1", "待供应商确认"));
+    when(purchaseOrderMapper.updateStatus("tenant-1", "po-1", "待供应商确认", "待发货")).thenReturn(1);
+    when(purchaseOrderMapper.findByTenantAndId("tenant-1", "po-1"))
+        .thenReturn(order("po-1", "tenant-1", "supplier-1", "待发货"));
+    org.assertj.core.api.Assertions.assertThatCode(() ->
+        org.assertj.core.api.Assertions.assertThat(purchaseOrderApplicationService.confirmCurrentSupplierOrder("po-1").status())
+            .isEqualTo("待发货")).doesNotThrowAnyException();
+  }
+
+  @Test
+  void existingInvoiceCanSettleAfterFinanceShutdownWithoutBypassingAuthorization() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(tenantFeatureMapper.findEnabledFeaturesJson("tenant-1")).thenReturn("[]");
+    var before = invoice("待付款");
+    when(invoiceMapper.findByTenantAndId("tenant-1", "invoice-1")).thenReturn(before, invoice("已付款"));
+    when(purchaseOrderMapper.findByTenantAndId("tenant-1", "po-1"))
+        .thenReturn(order("po-1", "tenant-1", "supplier-1", "已收货"));
+    when(invoiceMapper.updatePaymentStatus("tenant-1", "invoice-1", "待付款", "已付款")).thenReturn(1);
+    org.assertj.core.api.Assertions.assertThat(paymentApplicationService.register("invoice-1",
+        new RegisterPaymentRequest("已付款")).paymentStatus()).isEqualTo("已付款");
+    verify(authorization).requireReady(before, "已付款");
+    verify(authorization).recordPayment(before, null, null, null);
+  }
+
+  @Test
+  void financeShutdownDoesNotBypassExistingPaymentApprovalGuards() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(tenantFeatureMapper.findEnabledFeaturesJson("tenant-1")).thenReturn("[]");
+    var before = invoice("待付款");
+    when(invoiceMapper.findByTenantAndId("tenant-1", "invoice-1")).thenReturn(before);
+    when(purchaseOrderMapper.findByTenantAndId("tenant-1", "po-1"))
+        .thenReturn(order("po-1", "tenant-1", "supplier-1", "已收货"));
+    when(authorization.requireReady(before, "已付款")).thenThrow(new IllegalStateException("付款申请尚未审批通过"));
+    assertThatThrownBy(() -> paymentApplicationService.register("invoice-1", new RegisterPaymentRequest("已付款")))
+        .hasMessageContaining("尚未审批通过");
+    verify(invoiceMapper, never()).updatePaymentStatus(org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString());
+  }
+
+  private com.procurement.finance.domain.Invoice invoice(String status) {
+    var time = OffsetDateTime.parse("2026-06-15T10:00:00+08:00");
+    return new com.procurement.finance.domain.Invoice("invoice-1", "tenant-1", "supplier-1", "po-1",
+        BigDecimal.valueOf(100), "INV-1", status, null, time, time, null, null, null);
   }
 
   @SuppressWarnings("unused")

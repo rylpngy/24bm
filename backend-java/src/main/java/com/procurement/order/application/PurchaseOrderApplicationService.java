@@ -101,7 +101,7 @@ public class PurchaseOrderApplicationService {
       throw new IllegalArgumentException("Purchase order not found for supplier scope: " + orderId);
     }
     purchaseOrderStatusTransition.requireSupplierConfirmation(order.status(), orderId);
-    tenantFeatureApplicationService.requireEnabled(order.tenantId(), TenantFeatureKey.ORDER);
+    tenantFeatureApplicationService.requireHistoricalFulfillment(order.tenantId(), TenantFeatureKey.ORDER);
 
     int updated = purchaseOrderMapper.updateStatus(
         order.tenantId(),

@@ -86,7 +86,7 @@ public class DeliveryApplicationService {
       throw new IllegalArgumentException("Purchase order not found for supplier scope: " + orderId);
     }
     purchaseOrderStatusTransition.requireShipment(order.status(), orderId);
-    tenantFeatureApplicationService.requireEnabled(order.tenantId(), TenantFeatureKey.ORDER);
+    tenantFeatureApplicationService.requireHistoricalFulfillment(order.tenantId(), TenantFeatureKey.ORDER);
     var available = deliveryMapper.fulfillmentLines(order.tenantId(), orderId);
     if (available.isEmpty() || deliveryMapper.countUnattributedHistory(order.tenantId(), orderId) > 0) {
       throw new IllegalStateException("Legacy order or documents without attributable lines require manual reconciliation");
@@ -173,7 +173,7 @@ public class DeliveryApplicationService {
     if (!PurchaseOrderStatus.SHIPPED.equals(order.status())) {
       throw new IllegalStateException("Only shipped purchase orders can update delivery tracking: " + order.id());
     }
-    tenantFeatureApplicationService.requireEnabled(order.tenantId(), TenantFeatureKey.ORDER);
+    tenantFeatureApplicationService.requireHistoricalFulfillment(order.tenantId(), TenantFeatureKey.ORDER);
     int updated = deliveryMapper.updateSupplierDelivery(
         order.tenantId(),
         delivery.id(),

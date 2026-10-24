@@ -86,4 +86,33 @@ class BuyerRoleManagementTests {
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString());
   }
+
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(strings = {"details", "permissions", "scope", "delete"})
+  void protectsProvisionedTenantOwnerAtEveryMutationEntry(String action) {
+    TenantContext.set("tenant-1", null, "buyer-owner");
+    String id = "role-tenant-1-buyer-owner";
+    when(buyerRoleMapper.findBuyerRoleByTenantAndId("tenant-1", id))
+        .thenReturn(new BuyerRole(id, "tenant-1", "Owner", "[\"buyer:*\"]", "all"));
+    assertThatThrownBy(() -> {
+      switch (action) {
+        case "details" -> service.updateRole(id, new UpdateBuyerRoleRequest("Owner", List.of(), "self"));
+        case "permissions" -> service.updateRolePermissions(id,
+            new com.procurement.identity.api.UpdateRolePermissionsRequest(List.of()));
+        case "scope" -> service.updateRoleDataScope(id,
+            new com.procurement.identity.api.UpdateRoleDataScopeRequest("self"));
+        default -> service.deleteRole(id);
+      }
+    }).isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  void provisionedOwnerResponseIdentifiesBuiltInAndProtectedRole() {
+    TenantContext.set("tenant-1", null, "buyer-owner");
+    when(buyerRoleMapper.listBuyerRolesByTenant("tenant-1")).thenReturn(List.of(
+        new BuyerRole("role-tenant-1-buyer-owner", "tenant-1", "Owner", "[\"buyer:*\"]", "all")));
+    var json = new com.fasterxml.jackson.databind.ObjectMapper().valueToTree(service.listCurrentTenantRoles().getFirst());
+    org.assertj.core.api.Assertions.assertThat(json.path("builtIn").asBoolean()).isTrue();
+    org.assertj.core.api.Assertions.assertThat(json.path("protectedRole").asBoolean()).isTrue();
+  }
 }

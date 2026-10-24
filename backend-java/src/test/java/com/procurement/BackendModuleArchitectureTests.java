@@ -13,6 +13,8 @@ class BackendModuleArchitectureTests {
 
   private static final Path SOURCE_ROOT = Path.of("src/main/java/com/procurement");
   private static final Map<String, String> MODULE_BOUNDARY_TERMS = Map.ofEntries(
+      Map.entry("ai", "AI辅助"),
+      Map.entry("numbering", "自动编号"),
       Map.entry("platform", "平台运营"),
       Map.entry("tenant", "租户能力"),
       Map.entry("organization", "组织架构"),

@@ -43,6 +43,9 @@ public interface DictionaryMapper {
   @Select("select type, code, label, sort_order, status from dictionaries where type = #{type} and code = #{code}")
   DictionaryEntry find(@Param("type") String type, @Param("code") String code);
 
+  @Select("select type, code, label, sort_order, status from dictionaries where type = #{type} and code = #{code} for update")
+  DictionaryEntry lock(@Param("type") String type, @Param("code") String code);
+
   @Insert("""
       insert into dictionaries (type, code, label, sort_order, status)
       values (#{type}, #{code}, #{label}, #{sortOrder}, #{status})

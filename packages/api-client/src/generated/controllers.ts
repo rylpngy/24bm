@@ -1,4 +1,5 @@
 // 自动汇总各 controller 的 orval 产物（generate 后由 build-controllers-barrel 重建）。
+export * from './ai-review-controller/ai-review-controller';
 export * from './approval-inbox-controller/approval-inbox-controller';
 export * from './attachment-controller/attachment-controller';
 export * from './auction-stream-controller/auction-stream-controller';
@@ -19,6 +20,7 @@ export * from './buyer-mall-product-media-controller/buyer-mall-product-media-co
 export * from './buyer-mall-purchase-control-controller/buyer-mall-purchase-control-controller';
 export * from './buyer-notification-channel-controller/buyer-notification-channel-controller';
 export * from './buyer-notification-controller/buyer-notification-controller';
+export * from './buyer-numbering-rule-controller/buyer-numbering-rule-controller';
 export * from './buyer-payment-controller/buyer-payment-controller';
 export * from './buyer-payment-ledger-controller/buyer-payment-ledger-controller';
 export * from './buyer-payment-review-controller/buyer-payment-review-controller';

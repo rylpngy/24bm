@@ -25,6 +25,59 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ProcurementExecutionApplicationService {
+  @Transactional(readOnly=true, isolation=Isolation.REPEATABLE_READ,
+      propagation=org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+  public com.procurement.common.ai.AiContracts.Snapshot captureAiEvidence(String rfqId) {
+    String tenant=authorize(rfqId,false);
+    var data=capture(tenant,rfqId,false).snapshot();
+    var evaluated=ProcurementExecutionPolicy.evaluate(data);
+    String revision=ProcurementExecutionArchiveWriter.stateHash(data);
+    var evidence=new ArrayList<com.procurement.common.ai.AiContracts.Evidence>();
+    var findings=new ArrayList<com.procurement.common.ai.AiContracts.Finding>();
+    var targets=new ArrayList<com.procurement.common.ai.AiContracts.AccessTarget>();
+    var summary=json.createObjectNode(); summary.put("rfqId",rfqId);
+    summary.set("budgetAmount",json.valueToTree(evaluated.budgetAmount()));
+    summary.set("orderAmount",json.valueToTree(evaluated.orderAmount()));
+    summary.set("paidAmount",json.valueToTree(evaluated.paidAmount()));
+    summary.set("remainingAmount",json.valueToTree(evaluated.remainingAmount()));
+    evidence.add(new com.procurement.common.ai.AiContracts.Evidence("execution-summary","BUSINESS","execution/amounts",
+        "采购执行金额及已知付款证据",summary.toString(),rfqId,revision,null));
+    for(var doc:evaluated.documents()) {
+      if(evidence.size()>=180) throw new IllegalArgumentException("Project exceeds 180 evidence records; narrow the case before review");
+      var value=json.createObjectNode(); value.put("status",doc.status()); value.set("amount",json.valueToTree(doc.amount()));
+      evidence.add(new com.procurement.common.ai.AiContracts.Evidence("document:"+evidence.size(),"BUSINESS",doc.module()+"/"+doc.recordId(),
+          doc.label(),value.toString(),doc.id(),revision,null));
+    }
+    int index=0;
+    for(String blocker:evaluated.blockers()) {
+      if(index>=80) throw new IllegalArgumentException("Project exceeds 80 risk findings; resolve existing exceptions before review");
+      String eid="check:"+(++index);
+      evidence.add(new com.procurement.common.ai.AiContracts.Evidence(eid,"BUSINESS","execution/blockers/"+index,
+          "采购执行规则检查记录",blocker,rfqId,revision,null));
+      findings.add(com.procurement.common.ai.AiSupport.finding("execution-"+index,"risk","存在未闭环的采购执行证据",blocker,eid,"execution-summary"));
+    }
+    for(var order:data.path("orders")) targets.add(new com.procurement.common.ai.AiContracts.AccessTarget("order",order.path("id").asText()));
+    for(var owner:data.path("attachmentOwners")) targets.add(new com.procurement.common.ai.AiContracts.AccessTarget("owner:"+owner.path("type").asText(),owner.path("id").asText()));
+    for(var attachment:data.path("attachments")) targets.add(new com.procurement.common.ai.AiContracts.AccessTarget("attachment",attachment.path("id").asText()));
+    for(var history:data.path("workflowHistory")) targets.add(new com.procurement.common.ai.AiContracts.AccessTarget(
+        "workflow_instance",history.path("instance").path("id").asText()));
+    return new com.procurement.common.ai.AiContracts.Snapshot(revision,evidence,findings, List.of(
+        "本次仅解释既有采购执行及结项检查，不作合法性、欺诈或围串标认定。",
+        "项目附件仅引用元数据，本次未核验附件原件及正文；需审查正文时请进入附件独立审查。",
+        "历史付款缺少证据时保持未知，不将未知金额解释为已付零元。"),targets);
+  }
+
+  public void authorizeAiEvidence(String rfqId,com.procurement.common.ai.AiContracts.Snapshot snapshot) {
+    authorize(rfqId,false);
+    if(snapshot==null) return;
+    for(var target:snapshot.accessTargets()) {
+      if(target.subjectType().equals("order")) access.requireOrder(target.subjectId(),"buyer:order:read");
+      else if(target.subjectType().startsWith("owner:")) attachments.procurementExecutionAttachmentMetadata(target.subjectType().substring(6),target.subjectId());
+      else if(target.subjectType().equals("attachment")) attachments.requireCurrentTenantReadAccess(target.subjectId());
+      else if(target.subjectType().equals("workflow_instance")) workflow.requireCurrentTenantInstanceReadAccess(target.subjectId());
+      else throw new IllegalArgumentException("Unsupported project evidence authorization target");
+    }
+  }
   public static final int MAX_ATTACHMENTS = 100;
   public static final long MAX_ATTACHMENT_BYTES = 100L * 1024 * 1024;
   private static final List<String> READS = List.of("buyer:demand:read","buyer:rfq:read","buyer:order:read",

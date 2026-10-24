@@ -8,4 +8,8 @@
 
 export type BuyerFinanceActionExportProcurementAnalyticsParams = {
 format?: string;
+fromDate?: string;
+toDate?: string;
+supplierId?: string;
+status?: string;
 };

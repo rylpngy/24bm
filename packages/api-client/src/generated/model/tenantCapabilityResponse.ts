@@ -11,4 +11,7 @@ export interface TenantCapabilityResponse {
   methods?: MethodCapability[];
   moduleIds?: string[];
   methodGatedModuleIds?: string[];
+  enabledFeatures?: string[];
+  newBusinessModuleIds?: string[];
+  historicalModuleIds?: string[];
 }

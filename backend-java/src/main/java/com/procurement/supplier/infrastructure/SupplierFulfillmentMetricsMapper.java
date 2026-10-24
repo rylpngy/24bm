@@ -14,6 +14,17 @@ import org.apache.ibatis.annotations.Select;
 // 供应商实测履约:从收货验收单(join 订单取供应商与预计到货)聚合质量与准时数据。
 @Mapper
 public interface SupplierFulfillmentMetricsMapper {
+  @Select("<script>" + """
+      select distinct po.id from receipts r
+      join purchase_orders po on po.id=r.order_id and po.tenant_id=r.tenant_id
+      where r.tenant_id=#{tenantId} and po.supplier_id=#{supplierId}
+      and po.id in (
+      """ + com.procurement.common.data.ProcurementScopeSql.ORDERS + """
+      ) order by po.id limit 201
+      </script>
+      """)
+  List<String> aiReceiptOrderIds(@Param("tenantId") String tenantId,
+      @Param("supplierId") String supplierId,@Param("scope") DataScope scope);
 
   @Select("<script>" + SupplierPeriodMetricsSql.CTE + """
       select receipt_count, on_time_count, total_received, total_qualified,

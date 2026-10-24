@@ -4,6 +4,7 @@ import { downloadReport } from '@24bid/api-client';
 import { createProcurementArchive, useProcurementExecution } from '@24bid/api-client/procurement-execution';
 import { FeedbackNotice, StatusPill } from '@24bid/ui';
 import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
+import { AiReviewButton } from '../ai/ai-review-button';
 
 const readPermissions = ['demand', 'rfq', 'order', 'contract', 'receipt', 'invoice', 'workflow'].map(x => `buyer:${x}:read`);
 const money = (value: number | null) => value == null ? '待核对' : `¥${value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -33,7 +34,7 @@ export function ProcurementExecutionPanel({ rfqId }: { rfqId: string }) {
   return <section aria-label="项目执行与归档" className="min-w-0 rounded-lg border border-slate-200 bg-white p-4 sm:p-6">
     <header className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
       <h3 className="flex items-center gap-2 text-base font-black text-slate-900"><Archive size={18} className="text-blue-600" />项目执行与归档</h3>
-      {readable && <button className={buttonStyle} disabled={busy || query.isFetching} onClick={() => void query.refetch()}><RefreshCw size={15} />刷新台账</button>}
+      {readable && <div className="flex flex-wrap gap-2"><AiReviewButton subjectType="procurement_risk" subjectId={rfqId} /><button className={buttonStyle} disabled={busy || query.isFetching} onClick={() => void query.refetch()}><RefreshCw size={15} />刷新台账</button></div>}
     </header>
     {!readable ? <FeedbackNotice tone="info" message="查看完整执行台账需具备需求、询比、订单、合同、收货、财务及流程读取权限。" />
       : query.isError ? <FeedbackNotice tone="error" message="执行台账加载失败，请刷新后重试。" />

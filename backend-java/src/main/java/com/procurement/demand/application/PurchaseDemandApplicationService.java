@@ -30,16 +30,14 @@ import com.procurement.identity.domain.DataScope;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.notification.domain.NotificationTitle;
 import com.procurement.organization.infrastructure.DepartmentMapper;
+import com.procurement.numbering.application.NumberingApplicationService;
 import com.procurement.sourcing.application.RfqDemandLinkQueryService;
 import com.procurement.workflow.application.UnifiedWorkflowApplicationService;
 import com.procurement.workflow.application.WorkflowStartCommand;
 import com.procurement.workflow.application.WorkflowStartResult;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -49,7 +47,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PurchaseDemandApplicationService {
-  private static final DateTimeFormatter DEMAND_DATE_FORMAT = DateTimeFormatter.BASIC_ISO_DATE;
   private final PurchaseDemandMapper purchaseDemandMapper;
   private final PurchaseDemandItemMapper purchaseDemandItemMapper;
   private final ApprovalTaskMapper approvalTaskMapper;
@@ -63,6 +60,7 @@ public class PurchaseDemandApplicationService {
   private final DataScopeService dataScopeService;
   private final PermissionService permissionService;
   private UnifiedWorkflowApplicationService unifiedWorkflowApplicationService;
+  private NumberingApplicationService numbering;
 
   public PurchaseDemandApplicationService(
       PurchaseDemandMapper purchaseDemandMapper,
@@ -89,6 +87,11 @@ public class PurchaseDemandApplicationService {
     this.purchaseDemandApprovalStatusTransition = purchaseDemandApprovalStatusTransition;
     this.dataScopeService = dataScopeService;
     this.permissionService = permissionService;
+  }
+
+  @Autowired
+  void setNumberingApplicationService(NumberingApplicationService numbering) {
+    this.numbering = numbering;
   }
 
   @Autowired
@@ -495,9 +498,9 @@ public class PurchaseDemandApplicationService {
   }
 
   private String nextDemandId(String departmentId) {
-    String prefix = departmentAbbreviation(departmentId) + LocalDate.now().format(DEMAND_DATE_FORMAT);
-    long nextSeq = purchaseDemandMapper.allocateSequence(prefix);
-    return prefix + String.format(Locale.ROOT, "%03d", nextSeq);
+    return numbering == null
+        ? NumberingApplicationService.defaultNumber("demand", departmentId, purchaseDemandMapper::allocateSequence)
+        : numbering.nextDemandNumber(departmentId, purchaseDemandMapper::allocateSequence);
   }
 
   private void requireDataScope(String departmentId, String requesterId) {
@@ -508,21 +511,6 @@ public class PurchaseDemandApplicationService {
             : !scope.departmentIds().contains(departmentId)))) {
       throw new PermissionDeniedException("当前数据范围无权操作该采购需求");
     }
-  }
-
-  private static String departmentAbbreviation(String departmentId) {
-    return switch (departmentId) {
-      case "dept-it" -> "IT";
-      case "dept-finance" -> "FIN";
-      case "dept-admin" -> "ADM";
-      case "dept-purchase" -> "PUR";
-      case "dept-hq" -> "HQ";
-      default -> {
-        String normalized = departmentId == null ? "GEN" : departmentId.replace("dept-", "");
-        String letters = normalized.replaceAll("[^A-Za-z0-9]", "").toUpperCase(Locale.ROOT);
-        yield letters.isBlank() ? "GEN" : letters.substring(0, Math.min(3, letters.length()));
-      }
-    };
   }
 
   private String newId(String prefix) {
