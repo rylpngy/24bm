@@ -12,6 +12,45 @@ import org.apache.ibatis.annotations.Update;
 @Mapper
 public interface WorkflowBusinessInstanceMapper {
 
+  String LEDGER_FILTER = """
+      from workflow_business_instances w where w.tenant_id = #{query.tenantId}
+      <if test="query.restricted">
+        <choose>
+          <when test="query.requesterId != null">and w.initiator_id = #{query.requesterId}</when>
+          <when test="query.departmentIds != null and !query.departmentIds.isEmpty()">
+            and w.department_id in
+            <foreach collection="query.departmentIds" item="department" open="(" separator="," close=")">#{department}</foreach>
+          </when>
+          <otherwise>and 1 = 0</otherwise>
+        </choose>
+      </if>
+      <if test="query.view == 'initiated'">and w.initiator_id = #{query.userId}</if>
+      <if test="query.view == 'processed'">
+        and exists (select 1 from workflow_task_events e where e.tenant_id = w.tenant_id
+          and e.workflow_instance_id = w.id and e.actor_id = #{query.userId}
+          and e.action in ('approved', 'rejected'))
+      </if>
+      <if test="query.keyword != ''">
+        and (position(lower(#{query.keyword}) in lower(w.business_id)) &gt; 0
+          or position(lower(#{query.keyword}) in lower(w.id)) &gt; 0
+          or exists (select 1 from users u where u.tenant_id = w.tenant_id and u.id = w.initiator_id
+            and position(lower(#{query.keyword}) in lower(u.name)) &gt; 0))
+      </if>
+      """;
+
+  @Select("<script>select count(*) " + LEDGER_FILTER + "</script>")
+  long countLedger(@Param("query") com.procurement.workflow.domain.WorkflowLedgerQuery query);
+
+  @Select("""
+      <script>select w.id, w.tenant_id, w.business_type, w.business_id, w.definition_version_id,
+        w.flowable_process_instance_id, w.status, w.initiator_id, w.department_id, w.amount,
+        null::text as form_data, null::text as business_snapshot,
+        w.completed_by, w.completed_at, w.created_at, w.updated_at
+      """ + LEDGER_FILTER + " order by w.updated_at desc, w.id desc limit #{pageSize} offset #{offset}</script>")
+  List<WorkflowBusinessInstance> pageLedger(
+      @Param("query") com.procurement.workflow.domain.WorkflowLedgerQuery query,
+      @Param("pageSize") int pageSize, @Param("offset") long offset);
+
   @Insert("""
       insert into workflow_business_instances (
         id, tenant_id, business_type, business_id, definition_version_id,

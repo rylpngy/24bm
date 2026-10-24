@@ -504,6 +504,54 @@ public class UnifiedWorkflowApplicationService {
         history.completedByName(), history.completedAt());
   }
 
+  // Task authorization uses the existing row-locking lookup; keep this transaction writable.
+  @Transactional(isolation = org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
+  public com.procurement.workflow.api.WorkflowBusinessInstancePage pageCurrentTenantInstances(
+      String view, int page, int pageSize, String keyword) {
+    if (page < 1 || pageSize < 1 || pageSize > 100) {
+      throw new IllegalArgumentException("page must be positive and pageSize must be between 1 and 100");
+    }
+    String search = keyword == null ? "" : keyword.trim();
+    if (search.length() > 100) throw new IllegalArgumentException("keyword must not exceed 100 characters");
+    String tenantId = TenantAccessGuard.requireTenantId("unified workflow APIs");
+    String userId = TenantAccessGuard.requireUserId("unified workflow APIs");
+    String selectedView = view == null ? "pending" : view;
+    long offset = (long) (page - 1) * pageSize;
+    if ("pending".equals(selectedView)) {
+      var authorized = new LinkedHashMap<String, WorkflowInstanceLedgerResponse>();
+      for (var task : listCurrentUserTasks()) {
+        if (authorized.containsKey(task.workflowInstanceId())) continue;
+        var instance = workflowBusinessInstanceMapper.findByTenantAndId(tenantId, task.workflowInstanceId());
+        if (instance == null) continue;
+        var item = toLedgerResponse(tenantId, instance, task);
+        String value = search.toLowerCase(java.util.Locale.ROOT);
+        if (value.isEmpty() || java.util.stream.Stream.of(item.businessId(), item.workflowInstanceId(), item.initiatorName())
+            .filter(Objects::nonNull).anyMatch(field -> field.toLowerCase(java.util.Locale.ROOT).contains(value))) {
+          authorized.put(instance.id(), item);
+        }
+      }
+      var sorted = authorized.values().stream().sorted(java.util.Comparator
+          .comparing(WorkflowInstanceLedgerResponse::updatedAt, java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder()))
+          .thenComparing(WorkflowInstanceLedgerResponse::workflowInstanceId, java.util.Comparator.reverseOrder())).toList();
+      return new com.procurement.workflow.api.WorkflowBusinessInstancePage(
+          sorted.stream().skip(offset).limit(pageSize).toList(), sorted.size(), page, pageSize);
+    }
+    switch (selectedView) {
+      case "processed" -> permissionService.require("buyer:workflow:review");
+      case "initiated" -> requireWorkflowReadAccess();
+      case "all" -> permissionService.require("buyer:workflow:read");
+      default -> throw new IllegalArgumentException("Unsupported workflow ledger view: " + selectedView);
+    }
+    var scope = dataScopeService.currentUserDataScope();
+    var query = new com.procurement.workflow.domain.WorkflowLedgerQuery(tenantId, selectedView, userId,
+        scope.restricted(), scope.departmentIds(), scope.requesterId(), search);
+    long total = workflowBusinessInstanceMapper.countLedger(query);
+    var items = offset >= total ? List.<WorkflowInstanceLedgerResponse>of()
+        : workflowBusinessInstanceMapper.pageLedger(query, pageSize, offset).stream()
+            .map(instance -> toLedgerResponse(tenantId, instance)).toList();
+    return new com.procurement.workflow.api.WorkflowBusinessInstancePage(items, total, page, pageSize);
+  }
+
   public List<WorkflowInstanceLedgerResponse> listCurrentTenantInstances(String view, int requestedLimit) {
     String tenantId = TenantAccessGuard.requireTenantId("unified workflow APIs");
     String userId = TenantAccessGuard.requireUserId("unified workflow APIs");
@@ -890,11 +938,16 @@ public class UnifiedWorkflowApplicationService {
 
   private WorkflowInstanceLedgerResponse toLedgerResponse(
       String tenantId, WorkflowBusinessInstance instance) {
+    Task task = activeTask(instance);
+    return toLedgerResponse(tenantId, instance, task == null ? null : toTaskResponse(task, instance));
+  }
+
+  private WorkflowInstanceLedgerResponse toLedgerResponse(
+      String tenantId, WorkflowBusinessInstance instance, UnifiedWorkflowTaskResponse currentTask) {
     BuyerUser initiator = buyerUserMapper.findByTenantAndId(tenantId, instance.initiatorId());
     BuyerUser completedBy = instance.completedBy() == null
         ? null
         : buyerUserMapper.findByTenantAndId(tenantId, instance.completedBy());
-    Task activeTask = activeTask(instance);
     return new WorkflowInstanceLedgerResponse(
         instance.id(),
         instance.businessType(),
@@ -907,7 +960,7 @@ public class UnifiedWorkflowApplicationService {
         completedBy == null ? null : completedBy.name(),
         instance.departmentId(),
         instance.amount(),
-        activeTask == null ? null : toTaskResponse(activeTask, instance),
+        currentTask,
         instance.createdAt(),
         instance.completedAt(),
         instance.updatedAt());

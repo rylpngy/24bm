@@ -611,6 +611,7 @@ export * from './ticket';
 export * from './tierPriceLine';
 export * from './tierPriceResponse';
 export * from './unifiedWorkflowBusinessInstancesParams';
+export * from './unifiedWorkflowInstancePageParams';
 export * from './unifiedWorkflowInstancesParams';
 export * from './unifiedWorkflowTaskResponse';
 export * from './updateApprovalTemplateRequest';

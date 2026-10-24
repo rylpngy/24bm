@@ -60,6 +60,15 @@ public class UnifiedWorkflowController {
     return ApiResponse.ok(unifiedWorkflowApplicationService.listCurrentTenantBusinessInstances(businessType, businessId, page, pageSize));
   }
 
+  @GetMapping("/instances/page")
+  public ApiResponse<WorkflowBusinessInstancePage> instancePage(
+      @RequestParam(defaultValue = "pending") String view,
+      @RequestParam(defaultValue = "1") int page,
+      @RequestParam(defaultValue = "20") int pageSize,
+      @RequestParam(defaultValue = "") String keyword) {
+    return ApiResponse.ok(unifiedWorkflowApplicationService.pageCurrentTenantInstances(view, page, pageSize, keyword));
+  }
+
   @GetMapping("/instances")
   public ApiResponse<List<WorkflowInstanceLedgerResponse>> instances(
       @RequestParam(defaultValue = "pending") String view,
