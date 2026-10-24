@@ -44,7 +44,7 @@ class SupplierExportServiceTests {
   @AfterEach void clear() { TenantContext.clear(); }
 
   @ParameterizedTest
-  @ValueSource(strings = {"profiles", "admissions", "qualifications", "evaluations", "remediations", "exits"})
+  @ValueSource(strings = {"profiles", "admissions", "qualifications", "evaluations", "remediations", "exits", "admission-history", "exit-history"})
   void emptyExportRetainsChineseHeaders(String kind) throws Exception {
     try (var workbook = workbook(service.export(kind, "2026-Q1"))) {
       var sheet = workbook.getSheetAt(0);
@@ -274,6 +274,23 @@ class SupplierExportServiceTests {
     when(metrics.performanceComparison("2026-Q1"))
         .thenThrow(new PermissionDeniedException("scope denied"));
     assertThatThrownBy(() -> service.export("evaluations", "2026-Q1")).hasMessage("scope denied");
+  }
+
+  @Test void historicalExportIncludesRejectedAndResubmittedAttemptsWithSafeOpinions() throws Exception {
+    when(suppliers.listCurrentTenantSuppliers()).thenReturn(List.of(relation("name")));
+    var now = OffsetDateTime.now();
+    when(workflows.businessAuditEntries("buyer_supplier_admission", "r")).thenReturn(List.of(
+        new com.procurement.workflow.application.WorkflowAuditEntry("old", "v1", "rejected", "发起人", now, "审核员", now, "部门审核", "rejected", "审核员", now, "=意见"),
+        new com.procurement.workflow.application.WorkflowAuditEntry("new", "v2", "approved", "发起人", now, "审核员", now, "部门审核", "approved", "审核员", now, "同意")));
+    try (var workbook = workbook(service.export("admission-history", null))) {
+      var sheet = workbook.getSheetAt(0);
+      assertThat(sheet.getPhysicalNumberOfRows()).isEqualTo(3);
+      assertThat(sheet.getRow(1).getCell(4).getStringCellValue()).isEqualTo("old");
+      assertThat(sheet.getRow(2).getCell(4).getStringCellValue()).isEqualTo("new");
+      assertThat(sheet.getRow(1).getCell(15).getCellType()).isEqualTo(CellType.STRING);
+      assertThat(sheet.getRow(1).getCell(15).getStringCellValue()).isEqualTo("=意见");
+    }
+    verify(permissions).require("buyer:workflow:read");
   }
 
   @Test void remediationsExcludeUnrequestedTasksAndFreeText() throws Exception {

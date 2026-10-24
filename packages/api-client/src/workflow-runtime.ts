@@ -298,6 +298,24 @@ export function useWorkflowInstancesLedger(view: WorkflowLedgerView) {
   });
 }
 
+export interface WorkflowBusinessInstancesPage {
+  items: WorkflowInstanceLedgerItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export function useWorkflowBusinessInstances(businessType: string, businessId: string, page = 1) {
+  return useQuery({
+    queryKey: ['/api/v1/buyer/workflow/instances/business', businessType, businessId, 'instances', page],
+    queryFn: ({ signal }) => customInstance<ApiEnvelope<WorkflowBusinessInstancesPage>>({
+      url: `/api/v1/buyer/workflow/instances/business/${encodeURIComponent(businessType)}/${encodeURIComponent(businessId)}/instances`,
+      method: 'GET', params: { page, pageSize: 10 }, signal,
+    }),
+    enabled: Boolean(businessType && businessId),
+  });
+}
+
 export function useWorkflowRuntimePublishedForm(businessType: string, enabled = true) {
   return useQuery({
     queryKey: ['/api/v1/buyer/workflow/definitions', businessType, 'form'],

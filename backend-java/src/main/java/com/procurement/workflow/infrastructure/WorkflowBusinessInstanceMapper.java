@@ -129,6 +129,19 @@ public interface WorkflowBusinessInstanceMapper {
   @Select("""
       select id, tenant_id, business_type, business_id, definition_version_id,
              flowable_process_instance_id, status, initiator_id, department_id, amount,
+             null::text as form_data, null::text as business_snapshot,
+             completed_by, completed_at, created_at, updated_at
+      from workflow_business_instances
+      where tenant_id = #{tenantId} and business_type = #{businessType} and business_id = #{businessId}
+      order by created_at desc, id desc
+      limit #{limit}
+      """)
+  List<WorkflowBusinessInstance> listByBusiness(@Param("tenantId") String tenantId,
+      @Param("businessType") String businessType, @Param("businessId") String businessId, @Param("limit") int limit);
+
+  @Select("""
+      select id, tenant_id, business_type, business_id, definition_version_id,
+             flowable_process_instance_id, status, initiator_id, department_id, amount,
              form_data::text as form_data, business_snapshot::text as business_snapshot,
              completed_by, completed_at, created_at, updated_at
       from workflow_business_instances

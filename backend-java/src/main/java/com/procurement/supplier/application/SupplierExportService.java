@@ -31,7 +31,7 @@ public class SupplierExportService {
   private static final ZoneId SHANGHAI = ZoneId.of("Asia/Shanghai");
   private static final DateTimeFormatter DATE_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
   private static final Set<String> KINDS = Set.of(
-      "profiles", "admissions", "qualifications", "evaluations", "remediations", "exits");
+      "profiles", "admissions", "qualifications", "evaluations", "remediations", "exits", "admission-history", "exit-history");
   private final PermissionService permissions;
   private final BuyerSupplierApplicationService suppliers;
   private final QualificationLedgerService qualifications;
@@ -56,7 +56,7 @@ public class SupplierExportService {
     TenantAccessGuard.requireUserId("supplier export");
     permissions.require("buyer:supplier:read");
     if (kind == null || !KINDS.contains(kind)) {
-      throw new IllegalArgumentException("导出类型须为 profiles、admissions、qualifications、evaluations、remediations 或 exits");
+      throw new IllegalArgumentException("不支持的供应商导出类型");
     }
     if ("evaluations".equals(kind)
         && !Objects.equals(period, SupplierEvaluationPeriod.normalize(period))) {
@@ -69,6 +69,8 @@ public class SupplierExportService {
       case "evaluations" -> evaluations(period);
       case "remediations" -> remediations();
       case "exits" -> workflowLedger(true);
+      case "admission-history" -> workflowHistory(false);
+      case "exit-history" -> workflowHistory(true);
       default -> throw new IllegalArgumentException("不支持的导出类型");
     };
   }
@@ -162,6 +164,22 @@ public class SupplierExportService {
         "当前关系状态", "最新审批实例编号", "最新审批状态", "发起人", "发起时间", "完成人", "完成时间"), rows);
   }
 
+  private Export workflowHistory(boolean exit) {
+    permissions.require("buyer:workflow:read");
+    String type = exit ? "buyer_supplier_exit" : "buyer_supplier_admission";
+    var rows = new ArrayList<List<String>>();
+    for (var supplier : relations()) {
+      for (var entry : workflows.businessAuditEntries(type, supplier.id())) {
+        add(rows, supplier.id(), supplier.supplierId(), supplier.supplierName(), supplier.status(),
+            entry.workflowInstanceId(), entry.definitionVersionId(), statusLabel(entry.status()),
+            entry.initiatorName(), entry.createdAt(), entry.completedByName(), entry.completedAt(),
+            entry.nodeName(), statusLabel(entry.action()), entry.actorName(), entry.occurredAt(), entry.comment());
+      }
+    }
+    return excel(exit ? "供应商退出审批历史" : "供应商准入审批历史", List.of("关系编号", "供应商编号", "供应商名称", "当前关系状态",
+        "审批实例编号", "流程版本编号", "审批状态", "发起人", "发起时间", "完成人", "完成时间", "审批节点", "操作", "办理人", "办理时间", "办理意见"), rows);
+  }
+
   private List<BuyerSupplierResponse> relations() {
     var result = suppliers.listCurrentTenantSuppliers();
     requireWithinLimit(result.size());
@@ -200,6 +218,9 @@ public class SupplierExportService {
       case "approved" -> "已通过";
       case "rejected" -> "已驳回";
       case "cancelled" -> "已取消";
+      case "created" -> "任务创建";
+      case "claimed" -> "任务领取";
+      case "completed" -> "任务完成";
       default -> status;
     };
   }

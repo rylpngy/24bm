@@ -2,6 +2,10 @@
 
 ## 当前状态（2026-10-24，以本节为准）
 
+研发主线已按用户要求切回业务功能；正式SSO、生产容量及外部接口验收缺少客户条件时暂缓，不阻塞开发。PR124三项CI通过并已合并发布为`809c77307b9a2ce5ac68eb409776aff9fa897dcb`，原系统5173—5176/API8080固定目录`/Users/epl/.codex/deployments/24bid-base/809c77307b9a`；新备份`srm-backup-1792835383593`，163表/5对象发布及浏览器后摘要一致。四端真实登录、桌面/手机12项检查通过，仍为本地配置，不擅自启用prod。
+
+当前开发分支`codex/srm-approval-history`补齐供应商历次准入/退出审批列表、分页、逐实例快照/表单/历史详情和两类历史XLSX。原六类导出保留；数据范围先过滤再分页，5000实例/导出行上限明确拒绝截断。600前端测试、1100Java单元/236数据库集成、七包类型/四端构建、真实12次Flowable重提、36行XLSX及桌面/手机验收通过。新增SQL轻量投影另做最终定向集成复验。操作见`docs/srm-approval-history-guide.md`，优先级见`docs/business-gap-priorities.md`。新增业务尚未随PR124部署，后续PR/CI以实际记录为准；全局审批台账200条上限及分页为下一优先项，不重复生产专项。下方均为历史记录。
+
 PR123已完成三项CI并合并发布，原系统当前固定版本`ff2bcc4b59023e819a62307ea4a261abc7f4cffe`，目录`/Users/epl/.codex/deployments/24bid-base/ff2bcc4b5902`。四端真实登录、桌面/手机12项只读检查通过；新备份`srm-backup-1792831516995`含163表、5对象，发布及浏览器后摘要一致。原库`procurement_saas_base`及原桶`24bid-attachments`保留，本次无SQL/种子变更，未启用prod。首次CI因Keycloak镜像仓库503失败，重跑后通过，不重复修业务代码。
 
 当前后续开发分支`codex/production-recovery-identity-capacity`已完成issuer/audience验签及prod禁自签令牌、复用恢复工具和副本容量测量；1094项Java单元、236项数据库集成和7项运维测试通过。新数据库/新桶恢复163表和5对象后，登录、历史查询及摘要核验通过；700请求/并发8错误0，P95约175ms，仅本地小样本。原商城媒体元数据无对应引用，应用层商城图片下载未覆盖，5对象均已在新桶认证读取比对；不制造记录掩盖缺口。新增代码尚未随PR123发布，后续PR/CI以GitHub为准。详见`docs/production-stage-five-round-two.md`；正式客户SSO、账号同步、容量规模和RTO/RPO仍需实际环境与口径，不写成全阶段生产验收通过。以下为历史快照。
