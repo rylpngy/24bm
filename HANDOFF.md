@@ -2,6 +2,8 @@
 
 ## 当前状态（2026-10-24，以本节为准）
 
+本轮交付进展：合作邀请提交3b42e5d7已推送PR117（https://github.com/rylpngy/24bid/pull/117），前后端CI通过，三端E2E仍在运行。原库与5个附件已新增备份 `/Users/epl/.codex/deployments/24bid-base/srm-backup-1792802608755`。当前开发分支已切至 `codex/srm-sourcing-evidence`，提交5e305165整改寻源页无依据的评分、等级和推荐文案，补真实字段、查询错误重试、加入待准入反馈和刷新。15项聚焦测试、类型检查、构建、隔离真实浏览器及桌面/手机截图验证通过，独立审查无阻断项。该增量尚未推送或发布，详见 `docs/superpowers/plans/2026-10-24-srm-sourcing-evidence.md`。原系统仍以以下固定发布目录为准。
+
 PR115、PR116均已合并并发布，原系统固定版本为 `d47ff28ccc4948e5edd95fafefcb380fc932a89a`，不是下方历史记录中的“未发布”。发布目录 `/Users/epl/.codex/deployments/24bid-base/d47ff28ccc49`，采购方5173、平台5174、供应商5175、商城5176、API8080。原库 `procurement_saas_base` 和附件桶 `24bid-attachments` 保留，V216已成功应用。发布备份及逐表、附件、浏览器证据见该目录 `RESTORATION.md`，不要重复合并PR115/116或重新导入验收数据。
 
 当前开发分支 `codex/srm-cooperation-invitations` 从上述main开始，补齐采购方发邀请、供应商接受/拒绝、接受后进入待准入的双端流程。仅隔离8095/5197/5198验收，尚未合并或更新原系统。实施及验证进度见 `docs/superpowers/plans/2026-10-24-srm-cooperation-invitations.md`。下方全部保留为历史过程，不代表当前发布状态。
