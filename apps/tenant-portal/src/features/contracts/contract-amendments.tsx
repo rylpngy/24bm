@@ -6,11 +6,17 @@ import {
   useBuyerContractListAmendments,
 } from '@24bid/api-client';
 import { FeedbackNotice, PrimaryActionButton } from '@24bid/ui';
+import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
+import { financeErrorMessage } from '../finance/finance-feedback';
 
 const CHANGE_TYPES = ['金额变更', '工期变更', '条款变更', '范围变更'];
 
 // 合同变更/补充协议:登记金额/工期/条款/范围变更,金额与工期变更应用到主合同,留痕成时间线。
-export function ContractAmendments({ contractId }: { contractId: string }) {
+export function ContractAmendments({ contractId, status, archiveStatus }: {
+  contractId: string; status?: string; archiveStatus?: string;
+}) {
+  const { can } = useBuyerPermissions();
+  const editable = can('buyer:contract:manage') && status === '已生效' && archiveStatus === '未归档';
   const queryClient = useQueryClient();
   const amendments = useBuyerContractListAmendments(contractId);
   const create = useBuyerContractCreateAmendment();
@@ -28,7 +34,8 @@ export function ContractAmendments({ contractId }: { contractId: string }) {
         /\/buyer\/contracts/.test(q.queryKey[0] as string),
     });
 
-  const onAdd = () =>
+  const onAdd = () => {
+    if (!editable || amendments.isError || amendments.isLoading) return;
     create.mutate(
       {
         contractId,
@@ -48,6 +55,7 @@ export function ContractAmendments({ contractId }: { contractId: string }) {
         },
       },
     );
+  };
 
   const inputCls =
     'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100';
@@ -57,13 +65,17 @@ export function ContractAmendments({ contractId }: { contractId: string }) {
     (changeType !== '金额变更' || newAmount.trim().length > 0) &&
     (changeType !== '工期变更' || newExpiry.trim().length > 0);
 
+  if (amendments.isError) {
+    return <FeedbackNotice tone="error" message={financeErrorMessage(amendments.error, '合同变更加载失败')} />;
+  }
+
   return (
     <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
       <p className="inline-flex items-center gap-1.5 text-xs font-black text-slate-600">
         <FileDiff size={13} /> 合同变更 / 补充协议
       </p>
 
-      <div className="mt-2 rounded-lg border border-amber-100 bg-amber-50/40 p-3">
+      {editable && !amendments.isLoading && <div className="mt-2 rounded-lg border border-amber-100 bg-amber-50/40 p-3">
         <div className="grid gap-2 sm:grid-cols-3">
           <select className={inputCls} value={changeType} onChange={(e) => setChangeType(e.target.value)}>
             {CHANGE_TYPES.map((t) => (
@@ -87,12 +99,8 @@ export function ContractAmendments({ contractId }: { contractId: string }) {
         <PrimaryActionButton onClick={onAdd} busy={create.isPending} pendingLabel="登记中" disabled={!canAdd}>
           登记变更
         </PrimaryActionButton>
-        {create.isError && (
-          <p className="mt-2 text-xs font-bold text-red-600">
-            登记失败:金额/工期变更需填写变更后值;已归档合同不可变更。
-          </p>
-        )}
-      </div>
+        {create.isError && <FeedbackNotice tone="error" message={financeErrorMessage(create.error, '合同变更登记失败')} />}
+      </div>}
 
       <div className="mt-3">
         {amendments.isLoading ? (

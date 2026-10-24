@@ -10,6 +10,18 @@ import org.apache.ibatis.annotations.Select;
 @Mapper
 public interface RfqDemandMapper {
 
+  record DemandAccess(String demandId, String departmentId, String requesterId) {}
+
+  // Left join keeps broken/cross-tenant links visible to the fail-closed write guard.
+  @Select("""
+      select pd.id as demand_id, pd.department_id, pd.requester_id
+      from rfq_demands rd
+      left join purchase_demands pd on pd.tenant_id = rd.tenant_id and pd.id = rd.demand_id
+      where rd.tenant_id = #{tenantId} and rd.rfq_id = #{rfqId}
+      order by rd.demand_id
+      """)
+  List<DemandAccess> listDemandAccess(@Param("tenantId") String tenantId, @Param("rfqId") String rfqId);
+
   @Select("""
       <script>
       select distinct on (rd.demand_id) rd.demand_id, rd.rfq_id, r.status

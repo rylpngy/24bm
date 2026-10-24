@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft,
   Bot,
@@ -25,31 +25,13 @@ import {
 } from '@24bid/api-client';
 import { ApprovalTimeline, FeedbackNotice, Panel, SearchInput, StatusPill, cn } from '@24bid/ui';
 import { ProcurementPlanMergePage } from './procurement-plan-form';
+import { ProcurementExecutionPanel } from './procurement-execution-panel';
+import { derivePlanProgress, findAwardApproval } from './procurement-plan-progress';
 
 const currency = (value?: number) =>
   value == null ? '--' : `¥${value.toLocaleString('zh-CN', { minimumFractionDigits: 0 })}`;
 
-const stageSteps = ['需求整合', '方案制定', '方案审批', '采购执行', '验收归档'];
-
-// 进度节点由真实单据推导:方案状态(RFQ)决定前三节点,关联采购订单的状态决定执行/验收节点。
-function derivePlanProgress(plan: RfqResponse, order?: PurchaseOrderResponse) {
-  if (plan.status === '已流标' || plan.status === '已废标') {
-    return { currentIndex: -1, terminated: true as const, stageLabel: plan.status };
-  }
-  if (order) {
-    if (order.status === '已收货') {
-      return { currentIndex: 4, terminated: false as const, stageLabel: '验收归档' };
-    }
-    return { currentIndex: 3, terminated: false as const, stageLabel: '采购执行' };
-  }
-  if (plan.status === '已定标') {
-    return { currentIndex: 3, terminated: false as const, stageLabel: '采购执行' };
-  }
-  if (plan.status === '已开标' || plan.status === '定标审批中') {
-    return { currentIndex: 2, terminated: false as const, stageLabel: '方案审批' };
-  }
-  return { currentIndex: 1, terminated: false as const, stageLabel: '方案制定' };
-}
+const stageSteps = ['计划草稿', '报价征集', '评审定标', '订单履约', '履约结算'];
 
 function planNo(plan: RfqResponse, index = 0) {
   const date = plan.createdAt?.slice(0, 10).replaceAll('-', '') ?? '20260707';
@@ -224,7 +206,7 @@ function PlanList({
   );
 }
 
-function PlanDetail({
+export function PlanDetail({
   plan,
   index,
   demands,
@@ -283,7 +265,6 @@ function PlanDetail({
       demand,
       materialId: line.materialId,
       quantity: line.quantity ?? 0,
-      amount: (demand.budget ?? 0) / Math.max(1, demand.lineItems?.length ?? 1),
     })),
   );
 
@@ -307,22 +288,20 @@ function PlanDetail({
           </div>
           <div className="flex gap-2">
             {(plan.status === '报价中' || plan.status === '已开标' || plan.status === '定标审批中') && onNavigate && (
-              <button
+              <a
                 className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-blue-600 px-3 text-xs font-black text-white hover:bg-blue-700"
-                type="button"
-                onClick={() => onNavigate('quotes')}
+                href={`?module=rfqs&recordId=${encodeURIComponent(plan.id ?? '')}`}
               >
                 <CheckCircle2 size={15} /> 前往报价对比{plan.status === '报价中' ? '' : '定标'}
-              </button>
+              </a>
             )}
             {(plan.status === '已定标' || order) && onNavigate && (
-              <button
+              <a
                 className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 hover:bg-slate-50"
-                type="button"
-                onClick={() => onNavigate('orders')}
+                href={order?.id ? `?module=orders&recordId=${encodeURIComponent(order.id)}` : '?module=orders'}
               >
                 <FileText size={15} /> 查看采购订单
-              </button>
+              </a>
             )}
           </div>
         </div>
@@ -379,7 +358,7 @@ function PlanDetail({
                         if (stepIndex === 1) return `报价中 · ${plan.quotes?.length ?? 0} 家已报`;
                         if (stepIndex === 2) return plan.status === '定标审批中' ? '定标审批中' : '开标评标中';
                         if (stepIndex === 3) return order ? `订单${order.status ?? ''}` : '待生成订单';
-                        if (stepIndex === 4) return '货物已收,待归档';
+                        if (stepIndex === 4) return '收货已登记，结算及归档见下方台账';
                         return '处理中';
                       })()}
                     </p>
@@ -416,14 +395,14 @@ function PlanDetail({
               <FileText size={18} className="text-blue-600" />
               <h3 className="text-base font-black text-slate-950">采购物资明细</h3>
             </div>
-            <table className="w-full min-w-[620px] text-left text-sm">
+            <div className="overflow-x-auto"><table className="w-full min-w-[540px] text-left text-sm">
               <thead className="bg-slate-50 text-xs font-black text-slate-500">
                 <tr>
                   <th className="px-4 py-3">序号</th>
                   <th className="px-4 py-3">物资名称</th>
                   <th className="px-4 py-3">数量</th>
                   <th className="px-4 py-3">单位</th>
-                  <th className="px-4 py-3 text-right">预算小计</th>
+                  <th className="px-4 py-3 text-right">需求单预算</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -436,11 +415,11 @@ function PlanDetail({
                     </td>
                     <td className="px-4 py-4 font-mono font-black text-slate-700">{item.quantity}</td>
                     <td className="px-4 py-4 text-slate-500">{materialNames[item.materialId ?? '']?.unit ?? '项'}</td>
-                    <td className="px-4 py-4 text-right font-mono font-black text-slate-900">{currency(item.amount)}</td>
+                    <td className="px-4 py-4 text-right font-mono font-black text-slate-900">{currency(item.demand.budget)}</td>
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           </div>
         </div>
 
@@ -490,8 +469,8 @@ function PlanDetail({
                   desc: awardApproval
                     ? `${awardApproval.status ?? '待审批'} · 提交人 ${awardApproval.submittedByName ?? '--'}${awardApproval.actedAt ? ` · ${awardApproval.actedAt.slice(0, 10)}` : ''}${awardApproval.reviewComment ? ` · ${awardApproval.reviewComment}` : ''}`
                     : plan.status === '已定标'
-                      ? '定标已生效(免审直通,审批节点已关闭)'
-                      : '尚未发起定标审批(若审批节点已关闭,定标将免审直通)',
+                      ? '定标已生效，审批记录见关联单据'
+                      : plan.status === '定标审批中' ? '定标审批办理中，请在审批中心查看流程' : '尚未发起定标审批',
                   done: plan.status === '已定标' || awardApproval?.status === '已通过',
                   active: plan.status === '定标审批中' || awardApproval?.status === '待审批',
                 },
@@ -510,6 +489,7 @@ function PlanDetail({
           </div>
         </div>
       </div>
+      <ProcurementExecutionPanel rfqId={plan.id ?? ''} />
     </div>
   );
 }
@@ -533,7 +513,7 @@ export function ProcurementPlansPage({ onNavigate }: { onNavigate?: (moduleId: s
   const [directDepartmentId, setDirectDepartmentId] = useState('');
   const [planTitle, setPlanTitle] = useState('');
   const [planDate, setPlanDate] = useState('');
-  const [planPlace, setPlanPlace] = useState('上海市浦东新区张江园区');
+  const [planPlace, setPlanPlace] = useState('');
   const [planMethod, setPlanMethod] = useState('询比');
   const [collectionMethod, setCollectionMethod] = useState('公开');
   const [planUrgency, setPlanUrgency] = useState('普通');
@@ -548,7 +528,7 @@ export function ProcurementPlansPage({ onNavigate }: { onNavigate?: (moduleId: s
     });
     return map;
   }, [departmentsQuery.data]);
-  // 定标审批任务:待办 + 近期已办中匹配本方案(bizType=rfq_award, bizId=RFQ id)。
+  // 定标单的 parentBizId 指向RFQ；bizId是定标单本身。
   const awardApprovals = useMemo(
     () =>
       [...(pendingApprovals.data?.data ?? []), ...(recentApprovals.data?.data ?? [])].filter(
@@ -593,6 +573,18 @@ export function ProcurementPlansPage({ onNavigate }: { onNavigate?: (moduleId: s
   }, [materialsQuery.data?.data]);
 
   const plans = (rfqs.data?.data ?? []).filter((rfq) => (rfq.demandIds?.length ?? 0) > 0);
+  useEffect(() => {
+    if (selected) return;
+    const id = new URLSearchParams(window.location.search).get('recordId');
+    const plan = plans.find(item => item.id === id);
+    if (plan) setSelected(plan);
+  }, [rfqs.data, selected]);
+  const openPlan = (plan: RfqResponse | null) => {
+    const url = new URL(window.location.href);
+    if (plan?.id) url.searchParams.set('recordId', plan.id); else url.searchParams.delete('recordId');
+    window.history.replaceState(null, '', url.toString());
+    setSelected(plan);
+  };
 
   const toggleSupplier = (id?: string) => {
     if (!id) return;
@@ -608,7 +600,7 @@ export function ProcurementPlansPage({ onNavigate }: { onNavigate?: (moduleId: s
     setDirectDepartmentId('');
     setPlanTitle('');
     setPlanDate('');
-    setPlanPlace('上海市浦东新区张江园区');
+    setPlanPlace('');
     setPlanMethod('询比');
     setCollectionMethod('公开');
     setPlanUrgency('普通');
@@ -629,6 +621,7 @@ export function ProcurementPlansPage({ onNavigate }: { onNavigate?: (moduleId: s
       {
         data: {
           title: planTitle || (isDirect ? '直录采购方案' : `采购方案-${mergeDemands[0]?.title ?? '合并需求'}`),
+          saveAsDraft: true,
           demandIds,
           ...(isDirect
             ? {
@@ -666,6 +659,13 @@ export function ProcurementPlansPage({ onNavigate }: { onNavigate?: (moduleId: s
     );
   }
 
+  if (rfqs.isError || demandsQuery.isError || ordersQuery.isError) {
+    return <Panel title="采购计划" icon={ClipboardCheck}>
+      <FeedbackNotice tone="error" message="采购计划数据加载失败，请检查当前账号权限或重试。" />
+      <button type="button" className="mt-3 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-blue-700" onClick={() => { void rfqs.refetch(); void demandsQuery.refetch(); void ordersQuery.refetch(); }}>重新加载</button>
+    </Panel>;
+  }
+
   if (selected) {
     const fresh = plans.find((plan) => plan.id === selected.id) ?? selected;
     return (
@@ -674,11 +674,11 @@ export function ProcurementPlansPage({ onNavigate }: { onNavigate?: (moduleId: s
         index={plans.findIndex((plan) => plan.id === fresh.id)}
         demands={demands}
         order={orders.find((o) => o.rfqId === fresh.id)}
-        awardApproval={awardApprovals.find((task) => task.bizId === fresh.id)}
+        awardApproval={findAwardApproval(awardApprovals, fresh.id)}
         supplierNames={supplierNames}
         materialNames={materialNames}
         departmentNames={departmentNames}
-        onBack={() => setSelected(null)}
+        onBack={() => openPlan(null)}
         onNavigate={onNavigate}
       />
     );
@@ -826,7 +826,7 @@ export function ProcurementPlansPage({ onNavigate }: { onNavigate?: (moduleId: s
       demands={demands}
       orders={orders}
       departmentNames={departmentNames}
-      onOpen={setSelected}
+      onOpen={openPlan}
       onCreate={() => setCreating(true)}
     />
   );

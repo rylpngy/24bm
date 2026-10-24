@@ -174,6 +174,39 @@ public class UnifiedWorkflowApplicationService {
         saved.createdAt());
   }
 
+  @Transactional
+  public void withdrawPurchaseDemand(String workflowInstanceId, String reason) {
+    String tenantId = TenantAccessGuard.requireTenantId("unified workflow APIs");
+    String actorId = TenantAccessGuard.requireUserId("unified workflow APIs");
+    permissionService.require("buyer:demand:create");
+    if (reason == null || reason.isBlank() || reason.strip().length() > 1000) {
+      throw new IllegalArgumentException("撤回原因必填且不得超过1000字");
+    }
+    // Complete locks this same row through its process-instance lookup before changing Flowable tasks.
+    WorkflowBusinessInstance instance = workflowBusinessInstanceMapper.findByTenantAndIdForUpdate(tenantId, workflowInstanceId);
+    if (instance == null || !"purchase_demand".equals(instance.businessType())) {
+      throw new IllegalArgumentException("仅采购需求审批支持发起人撤回");
+    }
+    if (!actorId.equals(instance.initiatorId())) {
+      throw new PermissionDeniedException("仅审批发起人可撤回本人的采购需求");
+    }
+    if (!WorkflowInstanceStatus.PROCESSING.equals(instance.status())) {
+      throw new IllegalStateException("仅审批中的采购需求可撤回");
+    }
+    if (!isVisible(instance, dataScopeService.currentUserDataScope())) {
+      throw new PermissionDeniedException("当前数据范围无权撤回该采购需求");
+    }
+    String comment = reason.strip();
+    runtimeService.deleteProcessInstance(instance.flowableProcessInstanceId(), comment);
+    if (workflowBusinessInstanceMapper.complete(tenantId, instance.id(), WorkflowInstanceStatus.CANCELLED, actorId) == 0) {
+      throw new IllegalStateException("审批实例状态已变化,无法撤回");
+    }
+    workflowTaskEventMapper.insert("workflow-task-event-" + UUID.randomUUID(), tenantId, instance.id(),
+        null, null, null, "cancelled", actorId, comment);
+    requireCompletionHandler(instance.businessType()).onCancelled(instance, actorId, comment);
+    auditLogApplicationService.recordTenantAction(tenantId, "workflow.cancelled", "purchase_demand", instance.businessId(), comment);
+  }
+
   public List<UnifiedWorkflowTaskResponse> listCurrentUserTasks() {
     String tenantId = TenantAccessGuard.requireTenantId("unified workflow APIs");
     String userId = TenantAccessGuard.requireUserId("unified workflow APIs");
@@ -381,6 +414,38 @@ public class UnifiedWorkflowApplicationService {
     }
     return toHistoryResponse(tenantId, instance);
   }
+
+  /** Complete, untruncated history for an already-authorized procurement graph. Never hides inaccessible instances. */
+  public List<ProcurementExecutionHistory> procurementExecutionHistory(List<String> businessIds) {
+    String tenantId = TenantAccessGuard.requireTenantId("procurement execution history");
+    permissionService.require("buyer:workflow:read");
+    var ids = new java.util.HashSet<>(businessIds);
+    var scope = dataScopeService.currentUserDataScope();
+    List<ProcurementExecutionHistory> result = new ArrayList<>();
+    for (var instance : workflowBusinessInstanceMapper.listByTenant(tenantId, Integer.MAX_VALUE)) {
+      boolean related = ids.contains(instance.businessId());
+      if (!related && java.util.Set.of("rfq_award", "payment_request", "payment_archive_exception", "payment_batch")
+          .contains(instance.businessType())) {
+        try {
+          var snapshot = objectMapper.readTree(instance.businessSnapshot());
+          related = snapshot != null && (ids.contains(snapshot.path("rfqId").asText())
+              || ids.contains(snapshot.path("invoiceId").asText())
+              || ids.contains(snapshot.path("paymentBatchNo").asText()));
+        } catch (Exception error) {
+          throw new IllegalStateException("Cannot verify procurement workflow business reference", error);
+        }
+      }
+      if (!related) continue;
+      if (!isVisible(instance, scope)) throw new PermissionDeniedException("采购档案包含当前范围不可见的审批实例");
+      var events = new ArrayList<>(workflowTaskEventMapper.listByTenantAndWorkflowInstance(tenantId, instance.id()));
+      events.sort(java.util.Comparator.comparing(WorkflowTaskEvent::createdAt).thenComparing(WorkflowTaskEvent::id));
+      result.add(new ProcurementExecutionHistory(instance, List.copyOf(events)));
+    }
+    result.sort(java.util.Comparator.comparing(history -> history.instance().id()));
+    return List.copyOf(result);
+  }
+
+  public record ProcurementExecutionHistory(WorkflowBusinessInstance instance, List<WorkflowTaskEvent> events) {}
 
   public WorkflowBusinessSummary getCurrentTenantBusinessSummary(String businessType, String businessId) {
     var history = getCurrentTenantBusinessHistory(businessType, businessId);

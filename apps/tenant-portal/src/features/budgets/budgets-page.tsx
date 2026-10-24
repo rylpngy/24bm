@@ -52,6 +52,9 @@ function OccupancyMeter({ percent, over }: { percent?: number; over: boolean }) 
 }
 
 function BudgetCard({ b }: { b: DepartmentBudgetResponse }) {
+  // Transitional response field until the parent exports OpenAPI and regenerates the client.
+  const relatedPending = (b as DepartmentBudgetResponse & { pendingAllocationAmount?: number }).pendingAllocationAmount ?? 0;
+  const unverifiedPayments = (b as DepartmentBudgetResponse & { unverifiedPaymentCount?: number }).unverifiedPaymentCount ?? 0;
   return (
     <div
       className={`rounded-xl border p-4 shadow-sm ${
@@ -74,14 +77,20 @@ function BudgetCard({ b }: { b: DepartmentBudgetResponse }) {
         <MiniFact label="剩余" value={currency(b.remaining)} />
         <MiniFact label="已用(已通过)" value={currency(b.committed)} />
         <MiniFact label="在途(审批中)" value={currency(b.pending)} />
-        <MiniFact label="实付(已付里程碑)" value={currency(b.disbursed)} />
+        <MiniFact label="实付(付款净流水按需求预算分摊)" value={b.disbursed == null ? unverifiedPayments > 0 ? '待核对' : '待分摊' : currency(b.disbursed)} />
       </div>
       <OccupancyMeter percent={b.occupancyPercent} over={b.overBudget ?? false} />
       {(b.disbursed ?? 0) > 0 && (
         <p className="mt-1 text-[11px] font-bold text-emerald-600">
-          其中已实际支付 {currency(b.disbursed)}(由合同已付里程碑联动)
+          其中已实际支付 {currency(b.disbursed)}(按关联需求预算比例，末部门承接分差)
         </p>
       )}
+      {relatedPending !== 0 && <p className="mt-2 text-xs font-bold text-amber-800">
+        关联付款净额 {currency(relatedPending)} 待分摊：需求预算缺失或非正。此金额在涉及部门重复展示，不可相加。
+      </p>}
+      {unverifiedPayments > 0 && <p className="mt-2 text-xs font-bold text-red-700">
+        历史付款缺流水：{unverifiedPayments} 张发票，实付金额待核对，不能按零元认定。
+      </p>}
     </div>
   );
 }

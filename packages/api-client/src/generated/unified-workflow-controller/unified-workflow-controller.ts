@@ -31,7 +31,8 @@ import type {
   ApiResponseWorkflowInstanceHistoryResponse,
   ApiResponseWorkflowPublishedFormResponse,
   CompleteWorkflowTaskRequest,
-  UnifiedWorkflowInstancesParams
+  UnifiedWorkflowInstancesParams,
+  WithdrawPurchaseDemandWorkflowRequest
 } from '.././model';
 
 import { customInstance } from '../../http-client';
@@ -96,6 +97,65 @@ const {mutation: mutationOptions} = options ?
       > => {
 
       const mutationOptions = getUnifiedWorkflowCompleteMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const unifiedWorkflowWithdrawPurchaseDemand = (
+    workflowInstanceId: string,
+    withdrawPurchaseDemandWorkflowRequest: BodyType<WithdrawPurchaseDemandWorkflowRequest>,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseVoid>(
+      {url: `/api/v1/buyer/workflow/instances/${workflowInstanceId}/withdraw-purchase-demand`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: withdrawPurchaseDemandWorkflowRequest, signal
+    },
+      );
+    }
+
+
+
+export const getUnifiedWorkflowWithdrawPurchaseDemandMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unifiedWorkflowWithdrawPurchaseDemand>>, TError,{workflowInstanceId: string;data: BodyType<WithdrawPurchaseDemandWorkflowRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof unifiedWorkflowWithdrawPurchaseDemand>>, TError,{workflowInstanceId: string;data: BodyType<WithdrawPurchaseDemandWorkflowRequest>}, TContext> => {
+
+const mutationKey = ['unifiedWorkflowWithdrawPurchaseDemand'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof unifiedWorkflowWithdrawPurchaseDemand>>, {workflowInstanceId: string;data: BodyType<WithdrawPurchaseDemandWorkflowRequest>}> = (props) => {
+          const {workflowInstanceId,data} = props ?? {};
+
+          return  unifiedWorkflowWithdrawPurchaseDemand(workflowInstanceId,data,)
+        }
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UnifiedWorkflowWithdrawPurchaseDemandMutationResult = NonNullable<Awaited<ReturnType<typeof unifiedWorkflowWithdrawPurchaseDemand>>>
+    export type UnifiedWorkflowWithdrawPurchaseDemandMutationBody = BodyType<WithdrawPurchaseDemandWorkflowRequest>
+    export type UnifiedWorkflowWithdrawPurchaseDemandMutationError = ErrorType<ApiResponseVoid>
+
+    export const useUnifiedWorkflowWithdrawPurchaseDemand = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unifiedWorkflowWithdrawPurchaseDemand>>, TError,{workflowInstanceId: string;data: BodyType<WithdrawPurchaseDemandWorkflowRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof unifiedWorkflowWithdrawPurchaseDemand>>,
+        TError,
+        {workflowInstanceId: string;data: BodyType<WithdrawPurchaseDemandWorkflowRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getUnifiedWorkflowWithdrawPurchaseDemandMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

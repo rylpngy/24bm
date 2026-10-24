@@ -680,9 +680,9 @@ class BackendModuleArchitectureTests {
     assertSourceUsesStatusConstants(
         SOURCE_ROOT.resolve("order/application/DeliveryApplicationService.java"),
         List.of(
-            "PurchaseOrderStatus.PENDING_SHIPMENT",
             "PurchaseOrderStatus.SHIPPED",
-            "PurchaseOrderDocumentUniquenessPolicy.requireNoDelivery"),
+            "lockByTenantAndId",
+            "OrderFulfillmentPolicy.ship"),
         List.of(
             "private static final String READY_TO_SHIP_STATUS",
             "private static final String SHIPPED_STATUS",
@@ -692,7 +692,8 @@ class BackendModuleArchitectureTests {
         List.of(
             "PurchaseOrderStatus.SHIPPED",
             "PurchaseOrderStatus.RECEIVED",
-            "PurchaseOrderDocumentUniquenessPolicy.requireNoReceipt"),
+            "lockByTenantAndId",
+            "OrderFulfillmentPolicy.receive"),
         List.of(
             "private static final String SHIPPED_STATUS",
             "private static final String RECEIVED_STATUS",
@@ -754,12 +755,12 @@ class BackendModuleArchitectureTests {
     Path documentUniquenessPolicy = SOURCE_ROOT.resolve("order/domain/PurchaseOrderDocumentUniquenessPolicy.java");
     assertThat(documentUniquenessPolicy).exists();
     assertThat(Files.readString(documentUniquenessPolicy))
-        .contains("requireNoDelivery")
-        .contains("requireNoReceipt")
         .contains("requireNoInvoice")
-        .contains("Purchase order already has a delivery")
-        .contains("Purchase order already has a receipt")
         .contains("Purchase order already has an invoice");
+    assertThat(Files.readString(SOURCE_ROOT.resolve("order/domain/OrderFulfillmentPolicy.java")))
+        .contains("Shipment exceeds ordered quantity")
+        .contains("Receipt exceeds shipped or ordered quantity")
+        .contains("Header quantity must equal line total");
     Path paymentPolicy = SOURCE_ROOT.resolve("supplier/domain/BuyerSupplierPaymentPolicy.java");
     assertThat(paymentPolicy).exists();
     assertThat(Files.readString(paymentPolicy))

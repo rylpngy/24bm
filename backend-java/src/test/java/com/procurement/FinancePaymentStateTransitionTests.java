@@ -76,6 +76,22 @@ class FinancePaymentStateTransitionTests {
   }
 
   @Test
+  void buyerInvoiceUsesCumulativeReceiptAndAuthoritativeFulfillmentBlocker() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(invoiceMapper.listVisible("tenant-1", null, null, null, com.procurement.identity.domain.DataScope.unrestricted()))
+        .thenReturn(List.of(invoice("invoice-1", "tenant-1", "待付款")));
+    when(purchaseOrderMapper.findByTenantAndId("tenant-1", "po-1")).thenReturn(order(BigDecimal.valueOf(100)));
+    when(invoiceMapper.findAggregateReceipt("tenant-1", "po-1")).thenReturn(new com.procurement.order.domain.Receipt(
+        "aggregate", "tenant-1", "po-1", null, null, null, 10, 8, null, null, null, null));
+    when(threeWayMatchMapper.paymentBlockingReason("tenant-1", "invoice-1")).thenReturn("累计合格数量不足");
+    var response = paymentApplicationService.listCurrentTenantInvoices().getFirst();
+    org.assertj.core.api.Assertions.assertThat(response.receivedQuantity()).isEqualTo(10);
+    org.assertj.core.api.Assertions.assertThat(response.qualifiedQuantity()).isEqualTo(8);
+    org.assertj.core.api.Assertions.assertThat(response.reconciliationStatus()).isEqualTo("履约待核验");
+    org.assertj.core.api.Assertions.assertThat(response.nextReconciliationAction()).isEqualTo("处理差异");
+  }
+
+  @Test
   void listBuyerInvoicesAppliesFiltersInsideCurrentTenant() {
     TenantContext.set("tenant-1", null, "buyer-user");
     when(invoiceMapper.listVisible("tenant-1", "待付款", "supplier-1", "po-1", com.procurement.identity.domain.DataScope.unrestricted()))

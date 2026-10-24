@@ -55,7 +55,19 @@ public interface WorkflowBusinessInstanceMapper {
              form_data::text as form_data, business_snapshot::text as business_snapshot,
              completed_by, completed_at, created_at, updated_at
       from workflow_business_instances
+      where tenant_id = #{tenantId} and id = #{id}
+      for update
+      """)
+  WorkflowBusinessInstance findByTenantAndIdForUpdate(@Param("tenantId") String tenantId, @Param("id") String id);
+
+  @Select("""
+      select id, tenant_id, business_type, business_id, definition_version_id,
+             flowable_process_instance_id, status, initiator_id, department_id, amount,
+             form_data::text as form_data, business_snapshot::text as business_snapshot,
+             completed_by, completed_at, created_at, updated_at
+      from workflow_business_instances
       where tenant_id = #{tenantId} and flowable_process_instance_id = #{flowableProcessInstanceId}
+      for update
       """)
   WorkflowBusinessInstance findByTenantAndFlowableProcessInstanceId(
       @Param("tenantId") String tenantId,

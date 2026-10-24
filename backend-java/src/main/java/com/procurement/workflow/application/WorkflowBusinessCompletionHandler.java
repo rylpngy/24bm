@@ -15,4 +15,8 @@ public interface WorkflowBusinessCompletionHandler {
   }
 
   void onCompleted(WorkflowBusinessInstance instance, WorkflowCompletion completion);
+
+  default void onCancelled(WorkflowBusinessInstance instance, String actorId, String reason) {
+    throw new IllegalStateException("该业务不支持撤回审批: " + businessType());
+  }
 }

@@ -463,12 +463,23 @@ const main = async () => {
     headers: supplierHeaders,
   });
 
+  const fulfillmentLines = confirmedOrder.lineItems ?? order.lineItems ?? [];
+  if (fulfillmentLines.length === 0 || fulfillmentLines.some((line) => !line.id || !(line.quantity > 0))) {
+    throw new Error(`Java smoke order has no attributable fulfillment lines: ${order.id}`);
+  }
+  const fulfillmentQuantity = fulfillmentLines.reduce((total, line) => total + Number(line.quantity), 0);
+  if (!Number.isInteger(fulfillmentQuantity)) {
+    throw new Error(`Java smoke order total is incompatible with integer document headers: ${order.id}`);
+  }
+
   const delivery = await requestJson(`/api/v1/supplier/orders/${confirmedOrder.id}/deliveries`, {
     method: 'POST',
     headers: { ...supplierHeaders, 'content-type': 'application/json' },
     body: JSON.stringify({
       carrier: '顺丰速运',
       trackingNo: `SF${Date.now()}`,
+      shippedQuantity: fulfillmentQuantity,
+      lineItems: fulfillmentLines.map((line) => ({ orderLineId: line.id, shippedQuantity: line.quantity })),
     }),
   });
 
@@ -477,6 +488,11 @@ const main = async () => {
     headers: { ...authHeaders, 'content-type': 'application/json' },
     body: JSON.stringify({
       result: '验收通过',
+      receivedQuantity: fulfillmentQuantity,
+      qualifiedQuantity: fulfillmentQuantity,
+      lineItems: fulfillmentLines.map((line) => ({
+        orderLineId: line.id, receivedQuantity: line.quantity, qualifiedQuantity: line.quantity,
+      })),
     }),
   });
 

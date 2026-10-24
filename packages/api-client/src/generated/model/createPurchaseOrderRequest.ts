@@ -8,5 +8,5 @@
 
 export interface CreatePurchaseOrderRequest {
   awardId: string;
-  expectedReceiptDate?: string;
+  expectedReceiptDate: string;
 }

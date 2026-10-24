@@ -27,6 +27,8 @@ class PurchaseOrderStatusTransitionTests {
 
   @Test
   void allowsShipmentOnlyFromPendingShipment() {
+    assertThatCode(() -> transition.requireShipment(PurchaseOrderStatus.SHIPPED, "po-1"))
+        .doesNotThrowAnyException();
     assertThatCode(() -> transition.requireShipment(
         PurchaseOrderStatus.PENDING_SHIPMENT,
         "po-1"))

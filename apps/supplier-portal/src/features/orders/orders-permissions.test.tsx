@@ -7,8 +7,10 @@ const mutations = vi.hoisted(() => ({ confirm: vi.fn(), ship: vi.fn(), issue: vi
 beforeEach(() => vi.clearAllMocks());
 vi.mock('@24bid/api-client', () => ({
   useSupplierOrderList: () => ({ data: { data: [
-    { id: 'confirm-me', status: '待供应商确认' }, { id: 'ship-me', status: '待发货' }, { id: 'invoice-me', status: '已收货', amount: 1200 },
+    { id: 'confirm-me', status: '待供应商确认' }, { id: 'ship-me', status: '待发货', lineItems: [{ id: 'line-1', quantity: 10, description: '物料' }] }, { id: 'invoice-me', status: '已收货', amount: 1200 },
+    { id: 'partial-me', status: '已发货', lineItems: [{ id: 'line-2', quantity: 10, description: '分批物料' }] },
   ] } }),
+  useSupplierDeliveryList: () => ({ data: { data: [{ id: 'batch-1', orderId: 'partial-me', shippedQuantity: 4, trackingNo: 'FIRST', lineItems: [{ orderLineId: 'line-2', shippedQuantity: 4 }] }] } }),
   useSupplierOrderConfirm: () => ({ mutate: mutations.confirm }),
   useSupplierDeliveryCreate: () => ({ mutate: mutations.ship }),
   useSupplierInvoiceCreate: () => ({ mutate: mutations.issue }),
@@ -17,6 +19,12 @@ afterEach(cleanup);
 
 describe('supplier order actions', () => {
   const show = (props = {}) => render(<QueryClientProvider client={new QueryClient()}><OrdersPage {...props} /></QueryClientProvider>);
+  it('offers the next batch and shows the remaining quantity and history', () => {
+    show({ canShip: true });
+    fireEvent.click(screen.getAllByRole('button', { name: '继续发货' })[0]);
+    expect(screen.getAllByText(/剩余可发.*6/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/FIRST/).length).toBeGreaterThan(0);
+  });
   it('keeps details available to read-only users without write actions', () => {
     show();
     expect(screen.queryByRole('button', { name: '确认订单' })).toBeNull();

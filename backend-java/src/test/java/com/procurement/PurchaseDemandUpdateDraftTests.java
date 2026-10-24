@@ -60,6 +60,33 @@ class PurchaseDemandUpdateDraftTests {
     TenantContext.clear();
   }
 
+  @org.junit.jupiter.api.BeforeEach
+  void lockedReadsUseTheDemandFixture() {
+    when(purchaseDemandMapper.findByTenantAndIdForUpdate(
+        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString()))
+        .thenAnswer(call -> purchaseDemandMapper.findByTenantAndId(call.getArgument(0), call.getArgument(1)));
+  }
+
+  @Test
+  void rejectedDemandCanBeCorrectedWithoutErasingItsRejectionHistory() {
+    TenantContext.set("tenant-1", null, "buyer-user-1");
+    when(purchaseDemandMapper.findByTenantAndId("tenant-1", "demand-1"))
+        .thenReturn(demand("demand-1", "已驳回"));
+    when(departmentMapper.existsActiveByTenantAndId("tenant-1", "dept-it")).thenReturn(true);
+    when(purchaseDemandMapper.updateDraft(
+        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+        org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any())).thenReturn(1);
+    var result = purchaseDemandApplicationService.update("demand-1", new UpdatePurchaseDemandRequest(
+        "已修正需求", "dept-it", BigDecimal.TEN,
+        List.of(new PurchaseDemandLineItemRequest("mat-laptop", BigDecimal.ONE)), null, "常规", "修正"));
+    assertThat(result.status()).isEqualTo("已驳回");
+    verify(purchaseDemandMapper, never()).updateStatus(
+        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(),
+        org.mockito.ArgumentMatchers.anyString());
+  }
+
   @Test
   void updatesDraftDemandProfileAndReplacesLineItemsInsideTenant() {
     TenantContext.set("tenant-1", null, "buyer-user-1");

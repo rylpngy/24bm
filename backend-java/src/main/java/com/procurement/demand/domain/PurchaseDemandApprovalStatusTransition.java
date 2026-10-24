@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 public class PurchaseDemandApprovalStatusTransition {
 
   public void requireSubmission(String currentStatus, String demandId) {
-    if (!PurchaseDemandStatus.DRAFT.equals(currentStatus)) {
+    if (!PurchaseDemandStatus.DRAFT.equals(currentStatus) && !PurchaseDemandStatus.REJECTED.equals(currentStatus)) {
       throw new IllegalStateException("Only draft purchase demands can be submitted: " + demandId);
     }
   }

@@ -13,6 +13,18 @@ import org.apache.ibatis.annotations.Update;
 public interface InvoiceMapper {
 
   @Select("""
+      select min(id) as id, tenant_id, order_id, null::text as receiver_id,
+             null::text as result, max(received_at) as received_at,
+             case when count(received_quantity)=count(*) then sum(received_quantity)::integer end as received_quantity,
+             case when count(qualified_quantity)=count(*) then sum(qualified_quantity)::integer end as qualified_quantity,
+             null::text as quality_note, null::text as inspection_conclusion,
+             null::text as disposition, null::text as disposition_note
+      from receipts where tenant_id=#{tenantId} and order_id=#{orderId}
+      group by tenant_id, order_id
+      """)
+  com.procurement.order.domain.Receipt findAggregateReceipt(@Param("tenantId") String tenantId, @Param("orderId") String orderId);
+
+  @Select("""
       select id, tenant_id, supplier_id, order_id, amount, invoice_no, payment_status, reconciliation_note,
              created_at, updated_at, invoice_code, invoice_date, tax_rate
       from invoices where tenant_id=#{tenantId} and id=#{id} for update

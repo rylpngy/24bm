@@ -27,6 +27,8 @@ import {
 import { OwnerAttachments } from '../attachments/owner-attachments';
 import { ContractFulfillmentEvents } from './contract-fulfillment-events';
 import { ContractAmendments } from './contract-amendments';
+import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
+import { financeErrorMessage } from '../finance/finance-feedback';
 import { ContractScheduleSection } from './contract-schedule-section';
 import { ContractPaymentReconciliationPanel, ContractReconciliationDetail } from './contract-payment-reconciliation-panel';
 import { ContractEsignPanel } from './contract-esign-panel';
@@ -69,6 +71,8 @@ function ExpiryChip({ expiryDate, archived }: { expiryDate?: string | null; arch
 
 // 合同管理:表格台账 → 详情页(条款/附件/履约/变更/行项付款),操作收敛底部悬浮条。
 export function ContractsPage() {
+  const { can } = useBuyerPermissions();
+  const canManage = can('buyer:contract:manage');
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -89,7 +93,7 @@ export function ContractsPage() {
   const updateStatus = useBuyerContractUpdateStatus();
   const archive = useBuyerContractUpdateArchiveStatus();
 
-  const contracts = query.data?.data ?? [];
+  const contracts = query.isError ? [] : query.data?.data ?? [];
   const orderList = orders.data?.data ?? [];
 
   const statuses = ['全部', ...Array.from(new Set(contracts.map((c) => c.status).filter(Boolean) as string[]))];
@@ -117,15 +121,16 @@ export function ContractsPage() {
     });
 
   const submitCreate = () => {
+    if (!canManage) return;
     const order = orderList.find((o) => o.id === orderId);
-    if (!order) return;
+    if (!order || order.amount == null || order.amount <= 0) return;
     create.mutate(
       {
         data: {
           contractNo: `HT-${Date.now().toString().slice(-8)}`,
           contractName: name || `${order.id} 采购合同`,
           relatedOrderId: orderId,
-          amount: order.amount ?? 0,
+          amount: order.amount,
           status: '草案',
           fulfillmentProgress: '待同步',
         },
@@ -151,6 +156,9 @@ export function ContractsPage() {
   };
 
   const selected = selectedId ? contracts.find((c) => c.id === selectedId) : undefined;
+
+  if (query.isError) return <FeedbackNotice tone="error" message={financeErrorMessage(query.error, '合同加载失败')} />;
+  const failedAction = [create, submit, reviewApproval, renew, updateStatus, archive].find((action) => action.isError);
 
   // ── 详情页 ────────────────────────────────────────────────
   if (selected) {
@@ -189,6 +197,7 @@ export function ContractsPage() {
         </div>
 
         {feedback && <FeedbackNotice tone="success" message={feedback} />}
+        {failedAction && <FeedbackNotice tone="error" message={financeErrorMessage(failedAction.error, '合同操作失败')} />}
 
         {c.id && <WorkflowStatusPanel businessType="contract_approval" businessId={c.id} />}
 
@@ -254,7 +263,7 @@ export function ContractsPage() {
 
             {detailTab === 'fulfillment' && c.id && <ContractFulfillmentEvents contractId={c.id} />}
 
-            {detailTab === 'amendments' && c.id && <ContractAmendments contractId={c.id} />}
+            {detailTab === 'amendments' && c.id && <ContractAmendments contractId={c.id} status={c.status} archiveStatus={c.archiveStatus} />}
           </div>
 
           {/* 右栏:关键信息 */}
@@ -310,7 +319,7 @@ export function ContractsPage() {
               </span>
             </div>
             <div className="flex shrink-0 flex-wrap gap-2">
-              {c.status === '草案' && (
+              {canManage && c.archiveStatus !== '已归档' && c.status === '草案' && (
                 <button
                   type="button"
                   disabled={busy}
@@ -320,7 +329,7 @@ export function ContractsPage() {
                   提交审批
                 </button>
               )}
-              {c.status === '审批中' && (
+              {canManage && c.archiveStatus !== '已归档' && c.status === '审批中' && (
                 <>
                   <button
                     type="button"
@@ -356,7 +365,7 @@ export function ContractsPage() {
                   </button>
                 </>
               )}
-              {c.status === '已生效' && nextFulfillment && (
+              {canManage && c.archiveStatus !== '已归档' && c.status === '已生效' && nextFulfillment && (
                 <button
                   type="button"
                   disabled={busy}
@@ -371,7 +380,7 @@ export function ContractsPage() {
                   推进履约至「{nextFulfillment}」
                 </button>
               )}
-              {c.renewalStatus !== '已发起续签' && c.archiveStatus !== '已归档' && d != null && d <= RENEWAL_WINDOW_DAYS && (
+              {canManage && c.renewalStatus !== '已发起续签' && c.archiveStatus !== '已归档' && d != null && d <= RENEWAL_WINDOW_DAYS && (
                 <button
                   type="button"
                   disabled={busy}
@@ -383,7 +392,7 @@ export function ContractsPage() {
                   发起续签
                 </button>
               )}
-              {c.archiveStatus !== '已归档' && (
+              {canManage && c.status === '已生效' && c.archiveStatus !== '已归档' && (
                 <button
                   type="button"
                   disabled={busy}
@@ -450,6 +459,7 @@ export function ContractsPage() {
           />
           <button
             type="button"
+            disabled={!canManage}
             onClick={() => setShowForm((v) => !v)}
             className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-slate-900 px-4 text-xs font-black text-white transition hover:bg-slate-800"
           >
@@ -463,7 +473,7 @@ export function ContractsPage() {
         </div>
       )}
 
-      {showForm && (
+      {showForm && canManage && (
         <div className="mb-4 rounded-lg border border-blue-100 bg-blue-50/40 p-4">
           <p className="text-sm font-black text-blue-800">从采购订单创建合同</p>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">

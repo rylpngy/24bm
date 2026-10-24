@@ -5,12 +5,17 @@ import { financeErrorMessage } from './finance-feedback';
 import { InvoicesPage } from './invoices-page';
 import { ReconciliationVariancePanel } from './reconciliation-variance-panel';
 
+vi.mock('../../lib/use-buyer-permissions', () => ({
+  useBuyerPermissions: () => ({ can: () => false }),
+}));
+
 const denied = vi.hoisted(() => ({
   isError: true,
   error: { response: { data: { message: '无权访问该发票及其付款数据' } } },
   data: { data: [{ id: 'hidden', invoiceNo: '不应显示的发票', invoiceId: 'hidden', matchStatus: '金额差异' }] },
 }));
 vi.mock('@24bid/api-client', () => ({
+  useSessionPermissions: () => ({ data: { data: { permissions: [] } } }),
   useBuyerPaymentList: () => denied,
   useBuyerSupplierList: () => ({ data: { data: [] } }),
   useBuyerPaymentUpdate: () => ({}),

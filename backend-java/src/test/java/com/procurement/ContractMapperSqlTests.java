@@ -2,25 +2,28 @@ package com.procurement;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import com.procurement.common.data.ProcurementScopeSql;
+import com.procurement.contract.infrastructure.ContractMapper;
+import com.procurement.identity.domain.DataScope;
+import org.apache.ibatis.annotations.Select;
 import org.junit.jupiter.api.Test;
 
 class ContractMapperSqlTests {
-  private static final Path MAPPER_SOURCE = Path.of(
-      "src/main/java/com/procurement/contract/infrastructure/ContractMapper.java");
-
   @Test
-  void contractListDataScopeFollowsOrderRfqDemandDepartmentChain() throws IOException {
-    String source = Files.readString(MAPPER_SOURCE);
+  void contractListWritesAndAttachmentsReuseWholeOrderVisibility() throws Exception {
+    var methods = new java.lang.reflect.Method[] {
+        ContractMapper.class.getMethod("canAccessContractInScope", String.class, String.class, DataScope.class),
+        ContractMapper.class.getMethod("canAccessOrderInScope", String.class, String.class, DataScope.class),
+        ContractMapper.class.getMethod("listVisible", String.class, String.class, String.class, String.class, DataScope.class)
+    };
+    for (var method : methods) {
+      assertThat(String.join(" ", method.getAnnotation(Select.class).value()))
+          .as(method.getName()).contains(ProcurementScopeSql.RFQS).contains("po.tenant_id=#{tenantId}");
+    }
+  }
 
-    assertThat(source)
-        .contains("from purchase_orders po")
-        .contains("join rfqs rfq on rfq.tenant_id = po.tenant_id and rfq.id = po.rfq_id")
-        .contains("join rfq_demands rd on rd.tenant_id = rfq.tenant_id and rd.rfq_id = rfq.id")
-        .contains("join purchase_demands pd on pd.tenant_id = rd.tenant_id and pd.id = rd.demand_id")
-        .contains("pd.department_id in")
-        .contains("rfq.owner_id = #{requesterId}");
+  @Test void emptyOrConflictingLegacyScopesNeverBecomeUnrestricted() {
+    assertThat(ContractMapper.recordScope(java.util.List.of(), null).blocksAll()).isTrue();
+    assertThat(ContractMapper.recordScope(java.util.List.of("A"), "owner").blocksAll()).isTrue();
   }
 }

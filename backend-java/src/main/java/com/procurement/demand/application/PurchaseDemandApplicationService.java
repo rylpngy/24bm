@@ -205,13 +205,13 @@ public class PurchaseDemandApplicationService {
   public PurchaseDemandResponse update(String demandId, UpdatePurchaseDemandRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer demand APIs");
     permissionService.require("buyer:demand:create");
-    PurchaseDemand demand = purchaseDemandMapper.findByTenantAndId(tenantId, demandId);
+    PurchaseDemand demand = purchaseDemandMapper.findByTenantAndIdForUpdate(tenantId, demandId);
     if (demand == null) {
       throw new IllegalArgumentException("Purchase demand not found: " + demandId);
     }
     requireDataScope(demand.departmentId(), demand.requesterId());
     requireDataScope(request.departmentId(), demand.requesterId());
-    if (!PurchaseDemandStatus.DRAFT.equals(demand.status())) {
+    if (!PurchaseDemandStatus.DRAFT.equals(demand.status()) && !PurchaseDemandStatus.REJECTED.equals(demand.status())) {
       throw new IllegalStateException("Only draft purchase demand can be updated: " + demandId);
     }
     requireActiveDepartment(tenantId, request.departmentId());
@@ -255,7 +255,9 @@ public class PurchaseDemandApplicationService {
   public ApprovalTaskResponse submit(String demandId, Map<String, Object> formData) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer demand APIs");
     permissionService.require("buyer:demand:create");
-    PurchaseDemand demand = purchaseDemandMapper.findByTenantAndId(tenantId, demandId);
+    // Serialize profile edits before reading approval amount/department and building its immutable snapshot.
+    // This path starts a new workflow only; it never locks an existing workflow instance in reverse callback order.
+    PurchaseDemand demand = purchaseDemandMapper.findByTenantAndIdForUpdate(tenantId, demandId);
     if (demand == null) {
       throw new IllegalArgumentException("Purchase demand not found: " + demandId);
     }
@@ -267,7 +269,9 @@ public class PurchaseDemandApplicationService {
       return submitLegacy(demandId, tenantId, demand);
     }
 
-    purchaseDemandMapper.updateStatus(tenantId, demandId, PurchaseDemandStatus.IN_APPROVAL);
+    if (purchaseDemandMapper.updateStatusIfCurrent(tenantId, demandId, demand.status(), PurchaseDemandStatus.IN_APPROVAL) == 0) {
+      throw new IllegalStateException("Purchase demand changed before submission: " + demandId);
+    }
     Map<String, Object> snapshot = new LinkedHashMap<>();
     snapshot.put("title", demand.title());
     snapshot.put("budget", demand.budget());
@@ -351,6 +355,7 @@ public class PurchaseDemandApplicationService {
     if (demand == null) {
       throw new IllegalArgumentException("Purchase demand not found: " + demandId);
     }
+    requireDataScope(demand.departmentId(), demand.requesterId());
     purchaseDemandApprovalStatusTransition.requireReview(demand.status(), demandId);
 
     if (unifiedWorkflowApplicationService != null) {

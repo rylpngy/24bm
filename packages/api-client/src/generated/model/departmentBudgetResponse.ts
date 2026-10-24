@@ -18,4 +18,6 @@ export interface DepartmentBudgetResponse {
   occupancyPercent?: number;
   overBudget?: boolean;
   disbursed?: number;
+  pendingAllocationAmount?: number;
+  unverifiedPaymentCount?: number;
 }

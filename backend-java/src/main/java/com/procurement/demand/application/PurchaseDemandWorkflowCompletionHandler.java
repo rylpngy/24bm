@@ -35,6 +35,16 @@ public class PurchaseDemandWorkflowCompletionHandler implements WorkflowBusiness
   }
 
   @Override
+  public void onCancelled(WorkflowBusinessInstance instance, String actorId, String reason) {
+    if (purchaseDemandMapper.updateStatusIfCurrent(instance.tenantId(), instance.businessId(),
+        PurchaseDemandStatus.IN_APPROVAL, PurchaseDemandStatus.DRAFT) == 0) {
+      throw new IllegalStateException("采购需求不在审批中,无法撤回: " + instance.businessId());
+    }
+    auditLogApplicationService.recordTenantAction(instance.tenantId(), "purchase_demand.withdrawn",
+        ApprovalBusinessType.PURCHASE_DEMAND, instance.businessId(), reason);
+  }
+
+  @Override
   public void onCompleted(WorkflowBusinessInstance instance, WorkflowCompletion completion) {
     PurchaseDemand demand = purchaseDemandMapper.findByTenantAndId(instance.tenantId(), instance.businessId());
     if (demand == null) {

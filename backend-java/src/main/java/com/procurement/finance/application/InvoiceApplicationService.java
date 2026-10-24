@@ -197,8 +197,9 @@ public class InvoiceApplicationService {
     return InvoiceResponseAssembler.from(
         invoice,
         purchaseOrderMapper.findByTenantAndId(invoice.tenantId(), invoice.orderId()),
-        receiptMapper.findByTenantAndOrder(invoice.tenantId(), invoice.orderId()),
-        lineItemResponses(invoice.tenantId(), invoice.id()));
+        invoiceMapper.findAggregateReceipt(invoice.tenantId(), invoice.orderId()),
+        lineItemResponses(invoice.tenantId(), invoice.id()),
+        threeWayMatchMapper.paymentBlockingReason(invoice.tenantId(), invoice.id()));
   }
 
   // 发票开具时按订单行项原样复制为发票行项(保留 order_line_id 以支撑后续行级匹配)。

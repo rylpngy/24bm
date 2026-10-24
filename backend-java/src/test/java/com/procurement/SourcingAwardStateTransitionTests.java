@@ -56,6 +56,11 @@ class SourcingAwardStateTransitionTests {
       notificationApplicationService,
       new RfqAwardStatusTransition());
 
+  @org.junit.jupiter.api.BeforeEach
+  void configureRfqAccess() {
+    awardApplicationService.setRfqAccess(org.mockito.Mockito.mock(com.procurement.sourcing.application.RfqApplicationService.class));
+  }
+
   @AfterEach
   void clearTenantContext() {
     TenantContext.clear();

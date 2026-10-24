@@ -53,7 +53,7 @@ class DirectProjectCreationTests {
       rfqInviteMapper,
       purchaseDemandMapper,
       directDemandRegistrar,
-      mock(DataScopeService.class),
+      TestDataScopes.unrestricted(),
       mock(BuyerSupplierRelationMapper.class),
       mock(SupplierQualificationMapper.class),
       mock(TenantFeatureApplicationService.class),

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
   Bot,
@@ -13,6 +13,8 @@ import {
   ShieldCheck,
   Timer,
   WalletCards,
+  Pencil,
+  Undo2,
 } from 'lucide-react';
 import {
   type PurchaseDemandResponse,
@@ -20,10 +22,14 @@ import {
   usePurchaseDemandList,
   useMaterialList,
   useWorkflowPurchaseDemandSubmit,
+  useWorkflowBusinessHistory,
+  axiosInstance,
 } from '@24bid/api-client';
 import { FeedbackNotice, PrimaryActionButton, ShellState, StatusPill, cn } from '@24bid/ui';
 import { WorkflowSubmitDialog } from '../workflow/workflow-submit-dialog';
 import { WorkflowStatusPanel } from '../workflow/workflow-instance-panel';
+import { DemandCreateForm } from './demand-create-form';
+import { useAuthStore } from '../../lib/auth-store';
 
 const currency = (v?: number) =>
   v == null ? '--' : `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 0 })}`;
@@ -235,6 +241,21 @@ export function DemandDetail({
   });
   const submit = useWorkflowPurchaseDemandSubmit();
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [withdrawReason, setWithdrawReason] = useState<string | null>(null);
+  const userId = useAuthStore((state) => state.session?.userId);
+  const workflow = useWorkflowBusinessHistory('purchase_demand', demand.id);
+  const instance = workflow.isError ? undefined : workflow.data?.data;
+  const withdraw = useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) => axiosInstance.post(
+      `/api/v1/buyer/workflow/instances/${encodeURIComponent(id)}/withdraw-purchase-demand`, { reason }),
+    onSuccess: () => {
+      setWithdrawReason(null);
+      queryClient.invalidateQueries({ predicate: (query) => typeof query.queryKey[0] === 'string' &&
+        /\/buyer\/(demands|workflow|audit)/.test(query.queryKey[0]) });
+      onBack();
+    },
+  });
 
   const materialMap = useMemo(() => {
     const map: Record<string, { name: string; code: string; unit: string; referencePrice?: number }> = {};
@@ -274,8 +295,27 @@ export function DemandDetail({
     );
   };
 
+  if (editing && canSubmit) return <DemandCreateForm initialDemand={demand} onBack={() => setEditing(false)}
+    onCreated={() => { setEditing(false); refresh(); onBack(); }} />;
+
   return (
     <div className="mx-auto max-w-7xl space-y-5">
+      {withdrawReason !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <form role="dialog" aria-label="撤回采购需求" className="w-full max-w-md rounded-lg bg-white p-5 space-y-4"
+            onSubmit={(event) => { event.preventDefault(); if (instance?.workflowInstanceId && withdrawReason.trim())
+              withdraw.mutate({ id: instance.workflowInstanceId, reason: withdrawReason.trim() }); }}>
+            <h3 className="text-base font-bold">撤回采购需求</h3>
+            <label className="block text-sm">撤回原因<textarea required maxLength={1000} className="mt-2 w-full rounded border p-2"
+              value={withdrawReason} onChange={(event) => setWithdrawReason(event.target.value)} /></label>
+            {withdraw.isError && <FeedbackNotice tone="error" message="撤回失败，请刷新确认审批状态与权限。" />}
+            <div className="flex justify-end gap-3">
+              <button type="button" onClick={() => setWithdrawReason(null)} disabled={withdraw.isPending}>返回</button>
+              <button type="submit" disabled={withdraw.isPending || !withdrawReason.trim()} className="rounded bg-red-700 px-4 py-2 text-white disabled:opacity-40">确认撤回</button>
+            </div>
+          </form>
+        </div>
+      )}
       <div className="rounded-lg border border-slate-200 bg-white px-6 py-5 shadow-sm shadow-slate-200/50">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex min-w-0 items-center gap-4">
@@ -304,6 +344,11 @@ export function DemandDetail({
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
+            {canSubmit && <button type="button" onClick={() => setEditing(true)} className="inline-flex items-center gap-1.5 rounded border px-3 py-2 text-xs font-bold">
+              <Pencil size={15} />修改需求</button>}
+            {userId && demand.status === '审批中' && instance?.status === 'processing' && instance.initiatorId === userId &&
+              <button type="button" onClick={() => { withdraw.reset(); setWithdrawReason(''); }} className="inline-flex items-center gap-1.5 rounded border px-3 py-2 text-xs font-bold">
+                <Undo2 size={15} />撤回审批</button>}
             {canSubmit ? (
               <PrimaryActionButton onClick={() => setShowSubmitDialog(true)} busy={submit.isPending} pendingLabel="提交中">
                 <Send size={15} /> 提交审批

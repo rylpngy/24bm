@@ -440,9 +440,10 @@ class QualityHardeningIT {
         .header("Authorization", "Bearer " + token).contentType(MediaType.APPLICATION_JSON)
         .content("{\"paymentStatus\":\"已付款\"}")).andExpect(status().isForbidden());
     own = seedFinance("allowed", tenant, user, department, 100, "allowed-" + user);
+    seedVerifiedFinanceEvidence(own, 100);
     http.perform(post("/api/v1/buyer/invoices/{id}/payments", own)
         .header("Authorization", "Bearer " + token).contentType(MediaType.APPLICATION_JSON)
-        .content("{\"paymentStatus\":\"已付款\"}")).andExpect(status().isOk());
+        .content("{\"paymentStatus\":\"已付款\",\"releaseEvidenceNo\":\"ALLOWED-RECEIPT\"}")).andExpect(status().isOk());
     assertThat(jdbc.queryForObject("select payment_status from invoices where id=?", String.class, own)).isEqualTo("已付款");
     jdbc.update("update roles set permissions='[\"buyer:invoice:read\"]'::jsonb where id=?", role);
     http.perform(post("/api/v1/buyer/invoices/{id}/payments", own)
@@ -461,6 +462,7 @@ class QualityHardeningIT {
     publishFinanceWorkflow(token, "payment_archive_exception", reviewer, 2);
     String batch = "WF-" + user;
     String invoice = seedFinance("workflow", tenant, user, department, 1200, batch);
+    seedVerifiedFinanceEvidence(invoice, 1200);
     String requestId = "pr-" + invoice;
     jdbc.update("update payment_requests set request_status='付款申请待提交' where id=?", requestId);
     jdbc.update("update payment_batches set batch_status='付款申请待提交' where tenant_id=? and payment_batch_no=?", tenant, batch);
@@ -632,13 +634,15 @@ class QualityHardeningIT {
       for (String problem : List.of("request-missing", "request-pending", "request-amount", "batch-pending", "batch-archived", "receipt-missing")) {
         String batch = "gate-" + scenario + "-" + user;
         String invoice = seedFinance("gate" + scenario++, tenant, user, department, 100, batch);
+        seedVerifiedFinanceEvidence(invoice, 100);
         switch (problem) {
           case "request-missing" -> jdbc.update("delete from payment_requests where invoice_id=?", invoice);
           case "request-pending" -> jdbc.update("update payment_requests set request_status='付款申请审批中' where invoice_id=?", invoice);
           case "request-amount" -> jdbc.update("update payment_requests set amount=90 where invoice_id=?", invoice);
           case "batch-pending" -> jdbc.update("update payment_batches set batch_status='审批中' where tenant_id=? and payment_batch_no=?", tenant, batch);
           case "batch-archived" -> jdbc.update("update payment_batches set batch_status='已付款归档' where tenant_id=? and payment_batch_no=?", tenant, batch);
-          case "receipt-missing" -> jdbc.update("update purchase_orders set status='待发货' where id=?", "o-" + invoice);
+          // Keep the order's received flag: actual missing evidence must still block payment.
+          case "receipt-missing" -> jdbc.update("delete from receipts where tenant_id=? and order_id=?", tenant, "o-" + invoice);
           default -> throw new AssertionError(problem);
         }
         String url = "/api/v1/buyer/invoices/" + invoice + (method.equals("POST") ? "/payments" : "");
@@ -648,9 +652,13 @@ class QualityHardeningIT {
         assertThat(jdbc.queryForObject("select count(*) from payment_execution_records where invoice_id=?", Integer.class, invoice)).isZero();
       }
       String invoice = seedFinance("valid" + method, tenant, user, department, 100, "valid-" + method + user);
+      seedVerifiedFinanceEvidence(invoice, 100);
       financeCall(token, method, "/api/v1/buyer/invoices/" + invoice + (method.equals("POST") ? "/payments" : ""),
-          Map.of("paymentStatus", "已付款"), 200);
+          method.equals("POST") ? Map.of("paymentStatus", "已付款", "releaseEvidenceNo", "VALID-" + method)
+              : Map.of("paymentStatus", "已付款"), 200);
       assertThat(jdbc.queryForObject("select execution_status from payment_execution_records where invoice_id=?", String.class, invoice)).isEqualTo("已登记付款");
+      assertThat(jdbc.queryForObject("select sum(amount) from invoice_payment_entries where tenant_id=? and invoice_id=?",
+          java.math.BigDecimal.class, tenant, invoice)).isEqualByComparingTo("100");
       financeCall(token, method, "/api/v1/buyer/invoices/" + invoice + (method.equals("POST") ? "/payments" : ""),
           Map.of("paymentStatus", "已付款"), 400);
       assertThat(jdbc.queryForObject("select count(*) from audit_logs where target_id=? and action='invoice.paid'", Integer.class, invoice)).isEqualTo(1);
@@ -662,6 +670,7 @@ class QualityHardeningIT {
     grantFinance();
     jdbc.update("update roles set permissions=permissions || '[\"buyer:contract:read\",\"buyer:contract:manage\"]'::jsonb where id=?", role);
     String invoice = seedFinance("contract", tenant, user, department, 100, "contract-" + user);
+    seedVerifiedFinanceEvidence(invoice, 100);
     String contract = "c-" + invoice;
     jdbc.update("""
         insert into contracts(id,tenant_id,contract_no,contract_name,related_order_id,supplier_id,amount,status)
@@ -671,6 +680,7 @@ class QualityHardeningIT {
     String paymentUrl = "/api/v1/buyer/invoices/" + invoice + "/payments";
     String scheduleUrl = "/api/v1/buyer/contracts/" + contract + "/payment-milestones";
     financeCall(token, "POST", paymentUrl, Map.of("paymentStatus", "已付款"), 400);
+    // Explicit approved-contract precondition for payment policy tests, not a status-update API bypass.
     jdbc.update("update contracts set status='已生效',archive_status='已归档' where id=?", contract);
     financeCall(token, "POST", paymentUrl, Map.of("paymentStatus", "已付款"), 400);
     jdbc.update("update contracts set archive_status='未归档' where id=?", contract);
@@ -704,7 +714,7 @@ class QualityHardeningIT {
     jdbc.execute("alter table contract_payment_milestones add constraint quality_payment_sync_failure check (id <> '" + failId + "' or status <> '已付')");
     try {
       org.assertj.core.api.Assertions.assertThatThrownBy(() ->
-          financeCall(token, "POST", paymentUrl, Map.of("paymentStatus", "已付款"), 500))
+          financeCall(token, "POST", paymentUrl, Map.of("paymentStatus", "已付款", "releaseEvidenceNo", "CONTRACT-ROLLBACK"), 500))
           .hasRootCauseInstanceOf(org.postgresql.util.PSQLException.class);
       assertThat(jdbc.queryForObject("select payment_status from invoices where id=?", String.class, invoice)).isEqualTo("待付款");
       assertThat(jdbc.queryForObject("select count(*) from contract_payment_milestones where contract_id=? and status='已付'", Integer.class, contract)).isZero();
@@ -713,7 +723,7 @@ class QualityHardeningIT {
     } finally {
       jdbc.execute("alter table contract_payment_milestones drop constraint quality_payment_sync_failure");
     }
-    financeCall(token, "POST", paymentUrl, Map.of("paymentStatus", "已付款"), 200);
+    financeCall(token, "POST", paymentUrl, Map.of("paymentStatus", "已付款", "releaseEvidenceNo", "CONTRACT-PAID"), 200);
     assertThat(jdbc.queryForObject("select count(*) from contract_payment_milestones where contract_id=? and status='已付' and paid_at is not null", Integer.class, contract)).isEqualTo(3);
     assertThat(jdbc.queryForObject("select count(*) from audit_logs where target_id=? and action='contract.milestone_paid_from_invoice' and actor_id=?", Integer.class, contract, user)).isEqualTo(3);
     assertThat(jdbc.queryForObject("select execution_status from payment_execution_records where invoice_id=?", String.class, invoice)).isEqualTo("已登记付款");
@@ -723,6 +733,7 @@ class QualityHardeningIT {
   void paymentAmountsAreIdempotentBoundedReversibleAndScoped() throws Exception {
     grantFinance();
     String invoice = seedFinance("amount", tenant, user, department, 100, "AMT-" + user);
+    seedVerifiedFinanceEvidence(invoice, 100);
     String token = login();
     String url = "/api/v1/buyer/invoices/" + invoice + "/payment-ledger";
     var first = financeCall(token, "POST", url, Map.of("idempotencyKey", "one", "amount", 30, "evidenceNo", "BANK-1"), 200);
@@ -764,6 +775,7 @@ class QualityHardeningIT {
     grantFinance();
     jdbc.update("update roles set permissions='[\"buyer:*\"]'::jsonb where id=?", role);
     String invoice = seedFinance("installment", tenant, user, department, 100, "INST-" + user);
+    seedVerifiedFinanceEvidence(invoice, 100);
     String contract = "c-" + invoice;
     jdbc.update("insert into contracts(id,tenant_id,contract_no,contract_name,related_order_id,supplier_id,amount,status) values (?,?,?,'Installments',?,?,100,'已生效')",
         contract, tenant, contract, "o-" + invoice, "s-" + invoice);
@@ -793,6 +805,7 @@ class QualityHardeningIT {
   void concurrentAmountSubmissionsCannotOverpayAndLegacyStateIsNotInvented() throws Exception {
     grantFinance();
     String invoice = seedFinance("concurrent-pay", tenant, user, department, 100, "CP-" + user);
+    seedVerifiedFinanceEvidence(invoice, 100);
     String token = login();
     String url = "/api/v1/buyer/invoices/" + invoice + "/payment-ledger";
     try (var pool = Executors.newFixedThreadPool(2)) {
@@ -936,8 +949,15 @@ class QualityHardeningIT {
     jdbc.update("update tenants set enabled_features='[\"order\"]'::jsonb where id=?", tenant);
     jdbc.update("update purchase_orders set status='已发货' where id in (?,?)", "o-" + own, "o-" + hidden);
     for (String id : List.of(own, hidden)) {
-      jdbc.update("insert into deliveries(id,tenant_id,order_id,supplier_id,carrier,tracking_no,status) values (?,?,?,?,'Test','Test','已发货')",
+      int amount = id.equals(own) ? 100 : 200;
+      jdbc.update("""
+          insert into order_line_items(id,tenant_id,order_id,description,unit,quantity,unit_price,line_amount)
+          values (?,?,?,'Scope test item','件',1,?,?)
+          """, "ol-" + id, tenant, "o-" + id, amount, amount);
+      jdbc.update("insert into deliveries(id,tenant_id,order_id,supplier_id,carrier,tracking_no,status,shipped_quantity) values (?,?,?,?,'Test','Test','已发货',1)",
           "del-" + id, tenant, "o-" + id, "s-" + id);
+      jdbc.update("insert into delivery_line_items(id,tenant_id,delivery_id,order_line_id,shipped_quantity) values (?,?,?,?,1)",
+          "dl-" + id, tenant, "del-" + id, "ol-" + id);
     }
     String token = login();
     for (String resource : List.of("orders", "receipts", "deliveries", "suppliers", "supplier-invitations")) {
@@ -953,16 +973,18 @@ class QualityHardeningIT {
     Map<String, Object> date = Map.of("expectedReceiptDate", java.time.LocalDate.now().plusDays(30).toString());
     financeCall(token, "PUT", "/api/v1/buyer/orders/o-" + hidden, date, 403);
     financeCall(token, "PUT", "/api/v1/buyer/orders/o-" + own, date, 200);
-    Map<String, Object> receipt = Map.of("result", "验收通过", "receivedQuantity", 1, "qualifiedQuantity", 1);
-    financeCall(token, "POST", "/api/v1/buyer/orders/o-" + hidden + "/receipts", receipt, 403);
-    financeCall(token, "POST", "/api/v1/buyer/orders/o-" + own + "/receipts", receipt, 201);
+    java.util.function.Function<String, Map<String, Object>> receipt = id -> Map.of(
+        "result", "验收通过", "receivedQuantity", 1, "qualifiedQuantity", 1,
+        "lineItems", List.of(Map.of("orderLineId", "ol-" + id, "receivedQuantity", 1, "qualifiedQuantity", 1)));
+    financeCall(token, "POST", "/api/v1/buyer/orders/o-" + hidden + "/receipts", receipt.apply(hidden), 403);
+    financeCall(token, "POST", "/api/v1/buyer/orders/o-" + own + "/receipts", receipt.apply(own), 201);
     assertThat(jdbc.queryForObject("select receiver_id from receipts where order_id=?", String.class, "o-" + own)).isEqualTo(user);
     assertThat(jdbc.queryForObject("select status from purchase_orders where id=?", String.class, "o-" + hidden)).isEqualTo("已发货");
     var receipts = http.perform(get("/api/v1/buyer/receipts").header("Authorization", "Bearer " + token)).andExpect(status().isOk()).andReturn();
     assertThat(receipts.getResponse().getContentAsString()).contains("o-" + own).doesNotContain("o-" + hidden);
     jdbc.update("update roles set permissions='[\"buyer:order:read\",\"buyer:receipt:read\"]'::jsonb where id=?", role);
     financeCall(token, "PUT", "/api/v1/buyer/orders/o-" + own, date, 403);
-    financeCall(token, "POST", "/api/v1/buyer/orders/o-" + hidden + "/receipts", receipt, 403);
+    financeCall(token, "POST", "/api/v1/buyer/orders/o-" + hidden + "/receipts", receipt.apply(hidden), 403);
     jdbc.update("update roles set permissions='[]'::jsonb where id=?", role);
     http.perform(get("/api/v1/buyer/orders").header("Authorization", "Bearer " + token)).andExpect(status().isForbidden());
   }
@@ -1170,20 +1192,53 @@ class QualityHardeningIT {
   @Test
   void budgetDisbursementsDoNotMultiplyWithLinkedDemandsOrInventDepartmentAllocations() throws Exception {
     jdbc.update("update roles set permissions='[\"buyer:budget:read\",\"buyer:budget:manage\"]'::jsonb,data_scope='department' where id=?", role);
-    String item = seedFinance("budget", tenant, user, department, 100, "budget-" + user);
+    String item = seedFinance("budget", tenant, user, department, 1800, "budget-" + user);
     String duplicate = "second-" + user;
     insertDemand(duplicate, user);
+    jdbc.update("update purchase_demands set budget=1200 where id=?", "d-" + item);
+    jdbc.update("update purchase_demands set budget=600,status='已通过' where id=?", duplicate);
     jdbc.update("insert into rfq_demands(id,tenant_id,rfq_id,demand_id) values (?,?,?,?)", duplicate, tenant, "r-" + item, duplicate);
-    jdbc.update("insert into contracts(id,tenant_id,contract_no,contract_name,related_order_id,supplier_id,amount,status) values (?,?,?,'Test',?,?,100,'已生效')", "c-" + item, tenant, item, "o-" + item, "s-" + item);
-    jdbc.update("insert into contract_payment_milestones(id,tenant_id,contract_id,name,percent,amount,status) values (?,?,?,'Paid',100,100,'已付')", "cm-" + item, tenant, "c-" + item);
     String token = login();
     String period = jdbc.queryForObject("select to_char(current_date,'YYYY')", String.class);
     financeCall(token, "POST", "/api/v1/buyer/budgets", Map.of("departmentId", department, "period", period, "totalAmount", 5000), 200);
-    assertThat(buyerRead(token, "budgets", 200).get(0).path("disbursed").asInt()).isEqualTo(100);
+    // No contract or milestone is required; two linked demands must not multiply either ledger entry.
+    jdbc.update("insert into invoice_payment_entries(id,tenant_id,invoice_id,idempotency_key,amount,evidence_no,created_by) values (?,?,?,'budget-first',600,'bank-first',?)",
+        "paid-first-" + user, tenant, item, user);
+    assertThat(buyerRead(token, "budgets", 200).get(0).path("disbursed").decimalValue()).isEqualByComparingTo("600");
+    jdbc.update("insert into invoice_payment_entries(id,tenant_id,invoice_id,idempotency_key,amount,evidence_no,created_by) values (?,?,?,'budget-second',1200,'bank-second',?)",
+        "paid-second-" + user, tenant, item, user);
+    assertThat(buyerRead(token, "budgets", 200).get(0).path("disbursed").decimalValue()).isEqualByComparingTo("1800");
+    jdbc.update("insert into contracts(id,tenant_id,contract_no,contract_name,related_order_id,supplier_id,amount,status) values (?,?,?,'Test',?,?,1800,'已生效')", "c-" + item, tenant, item, "o-" + item, "s-" + item);
+    jdbc.update("insert into contract_payment_milestones(id,tenant_id,contract_id,name,percent,amount,status) values (?,?,?,'Paid',100,1800,'已付')", "cm-" + item, tenant, "c-" + item);
+    assertThat(buyerRead(token, "budgets", 200).get(0).path("disbursed").decimalValue()).isEqualByComparingTo("1800");
     String other = "budget-other-" + department;
     jdbc.update("insert into departments(id,tenant_id,name,status) values (?,?,'Other','active')", other, tenant);
     jdbc.update("update purchase_demands set department_id=? where id=?", other, duplicate);
-    assertThat(buyerRead(token, "budgets", 200).get(0).path("disbursed").asInt()).isZero();
+    // Explicit positive demand budgets provide a 1200:600 allocation, not exclusion of the whole project.
+    assertThat(buyerRead(token, "budgets", 200).get(0).path("disbursed").decimalValue()).isEqualByComparingTo("1200");
+    jdbc.update("update roles set data_scope='all' where id=?", role);
+    financeCall(token, "POST", "/api/v1/buyer/budgets", Map.of("departmentId", other, "period", period, "totalAmount", 5000), 200);
+    var byDepartment = new java.util.HashMap<String, com.fasterxml.jackson.databind.JsonNode>();
+    buyerRead(token, "budgets", 200).forEach(row -> byDepartment.put(row.path("departmentId").asText(), row));
+    assertThat(byDepartment.get(department).path("disbursed").decimalValue()).isEqualByComparingTo("1200");
+    assertThat(byDepartment.get(other).path("disbursed").decimalValue()).isEqualByComparingTo("600");
+    jdbc.update("insert into invoice_payment_entries(id,tenant_id,invoice_id,idempotency_key,amount,evidence_no,created_by,reversal_of) values (?,?,?,'budget-reverse',-1200,'bank-reversal',?,?)",
+        "paid-reverse-" + user, tenant, item, user, "paid-second-" + user);
+    buyerRead(token, "budgets", 200).forEach(row -> byDepartment.put(row.path("departmentId").asText(), row));
+    assertThat(byDepartment.get(department).path("disbursed").decimalValue()).isEqualByComparingTo("400");
+    assertThat(byDepartment.get(other).path("disbursed").decimalValue()).isEqualByComparingTo("200");
+    // A separate historical project respects one-invoice-per-order while exposing unknown payments to both departments.
+    String historical = seedFinance("budget-legacy", tenant, user, department, 1800, "budget-legacy-" + user);
+    String historicalSecond = "legacy-second-" + user;
+    insertDemand(historicalSecond, user);
+    jdbc.update("update purchase_demands set budget=1200 where id=?", "d-" + historical);
+    jdbc.update("update purchase_demands set department_id=?,budget=600,status='已通过' where id=?", other, historicalSecond);
+    jdbc.update("insert into rfq_demands(id,tenant_id,rfq_id,demand_id) values (?,?,?,?)", historicalSecond, tenant, "r-" + historical, historicalSecond);
+    jdbc.update("update invoices set payment_status='已付款' where id=?", historical);
+    buyerRead(token, "budgets", 200).forEach(row -> {
+      assertThat(row.path("disbursed").isNull() || row.path("disbursed").isMissingNode()).isTrue();
+      assertThat(row.path("unverifiedPaymentCount").asInt()).isEqualTo(1);
+    });
   }
 
   @Test
@@ -1346,6 +1401,46 @@ class QualityHardeningIT {
     var result = http.perform(get("/api/v1/buyer/" + path).header("Authorization", "Bearer " + token))
         .andExpect(status().is(expected)).andReturn();
     return json.readTree(result.getResponse().getContentAsString()).path("data");
+  }
+
+  // Opt-in evidence for the exact, fully fulfilled finance scenarios above; legacy seeds remain unverified.
+  private void seedVerifiedFinanceEvidence(String invoice, int amount) {
+    assertThat(jdbc.queryForObject("select amount from invoices where tenant_id=? and id=?",
+        java.math.BigDecimal.class, tenant, invoice)).isEqualByComparingTo(String.valueOf(amount));
+    String line = "verified-ol-" + invoice;
+    String delivery = "verified-del-" + invoice;
+    String receipt = "verified-rec-" + invoice;
+    jdbc.update("""
+        insert into order_line_items(id,tenant_id,order_id,description,unit,quantity,unit_price,line_amount)
+        values (?,?,?,'Verified test item','件',1,?,?)
+        """, line, tenant, "o-" + invoice, amount, amount);
+    jdbc.update("""
+        insert into deliveries(id,tenant_id,order_id,supplier_id,carrier,tracking_no,status,shipped_quantity)
+        values (?,?,?,?,'Fixture carrier',?,'已发货',1)
+        """, delivery, tenant, "o-" + invoice, "s-" + invoice, "TRACK-" + invoice);
+    jdbc.update("""
+        insert into delivery_line_items(id,tenant_id,delivery_id,order_line_id,shipped_quantity)
+        values (?,?,?,?,1)
+        """, "verified-dl-" + invoice, tenant, delivery, line);
+    jdbc.update("""
+        insert into receipts(id,tenant_id,order_id,receiver_id,result,received_quantity,qualified_quantity,inspection_conclusion)
+        values (?,?,?,?,'验收通过',1,1,'全部合格')
+        """, receipt, tenant, "o-" + invoice, user);
+    jdbc.update("""
+        insert into receipt_line_items(id,tenant_id,receipt_id,order_line_id,description,unit,ordered_quantity,received_quantity,qualified_quantity)
+        values (?,?,?,?,'Verified test item','件',1,1,1)
+        """, "verified-rl-" + invoice, tenant, receipt, line);
+    jdbc.update("""
+        insert into invoice_line_items(id,tenant_id,invoice_id,order_line_id,description,unit,quantity,unit_price,line_amount)
+        values (?,?,?,?,'Verified test item','件',1,?,?)
+        """, "verified-il-" + invoice, tenant, invoice, line, amount, amount);
+    // The generic seed creates a placeholder pending difference, not evidence of a real variance.
+    assertThat(jdbc.update("""
+        delete from variance_handlings where tenant_id=? and invoice_id=? and variance_amount=0
+          and reason='Test' and result='Pending' and status='待处理'
+        """, tenant, invoice)).isEqualTo(1);
+    assertThat(jdbc.queryForObject("select blocking_reason from finance_invoice_closeout_checks where tenant_id=? and invoice_id=?",
+        String.class, tenant, invoice)).isNull();
   }
 
   private String seedFinance(String tag, String targetTenant, String owner, String dept, int amount, String batch) {

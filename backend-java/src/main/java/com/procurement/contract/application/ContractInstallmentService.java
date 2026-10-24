@@ -86,12 +86,13 @@ public class ContractInstallmentService {
 
   @Transactional(propagation = Propagation.MANDATORY)
   public void reverse(String tenant, String order, String original, String reversal) {
+    var contract = contracts.lockByOrder(tenant, order);
+    if (contract != null && "已归档".equals(contract.archiveStatus())) {
+      throw new IllegalStateException("关联合同已归档，不能冲销付款");
+    }
     var originalAllocations = allocations.byEntry(tenant, original);
     if (originalAllocations.isEmpty()) return;
-    var contract = contracts.lockByOrder(tenant, order);
-    if (contract == null || "已归档".equals(contract.archiveStatus())) {
-      throw new IllegalStateException("关联合同不存在或已归档，不能冲销付款");
-    }
+    if (contract == null) throw new IllegalStateException("关联合同不存在，不能冲销里程碑付款");
     var schedule = balances(tenant, order);
     for (var allocation : originalAllocations) {
       var m = schedule.stream().filter(item -> item.id().equals(allocation.milestoneId())).findFirst()

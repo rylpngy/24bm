@@ -143,7 +143,7 @@ public interface PaymentExecutionRecordMapper {
       join invoices i
         on i.tenant_id = pr.tenant_id
        and i.id = pr.invoice_id
-      left join three_way_matches twm
+      left join finance_three_way_match_checks twm
         on twm.tenant_id = pr.tenant_id
        and twm.invoice_id = pr.invoice_id
       left join variance_handlings vh
@@ -206,7 +206,7 @@ public interface PaymentExecutionRecordMapper {
       join invoices i
         on i.tenant_id = pr.tenant_id
        and i.id = pr.invoice_id
-      left join three_way_matches twm
+      left join finance_three_way_match_checks twm
         on twm.tenant_id = pr.tenant_id
        and twm.invoice_id = pr.invoice_id
       left join variance_handlings vh
@@ -290,7 +290,7 @@ public interface PaymentExecutionRecordMapper {
       join invoices i
         on i.tenant_id = pr.tenant_id
        and i.id = pr.invoice_id
-      left join three_way_matches twm
+      left join finance_three_way_match_checks twm
         on twm.tenant_id = pr.tenant_id
        and twm.invoice_id = pr.invoice_id
       left join variance_handlings vh

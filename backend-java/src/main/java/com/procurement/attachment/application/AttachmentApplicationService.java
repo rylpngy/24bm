@@ -53,6 +53,20 @@ public class AttachmentApplicationService {
         .toList();
   }
 
+  /** Metadata only: a null baseline means no upload-time integrity evidence, not a verified empty file. */
+  public List<ProcurementExecutionAttachmentMetadata> procurementExecutionAttachmentMetadata(String ownerType, String ownerId) {
+    String tenantId = TenantAccessGuard.requireTenantId("procurement execution attachment metadata");
+    return listCurrentTenantAttachmentEntities(ownerType, ownerId).stream().map(attachment -> {
+      var fingerprint = attachmentMapper.fingerprint(tenantId, attachment.id());
+      return new ProcurementExecutionAttachmentMetadata(attachment.id(), attachment.tenantId(),
+          attachment.ownerType(), attachment.ownerId(), attachment.fileName(),
+          fingerprint == null ? null : fingerprint.contentSize(), fingerprint == null ? null : fingerprint.contentSha256());
+    }).toList();
+  }
+
+  public record ProcurementExecutionAttachmentMetadata(String id, String tenantId, String ownerType,
+      String ownerId, String fileName, Long contentSize, String contentSha256) {}
+
   public List<Attachment> listCurrentTenantAttachmentEntities(String ownerType, String ownerId) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer attachment APIs");
     access.requireAccess(ownerType, ownerId, false);

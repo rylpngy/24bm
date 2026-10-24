@@ -38,6 +38,13 @@ public class UnifiedWorkflowController {
     return ApiResponse.ok(unifiedWorkflowApplicationService.getCurrentTenantHistory(workflowInstanceId));
   }
 
+  @PostMapping("/instances/{workflowInstanceId}/withdraw-purchase-demand")
+  public ApiResponse<Void> withdrawPurchaseDemand(@PathVariable String workflowInstanceId,
+      @Valid @RequestBody WithdrawPurchaseDemandWorkflowRequest request) {
+    unifiedWorkflowApplicationService.withdrawPurchaseDemand(workflowInstanceId, request.reason());
+    return ApiResponse.ok(null);
+  }
+
   @GetMapping("/instances/business/{businessType}/{businessId}/history")
   public ApiResponse<WorkflowInstanceHistoryResponse> businessHistory(
       @PathVariable String businessType,

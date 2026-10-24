@@ -10,6 +10,8 @@ import {
   RotateCcw,
   Timer,
   Trophy,
+  Pencil,
+  Save,
 } from 'lucide-react';
 import {
   type RfqResponse,
@@ -23,6 +25,7 @@ import {
   useRfqListEnrollments,
   useRfqListAnnouncements,
   useWorkflowRfqAwardSubmit,
+  useRfqUpdate,
 } from '@24bid/api-client';
 import { ConfirmDialog, FeedbackNotice, StatusPill, cn } from '@24bid/ui';
 import { QuoteComparisonTable } from './quote-comparison-table';
@@ -103,6 +106,9 @@ export function RfqProjectDetail({
   const award = useWorkflowRfqAwardSubmit();
   const newRound = useRfqStartNewRound();
   const abort = useRfqAbort();
+  const update = useRfqUpdate();
+  const [draftEdit, setDraftEdit] = useState<{ title: string; deadline: string; quote: string; delivery: string; evaluation: string } | null>(null);
+  const [cancelReason, setCancelReason] = useState<string | null>(null);
   const remind = useRfqRemind();
   const enrollments = useRfqListEnrollments(rfq.id ?? '', { query: { enabled: !!rfq.id } });
   const rfqAnnouncements = useRfqListAnnouncements(rfq.id ?? '', { query: { enabled: !!rfq.id } });
@@ -222,8 +228,45 @@ export function RfqProjectDetail({
               继续办理(选商 / 发布)
             </button>
           )}
+          <button type="button" onClick={() => setDraftEdit({ title: rfq.title ?? '',
+            deadline: rfq.deadlineAt ? new Date(new Date(rfq.deadlineAt).getTime() - new Date(rfq.deadlineAt).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : '',
+            quote: rfq.quoteRequirement ?? '', delivery: rfq.deliveryRequirement ?? '', evaluation: rfq.evaluationMethod ?? '最低价' })}
+            className="inline-flex items-center gap-1 rounded border bg-white px-3 py-2 text-xs font-bold"><Pencil size={14} />编辑草稿</button>
+          <button type="button" onClick={() => setCancelReason('')} className="inline-flex items-center gap-1 rounded border border-red-200 bg-white px-3 py-2 text-xs font-bold text-red-700">
+            <Ban size={14} />取消草稿</button>
         </div>
       )}
+
+      {isDraft && draftEdit && <form className="space-y-3 rounded-lg border bg-white p-5" onSubmit={(event) => {
+        event.preventDefault(); if (!rfq.id || !draftEdit.deadline || !draftEdit.title.trim()) return;
+        update.mutate({ rfqId: rfq.id, data: { title: draftEdit.title.trim(), invitedSupplierIds: invited,
+          deadlineAt: new Date(draftEdit.deadline).toISOString(), quoteRequirement: draftEdit.quote,
+          deliveryRequirement: draftEdit.delivery, evaluationMethod: draftEdit.evaluation } }, {
+          onSuccess: () => { setDraftEdit(null); refresh(); }, onError: reportError,
+        });
+      }}>
+        <label className="block text-sm">项目名称<input required className={inputCls} value={draftEdit.title} onChange={(e) => setDraftEdit({ ...draftEdit, title: e.target.value })} /></label>
+        <label className="block text-sm">报价截止时间<input required type="datetime-local" className={inputCls} value={draftEdit.deadline} onChange={(e) => setDraftEdit({ ...draftEdit, deadline: e.target.value })} /></label>
+        <label className="block text-sm">报价要求<textarea className={inputCls} value={draftEdit.quote} onChange={(e) => setDraftEdit({ ...draftEdit, quote: e.target.value })} /></label>
+        <label className="block text-sm">交付要求<textarea className={inputCls} value={draftEdit.delivery} onChange={(e) => setDraftEdit({ ...draftEdit, delivery: e.target.value })} /></label>
+        <label className="block text-sm">评选方式<select className={inputCls} value={draftEdit.evaluation} onChange={(e) => setDraftEdit({ ...draftEdit, evaluation: e.target.value })}><option>最低价</option><option>综合评分</option></select></label>
+        <div className="flex justify-end gap-3"><button type="button" onClick={() => setDraftEdit(null)}>返回</button>
+          <button type="submit" disabled={update.isPending} className="inline-flex items-center gap-1 rounded bg-blue-700 px-4 py-2 text-sm text-white"><Save size={14} />保存草稿</button></div>
+      </form>}
+
+      {isDraft && cancelReason !== null && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <form role="dialog" aria-label="取消草稿" className="w-full max-w-md space-y-4 rounded-lg bg-white p-5" onSubmit={(event) => {
+          event.preventDefault(); if (!rfq.id || !cancelReason.trim()) return;
+          abort.mutate({ rfqId: rfq.id, data: { kind: '废标', reason: cancelReason.trim() } }, {
+            onSuccess: () => { setCancelReason(null); refresh(); }, onError: reportError,
+          });
+        }}><h3 className="font-bold">取消草稿</h3>
+          <label className="block text-sm">取消原因<textarea required maxLength={1000} className={inputCls} value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} /></label>
+          {error && <FeedbackNotice tone="error" message={error} />}
+          <div className="flex justify-end gap-3"><button type="button" onClick={() => setCancelReason(null)} disabled={abort.isPending}>返回</button>
+            <button type="submit" disabled={abort.isPending || !cancelReason.trim()} className="rounded bg-red-700 px-4 py-2 text-white disabled:opacity-40">确认取消草稿</button></div>
+        </form>
+      </div>}
 
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="rounded-lg border border-slate-200 bg-white p-4 text-center shadow-sm">

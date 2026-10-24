@@ -21,6 +21,7 @@ export * from './buyer-payment-ledger-controller/buyer-payment-ledger-controller
 export * from './buyer-payment-review-controller/buyer-payment-review-controller';
 export * from './buyer-performance-task-controller/buyer-performance-task-controller';
 export * from './buyer-receipt-controller/buyer-receipt-controller';
+export * from './buyer-receipt-disposition-review-controller/buyer-receipt-disposition-review-controller';
 export * from './buyer-role-controller/buyer-role-controller';
 export * from './buyer-supplier-controller/buyer-supplier-controller';
 export * from './buyer-supplier-discovery-controller/buyer-supplier-discovery-controller';
@@ -44,6 +45,7 @@ export * from './platform-supplier-controller/platform-supplier-controller';
 export * from './platform-tenant-controller/platform-tenant-controller';
 export * from './platform-workspace-controller/platform-workspace-controller';
 export * from './process-definition-controller/process-definition-controller';
+export * from './procurement-execution-controller/procurement-execution-controller';
 export * from './public-mall-controller/public-mall-controller';
 export * from './public-opportunity-controller/public-opportunity-controller';
 export * from './public-portal-controller/public-portal-controller';

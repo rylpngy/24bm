@@ -61,6 +61,13 @@ class PurchaseDemandAuditLogTests {
     TenantContext.clear();
   }
 
+  @org.junit.jupiter.api.BeforeEach
+  void lockedReadsUseTheDemandFixture() {
+    when(purchaseDemandMapper.findByTenantAndIdForUpdate(
+        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString()))
+        .thenAnswer(call -> purchaseDemandMapper.findByTenantAndId(call.getArgument(0), call.getArgument(1)));
+  }
+
   @Test
   void creatingPurchaseDemandRecordsTenantScopedAuditLog() {
     TenantContext.set("tenant-1", null, "buyer-user-1");

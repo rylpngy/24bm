@@ -85,7 +85,6 @@ export function DeliveriesPage() {
         data: {
           carrier: form.carrier.trim(),
           trackingNo: form.trackingNo.trim(),
-          shippedQuantity: form.qty ? Number(form.qty) : undefined,
           shippedDate: form.shippedDate || undefined,
           estimatedArrival: form.estimatedArrival || undefined,
           logisticsNote: form.note.trim() || undefined,
@@ -122,8 +121,8 @@ export function DeliveriesPage() {
             <input className={cn(inputCls, 'mt-1')} value={f.trackingNo} onChange={(e) => setForm({ ...f, trackingNo: e.target.value })} />
           </label>
           <label className="block">
-            <span className="text-[11px] font-black text-slate-500">发货数量(选填)</span>
-            <input className={cn(inputCls, 'mt-1')} type="number" value={f.qty} onChange={(e) => setForm({ ...f, qty: e.target.value })} />
+            <span className="text-[11px] font-black text-slate-500">本批发货数量</span>
+            <input className={cn(inputCls, 'mt-1')} type="number" value={f.qty} readOnly />
           </label>
           <label className="block">
             <span className="text-[11px] font-black text-slate-500">发货日期(选填)</span>

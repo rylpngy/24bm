@@ -20,6 +20,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 class ContractStatusActionTests {
+  @org.junit.jupiter.api.BeforeEach
+  void configureAccess() { TestContractAccess.allow(contractApplicationService); }
   private final ContractMapper contractMapper = org.mockito.Mockito.mock(ContractMapper.class);
   private final PurchaseOrderMapper purchaseOrderMapper = org.mockito.Mockito.mock(PurchaseOrderMapper.class);
   private final ContractApplicationService contractApplicationService = new ContractApplicationService(
@@ -35,16 +37,16 @@ class ContractStatusActionTests {
   void updatingContractStatusUsesTenantScopeAndReturnsRefreshedContract() {
     TenantContext.set("tenant-1", null, "buyer-user");
     when(contractMapper.findByTenantAndId("tenant-1", "contract-1"))
-        .thenReturn(contract("履约中", "未归档"));
+        .thenReturn(contract("已生效", "未归档"));
     when(contractMapper.updateStatus(
         "tenant-1",
         "contract-1",
-        "履约中",
+        "已生效",
         "已生效",
         "收货验收中"))
         .thenReturn(1);
     when(contractMapper.findByTenantAndId("tenant-1", "contract-1"))
-        .thenReturn(contract("履约中", "未归档"), contract("已生效", "未归档"));
+        .thenReturn(contract("已生效", "未归档"), contract("已生效", "未归档"));
 
     var response = contractApplicationService.updateCurrentTenantContractStatus(
         "contract-1",
@@ -55,7 +57,7 @@ class ContractStatusActionTests {
     verify(contractMapper).updateStatus(
         "tenant-1",
         "contract-1",
-        "履约中",
+        "已生效",
         "已生效",
         "收货验收中");
   }

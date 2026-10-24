@@ -91,6 +91,15 @@ public interface PurchaseDemandMapper {
       """)
   PurchaseDemand findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
 
+  @Select("""
+      select id, tenant_id, title, department_id, requester_id, budget, status, created_at, updated_at,
+             expected_delivery_date, priority, purpose, source
+      from purchase_demands
+      where tenant_id = #{tenantId} and id = #{id}
+      for update
+      """)
+  PurchaseDemand findByTenantAndIdForUpdate(@Param("tenantId") String tenantId, @Param("id") String id);
+
   @Insert("""
       insert into purchase_demands (
         id, tenant_id, title, department_id, requester_id, budget, status,
@@ -121,6 +130,13 @@ public interface PurchaseDemandMapper {
   int updateStatus(@Param("tenantId") String tenantId, @Param("id") String id, @Param("status") String status);
 
   @Update("""
+      update purchase_demands set status = #{status}, updated_at = now()
+      where tenant_id = #{tenantId} and id = #{id} and status = #{expectedStatus}
+      """)
+  int updateStatusIfCurrent(@Param("tenantId") String tenantId, @Param("id") String id,
+      @Param("expectedStatus") String expectedStatus, @Param("status") String status);
+
+  @Update("""
       update purchase_demands
       set title = #{title},
           department_id = #{departmentId},
@@ -131,7 +147,7 @@ public interface PurchaseDemandMapper {
           updated_at = now()
       where tenant_id = #{tenantId}
         and id = #{id}
-        and status = '草稿'
+        and status in ('草稿', '已驳回')
       """)
   int updateDraft(
       @Param("tenantId") String tenantId,

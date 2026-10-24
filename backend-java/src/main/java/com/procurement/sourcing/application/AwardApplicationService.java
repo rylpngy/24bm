@@ -43,6 +43,7 @@ public class AwardApplicationService {
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
   private final RfqAwardStatusTransition rfqAwardStatusTransition;
+  private RfqApplicationService rfqAccess;
   private UnifiedWorkflowApplicationService unifiedWorkflowApplicationService;
 
   public AwardApplicationService(
@@ -67,6 +68,11 @@ public class AwardApplicationService {
   }
 
   @Autowired
+  public void setRfqAccess(RfqApplicationService rfqAccess) {
+    this.rfqAccess = java.util.Objects.requireNonNull(rfqAccess);
+  }
+
+  @Autowired
   void setUnifiedWorkflowApplicationService(
       UnifiedWorkflowApplicationService unifiedWorkflowApplicationService) {
     this.unifiedWorkflowApplicationService = unifiedWorkflowApplicationService;
@@ -75,6 +81,7 @@ public class AwardApplicationService {
   @Transactional
   public AwardDecisionResponse award(String rfqId, AwardRfqRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer award APIs");
+    rfqAccess.requireWriteAccess(rfqId);
     Rfq rfq = rfqMapper.findByTenantAndId(tenantId, rfqId);
     if (rfq == null) {
       throw new IllegalArgumentException("RFQ not found in tenant scope: " + rfqId);
@@ -188,6 +195,7 @@ public class AwardApplicationService {
   @Transactional
   public AwardDecisionResponse reviewApproval(String rfqId, ReviewAwardApprovalRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer award APIs");
+    rfqAccess.requireWriteAccess(rfqId);
     String userId = TenantAccessGuard.requireUserId("buyer award APIs");
     AwardDecision awardDecision = awardDecisionMapper.findByTenantAndId(tenantId, request.awardId());
     if (awardDecision == null || !rfqId.equals(awardDecision.rfqId())) {

@@ -8,7 +8,7 @@
 
 export interface UpdateRfqRequest {
   title: string;
-  invitedSupplierIds: string[];
+  invitedSupplierIds?: string[];
   deadlineAt?: string;
   quoteRequirement?: string;
   deliveryRequirement?: string;

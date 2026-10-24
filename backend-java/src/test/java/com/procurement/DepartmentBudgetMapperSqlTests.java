@@ -12,21 +12,15 @@ class DepartmentBudgetMapperSqlTests {
       "src/main/java/com/procurement/buyer/infrastructure/DepartmentBudgetMapper.java");
 
   @Test
-  void disbursedFollowsPaidMilestoneContractOrderRfqDemandDepartmentChain() throws IOException {
+  void disbursedUsesOnlySignedPaymentLedgerAndBudgetAllocation() throws IOException {
     String source = Files.readString(MAPPER_SOURCE);
 
     assertThat(source)
-        .contains("select sum(m.amount) from contract_payment_milestones m")
-        .contains("join contracts c on c.id = m.contract_id")
-        .contains("join purchase_orders po on po.id = c.related_order_id")
-        .contains("and exists (select 1 from rfq_demands rd")
-        .contains("and not exists (select 1 from rfq_demands rd")
-        .contains("rd.rfq_id = po.rfq_id and rd.tenant_id = po.tenant_id")
-        .contains("join purchase_demands pd on pd.id = rd.demand_id")
-        .contains("m.status = '已付'")
-        .contains("pd.department_id = b.department_id")
-        .contains("to_char(pd.created_at, 'YYYY') = b.period")
-        .contains("as disbursed");
+        .contains("from invoice_payment_entries pe")
+        .contains("sum(pe.amount)")
+        .contains("pending_allocation_amount")
+        .contains("as disbursed")
+        .doesNotContain("contract_payment_milestones");
   }
 
   @Test

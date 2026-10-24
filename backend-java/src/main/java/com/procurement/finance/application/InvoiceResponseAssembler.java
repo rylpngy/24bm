@@ -29,6 +29,11 @@ final class InvoiceResponseAssembler {
       PurchaseOrder order,
       Receipt receipt,
       List<InvoiceLineItemResponse> lineItems) {
+    return from(invoice, order, receipt, lineItems, null);
+  }
+
+  static InvoiceResponse from(Invoice invoice, PurchaseOrder order, Receipt receipt,
+      List<InvoiceLineItemResponse> lineItems, String blockingReason) {
     LocalDate dueDate = invoice.createdAt()
         .atZoneSameInstant(BUSINESS_ZONE)
         .toLocalDate()
@@ -41,7 +46,8 @@ final class InvoiceResponseAssembler {
     String receiptStatus = order == null
         ? "订单待同步"
         : ("已收货".equals(order.status()) || "已完成".equals(order.status()) ? "已收货" : "待收货");
-    String reconciliationStatus = toReconciliationStatus(orderAmount, varianceAmount, receiptStatus);
+    String reconciliationStatus = blockingReason == null
+        ? toReconciliationStatus(orderAmount, varianceAmount, receiptStatus) : "履约待核验";
     String reconciliationStage = toReconciliationStage(invoice.paymentStatus(), reconciliationStatus);
     String nextReconciliationAction = toNextReconciliationAction(reconciliationStage);
 
@@ -118,7 +124,7 @@ final class InvoiceResponseAssembler {
   }
 
   private static String toReconciliationStage(String paymentStatus, String reconciliationStatus) {
-    if ("金额差异".equals(reconciliationStatus)) {
+    if ("金额差异".equals(reconciliationStatus) || "履约待核验".equals(reconciliationStatus)) {
       return "差异处理中";
     }
     if ("待收货".equals(reconciliationStatus) || "订单待同步".equals(reconciliationStatus)) {

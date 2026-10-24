@@ -231,8 +231,9 @@ public class PaymentApplicationService {
     return InvoiceResponseAssembler.from(
         invoice,
         purchaseOrderMapper.findByTenantAndId(invoice.tenantId(), invoice.orderId()),
-        receiptMapper.findByTenantAndOrder(invoice.tenantId(), invoice.orderId()),
-        lineItems);
+        invoiceMapper.findAggregateReceipt(invoice.tenantId(), invoice.orderId()),
+        lineItems,
+        threeWayMatchMapper.paymentBlockingReason(invoice.tenantId(), invoice.id()));
   }
 
   private InvoiceReconciliationResponse toReconciliationResponse(InvoiceReconciliation reconciliation) {

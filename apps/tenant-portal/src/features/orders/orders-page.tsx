@@ -55,24 +55,6 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
     return map;
   }, [suppliersQuery.data]);
 
-  const receiptByOrder = useMemo(() => {
-    const list = receiptsQuery.data?.data ?? [];
-    const map: Record<string, (typeof list)[number]> = {};
-    list.forEach((r) => {
-      if (r.orderId) map[r.orderId] = r;
-    });
-    return map;
-  }, [receiptsQuery.data]);
-
-  const deliveryByOrder = useMemo(() => {
-    const list = deliveriesQuery.data?.data ?? [];
-    const map: Record<string, (typeof list)[number]> = {};
-    list.forEach((d) => {
-      if (d.orderId) map[d.orderId] = d;
-    });
-    return map;
-  }, [deliveriesQuery.data]);
-
   const statuses = ['全部', ...Array.from(new Set(allOrders.map((o) => o.status).filter(Boolean) as string[]))];
   const kw = keyword.toLowerCase();
   const orders = allOrders.filter((o) => {
@@ -96,8 +78,10 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
   // ── 详情页 ────────────────────────────────────────────────
   if (selected) {
     const o = selected;
-    const delivery = o.id ? deliveryByOrder[o.id] : undefined;
-    const rec = o.id ? receiptByOrder[o.id] : undefined;
+    const deliveryBatches = (deliveriesQuery.data?.data ?? []).filter(d => d.orderId === o.id);
+    const receiptBatches = (receiptsQuery.data?.data ?? []).filter(r => r.orderId === o.id);
+    const delivery = deliveryBatches[deliveryBatches.length - 1];
+    const rec = receiptBatches[0];
     const supplierName = o.supplierId ? (supplierNames[o.supplierId] ?? o.supplierId) : '—';
     return (
       <div className="space-y-4">
@@ -123,6 +107,8 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
             <p className="shrink-0 font-mono text-xl font-black text-slate-950">{currency(o.amount)}</p>
           </div>
         </div>
+
+        <p className="text-xs font-bold">发货累计 {deliveryBatches.reduce((s, d) => s + (d.shippedQuantity ?? 0), 0)} · 收货累计 {receiptBatches.reduce((s, r) => s + (r.receivedQuantity ?? 0), 0)} · 合格累计 {receiptBatches.reduce((s, r) => s + (r.qualifiedQuantity ?? 0), 0)} · 待收总量 {(o.lineItems ?? []).length ? Math.max(0, (o.lineItems ?? []).reduce((s, l) => s + (l.quantity ?? 0), 0) - receiptBatches.reduce((s, r) => s + (r.receivedQuantity ?? 0), 0)) : '待核对'}</p>
 
         <div className="grid gap-4 xl:grid-cols-[1fr_20rem]">
           <div className="min-w-0 space-y-4">
@@ -186,9 +172,9 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
             )}
 
             {/* 物流信息 */}
-            {delivery && (
-              <section className="rounded-lg border border-indigo-100 bg-indigo-50/40 p-4">
-                <p className="text-xs font-black text-indigo-700">物流信息</p>
+            {deliveryBatches.map(delivery => (
+              <section key={delivery.id} className="rounded-lg border border-indigo-100 bg-indigo-50/40 p-4">
+                <p className="break-words text-xs font-black text-indigo-700">物流信息 · {delivery.id}</p>
                 <div className="mt-2 grid gap-2 sm:grid-cols-4">
                   <MiniFact label="承运商" value={delivery.carrier ?? '—'} />
                   <MiniFact label="运单号" value={delivery.trackingNo ?? '—'} />
@@ -203,13 +189,13 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
                   <p className="mt-2 break-words text-xs font-bold leading-5 text-slate-700">{delivery.logisticsNote}</p>
                 )}
               </section>
-            )}
+            ))}
 
             {/* 收货验收明细(已收货) */}
-            {o.status === '已收货' && rec && (
-              <section className="rounded-lg border border-emerald-100 bg-emerald-50/50 p-4">
+            {receiptBatches.map(rec => (
+              <section key={rec.id} className="rounded-lg border border-emerald-100 bg-emerald-50/50 p-4">
                 <p className="flex flex-wrap items-center gap-2 text-xs font-black text-emerald-700">
-                  收货验收明细
+                  收货验收明细 · {rec.id}
                   {rec.inspectionConclusion && (
                     <span className={cn('rounded px-1.5 py-0.5 text-[10px] font-black', conclusionCls(rec.inspectionConclusion))}>
                       {rec.inspectionConclusion}
@@ -260,7 +246,7 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
                   <p className="mt-2 break-words text-xs font-bold leading-5 text-slate-700">{rec.qualityNote}</p>
                 )}
               </section>
-            )}
+            ))}
 
             {/* 收货验收动作已迁至「收货验收」工作台,此处保留引导 */}
             {o.status === '已发货' && can('buyer:receipt:read') && (
@@ -307,7 +293,7 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
                 {[
                   { label: '订单创建', time: o.createdAt?.slice(0, 10) ?? null, done: true },
                   { label: '供应商发货', time: delivery?.shippedDate ?? (delivery?.createdAt ? `登记于 ${delivery.createdAt.slice(0, 10)}` : null), done: !!delivery || o.status === '已发货' || o.status === '已收货' },
-                  { label: '收货验收', time: rec ? (rec.result ?? '已验收') : null, done: !!rec || o.status === '已收货' },
+                  { label: '收货验收', time: rec ? (o.status === '已收货' ? (rec.result ?? '已验收') : '部分收货，待足额') : null, done: o.status === '已收货' },
                 ].map((step, idx, arr) => (
                   <div key={step.label} className="relative pl-5">
                     {idx < arr.length - 1 && <span className="absolute left-[5px] top-4 h-full w-px bg-slate-200" />}

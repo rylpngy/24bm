@@ -422,8 +422,8 @@ public class FinanceActionApplicationService {
       throw new IllegalArgumentException("Three-way match not found in tenant scope: " + matchId);
     }
     financeAccess.requireInvoice(match.invoiceId(), "buyer:payment:register");
-    if (!"金额差异".equals(match.matchStatus())) {
-      throw new IllegalStateException("Only amount variance three-way matches can create variance handling: " + matchId);
+    if (!java.util.Set.of("金额差异", "履约待核验", "待收货").contains(match.matchStatus())) {
+      throw new IllegalStateException("Only blocked three-way matches can create variance handling: " + matchId);
     }
     varianceHandlingMapper.upsert(
         "variance-" + UUID.randomUUID(),
@@ -579,6 +579,10 @@ public class FinanceActionApplicationService {
   }
 
   private void ensureAmountVarianceHandledBeforePaymentRequest(String tenantId, Invoice invoice) {
+    String blockingReason = threeWayMatchMapper.paymentBlockingReason(tenantId, invoice.id());
+    if (blockingReason != null) {
+      throw new IllegalStateException("履约付款校验未通过：" + blockingReason);
+    }
     ThreeWayMatch match = threeWayMatchMapper.listByTenantFiltered(
             tenantId,
             null,
@@ -693,6 +697,10 @@ public class FinanceActionApplicationService {
         ? varianceHandling.result()
         : request.result();
     String status = request.status();
+    if (VarianceApprovalPolicy.STATUS_RESOLVED.equals(status)
+        && (request.result() == null || request.result().isBlank())) {
+      throw new IllegalArgumentException("差异结案须填写本次核实的处置结果及凭据，不能沿用默认结果");
+    }
     // 差异分级审批:超阈值差异不能由买方直接结案,改置「待财务经理签核」(付款仍阻断)。
     if (VarianceApprovalPolicy.STATUS_RESOLVED.equals(status)
         && VarianceApprovalPolicy.requiresManagerApproval(varianceHandling.varianceAmount())) {

@@ -19,6 +19,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 class ContractExpiryScanTests {
+  @org.junit.jupiter.api.BeforeEach
+  void configureAccess() { TestContractAccess.allow(contractApplicationService); }
   private final ContractMapper contractMapper = org.mockito.Mockito.mock(ContractMapper.class);
   private final PurchaseOrderMapper purchaseOrderMapper = org.mockito.Mockito.mock(PurchaseOrderMapper.class);
   private final AuditLogApplicationService auditLogApplicationService =

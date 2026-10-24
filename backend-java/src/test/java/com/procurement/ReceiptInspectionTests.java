@@ -15,8 +15,10 @@ class ReceiptInspectionTests {
     assertThat(ReceiptInspection.conclude(10, 10)).isEqualTo(ReceiptInspection.ALL_QUALIFIED);
     assertThat(ReceiptInspection.conclude(10, 6)).isEqualTo(ReceiptInspection.PARTIAL);
     assertThat(ReceiptInspection.conclude(10, 0)).isEqualTo(ReceiptInspection.ALL_REJECTED);
-    // 未填数量退化为全部合格(兼容抬头级收货)。
-    assertThat(ReceiptInspection.conclude(0, 0)).isEqualTo(ReceiptInspection.ALL_QUALIFIED);
+    assertThatThrownBy(() -> ReceiptInspection.conclude(0, 0)).isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> ReceiptInspection.conclude(-1, 0)).isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> ReceiptInspection.conclude(10, -1)).isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> ReceiptInspection.conclude(10, 11)).isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test

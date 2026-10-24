@@ -4,12 +4,12 @@ import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.audit.domain.AuditTargetType;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.order.api.CreateDeliveryRequest;
+import com.procurement.order.api.DeliveryLineItemRequest;
 import com.procurement.order.api.DeliveryResponse;
 import com.procurement.order.api.UpdateDeliveryRequest;
 import com.procurement.order.domain.Delivery;
 import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.domain.PurchaseOrderAuditAction;
-import com.procurement.order.domain.PurchaseOrderDocumentUniquenessPolicy;
 import com.procurement.order.domain.PurchaseOrderStatus;
 import com.procurement.order.domain.PurchaseOrderStatusTransition;
 import com.procurement.order.infrastructure.DeliveryMapper;
@@ -20,6 +20,9 @@ import com.procurement.tenant.application.TenantFeatureApplicationService;
 import com.procurement.tenant.domain.TenantFeatureKey;
 import java.util.List;
 import java.util.UUID;
+import java.math.BigDecimal;
+import java.util.HashSet;
+import com.procurement.order.domain.OrderFulfillmentPolicy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -78,11 +81,39 @@ public class DeliveryApplicationService {
     if (order == null) {
       throw new IllegalArgumentException("Purchase order not found for supplier scope: " + orderId);
     }
+    order = purchaseOrderMapper.lockByTenantAndId(order.tenantId(), orderId);
+    if (order == null || !supplierId.equals(order.supplierId())) {
+      throw new IllegalArgumentException("Purchase order not found for supplier scope: " + orderId);
+    }
     purchaseOrderStatusTransition.requireShipment(order.status(), orderId);
     tenantFeatureApplicationService.requireEnabled(order.tenantId(), TenantFeatureKey.ORDER);
-    PurchaseOrderDocumentUniquenessPolicy.requireNoDelivery(
-        deliveryMapper.countByTenantAndOrder(order.tenantId(), order.id()),
-        orderId);
+    var available = deliveryMapper.fulfillmentLines(order.tenantId(), orderId);
+    if (available.isEmpty() || deliveryMapper.countUnattributedHistory(order.tenantId(), orderId) > 0) {
+      throw new IllegalStateException("Legacy order or documents without attributable lines require manual reconciliation");
+    }
+    var lineItems = request.lineItems();
+    if (lineItems == null || lineItems.isEmpty()) {
+      lineItems = available.stream().map(l -> new DeliveryLineItemRequest(l.orderLineId(),
+          l.orderedQuantity().subtract(l.shippedQuantity())))
+          .filter(l -> l.shippedQuantity().signum() > 0).toList();
+      OrderFulfillmentPolicy.requireTotal(request.shippedQuantity(), lineItems.stream()
+          .map(DeliveryLineItemRequest::shippedQuantity).reduce(BigDecimal.ZERO, BigDecimal::add));
+    }
+    if (lineItems.isEmpty()) {
+      throw new IllegalArgumentException("Shipment order lines are required");
+    }
+    var seen = new HashSet<String>();
+    BigDecimal total = BigDecimal.ZERO;
+    for (var line : lineItems) {
+      if (line == null || !seen.add(line.orderLineId())) {
+        throw new IllegalArgumentException("Duplicate shipment order line");
+      }
+      var capacity = available.stream().filter(l -> l.orderLineId().equals(line.orderLineId())).findFirst()
+          .orElseThrow(() -> new IllegalArgumentException("Shipment order line not found"));
+      OrderFulfillmentPolicy.ship(capacity, line.shippedQuantity());
+      total = total.add(line.shippedQuantity());
+    }
+    OrderFulfillmentPolicy.requireTotal(request.shippedQuantity(), total);
 
     String deliveryId = newId("delivery");
     deliveryMapper.insert(
@@ -93,14 +124,17 @@ public class DeliveryApplicationService {
         request.carrier(),
         request.trackingNo(),
         PurchaseOrderStatus.SHIPPED,
-        request.shippedQuantity() == null ? 0 : request.shippedQuantity(),
+        request.shippedQuantity(),
         request.shippedDate(),
         request.estimatedArrival(),
         request.logisticsNote() == null ? "" : request.logisticsNote());
+    for (var line : lineItems) {
+      deliveryMapper.insertLine(newId("dli"), order.tenantId(), deliveryId, line.orderLineId(), line.shippedQuantity());
+    }
     int updated = purchaseOrderMapper.updateStatus(
         order.tenantId(),
         order.id(),
-        PurchaseOrderStatus.PENDING_SHIPMENT,
+        order.status(),
         PurchaseOrderStatus.SHIPPED);
     if (updated == 0) {
       throw new IllegalStateException("Purchase order status changed before delivery could be recorded: " + orderId);
@@ -129,6 +163,13 @@ public class DeliveryApplicationService {
     if (order == null) {
       throw new IllegalArgumentException("Purchase order not found for supplier scope: " + delivery.orderId());
     }
+    order = purchaseOrderMapper.lockByTenantAndId(order.tenantId(), order.id());
+    if (order == null || !supplierId.equals(order.supplierId())) {
+      throw new IllegalArgumentException("Purchase order not found for supplier scope");
+    }
+    if (request.shippedQuantity() != null && !request.shippedQuantity().equals(delivery.shippedQuantity())) {
+      throw new IllegalArgumentException("Recorded shipment quantity is immutable; create a new batch");
+    }
     if (!PurchaseOrderStatus.SHIPPED.equals(order.status())) {
       throw new IllegalStateException("Only shipped purchase orders can update delivery tracking: " + order.id());
     }
@@ -139,7 +180,7 @@ public class DeliveryApplicationService {
         supplierId,
         request.carrier(),
         request.trackingNo(),
-        request.shippedQuantity(),
+        null,
         request.shippedDate(),
         request.estimatedArrival(),
         blankToNull(request.logisticsNote()));
@@ -172,7 +213,8 @@ public class DeliveryApplicationService {
         delivery.shippedQuantity(),
         delivery.shippedDate(),
         delivery.estimatedArrival(),
-        delivery.logisticsNote());
+        delivery.logisticsNote(),
+        deliveryMapper.listLines(delivery.tenantId(), delivery.id()));
   }
 
   private String newId(String prefix) {
