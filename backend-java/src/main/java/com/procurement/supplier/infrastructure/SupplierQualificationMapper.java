@@ -11,8 +11,14 @@ import org.apache.ibatis.annotations.Update;
 
 @Mapper
 public interface SupplierQualificationMapper {
+  @Select("select pg_advisory_xact_lock(hashtextextended('supplier-qualification:' || #{supplier},0))")
+  @org.apache.ibatis.annotations.Options(useCache=false,flushCache=org.apache.ibatis.annotations.Options.FlushCachePolicy.TRUE)
+  String lockSupplier(String supplier);
   @Update("update supplier_qualification_reviews set status='superseded' where qualification_id=#{previousId} and status='pending'")
   void supersedeReviews(String previousId);
+
+  @Update("update qualification_supplement_requests set status='returned',revision=revision+1 where replacement_id=#{previousId} and status='submitted'")
+  void returnSupersededSupplements(String previousId);
 
   @Insert("insert into supplier_qualification_reviews(relation_id,qualification_id,previous_id) select id,#{id},#{previousId} from buyer_supplier_relations where supplier_id=#{supplierId}")
   void enqueueReviews(String supplierId, String id, String previousId);

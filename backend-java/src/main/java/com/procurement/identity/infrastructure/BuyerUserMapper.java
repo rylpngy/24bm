@@ -276,7 +276,7 @@ public interface BuyerUserMapper extends BuyerAdministrationMapper {
           email = #{email,jdbcType=VARCHAR},
           department_id = #{departmentId},
           employee_no = #{employeeNo,jdbcType=VARCHAR},
-          job_title = #{jobTitle,jdbcType=VARCHAR},
+          job_title = coalesce(#{jobTitle,jdbcType=VARCHAR}, ''),
           updated_at = now()
       where tenant_id = #{tenantId}
         and id = #{userId}

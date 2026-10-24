@@ -8,6 +8,7 @@ import { OwnerAttachments } from '../attachments/owner-attachments';
 
 import { qualificationAlert } from './qualification-status';
 import { QualificationReviewPanel } from './qualification-review-panel';
+import { QualificationSupplementPanel } from './qualification-supplement-panel';
 export { qualificationAlert } from './qualification-status';
 
 // 资质证照 Tab:证照台账 + 到期预警 + 附件(营业执照/资质证书/开户许可证)。
@@ -33,6 +34,7 @@ export function SupplierQualificationsTab({
   return (
     <div className="space-y-4">
       <QualificationReviewPanel relationId={relationId} />
+      <QualificationSupplementPanel relationId={relationId} />
       <div>
         {downloadError && <p role="alert" className="mb-2 text-sm text-red-700">{downloadError}</p>}
         <p className="text-xs font-black text-slate-500">证照台账 · 到期预警</p>

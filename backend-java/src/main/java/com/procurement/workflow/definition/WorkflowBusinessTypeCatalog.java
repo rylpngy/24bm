@@ -8,6 +8,7 @@ import java.util.Set;
 public final class WorkflowBusinessTypeCatalog {
   public static final List<String> TYPES = List.of(
       "budget_change", "budget_exception",
+      "supplier_qualification_change",
       ApprovalBusinessType.LUDONG_PROJECT_APPLICATION,
       ApprovalBusinessType.PURCHASE_DEMAND,
       ApprovalBusinessType.BUYER_SUPPLIER_ADMISSION,

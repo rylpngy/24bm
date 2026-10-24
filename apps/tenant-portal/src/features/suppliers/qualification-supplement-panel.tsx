@@ -1,0 +1,36 @@
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Plus, RefreshCw } from 'lucide-react';
+import { qualificationSupplements, requestQualificationSupplement, cancelQualificationSupplement, buyerQualificationArchive, useBuyerSupplierList } from '@24bid/api-client';
+import { FeedbackNotice, Pagination } from '@24bid/ui';
+import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
+
+const states: Record<string, string> = { requested: '待补件', submitted: '已补件待审批', returned: '退回补正', closed: '已完成', cancelled: '已取消' };
+const button = 'inline-flex h-9 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-slate-200 bg-white px-3 text-xs font-bold disabled:opacity-40';
+const field = 'mt-1 h-10 w-full min-w-0 rounded-md border border-slate-200 bg-white px-3 text-sm';
+export function QualificationSupplementPanel({ relationId = '' }: { relationId?: string }) {
+  const { can } = useBuyerPermissions(); const client = useQueryClient(); const [page, setPage] = useState(1);
+  const [form, setForm] = useState(false); const [relation, setRelation] = useState(relationId); const [qualification, setQualification] = useState('');
+  const [reason, setReason] = useState(''); const [due, setDue] = useState(''); const [busy, setBusy] = useState(false); const [message, setMessage] = useState('');
+  const query = useQuery({ queryKey: ['/buyer/suppliers/qualification-supplements', relationId, page], queryFn: () => qualificationSupplements('buyer', page, relationId) });
+  const suppliers = useBuyerSupplierList(undefined, { query: { enabled: form } });
+  const originals = useQuery({ queryKey: ['/buyer/suppliers', relation, 'qualification-archive'], queryFn: () => buyerQualificationArchive(relation), enabled: form && Boolean(relation) });
+  const [cancelling, setCancelling] = useState<string | null>(null);
+  const rows = query.isError ? [] : query.data?.items ?? [];
+  const refresh = () => client.invalidateQueries({ predicate: q => String(q.queryKey[0]).includes('qualification-supplements') });
+  const errorText = (e: unknown) => (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? '操作失败，请刷新重试。';
+  return <section className="space-y-3 border-b border-slate-200 pb-5" aria-label="资质补件台账">
+    <header className="flex flex-wrap items-center justify-between gap-3"><h3 className="text-sm font-bold">资质补件台账</h3><div className="flex gap-2"><button type="button" className={button} title="刷新补件" aria-label="刷新补件" disabled={busy || query.isFetching} onClick={() => void refresh()}><RefreshCw size={14} /></button>{can('buyer:supplier:manage') && <button type="button" className={button} onClick={() => { setForm(!form); setRelation(relationId); setQualification(''); setReason(''); setDue(''); setCancelling(null); setMessage(''); }}><Plus size={14} />发起补件</button>}</div></header>
+    {message && <p role="status" className="text-sm text-slate-600">{message}</p>}
+    {form && can('buyer:supplier:manage') && <form className="grid gap-3 rounded-md border border-slate-200 p-4 sm:grid-cols-2" onSubmit={e => { e.preventDefault(); if (busy) return; setBusy(true); setMessage(''); void requestQualificationSupplement({ relationId: relation, qualificationId: qualification, reason: reason.trim(), dueDate: due }).then(() => { setForm(false); setPage(1); setMessage('补件任务已发送供应商。'); return refresh(); }).catch(e => setMessage(errorText(e))).finally(() => setBusy(false)); }}>
+      <label className="text-xs font-bold">供应商 *<select aria-label="补件供应商" required disabled={Boolean(relationId) || busy} value={relation} className={field} onChange={e => { setRelation(e.target.value); setQualification(''); }}><option value="">请选择</option>{suppliers.data?.data?.map(s => <option key={s.id} value={s.id}>{s.supplierName}</option>)}</select></label>
+      <label className="text-xs font-bold">证照 *<select aria-label="补件证照" required disabled={busy || originals.isFetching} className={field} value={qualification} onChange={e => setQualification(e.target.value)}><option value="">请选择当前证照</option>{originals.data?.filter(q => q.status === 'active').map(q => <option key={q.id} value={q.id}>{q.qualificationType} · {q.certificateNo || '未登记证号'}</option>)}</select></label>
+      {originals.isError && <FeedbackNotice tone="error" message="证照加载失败，请刷新重试。" />}
+      <label className="text-xs font-bold">补件期限 *<input aria-label="补件期限" type="date" required disabled={busy} className={field} value={due} onChange={e => setDue(e.target.value)} /></label>
+      <label className="text-xs font-bold sm:col-span-2">材料要求及原因 *<textarea aria-label="补件原因" required maxLength={2000} disabled={busy} className="mt-1 min-h-24 w-full rounded-md border border-slate-200 p-3 font-normal" value={reason} onChange={e => setReason(e.target.value)} /></label>
+      <div className="flex justify-end gap-2 sm:col-span-2"><button type="button" className={button} disabled={busy} onClick={() => setForm(false)}>取消</button><button type="submit" className={button} disabled={busy || suppliers.isError || originals.isError}>发送补件任务</button></div>
+    </form>}
+    {query.isError ? <FeedbackNotice tone="error" message="补件台账加载失败，请刷新重试。" /> : query.isLoading ? <p className="text-sm">正在加载补件…</p> : !rows.length ? <p className="text-sm text-slate-500">暂无补件任务。</p> : <><div className="overflow-x-auto"><table className="w-full min-w-[650px] text-left text-sm"><thead className="bg-slate-50 text-xs text-slate-500"><tr>{['供应商 / 证照', '补件要求 / 回复', '期限', '状态', '操作'].map(h => <th className="p-3" key={h}>{h}</th>)}</tr></thead><tbody className="divide-y divide-slate-100">{rows.map(r => <tr key={r.id}><td className="p-3 font-bold">{r.supplierName}<p className="mt-1 text-xs font-normal">{r.qualificationType}</p></td><td className="max-w-72 p-3"><p className="truncate" title={r.reason}>{r.reason}</p>{r.response && <p className="mt-1 truncate text-xs text-slate-500" title={r.response}>回复：{r.response}</p>}</td><td className="whitespace-nowrap p-3">{r.dueDate}</td><td className="whitespace-nowrap p-3">{states[r.status]}</td><td className="p-3">{can('buyer:supplier:manage') && ['requested', 'returned'].includes(r.status) && <button type="button" className={button} disabled={busy} onClick={() => { setCancelling(r.id); setReason(''); setForm(false); }}>取消任务</button>}</td></tr>)}</tbody></table></div><Pagination page={page} pageSize={10} total={query.data?.total ?? 0} onPageChange={setPage} /></>}
+    {cancelling && <form className="space-y-2" onSubmit={e => { e.preventDefault(); const row = rows.find(r => r.id === cancelling); if (!row || busy) return; setBusy(true); void cancelQualificationSupplement(row.id, { reason, revision: row.revision }).then(() => { setCancelling(null); return refresh(); }).catch(e => setMessage(errorText(e))).finally(() => setBusy(false)); }}><label className="block text-sm">取消原因 *<textarea required maxLength={1000} aria-label="取消补件原因" className="mt-1 w-full rounded-md border border-slate-200 p-3" value={reason} onChange={e => setReason(e.target.value)} /></label><button type="submit" className={button} disabled={busy}>确认取消任务</button><button type="button" className={button} disabled={busy} onClick={() => setCancelling(null)}>返回</button></form>}
+  </section>;
+}

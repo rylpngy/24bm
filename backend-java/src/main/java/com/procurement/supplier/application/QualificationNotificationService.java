@@ -14,6 +14,9 @@ public class QualificationNotificationService {
   private final QualificationNoticeMapper notices;
   private final NotificationApplicationService notifications;
   private final PermissionService permissions;
+  private com.procurement.supplier.infrastructure.QualificationWorkflowMapper supplements;
+  @org.springframework.beans.factory.annotation.Autowired
+  void setSupplements(com.procurement.supplier.infrastructure.QualificationWorkflowMapper supplements){this.supplements=supplements;}
 
   public QualificationNotificationService(QualificationNoticeMapper notices,
       NotificationApplicationService notifications, PermissionService permissions) {
@@ -50,6 +53,13 @@ public class QualificationNotificationService {
 
   @Transactional
   public void remindExpiry(LocalDate today) {
+    if(supplements!=null)for(var task:supplements.due(today.plusDays(7))){
+      String phase=task.dueDate().isBefore(today)?"已逾期":task.dueDate().equals(today)?"今日到期":"7天内到期";
+      String event="supplement:"+task.id()+":"+task.revision()+":"+phase;
+      String content=task.tenantName()+"的"+task.qualificationType()+"补件任务"+phase+"，截止"+task.dueDate()+"。要求："+task.reason();
+      if(permissions.userHas(task.createdBy(),"buyer:supplier:read"))send(event,task.tenantId(),task.createdBy(),"资质补件期限提醒",content);
+      for(String user:notices.supplierUsers(task.supplierId()))if(permissions.userHas(user,"supplier:qualification:read"))send(event,task.tenantId(),user,"资质补件期限提醒",content);
+    }
     for (var notice : notices.expiring(today.plusDays(30))) {
       String phase = notice.expiresAt().isBefore(today) ? "已过期"
           : notice.expiresAt().equals(today) ? "今日到期" : "30天内到期";

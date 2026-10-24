@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { BadgeCheck, Download, Upload } from 'lucide-react';
+import { SupplementRequests } from './supplement-requests';
 import {
   axiosInstance,
   downloadReport,
@@ -129,6 +130,7 @@ export function QualificationsPage({ canManage = false }: { canManage?: boolean 
         </div>
       )}
 
+      <SupplementRequests qualifications={quals.isError ? [] : all} canManage={canManage} />
       <section className="mb-4 border-b border-slate-200 pb-4">
         <div className="flex items-center justify-between gap-3"><h3 className="text-sm font-bold text-slate-900">采购方复核反馈</h3><button type="button" disabled={reviews.isFetching} className="text-xs text-blue-600 disabled:opacity-50" onClick={() => void reviews.refetch()}>刷新反馈</button></div>
         {reviews.isLoading ? <p className="mt-2 text-sm">加载中…</p> : reviews.isError ? <p role="alert" className="mt-2 text-sm text-red-700">复核记录加载失败。<button className="ml-2 underline" onClick={() => void reviews.refetch()}>重试</button></p> : !(reviews.data?.length) ? <p className="mt-2 text-sm text-slate-500">暂无换证复核记录</p> : <details className="mt-2" open>

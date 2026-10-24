@@ -25,9 +25,21 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ApiResponseAttempt,
+  ApiResponseAttemptPage,
   ApiResponseListQualificationReviewResponse,
+  ApiResponseSupplement,
+  ApiResponseSupplementPage,
   ApiResponseVoid,
-  QualificationReviewRequest
+  CancelReview,
+  QualificationReviewBuyerSupplementsParams,
+  QualificationReviewHistoryParams,
+  QualificationReviewRequest,
+  QualificationReviewSupplierSupplementsParams,
+  StartReview,
+  SupplementCancel,
+  SupplementDraft,
+  SupplementReply
 } from '.././model';
 
 import { customInstance } from '../../http-client';
@@ -36,7 +48,482 @@ import type { ErrorType , BodyType } from '../../http-client';
 
 
 
-export const qualificationReviewReview = (
+export const qualificationReviewReply = (
+    id: string,
+    supplementReply: BodyType<SupplementReply>,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseSupplement>(
+      {url: `/api/v1/supplier/qualifications/supplements/${id}/reply`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: supplementReply, signal
+    },
+      );
+    }
+
+
+
+export const getQualificationReviewReplyMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof qualificationReviewReply>>, TError,{id: string;data: BodyType<SupplementReply>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof qualificationReviewReply>>, TError,{id: string;data: BodyType<SupplementReply>}, TContext> => {
+
+const mutationKey = ['qualificationReviewReply'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof qualificationReviewReply>>, {id: string;data: BodyType<SupplementReply>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  qualificationReviewReply(id,data,)
+        }
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type QualificationReviewReplyMutationResult = NonNullable<Awaited<ReturnType<typeof qualificationReviewReply>>>
+    export type QualificationReviewReplyMutationBody = BodyType<SupplementReply>
+    export type QualificationReviewReplyMutationError = ErrorType<ApiResponseVoid>
+
+    export const useQualificationReviewReply = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof qualificationReviewReply>>, TError,{id: string;data: BodyType<SupplementReply>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof qualificationReviewReply>>,
+        TError,
+        {id: string;data: BodyType<SupplementReply>},
+        TContext
+      > => {
+
+      const mutationOptions = getQualificationReviewReplyMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const qualificationReviewCancel = (
+    id: string,
+    cancelReview: BodyType<CancelReview>,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseVoid>(
+      {url: `/api/v1/buyer/suppliers/qualification-workflows/${id}/cancel`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: cancelReview, signal
+    },
+      );
+    }
+
+
+
+export const getQualificationReviewCancelMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof qualificationReviewCancel>>, TError,{id: string;data: BodyType<CancelReview>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof qualificationReviewCancel>>, TError,{id: string;data: BodyType<CancelReview>}, TContext> => {
+
+const mutationKey = ['qualificationReviewCancel'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof qualificationReviewCancel>>, {id: string;data: BodyType<CancelReview>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  qualificationReviewCancel(id,data,)
+        }
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type QualificationReviewCancelMutationResult = NonNullable<Awaited<ReturnType<typeof qualificationReviewCancel>>>
+    export type QualificationReviewCancelMutationBody = BodyType<CancelReview>
+    export type QualificationReviewCancelMutationError = ErrorType<ApiResponseVoid>
+
+    export const useQualificationReviewCancel = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof qualificationReviewCancel>>, TError,{id: string;data: BodyType<CancelReview>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof qualificationReviewCancel>>,
+        TError,
+        {id: string;data: BodyType<CancelReview>},
+        TContext
+      > => {
+
+      const mutationOptions = getQualificationReviewCancelMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const qualificationReviewBuyerSupplements = (
+    params?: QualificationReviewBuyerSupplementsParams,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseSupplementPage>(
+      {url: `/api/v1/buyer/suppliers/qualification-supplements`, method: 'GET',
+        params, signal
+    },
+      );
+    }
+
+
+
+
+export const getQualificationReviewBuyerSupplementsQueryKey = (params?: QualificationReviewBuyerSupplementsParams,) => {
+    return [
+    `/api/v1/buyer/suppliers/qualification-supplements`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+
+export const getQualificationReviewBuyerSupplementsQueryOptions = <TData = Awaited<ReturnType<typeof qualificationReviewBuyerSupplements>>, TError = ErrorType<ApiResponseVoid>>(params?: QualificationReviewBuyerSupplementsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof qualificationReviewBuyerSupplements>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getQualificationReviewBuyerSupplementsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof qualificationReviewBuyerSupplements>>> = ({ signal }) => qualificationReviewBuyerSupplements(params, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof qualificationReviewBuyerSupplements>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type QualificationReviewBuyerSupplementsQueryResult = NonNullable<Awaited<ReturnType<typeof qualificationReviewBuyerSupplements>>>
+export type QualificationReviewBuyerSupplementsQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useQualificationReviewBuyerSupplements<TData = Awaited<ReturnType<typeof qualificationReviewBuyerSupplements>>, TError = ErrorType<ApiResponseVoid>>(
+ params: undefined |  QualificationReviewBuyerSupplementsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof qualificationReviewBuyerSupplements>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof qualificationReviewBuyerSupplements>>,
+          TError,
+          Awaited<ReturnType<typeof qualificationReviewBuyerSupplements>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useQualificationReviewBuyerSupplements<TData = Awaited<ReturnType<typeof qualificationReviewBuyerSupplements>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: QualificationReviewBuyerSupplementsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof qualificationReviewBuyerSupplements>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof qualificationReviewBuyerSupplements>>,
+          TError,
+          Awaited<ReturnType<typeof qualificationReviewBuyerSupplements>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useQualificationReviewBuyerSupplements<TData = Awaited<ReturnType<typeof qualificationReviewBuyerSupplements>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: QualificationReviewBuyerSupplementsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof qualificationReviewBuyerSupplements>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useQualificationReviewBuyerSupplements<TData = Awaited<ReturnType<typeof qualificationReviewBuyerSupplements>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: QualificationReviewBuyerSupplementsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof qualificationReviewBuyerSupplements>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getQualificationReviewBuyerSupplementsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const qualificationReviewRequest = (
+    supplementDraft: BodyType<SupplementDraft>,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseSupplement>(
+      {url: `/api/v1/buyer/suppliers/qualification-supplements`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: supplementDraft, signal
+    },
+      );
+    }
+
+
+
+export const getQualificationReviewRequestMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof qualificationReviewRequest>>, TError,{data: BodyType<SupplementDraft>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof qualificationReviewRequest>>, TError,{data: BodyType<SupplementDraft>}, TContext> => {
+
+const mutationKey = ['qualificationReviewRequest'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof qualificationReviewRequest>>, {data: BodyType<SupplementDraft>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  qualificationReviewRequest(data,)
+        }
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type QualificationReviewRequestMutationResult = NonNullable<Awaited<ReturnType<typeof qualificationReviewRequest>>>
+    export type QualificationReviewRequestMutationBody = BodyType<SupplementDraft>
+    export type QualificationReviewRequestMutationError = ErrorType<ApiResponseVoid>
+
+    export const useQualificationReviewRequest = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof qualificationReviewRequest>>, TError,{data: BodyType<SupplementDraft>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof qualificationReviewRequest>>,
+        TError,
+        {data: BodyType<SupplementDraft>},
+        TContext
+      > => {
+
+      const mutationOptions = getQualificationReviewRequestMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const qualificationReviewCancelSupplement = (
+    id: string,
+    supplementCancel: BodyType<SupplementCancel>,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseVoid>(
+      {url: `/api/v1/buyer/suppliers/qualification-supplements/${id}/cancel`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: supplementCancel, signal
+    },
+      );
+    }
+
+
+
+export const getQualificationReviewCancelSupplementMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof qualificationReviewCancelSupplement>>, TError,{id: string;data: BodyType<SupplementCancel>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof qualificationReviewCancelSupplement>>, TError,{id: string;data: BodyType<SupplementCancel>}, TContext> => {
+
+const mutationKey = ['qualificationReviewCancelSupplement'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof qualificationReviewCancelSupplement>>, {id: string;data: BodyType<SupplementCancel>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  qualificationReviewCancelSupplement(id,data,)
+        }
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type QualificationReviewCancelSupplementMutationResult = NonNullable<Awaited<ReturnType<typeof qualificationReviewCancelSupplement>>>
+    export type QualificationReviewCancelSupplementMutationBody = BodyType<SupplementCancel>
+    export type QualificationReviewCancelSupplementMutationError = ErrorType<ApiResponseVoid>
+
+    export const useQualificationReviewCancelSupplement = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof qualificationReviewCancelSupplement>>, TError,{id: string;data: BodyType<SupplementCancel>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof qualificationReviewCancelSupplement>>,
+        TError,
+        {id: string;data: BodyType<SupplementCancel>},
+        TContext
+      > => {
+
+      const mutationOptions = getQualificationReviewCancelSupplementMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const qualificationReviewHistory = (
+    id: number,
+    params?: QualificationReviewHistoryParams,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseAttemptPage>(
+      {url: `/api/v1/buyer/suppliers/qualification-reviews/${id}/workflows`, method: 'GET',
+        params, signal
+    },
+      );
+    }
+
+
+
+
+export const getQualificationReviewHistoryQueryKey = (id?: number,
+    params?: QualificationReviewHistoryParams,) => {
+    return [
+    `/api/v1/buyer/suppliers/qualification-reviews/${id}/workflows`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+
+export const getQualificationReviewHistoryQueryOptions = <TData = Awaited<ReturnType<typeof qualificationReviewHistory>>, TError = ErrorType<ApiResponseVoid>>(id: number,
+    params?: QualificationReviewHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof qualificationReviewHistory>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getQualificationReviewHistoryQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof qualificationReviewHistory>>> = ({ signal }) => qualificationReviewHistory(id,params, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof qualificationReviewHistory>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type QualificationReviewHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof qualificationReviewHistory>>>
+export type QualificationReviewHistoryQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useQualificationReviewHistory<TData = Awaited<ReturnType<typeof qualificationReviewHistory>>, TError = ErrorType<ApiResponseVoid>>(
+ id: number,
+    params: undefined |  QualificationReviewHistoryParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof qualificationReviewHistory>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof qualificationReviewHistory>>,
+          TError,
+          Awaited<ReturnType<typeof qualificationReviewHistory>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useQualificationReviewHistory<TData = Awaited<ReturnType<typeof qualificationReviewHistory>>, TError = ErrorType<ApiResponseVoid>>(
+ id: number,
+    params?: QualificationReviewHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof qualificationReviewHistory>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof qualificationReviewHistory>>,
+          TError,
+          Awaited<ReturnType<typeof qualificationReviewHistory>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useQualificationReviewHistory<TData = Awaited<ReturnType<typeof qualificationReviewHistory>>, TError = ErrorType<ApiResponseVoid>>(
+ id: number,
+    params?: QualificationReviewHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof qualificationReviewHistory>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useQualificationReviewHistory<TData = Awaited<ReturnType<typeof qualificationReviewHistory>>, TError = ErrorType<ApiResponseVoid>>(
+ id: number,
+    params?: QualificationReviewHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof qualificationReviewHistory>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getQualificationReviewHistoryQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const qualificationReviewStart = (
+    id: number,
+    startReview: BodyType<StartReview>,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseAttempt>(
+      {url: `/api/v1/buyer/suppliers/qualification-reviews/${id}/workflows`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: startReview, signal
+    },
+      );
+    }
+
+
+
+export const getQualificationReviewStartMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof qualificationReviewStart>>, TError,{id: number;data: BodyType<StartReview>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof qualificationReviewStart>>, TError,{id: number;data: BodyType<StartReview>}, TContext> => {
+
+const mutationKey = ['qualificationReviewStart'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof qualificationReviewStart>>, {id: number;data: BodyType<StartReview>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  qualificationReviewStart(id,data,)
+        }
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type QualificationReviewStartMutationResult = NonNullable<Awaited<ReturnType<typeof qualificationReviewStart>>>
+    export type QualificationReviewStartMutationBody = BodyType<StartReview>
+    export type QualificationReviewStartMutationError = ErrorType<ApiResponseVoid>
+
+    export const useQualificationReviewStart = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof qualificationReviewStart>>, TError,{id: number;data: BodyType<StartReview>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof qualificationReviewStart>>,
+        TError,
+        {id: number;data: BodyType<StartReview>},
+        TContext
+      > => {
+
+      const mutationOptions = getQualificationReviewStartMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const qualificationReviewReview = (
     id: number,
     qualificationReviewRequest: BodyType<QualificationReviewRequest>,
  signal?: AbortSignal
@@ -95,7 +582,94 @@ const {mutation: mutationOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const qualificationReviewSupplierReviews = (
+    export const qualificationReviewSupplierSupplements = (
+    params?: QualificationReviewSupplierSupplementsParams,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseSupplementPage>(
+      {url: `/api/v1/supplier/qualifications/supplements`, method: 'GET',
+        params, signal
+    },
+      );
+    }
+
+
+
+
+export const getQualificationReviewSupplierSupplementsQueryKey = (params?: QualificationReviewSupplierSupplementsParams,) => {
+    return [
+    `/api/v1/supplier/qualifications/supplements`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+
+export const getQualificationReviewSupplierSupplementsQueryOptions = <TData = Awaited<ReturnType<typeof qualificationReviewSupplierSupplements>>, TError = ErrorType<ApiResponseVoid>>(params?: QualificationReviewSupplierSupplementsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof qualificationReviewSupplierSupplements>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getQualificationReviewSupplierSupplementsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof qualificationReviewSupplierSupplements>>> = ({ signal }) => qualificationReviewSupplierSupplements(params, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof qualificationReviewSupplierSupplements>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type QualificationReviewSupplierSupplementsQueryResult = NonNullable<Awaited<ReturnType<typeof qualificationReviewSupplierSupplements>>>
+export type QualificationReviewSupplierSupplementsQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useQualificationReviewSupplierSupplements<TData = Awaited<ReturnType<typeof qualificationReviewSupplierSupplements>>, TError = ErrorType<ApiResponseVoid>>(
+ params: undefined |  QualificationReviewSupplierSupplementsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof qualificationReviewSupplierSupplements>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof qualificationReviewSupplierSupplements>>,
+          TError,
+          Awaited<ReturnType<typeof qualificationReviewSupplierSupplements>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useQualificationReviewSupplierSupplements<TData = Awaited<ReturnType<typeof qualificationReviewSupplierSupplements>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: QualificationReviewSupplierSupplementsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof qualificationReviewSupplierSupplements>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof qualificationReviewSupplierSupplements>>,
+          TError,
+          Awaited<ReturnType<typeof qualificationReviewSupplierSupplements>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useQualificationReviewSupplierSupplements<TData = Awaited<ReturnType<typeof qualificationReviewSupplierSupplements>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: QualificationReviewSupplierSupplementsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof qualificationReviewSupplierSupplements>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useQualificationReviewSupplierSupplements<TData = Awaited<ReturnType<typeof qualificationReviewSupplierSupplements>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: QualificationReviewSupplierSupplementsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof qualificationReviewSupplierSupplements>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getQualificationReviewSupplierSupplementsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const qualificationReviewSupplierReviews = (
 
  signal?: AbortSignal
 ) => {

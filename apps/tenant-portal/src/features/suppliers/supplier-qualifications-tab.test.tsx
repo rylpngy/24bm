@@ -7,6 +7,7 @@ vi.mock('@tanstack/react-query', () => ({ useQuery: mocks.query }));
 vi.mock('@24bid/api-client', () => ({ downloadReport: mocks.download, buyerQualificationArchive: vi.fn() }));
 vi.mock('../../lib/use-buyer-permissions', () => ({ useBuyerPermissions: () => ({ can: () => false }) }));
 vi.mock('./qualification-review-panel', () => ({ QualificationReviewPanel: () => null }));
+vi.mock('./qualification-supplement-panel', () => ({ QualificationSupplementPanel: () => null }));
 vi.mock('../attachments/owner-attachments', () => ({ OwnerAttachments: () => null }));
 afterEach(() => { cleanup(); vi.resetAllMocks(); });
 

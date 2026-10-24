@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { SupplierQualificationsBoard } from './supplier-qualifications-board';
 vi.mock('./qualification-review-panel', () => ({ QualificationReviewPanel: () => null }));
+vi.mock('./qualification-supplement-panel', () => ({ QualificationSupplementPanel: () => null }));
 
 const mocks = vi.hoisted(() => ({ listError: false, certError: false, retry: vi.fn() }));
 vi.mock('@24bid/api-client', () => ({

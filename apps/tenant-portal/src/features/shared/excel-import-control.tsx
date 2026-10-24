@@ -25,6 +25,11 @@ export function ExcelImportControl({
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  async function template() {
+    setError(null);
+    try { await downloadReport(`${endpoint}-template`, `${templateName}.xlsx`); }
+    catch { setError('模板下载失败，请确认权限后重试。'); }
+  }
 
   const onFile = async (file: File) => {
     setBusy(true);
@@ -37,9 +42,8 @@ export function ExcelImportControl({
         predicate: (query) => String(query.queryKey[0] ?? '').startsWith(invalidatePrefix),
       });
     } catch (err) {
-      const message =
-        (err as { response?: { data?: { error?: { message?: string } } } }).response?.data?.error
-          ?.message ?? '导入失败,请确认文件为模板格式的 .xlsx';
+      const data = (err as { response?: { data?: { message?: string; error?: { message?: string } } } }).response?.data;
+      const message = data?.message ?? data?.error?.message ?? '导入失败,请确认文件为模板格式的 .xlsx';
       setError(message);
     } finally {
       setBusy(false);
@@ -52,7 +56,8 @@ export function ExcelImportControl({
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
-          onClick={() => downloadReport(`${endpoint}-template`, `${templateName}.xlsx`)}
+          disabled={busy}
+          onClick={() => void template()}
           className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 transition hover:bg-slate-50"
         >
           <FileDown size={14} className="text-emerald-600" /> 下载模板

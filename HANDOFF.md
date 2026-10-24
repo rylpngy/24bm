@@ -2,6 +2,10 @@
 
 ## 当前状态（2026-10-24，以本节为准）
 
+最新原系统为PR127/main `0f62ee09ed8d24aa51e3b583a15ff1ebb8a8b2a1`，固定目录`/Users/epl/.codex/deployments/24bid-base/0f62ee09ed8d`，168表/5附件，预算仍预警。下方PR126等为历史。
+
+第二批既定范围为SRM业务深化，分支`codex/srm-qualification-workflow-closeout`。新增资质变更统一多级审批、补件任务及双端回复/闭合、到期阶段通知、供应商关系Excel导入、错误反馈和成员空岗位修复。V232只新增2表，不改原行。全量回归及9项本批数据库定向、真实HTTP7组、双端桌面/手机已通过。指南与结果见`docs/srm-business-deepening-guide.md`、`docs/srm-business-deepening-result.md`；写入验收在`srm_deepening_1792850182387`/8095/5197—5198及独立桶，不是原系统。原数据新备份`srm-backup-1792850090236`。本段为开发交付快照，合并与部署实际状态以GitHub和固定目录RESTORATION.md为准，不将等待交付冒称已发布。
+
 最新原系统基线为PR126/main `503dffd45ee6532caec36e1a1ca7031b38568282`，固定目录`/Users/epl/.codex/deployments/24bid-base/503dffd45ee6`，采购方5173、平台5174、供应商5175、商城5176/API8080。以下PR125等段落均为历史，不代表当前部署。
 
 当前批次`codex/budget-business-closeout`实现部门年度预算编制/调整/例外、真实Flowable独立审批、版本防覆盖、统一需求/订单/净付款占用、归档结余释放和受控历史订单归属。未配置策略仍为warning；不将启用强控作为上线动作，不自动回填或替换原数据。V231只新增5表及预算占用视图。1106项Java单元、246项数据库集成、616项前端全量、七包类型和四端构建通过；真实HTTP和1440/390浏览器已通过。功能及边界见`docs/budget-business-guide.md`和`docs/budget-business-closeout-plan.md`。写入验收在`budget_closeout_1792847748587`/8095/5197，不是原系统。PR、合并及最终保留数据部署以GitHub和固定发布目录RESTORATION.md为准；本段不将待交付状态冒称已发布。原数据新备份`srm-backup-1792847994900`保留163表及5对象。

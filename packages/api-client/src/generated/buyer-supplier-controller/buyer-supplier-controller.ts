@@ -27,6 +27,7 @@ import type {
 import type {
   ApiResponseApprovalTaskResponse,
   ApiResponseBuyerSupplierResponse,
+  ApiResponseImportResultResponse,
   ApiResponseListBuyerSupplierResponse,
   ApiResponseListSupplierQualificationResponse,
   ApiResponseSupplierExitRiskResponse,
@@ -486,6 +487,64 @@ const {mutation: mutationOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
+    export const buyerSupplierImportFile = (
+    buyerSupplierImportFileBody: BodyType<string>,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseImportResultResponse>(
+      {url: `/api/v1/buyer/suppliers/import`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: buyerSupplierImportFileBody, signal
+    },
+      );
+    }
+
+
+
+export const getBuyerSupplierImportFileMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerSupplierImportFile>>, TError,{data: BodyType<string>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerSupplierImportFile>>, TError,{data: BodyType<string>}, TContext> => {
+
+const mutationKey = ['buyerSupplierImportFile'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerSupplierImportFile>>, {data: BodyType<string>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  buyerSupplierImportFile(data,)
+        }
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BuyerSupplierImportFileMutationResult = NonNullable<Awaited<ReturnType<typeof buyerSupplierImportFile>>>
+    export type BuyerSupplierImportFileMutationBody = BodyType<string>
+    export type BuyerSupplierImportFileMutationError = ErrorType<ApiResponseVoid>
+
+    export const useBuyerSupplierImportFile = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerSupplierImportFile>>, TError,{data: BodyType<string>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof buyerSupplierImportFile>>,
+        TError,
+        {data: BodyType<string>},
+        TContext
+      > => {
+
+      const mutationOptions = getBuyerSupplierImportFileMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
     export const buyerSupplierListRelationQualifications = (
     relationId: string,
  signal?: AbortSignal
@@ -827,6 +886,93 @@ export function useBuyerSupplierExitRisk<TData = Awaited<ReturnType<typeof buyer
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getBuyerSupplierExitRiskQueryOptions(relationId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const buyerSupplierTemplate = (
+
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<Blob>(
+      {url: `/api/v1/buyer/suppliers/import-template`, method: 'GET',
+        responseType: 'blob', signal
+    },
+      );
+    }
+
+
+
+
+export const getBuyerSupplierTemplateQueryKey = () => {
+    return [
+    `/api/v1/buyer/suppliers/import-template`
+    ] as const;
+    }
+
+
+export const getBuyerSupplierTemplateQueryOptions = <TData = Awaited<ReturnType<typeof buyerSupplierTemplate>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierTemplate>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getBuyerSupplierTemplateQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerSupplierTemplate>>> = ({ signal }) => buyerSupplierTemplate(signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierTemplate>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type BuyerSupplierTemplateQueryResult = NonNullable<Awaited<ReturnType<typeof buyerSupplierTemplate>>>
+export type BuyerSupplierTemplateQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useBuyerSupplierTemplate<TData = Awaited<ReturnType<typeof buyerSupplierTemplate>>, TError = ErrorType<ApiResponseVoid>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierTemplate>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerSupplierTemplate>>,
+          TError,
+          Awaited<ReturnType<typeof buyerSupplierTemplate>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerSupplierTemplate<TData = Awaited<ReturnType<typeof buyerSupplierTemplate>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierTemplate>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerSupplierTemplate>>,
+          TError,
+          Awaited<ReturnType<typeof buyerSupplierTemplate>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerSupplierTemplate<TData = Awaited<ReturnType<typeof buyerSupplierTemplate>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierTemplate>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useBuyerSupplierTemplate<TData = Awaited<ReturnType<typeof buyerSupplierTemplate>>, TError = ErrorType<ApiResponseVoid>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerSupplierTemplate>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getBuyerSupplierTemplateQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

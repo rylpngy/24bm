@@ -12,6 +12,7 @@ import {
   cn,
 } from '@24bid/ui';
 import { SupplierMetricCard, SupplierMetricGrid } from './supplier-metric-card';
+import { ExcelImportControl } from '../shared/excel-import-control';
 
 const PAGE_SIZE = 8;
 
@@ -154,6 +155,7 @@ export function SupplierListView({ onOpen, onRegister }: { onOpen: (id: string) 
       </div>
 
 
+      {can('buyer:supplier:manage') && <div className="mb-4"><ExcelImportControl endpoint="/api/v1/buyer/suppliers/import" templateName="供应商关系导入模板" invalidatePrefix="/api/v1/buyer/suppliers" /></div>}
       {query.isError ? <FeedbackNotice tone="error" message="供应商库加载失败，请刷新或确认当前账号权限。" /> : query.isLoading ? (
         <FeedbackNotice tone="info" message="正在加载供应商库…" />
       ) : suppliers.length === 0 ? (
