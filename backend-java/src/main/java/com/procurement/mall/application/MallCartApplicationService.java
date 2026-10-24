@@ -53,6 +53,7 @@ public class MallCartApplicationService {
       throw new IllegalArgumentException("加购数量必须大于 0");
     }
     ensureCart(tenantId, userId);
+    mallCartMapper.lockCart(tenantId,userId);
     // 加购不卡起订量:允许先攒数量,结算时统一按规则校验并给出明确原因。
     mallCartMapper.addItem("mci-" + UUID.randomUUID(), tenantId, userId, sku.id(), quantity);
     return view();
@@ -62,6 +63,7 @@ public class MallCartApplicationService {
   public MallCartResponse updateQuantity(String skuId, BigDecimal quantity) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer mall APIs");
     String userId = TenantAccessGuard.requireUserId("buyer mall APIs");
+    mallCartMapper.lockCart(tenantId,userId);
     if (quantity == null || quantity.signum() <= 0) {
       mallCartMapper.removeItem(tenantId, userId, skuId);
       return view();
@@ -76,6 +78,7 @@ public class MallCartApplicationService {
   public MallCartResponse removeItem(String skuId) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer mall APIs");
     String userId = TenantAccessGuard.requireUserId("buyer mall APIs");
+    mallCartMapper.lockCart(tenantId,userId);
     mallCartMapper.removeItem(tenantId, userId, skuId);
     return view();
   }
@@ -84,6 +87,7 @@ public class MallCartApplicationService {
   public void clear() {
     String tenantId = TenantAccessGuard.requireTenantId("buyer mall APIs");
     String userId = TenantAccessGuard.requireUserId("buyer mall APIs");
+    mallCartMapper.lockCart(tenantId,userId);
     mallCartMapper.clearCart(tenantId, userId);
   }
 
@@ -160,7 +164,7 @@ public class MallCartApplicationService {
       MallProduct product = mallCatalogMapper.findProductForTenant(tenantId, sku.productId());
       List<MallTierPrice> tiers = mallCatalogMapper.listTiersForTenant(tenantId, sku.id());
       BigDecimal unitPrice = MallCatalogPolicy.effectivePrice(sku, tiers, item.quantity());
-      BigDecimal lineTotal = unitPrice.multiply(item.quantity());
+      BigDecimal lineTotal = unitPrice.multiply(item.quantity()).setScale(2,java.math.RoundingMode.HALF_UP);
 
       String blockedReason = null;
       try {

@@ -19,4 +19,5 @@ export interface MallAfterSalesResponse {
   supplierReply?: string;
   createdAt?: string;
   updatedAt?: string;
+  financialStatus?: string;
 }

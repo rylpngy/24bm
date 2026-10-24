@@ -44,6 +44,13 @@ class TenantIsolationArchitectureTests {
       // 公开商城跨租户只读(门户采购商城),不暴露价格/租户/供应商。
       "mall/infrastructure/PublicMallMapper.java");
 
+  // Audited METHOD-only exception, never a mapper-wide exemption. Public products have no tenant.
+  // Only platform:* in platform context; pending-row lock and mandatory identified review audit.
+  // SQL scope/bindings: ScopedMapperMutationTests; authorization: MallPublicCatalogReviewTests;
+  // tenant-row denial and persisted audit: MallCatalogMaintenancePostgresIT.
+  private static final Set<String> PLATFORM_PUBLIC_REVIEW_MUTATIONS = Set.of(
+      "mall/infrastructure/MallPublicCatalogReviewMapper.java#reviewPublicProduct");
+
   @Test
   void applicationServicesUseCentralTenantAccessGuardInsteadOfLocalThreadLocalReads() throws IOException {
     List<Path> serviceFiles;
@@ -220,6 +227,16 @@ class TenantIsolationArchitectureTests {
       while (sqlMatcher.find()) {
         String sql = sqlMatcher.group("sql").toLowerCase();
         if (sql.contains(" where ")) {
+          String declaration = source.substring(sqlMatcher.end());
+          Matcher method = Pattern.compile("^\\s*int\\s+(\\w+)\\s*\\(").matcher(declaration);
+          String methodKey = method.find()
+              ? SOURCE_ROOT.relativize(mapperFile) + "#" + method.group(1) : "";
+          if (PLATFORM_PUBLIC_REVIEW_MUTATIONS.contains(methodKey)) {
+            assertThat(sql.replaceAll("\\s+", " ").trim())
+                .as(methodKey + " must retain public-only pending-row boundaries")
+                .endsWith("where id = #{id} and scope = 'public' and tenant_id is null and status = '待审核'");
+            continue;
+          }
           assertThat(sql)
               .as(mapperFile + " SQL with where clauses must stay tenant or supplier scoped: " + sql.strip())
               .matches("(?s).*(tenant_id\\s*=|supplier_id\\s*=).*");

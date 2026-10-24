@@ -14,12 +14,14 @@ import com.procurement.common.tenant.TenantContext;
 import com.procurement.notification.application.NotificationApplicationService;
 import com.procurement.sourcing.api.EnrollOpportunityRequest;
 import com.procurement.sourcing.application.OpportunityApplicationService;
+import com.procurement.sourcing.application.RfqApplicationService;
 import com.procurement.sourcing.domain.RfqEnrollment;
 import com.procurement.sourcing.infrastructure.PublicOpportunityMapper;
 import com.procurement.sourcing.infrastructure.RfqEnrollmentMapper;
 import com.procurement.sourcing.infrastructure.RfqInviteMapper;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 // 公开商机报名闭环:报名登记(仅报价中/防重复)→ 买方受理(须平台认证供应商)→ 转正式邀请。
@@ -28,6 +30,7 @@ class OpportunityEnrollmentTests {
   private final PublicOpportunityMapper publicOpportunityMapper = mock(PublicOpportunityMapper.class);
   private final RfqEnrollmentMapper rfqEnrollmentMapper = mock(RfqEnrollmentMapper.class);
   private final RfqInviteMapper rfqInviteMapper = mock(RfqInviteMapper.class);
+  private final RfqApplicationService rfqAccess = mock(RfqApplicationService.class);
   private final NotificationApplicationService notificationApplicationService =
       mock(NotificationApplicationService.class);
   private final OpportunityApplicationService service = new OpportunityApplicationService(
@@ -36,6 +39,11 @@ class OpportunityEnrollmentTests {
       rfqInviteMapper,
       notificationApplicationService,
       mock(AuditLogApplicationService.class));
+
+  @BeforeEach
+  void injectRfqAccess() {
+    service.setRfqAccess(rfqAccess);
+  }
 
   @AfterEach
   void clearTenantContext() {
@@ -82,6 +90,7 @@ class OpportunityEnrollmentTests {
     var result = service.acceptEnrollment("rfq-1", "enr-1");
 
     assertThat(result.status()).isEqualTo("已受邀");
+    verify(rfqAccess).requireAdditionalInvitation("rfq-1", "ent-supplier-sunrise");
     verify(rfqInviteMapper).insert(anyString(), eq("tenant-1"), eq("rfq-1"), eq("ent-supplier-sunrise"), eq("已邀请"));
     verify(notificationApplicationService).notifyActiveSupplierUsers(
         eq("tenant-1"), eq("ent-supplier-sunrise"), anyString(), anyString());
@@ -97,6 +106,19 @@ class OpportunityEnrollmentTests {
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("尚未入驻平台");
     verify(rfqInviteMapper, never()).insert(anyString(), anyString(), anyString(), anyString(), anyString());
+  }
+
+  @Test
+  void acceptEnrollmentDoesNotInviteWhenProjectAdmissionGuardRejectsSupplier() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(rfqEnrollmentMapper.findByTenantAndId("tenant-1", "enr-1")).thenReturn(pending("晨光科技供应商"));
+    when(publicOpportunityMapper.findVerifiedSupplierIdByName("晨光科技供应商")).thenReturn("ent-supplier-sunrise");
+    org.mockito.Mockito.doThrow(new IllegalStateException("单一来源不可追加供应商"))
+        .when(rfqAccess).requireAdditionalInvitation("rfq-1", "ent-supplier-sunrise");
+    assertThatThrownBy(() -> service.acceptEnrollment("rfq-1", "enr-1"))
+        .isInstanceOf(IllegalStateException.class).hasMessageContaining("不可追加");
+    verify(rfqInviteMapper, never()).insert(anyString(), anyString(), anyString(), anyString(), anyString());
+    verify(rfqEnrollmentMapper, never()).updateStatus(anyString(), anyString(), anyString());
   }
 
   @Test

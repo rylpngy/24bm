@@ -53,6 +53,9 @@ public final class RfqMethod {
     if (bidderCount < 1) {
       throw new IllegalStateException("须有至少 1 家有效报价方可定标: " + rfqId);
     }
+    if (SINGLE_SOURCE.equals(m) && bidderCount != 1) {
+      throw new IllegalStateException("单一来源须且仅须 1 家有效报价: " + rfqId);
+    }
   }
 
   // 定标家数参考提醒:竞争性方式有效报价低于 3 家时返回提示文案(不阻断),否则 null。

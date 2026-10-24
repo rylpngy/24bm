@@ -60,4 +60,12 @@ class BidEvaluatorTests {
     assertThatThrownBy(() -> BidEvaluator.evaluate(List.of(quote("q", "s", 1, 1)), 0, 0))
         .isInstanceOf(IllegalArgumentException.class);
   }
+
+  @Test
+  void equalScoresHaveStableOrderIndependentOfDatabaseOrder() {
+    var a = quote("q-a", "s-a", 100, 7);
+    var b = quote("q-b", "s-b", 100, 7);
+    assertThat(BidEvaluator.evaluate(List.of(b, a), 70, 30).getFirst().quote().id()).isEqualTo("q-a");
+    assertThat(BidEvaluator.evaluate(List.of(a, b), 70, 30).getFirst().quote().id()).isEqualTo("q-a");
+  }
 }

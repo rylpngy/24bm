@@ -21,7 +21,11 @@ import org.junit.jupiter.api.Test;
 
 class ContractStatusActionTests {
   @org.junit.jupiter.api.BeforeEach
-  void configureAccess() { TestContractAccess.allow(contractApplicationService); }
+  void configureAccess() {
+    TestContractAccess.allow(contractApplicationService);
+    when(contractMapper.lockOrderForContract("tenant-1", "contract-1")).thenReturn("po-1");
+    when(contractMapper.lockById("tenant-1", "contract-1")).thenReturn("contract-1");
+  }
   private final ContractMapper contractMapper = org.mockito.Mockito.mock(ContractMapper.class);
   private final PurchaseOrderMapper purchaseOrderMapper = org.mockito.Mockito.mock(PurchaseOrderMapper.class);
   private final ContractApplicationService contractApplicationService = new ContractApplicationService(
@@ -88,6 +92,10 @@ class ContractStatusActionTests {
         "contract-1",
         "未归档",
         "已归档");
+    var locks = org.mockito.Mockito.inOrder(contractMapper);
+    locks.verify(contractMapper).lockOrderForContract("tenant-1", "contract-1");
+    locks.verify(contractMapper).lockById("tenant-1", "contract-1");
+    locks.verify(contractMapper).countArchiveBlockers("tenant-1", "contract-1");
   }
 
   @Test

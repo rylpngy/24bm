@@ -44,6 +44,7 @@ public class PaymentAuthorizationService {
 
   @Transactional(propagation = Propagation.MANDATORY)
   public PaymentRequest requireReady(Invoice invoice, String targetStatus) {
+    lockOrder(invoice);
     var locked = invoices.lockByTenantAndId(invoice.tenantId(), invoice.id());
     if (locked == null || !locked.paymentStatus().equals(invoice.paymentStatus())) {
       throw new IllegalStateException("付款状态已变化，请刷新重试");
@@ -59,6 +60,7 @@ public class PaymentAuthorizationService {
 
   @Transactional(propagation = Propagation.MANDATORY)
   public PaymentRequest requireApproved(Invoice invoice, boolean checkMatch) {
+    lockOrder(invoice);
     String tenant = invoice.tenantId();
     var request = requests.lockByTenantAndInvoice(tenant, invoice.id());
     if (request == null || !"付款申请已通过".equals(request.requestStatus())) {
@@ -100,6 +102,13 @@ public class PaymentAuthorizationService {
   public static void requireKnownBalance(Invoice invoice, java.math.BigDecimal paid) {
     if (paid.signum() < 0 || paid.compareTo(invoice.amount()) > 0 || !status(paid, invoice.amount()).equals(invoice.paymentStatus())) {
       throw new IllegalStateException("历史付款状态与金额流水不一致，请先核对实际付款，不能推算或重复登记");
+    }
+  }
+
+  private void lockOrder(Invoice invoice) {
+    String order = invoices.lockOrderForInvoice(invoice.tenantId(), invoice.id());
+    if (order == null || !order.equals(invoice.orderId())) {
+      throw new IllegalStateException("付款关联订单已变化，请刷新重试");
     }
   }
 

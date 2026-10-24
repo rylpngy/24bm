@@ -9,4 +9,5 @@
 export interface HandleAfterSalesRequest {
   status: string;
   reply?: string;
+  evidenceNo?: string;
 }

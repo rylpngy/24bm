@@ -82,6 +82,7 @@ public class AwardApplicationService {
   public AwardDecisionResponse award(String rfqId, AwardRfqRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer award APIs");
     rfqAccess.requireWriteAccess(rfqId);
+    rfqMapper.lockByTenantAndId(tenantId, rfqId);
     Rfq rfq = rfqMapper.findByTenantAndId(tenantId, rfqId);
     if (rfq == null) {
       throw new IllegalArgumentException("RFQ not found in tenant scope: " + rfqId);
@@ -101,6 +102,7 @@ public class AwardApplicationService {
     if (quote == null) {
       throw new IllegalStateException("Award requires a submitted quote: " + request.quoteId());
     }
+    rfqAccess.requireAwardSupplier(rfq, quote.supplierId());
 
     int updated = rfqMapper.updateStatus(
         tenantId,

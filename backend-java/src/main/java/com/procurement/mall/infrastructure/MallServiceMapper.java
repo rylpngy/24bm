@@ -1,11 +1,13 @@
 package com.procurement.mall.infrastructure;
 
 import com.procurement.mall.domain.MallAfterSales;
+import com.procurement.mall.domain.MallAfterSalesEvent;
 import com.procurement.mall.domain.MallReview;
 import java.math.BigDecimal;
 import java.util.List;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
@@ -14,10 +16,78 @@ import org.apache.ibatis.annotations.Update;
 @Mapper
 public interface MallServiceMapper {
 
+  @Select("select id from purchase_orders where tenant_id=#{tenantId} and id=#{orderId} for update")
+  @Options(flushCache = Options.FlushCachePolicy.TRUE, useCache = false)
+  String lockOrder(@Param("tenantId") String tenantId, @Param("orderId") String orderId);
+
+  @Select("""
+      select coalesce(sum(quantity),0) from mall_after_sales
+      where tenant_id=#{tenantId} and order_line_id=#{orderLineId}
+        and status not in ('已拒绝','已撤回')
+      """)
+  BigDecimal claimedQuantity(@Param("tenantId") String tenantId, @Param("orderLineId") String orderLineId);
+
+  @Select("""
+      select p.id from order_line_items l
+      join mall_skus s on s.id=l.source_sku_id
+      join mall_products p on p.id=s.product_id
+      where l.tenant_id=#{tenantId} and l.order_id=#{orderId} and l.id=#{lineId}
+      """)
+  String sourceProduct(@Param("tenantId") String tenantId, @Param("orderId") String orderId,
+      @Param("lineId") String lineId);
+
+  @Select("""
+      select
+      """ + AFTER_SALES_COLUMNS + """
+      from mall_after_sales a join enterprises e on e.id=a.supplier_id
+      where a.tenant_id=#{tenantId} and a.id=#{id}
+      """)
+  MallAfterSales findForBuyer(@Param("tenantId") String tenantId, @Param("id") String id);
+
+  @Update("""
+      update mall_after_sales set status=#{status}, updated_at=now()
+      where tenant_id=#{tenantId} and id=#{id} and status=#{expectedStatus}
+      """)
+  int buyerTransition(@Param("tenantId") String tenantId, @Param("id") String id,
+      @Param("expectedStatus") String expectedStatus, @Param("status") String status);
+
+  @Insert("""
+      insert into mall_after_sales_events
+        (id,after_sales_id,actor_id,actor_role,from_status,to_status,note,evidence_no)
+      values (#{id},#{afterSalesId},#{actorId},#{actorRole},#{fromStatus},#{toStatus},#{note},#{evidenceNo})
+      """)
+  void insertEvent(@Param("id") String id, @Param("afterSalesId") String afterSalesId,
+      @Param("actorId") String actorId, @Param("actorRole") String actorRole,
+      @Param("fromStatus") String fromStatus, @Param("toStatus") String toStatus,
+      @Param("note") String note, @Param("evidenceNo") String evidenceNo);
+
+  @Select("""
+      select e.id,e.after_sales_id,e.actor_id,e.actor_role,e.from_status,e.to_status,e.note,e.evidence_no,e.created_at
+      from mall_after_sales_events e join mall_after_sales a on a.id=e.after_sales_id
+      where e.after_sales_id=#{id} and (a.tenant_id=#{tenantId} or a.supplier_id=#{supplierId})
+      order by e.created_at,e.id
+      """)
+  List<MallAfterSalesEvent> history(@Param("tenantId") String tenantId,
+      @Param("supplierId") String supplierId, @Param("id") String id);
+
   String AFTER_SALES_COLUMNS = """
       a.id, a.tenant_id, a.order_id, a.order_line_id, a.supplier_id, e.name as supplier_name,
       a.type, a.quantity, a.reason, a.status, a.supplier_reply, a.created_at, a.updated_at
       """;
+
+  @Select("select " + AFTER_SALES_COLUMNS + """
+      from mall_after_sales a join enterprises e on e.id=a.supplier_id
+      where a.tenant_id=#{tenantId} and a.id=#{id} for update of a
+      """)
+  @Options(flushCache = Options.FlushCachePolicy.TRUE, useCache = false)
+  MallAfterSales lockForBuyer(@Param("tenantId") String tenantId, @Param("id") String id);
+
+  @Select("select " + AFTER_SALES_COLUMNS + """
+      from mall_after_sales a join enterprises e on e.id=a.supplier_id
+      where a.supplier_id=#{supplierId} and a.id=#{id} for update of a
+      """)
+  @Options(flushCache = Options.FlushCachePolicy.TRUE, useCache = false)
+  MallAfterSales lockForSupplier(@Param("supplierId") String supplierId, @Param("id") String id);
 
   @Select("""
       select
@@ -68,13 +138,14 @@ public interface MallServiceMapper {
 
   @Update("""
       update mall_after_sales set status = #{status}, supplier_reply = #{reply}, updated_at = now()
-      where id = #{id} and supplier_id = #{supplierId}
+      where id = #{id} and supplier_id = #{supplierId} and status=#{expectedStatus}
       """)
   int handleBySupplier(
       @Param("id") String id,
       @Param("supplierId") String supplierId,
       @Param("status") String status,
-      @Param("reply") String reply);
+      @Param("reply") String reply,
+      @Param("expectedStatus") String expectedStatus);
 
   // ── 评价 ───────────────────────────────────────────────────
   @Insert("""

@@ -60,7 +60,7 @@ public interface QuoteMapper {
       select id, tenant_id, rfq_id, supplier_id, amount, tax_rate, delivery_days, status, submitted_at
       from quotes
       where tenant_id = #{tenantId} and rfq_id = #{rfqId} and round = #{round}
-      order by amount
+      order by amount, submitted_at, id
       """)
   List<Quote> listByTenantAndRfqAndRound(
       @Param("tenantId") String tenantId,
@@ -86,11 +86,14 @@ public interface QuoteMapper {
       update quotes
       set amount = #{amount},
           tax_rate = #{taxRate},
-          delivery_days = #{deliveryDays}
+          delivery_days = #{deliveryDays},
+          submitted_at = now()
       where tenant_id = #{tenantId}
         and id = #{id}
         and supplier_id = #{supplierId,jdbcType=VARCHAR}
         and status = #{status,jdbcType=VARCHAR}
+        and round = (select r.current_round from rfqs r
+                     where r.tenant_id = quotes.tenant_id and r.id = quotes.rfq_id)
       """)
   int updateSubmittedQuote(
       @Param("tenantId") String tenantId,
@@ -200,6 +203,8 @@ public interface QuoteMapper {
         and rfq_id = #{rfqId,jdbcType=VARCHAR}
         and id = #{quoteId}
         and status = #{status,jdbcType=VARCHAR}
+        and round = (select r.current_round from rfqs r
+                     where r.tenant_id = quotes.tenant_id and r.id = quotes.rfq_id)
       """)
   Quote findSubmittedQuoteForAward(
       @Param("tenantId") String tenantId,

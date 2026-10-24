@@ -47,7 +47,7 @@ test('商城商品域:阶梯价与起订量在服务端生效', async ({ request
   // 注:1000 是「合步进但超库存」,999 会先撞步进校验——校验顺序:起订 → 步进 → 库存。
   for (const [quantity, hint] of [[1, '起订'], [3, '整数倍'], [1000, '库存不足']] as const) {
     const rejected = await request.post(`${API}/buyer/mall/orders`, {
-      headers: buy, data: { listingId: skuId, quantity },
+      headers: buy, data: { listingId: skuId, quantity, idempotencyKey: crypto.randomUUID() },
     });
     expect(rejected.ok(), `数量 ${quantity} 应被拒绝`).toBeFalsy();
     expect(await rejected.text()).toContain(hint);
@@ -55,7 +55,7 @@ test('商城商品域:阶梯价与起订量在服务端生效', async ({ request
 
   // 阶梯价:10 箱落 180 档,金额由服务端重算(前端传什么价都不影响)。
   const ordered = await request.post(`${API}/buyer/mall/orders`, {
-    headers: buy, data: { listingId: skuId, quantity: 10 },
+    headers: buy, data: { listingId: skuId, quantity: 10, idempotencyKey: crypto.randomUUID() },
   });
   expect(ordered.ok()).toBeTruthy();
   expect((await ordered.json()).data.amount).toBe(1800);

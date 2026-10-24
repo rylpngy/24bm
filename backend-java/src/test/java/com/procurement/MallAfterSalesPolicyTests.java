@@ -81,8 +81,37 @@ class MallAfterSalesPolicyTests {
         .hasMessageContaining("处理中 / 已完成 / 已拒绝");
     assertThatThrownBy(() -> MallAfterSalesPolicy.requireHandleable("待处理", "已拒绝", " "))
         .hasMessageContaining("理由");
-    assertThatCode(() -> MallAfterSalesPolicy.requireHandleable("待处理", "已完成", null))
+    assertThatThrownBy(() -> MallAfterSalesPolicy.requireHandleable("待处理", "已完成", null))
+        .isInstanceOf(IllegalStateException.class);
+    assertThatThrownBy(() -> MallAfterSalesPolicy.requireHandleable("处理中", "已完成", " "))
+        .hasMessageContaining("回复");
+    assertThatCode(() -> MallAfterSalesPolicy.requireHandleable("处理中", "已完成", "已换新"))
         .doesNotThrowAnyException();
+  }
+
+  @Test
+  void cumulativeQuantityIncludesAlreadyCompletedClaims() {
+    assertThatThrownBy(() -> MallAfterSalesPolicy.requireCumulativeQuantity(
+        new BigDecimal("5"), new BigDecimal("4"), new BigDecimal("2")))
+        .hasMessageContaining("累计");
+    assertThatCode(() -> MallAfterSalesPolicy.requireCumulativeQuantity(
+        new BigDecimal("5"), new BigDecimal("4"), BigDecimal.ONE))
+        .doesNotThrowAnyException();
+    assertThatThrownBy(() -> MallAfterSalesPolicy.requireApplicable(
+        "已收货", "退货", new BigDecimal("0.001"), "破损"))
+        .hasMessageContaining("小数");
+  }
+
+  @Test
+  void buyerMustConfirmAndCannotWithdrawCompletedWork() {
+    assertThatThrownBy(() -> MallAfterSalesPolicy.requireBuyerAction("处理中", "confirm"))
+        .isInstanceOf(IllegalStateException.class);
+    assertThatCode(() -> MallAfterSalesPolicy.requireBuyerAction("待买方确认", "confirm"))
+        .doesNotThrowAnyException();
+    assertThatThrownBy(() -> MallAfterSalesPolicy.requireBuyerAction("待买方确认", "withdraw"))
+        .isInstanceOf(IllegalStateException.class);
+    assertThatThrownBy(() -> MallAfterSalesPolicy.requireHandleable("待买方确认", "已拒绝", "拒绝"))
+        .isInstanceOf(IllegalStateException.class);
   }
 
   @Test

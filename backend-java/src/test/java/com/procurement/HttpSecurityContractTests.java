@@ -287,6 +287,14 @@ import org.springframework.test.web.servlet.MvcResult;
     DepartmentController.class,
     com.procurement.process.api.ProcessDefinitionController.class,
     com.procurement.mall.api.BuyerMallController.class,
+    com.procurement.mall.api.BuyerMallPurchaseControlController.class,
+    com.procurement.mall.api.MallCheckoutNoteController.class,
+    com.procurement.mall.api.BuyerMallAfterSalesController.class,
+    com.procurement.mall.api.SupplierMallAfterSalesController.class,
+    com.procurement.mall.api.BuyerMallProductMediaController.class,
+    com.procurement.mall.api.SupplierMallProductMediaController.class,
+    com.procurement.mall.api.PlatformMallProductMediaController.class,
+    com.procurement.mall.api.PlatformMallCatalogReviewController.class,
     com.procurement.mall.api.SupplierMallController.class,
     com.procurement.esign.api.BuyerEsignController.class,
     com.procurement.esign.api.SupplierEsignController.class,
@@ -319,10 +327,19 @@ class HttpSecurityContractTests {
   private com.procurement.mall.application.MallServiceApplicationService mallServiceApplicationService;
 
   @MockBean
+  private com.procurement.mall.application.MallPurchaseControlApplicationService mallPurchaseControlApplicationService;
+
+  @MockBean
   private com.procurement.mall.application.MallCartApplicationService mallCartApplicationService;
 
   @MockBean
   private com.procurement.mall.application.MallCatalogApplicationService mallCatalogApplicationService;
+
+  @MockBean
+  private com.procurement.mall.application.MallProductMediaApplicationService mallProductMediaApplicationService;
+
+  @MockBean
+  private com.procurement.mall.application.MallPublicCatalogReviewApplicationService mallPublicCatalogReviewApplicationService;
 
   @MockBean
   private com.procurement.tenant.application.TenantCapabilityApplicationService tenantCapabilityApplicationService;
@@ -5186,6 +5203,107 @@ class HttpSecurityContractTests {
     mockMvc.perform(get("/api/v1/buyer/mall/listings")
             .header("Authorization", "Bearer " + buyerToken))
         .andExpect(status().isOk());
+  }
+
+  @Test
+  void mallControlsAndAfterSalesHistoryKeepPortalBoundaries() throws Exception {
+    mockMvc.perform(get("/api/v1/buyer/mall/purchase-controls")).andExpect(status().isForbidden());
+    String supplierToken=loginAndExtractToken("""
+        {"account":"supplier","password":"demo123456","scope":"SUPPLIER","supplierId":"ent-supplier-sunrise"}
+        """);
+    mockMvc.perform(get("/api/v1/buyer/mall/purchase-controls").header("Authorization","Bearer "+supplierToken)).andExpect(status().isForbidden());
+    mockMvc.perform(get("/api/v1/buyer/mall/after-sales/case/history").header("Authorization","Bearer "+supplierToken)).andExpect(status().isForbidden());
+    String buyerToken=loginAndExtractToken("""
+        {"account":"buyer","password":"demo123456","scope":"BUYER","tenantId":"tenant-acme"}
+        """);
+    mockMvc.perform(get("/api/v1/buyer/mall/purchase-controls").header("Authorization","Bearer "+buyerToken)).andExpect(status().isOk());
+    mockMvc.perform(get("/api/v1/supplier/mall/after-sales/case/history").header("Authorization","Bearer "+buyerToken)).andExpect(status().isForbidden());
+  }
+
+  @Test
+  void mallProductImagesKeepPortalAndMutationPermissions() throws Exception {
+    String buyer = loginAndExtractToken("""
+        {"account":"buyer","password":"demo123456","scope":"BUYER","tenantId":"tenant-acme"}
+        """);
+    String supplier = loginAndExtractToken("""
+        {"account":"supplier","password":"demo123456","scope":"SUPPLIER","supplierId":"ent-supplier-sunrise"}
+        """);
+    String buyerPath = "/api/v1/buyer/mall/products/p/media";
+    String supplierPath = "/api/v1/supplier/mall/products/p/media";
+    mockMvc.perform(get(buyerPath)).andExpect(status().isForbidden());
+    mockMvc.perform(get(buyerPath).header("Authorization", "Bearer " + supplier)).andExpect(status().isForbidden());
+    mockMvc.perform(get(supplierPath).header("Authorization", "Bearer " + buyer)).andExpect(status().isForbidden());
+    mockMvc.perform(get("/api/v1/platform/mall/products/p/media").header("Authorization", "Bearer " + supplier))
+        .andExpect(status().isForbidden());
+    when(portalPermissions.currentUserHas("supplier:mall:manage")).thenReturn(false);
+    mockMvc.perform(post(supplierPath + "/upload-ticket").header("Authorization", "Bearer " + supplier)
+        .contentType(MediaType.APPLICATION_JSON).content("{\"fileName\":\"photo.png\"}"))
+        .andExpect(status().isForbidden());
+    org.mockito.Mockito.verifyNoInteractions(mallProductMediaApplicationService);
+  }
+
+  @Test
+  void buyerReviewMediaRequiresManageWithoutGrantingThatPermissionToCatalogReaders() throws Exception {
+    String buyer = loginAndExtractToken("""
+        {"account":"buyer","password":"demo123456","scope":"BUYER","tenantId":"tenant-acme"}
+        """);
+    when(portalPermissions.currentUserHas("buyer:mall:read")).thenReturn(true);
+    when(portalPermissions.currentUserHas("buyer:mall:manage")).thenReturn(false);
+    String path = "/api/v1/buyer/mall/products/p/review-media";
+    mockMvc.perform(get(path).header("Authorization","Bearer "+buyer)).andExpect(status().isForbidden());
+    mockMvc.perform(get(path+"/m/content").header("Authorization","Bearer "+buyer)).andExpect(status().isForbidden());
+    org.mockito.Mockito.verifyNoInteractions(mallProductMediaApplicationService);
+    when(portalPermissions.currentUserHas("buyer:mall:read")).thenReturn(false);
+    when(portalPermissions.currentUserHas("buyer:mall:manage")).thenReturn(true);
+    when(mallProductMediaApplicationService.listBuyerReview("p")).thenReturn(List.of());
+    mockMvc.perform(get(path).header("Authorization","Bearer "+buyer)).andExpect(status().isOk());
+  }
+
+  @Test
+  void streamingImageUploadPreserves413Status() throws Exception {
+    String supplier = loginAndExtractToken("""
+        {"account":"supplier","password":"demo123456","scope":"SUPPLIER","supplierId":"ent-supplier-sunrise"}
+        """);
+    org.mockito.Mockito.doThrow(new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.PAYLOAD_TOO_LARGE))
+        .when(mallProductMediaApplicationService).upload(org.mockito.ArgumentMatchers.eq("p"),org.mockito.ArgumentMatchers.eq("key"),
+            org.mockito.ArgumentMatchers.eq("token"),org.mockito.ArgumentMatchers.any(java.io.InputStream.class),org.mockito.ArgumentMatchers.anyLong());
+    mockMvc.perform(post("/api/v1/supplier/mall/products/p/media/upload-sink").param("storageKey","key").param("token","token")
+        .header("Authorization","Bearer "+supplier).contentType(MediaType.APPLICATION_OCTET_STREAM).content(new byte[]{1}))
+        .andExpect(status().isPayloadTooLarge());
+  }
+
+  @Test
+  void publicCatalogReviewRequiresPlatformRoleAndFullPlatformPermission() throws Exception {
+    String queue = "/api/v1/platform/mall/products/pending-review";
+    String review = "/api/v1/platform/mall/products/public-product/review";
+    String body = "{\"approved\":true,\"comment\":\"Checked\"}";
+    mockMvc.perform(get(queue)).andExpect(status().isForbidden());
+    String supplier = loginAndExtractToken("""
+        {"account":"supplier","password":"demo123456","scope":"SUPPLIER","supplierId":"ent-supplier-sunrise"}
+        """);
+    String buyer = loginAndExtractToken("""
+        {"account":"buyer","password":"demo123456","scope":"BUYER","tenantId":"tenant-acme"}
+        """);
+    for (String token : List.of(supplier, buyer)) {
+      mockMvc.perform(get(queue).header("Authorization", "Bearer " + token)).andExpect(status().isForbidden());
+      mockMvc.perform(post(review).header("Authorization", "Bearer " + token)
+          .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isForbidden());
+    }
+    String platform = loginAndExtractToken("""
+        {"account":"platform","password":"demo123456","scope":"PLATFORM"}
+        """);
+    when(portalPermissions.currentUserHas("platform:*")).thenReturn(false);
+    mockMvc.perform(get(queue).header("Authorization", "Bearer " + platform)).andExpect(status().isForbidden());
+    mockMvc.perform(post(review).header("Authorization", "Bearer " + platform)
+        .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isForbidden());
+    org.mockito.Mockito.verifyNoInteractions(mallPublicCatalogReviewApplicationService);
+    when(portalPermissions.currentUserHas("platform:*")).thenReturn(true);
+    when(mallPublicCatalogReviewApplicationService.listPendingReview()).thenReturn(List.of());
+    mockMvc.perform(get(queue).header("Authorization", "Bearer " + platform)).andExpect(status().isOk());
+    mockMvc.perform(post(review).header("Authorization", "Bearer " + platform)
+        .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isOk());
+    org.mockito.Mockito.verify(mallPublicCatalogReviewApplicationService)
+        .review("public-product", new com.procurement.mall.api.ReviewMallProductRequest(true, "Checked"));
   }
 
   @Test

@@ -22,6 +22,9 @@ public interface MallCartMapper {
   @Select("select id from mall_carts where tenant_id = #{tenantId} and user_id = #{userId}")
   String findCartId(@Param("tenantId") String tenantId, @Param("userId") String userId);
 
+  @Select("select id from mall_carts where tenant_id=#{tenantId} and user_id=#{userId} for update")
+  String lockCart(@Param("tenantId") String tenantId,@Param("userId") String userId);
+
   @Insert("""
       insert into mall_carts (id, tenant_id, user_id) values (#{id}, #{tenantId}, #{userId})
       on conflict (tenant_id, user_id) do nothing

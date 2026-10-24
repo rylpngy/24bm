@@ -1,9 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
+import { MallReviewProductImages } from './mall-review-product-images';
 import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
+import { MallPurchaseControls } from './mall-purchase-controls';
+import { BuyerMallAfterSalesPanel } from './mall-after-sales-panel';
 import { useQueryClient } from '@tanstack/react-query';
 import { ShoppingCart, Store } from 'lucide-react';
 import {
-  useBuyerMallCheckoutCart,
   useBuyerMallCreateOrder,
   useBuyerMallListings,
   useBuyerMallProducts,
@@ -15,7 +17,6 @@ import {
   useBuyerMallAddresses,
   useBuyerMallPendingReview,
   useBuyerMallReviewProduct,
-  useBuyerMallAfterSales,
   useBuyerMallPublish,
   useBuyerMallUpdateStatus,
   useBuyerSupplierList,
@@ -141,6 +142,7 @@ function ListingCard({
 // 企业商城:协议价货架(已准入供应商 × 物料 × 协议价)+ 目录直购成单。
 export function MallPage({ onNavigate }: { onNavigate?: (moduleId: string) => void }) {
   const { can } = useBuyerPermissions();
+  const canReadMall = can('buyer:mall:read');
   const canManage = can('buyer:mall:manage');
   const canPurchase = can('buyer:mall:purchase');
   const canReadOrders = can('buyer:order:read');
@@ -150,6 +152,8 @@ export function MallPage({ onNavigate }: { onNavigate?: (moduleId: string) => vo
   const [keyword, setKeyword] = useState('');
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const orderAttempts = useRef({ pending: false, keys: new Map<string, string>() });
+  const [orderSubmitting, setOrderSubmitting] = useState(false);
 
   const [supplierId, setSupplierId] = useState('');
   const [materialId, setMaterialId] = useState('');
@@ -181,7 +185,6 @@ export function MallPage({ onNavigate }: { onNavigate?: (moduleId: string) => vo
   const publish = useBuyerMallPublish();
   const updateStatus = useBuyerMallUpdateStatus();
   const createOrder = useBuyerMallCreateOrder();
-  const checkoutCart = useBuyerMallCheckoutCart();
   // M-2:购物车改为服务端存储——换设备/刷新不丢,单价与可结算性由后端按当前阶梯价与库存实时判定。
   const cart = useBuyerMallCart({ query: { enabled: canPurchase } });
   const addToCart = useBuyerMallAddToCart();
@@ -192,12 +195,26 @@ export function MallPage({ onNavigate }: { onNavigate?: (moduleId: string) => vo
   // M-4:上架审核台与售后台。
   const pendingReview = useBuyerMallPendingReview({ query: { enabled: canManage && tab === 'review' } });
   const reviewProduct = useBuyerMallReviewProduct();
-  const afterSales = useBuyerMallAfterSales({ query: { enabled: canReadOrders && tab === 'after-sales' } });
   const [reviewComments, setReviewComments] = useState<Record<string, string>>({});
 
   const items = listings.isError ? [] : listings.data?.data ?? [];
   const onShelfCount = items.filter((l) => l.status === '在架').length;
-  const busy = publish.isPending || updateStatus.isPending || createOrder.isPending || checkoutCart.isPending;
+  const busy = orderSubmitting || publish.isPending || updateStatus.isPending || createOrder.isPending || checkoutServerCart.isPending;
+
+  const beginOrder = (fingerprint: string) => {
+    if (!canPurchase || orderAttempts.current.pending) return;
+    const key = orderAttempts.current.keys.get(fingerprint) ?? crypto.randomUUID();
+    orderAttempts.current.keys.set(fingerprint, key);
+    orderAttempts.current.pending = true;
+    setOrderSubmitting(true);
+    setError(null);
+    return key;
+  };
+  const finishOrder = (fingerprint: string, succeeded: boolean) => {
+    if (succeeded) orderAttempts.current.keys.delete(fingerprint);
+    orderAttempts.current.pending = false;
+    setOrderSubmitting(false);
+  };
 
   const refresh = () => {
     setError(null);
@@ -214,20 +231,26 @@ export function MallPage({ onNavigate }: { onNavigate?: (moduleId: string) => vo
     setFeedback(null);
   };
 
-  const submitOrder = (listingId: string, quantity: number) =>
+  const submitOrder = (listingId: string, quantity: number) => {
+    if (!Number.isFinite(quantity) || quantity <= 0) return;
+    const fingerprint = JSON.stringify(['direct', listingId, quantity]);
+    const idempotencyKey = beginOrder(fingerprint);
+    if (!idempotencyKey) return;
     createOrder.mutate(
-      { data: { listingId, quantity } },
+      { data: { listingId, quantity, ...{ idempotencyKey } } },
       {
         onSuccess: (res) => {
+          finishOrder(fingerprint, true);
           const order = res.data;
           setFeedback(
             `直购订单已生成:${order?.orderId ?? ''}(${order?.materialName ?? ''} × ${quantity},合计 ${currency(order?.amount)})。可在采购订单模块跟进履约。`,
           );
           refresh();
         },
-        onError: reportError,
+        onError: cause => { finishOrder(fingerprint, false); reportError(cause); },
       },
     );
+  };
 
   const submitPublish = () =>
     publish.mutate(
@@ -258,11 +281,16 @@ export function MallPage({ onNavigate }: { onNavigate?: (moduleId: string) => vo
         && (q.queryKey[0] as string).includes('/buyer/mall'),
     });
 
-  const submitCheckout = () =>
+  const submitCheckout = () => {
+    const fingerprint = JSON.stringify(['server-cart', defaultAddress?.id ?? null,
+      cartLines.map(line => [line.skuId, line.quantity] as const).sort((a, b) => (a[0] ?? '').localeCompare(b[0] ?? ''))]);
+    const idempotencyKey = beginOrder(fingerprint);
+    if (!idempotencyKey) return;
     checkoutServerCart.mutate(
-      { data: { addressId: defaultAddress?.id } },
+      { data: { addressId: defaultAddress?.id, ...{ idempotencyKey } } },
       {
         onSuccess: (res) => {
+          finishOrder(fingerprint, true);
           const orders = res.data ?? [];
           setFeedback(
             `购物车结算完成:生成 ${orders.length} 张订单(按供应商合并),合计 ${currency(
@@ -272,9 +300,10 @@ export function MallPage({ onNavigate }: { onNavigate?: (moduleId: string) => vo
           void refreshCart();
           refresh();
         },
-        onError: reportError,
+        onError: cause => { finishOrder(fingerprint, false); reportError(cause); },
       },
     );
+  };
 
   return (
     <Panel title="企业商城" icon={Store} subtitle="协议价货架 · 商品检索 · 购物车 · 目录直购">
@@ -288,7 +317,10 @@ export function MallPage({ onNavigate }: { onNavigate?: (moduleId: string) => vo
           value={tab}
           onChange={setTab}
         />
-        <CountTag>在架 {onShelfCount} / 共 {items.length} 件</CountTag>
+        <div className="flex flex-wrap items-center gap-2">
+          {canReadMall && <MallPurchaseControls canManage={canManage} />}
+          <CountTag>在架 {onShelfCount} / 共 {items.length} 件</CountTag>
+        </div>
       </div>
 
       {feedback && (
@@ -348,6 +380,7 @@ export function MallPage({ onNavigate }: { onNavigate?: (moduleId: string) => vo
                     </div>
                     <StatusPill label={product.status ?? '待审核'} />
                   </div>
+                  <MallReviewProductImages productId={product.id} name={product.name} />
                   <div className="mt-3 overflow-hidden rounded-lg border border-slate-100">
                     <table className="w-full text-left text-xs">
                       <thead className="bg-slate-50 text-[11px] font-black text-slate-400">
@@ -407,40 +440,7 @@ export function MallPage({ onNavigate }: { onNavigate?: (moduleId: string) => vo
         </div>
       )}
 
-      {tab === 'after-sales' && (
-        <div className="space-y-3">
-          {afterSales.isError ? <FeedbackNotice tone="error" message="售后记录加载失败，请检查权限后重试。" /> : (afterSales.data?.data ?? []).length === 0 ? (
-            <FeedbackNotice tone="info" message="暂无售后单。采购员可在商城门户的「我的订单」里发起售后。" />
-          ) : (
-            <div className="overflow-hidden rounded-lg border border-slate-200">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 text-[11px] font-black text-slate-400">
-                  <tr>
-                    <th className="px-3 py-2">类型</th>
-                    <th className="px-3 py-2">供应商</th>
-                    <th className="px-3 py-2 text-right">数量</th>
-                    <th className="px-3 py-2">原因</th>
-                    <th className="px-3 py-2">状态</th>
-                    <th className="px-3 py-2">供应商回复</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {(afterSales.data?.data ?? []).map((row) => (
-                    <tr key={row.id} className="font-bold text-slate-700">
-                      <td className="px-3 py-2 font-black text-slate-900">{row.type}</td>
-                      <td className="px-3 py-2">{row.supplierName}</td>
-                      <td className="px-3 py-2 text-right font-mono">{row.quantity}</td>
-                      <td className="px-3 py-2">{row.reason}</td>
-                      <td className="px-3 py-2"><StatusPill label={row.status ?? ''} /></td>
-                      <td className="px-3 py-2">{row.supplierReply || <span className="text-slate-400">—</span>}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
+      {tab === 'after-sales' && canReadOrders && <BuyerMallAfterSalesPanel canPurchase={canPurchase} />}
 
       {tab === 'shelf' && (
         <div className="mb-4 rounded-lg border border-blue-100 bg-blue-50/40 p-4">

@@ -95,7 +95,7 @@ export function App() {
       ) : activeModuleId === 'deliveries' ? (
         <DeliveriesPage />
       ) : activeModuleId === 'shelf' ? (
-        <ShelfPage />
+        <ShelfPage canManage={hasPermission(granted, 'supplier:mall:manage')} />
       ) : activeModuleId === 'invoices' ? (
         <ReceivablesPage />
       ) : activeModuleId === 'reconciliations' ? (

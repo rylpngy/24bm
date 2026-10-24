@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Banknote, Package, Pencil, Plus, Store } from 'lucide-react';
+import { ProductCenter } from './product-center';
+import { SupplierMallAfterSalesPanel } from './mall-after-sales-panel';
 import {
   type MallListingResponse,
-  useSupplierMallAfterSales,
-  useSupplierMallHandleAfterSales,
   useSupplierMallListings,
   useSupplierMallMaterials,
   useSupplierMallPublish,
@@ -22,7 +22,6 @@ import {
   ResponsiveTableFrame,
   SearchInput,
   cn,
-  StatusPill,
 } from '@24bid/ui';
 
 const inputCls =
@@ -87,19 +86,25 @@ function ListingEditPage({
   const [error, setError] = useState<string | null>(null);
 
   const busy = updatePrice.isPending || updateStatus.isPending;
-  const priceChanged = Number(price) > 0 && Number(price) !== listing.price;
+  const validPrice = Number.isFinite(Number(price)) && Number(price) > 0;
+  const priceChanged = validPrice && Number(price) !== listing.price;
   const statusChanged = status !== listing.status;
 
   const save = async () => {
     setError(null);
+    if (!validPrice) {
+      setError('请填写大于 0 的协议单价。');
+      return;
+    }
     try {
       if (priceChanged && listing.id) {
         await updatePrice.mutateAsync({ listingId: listing.id, data: { price: Number(price) } });
       }
-      if (statusChanged && listing.id) {
+      if (statusChanged && listing.id && (!priceChanged || status === '下架')) {
         await updateStatus.mutateAsync({ listingId: listing.id, data: { status } });
       }
-      onSaved('商品信息已保存。');
+      onSaved(priceChanged ? '价格已保存，商品需重新提交采购方审核。'
+        : statusChanged && status === '在架' ? '规格已启用，商品需重新提交审核。' : '商品信息已保存。');
     } catch (e) {
       setError(
         (e as { response?: { data?: { message?: string } } })?.response?.data?.message ??
@@ -168,6 +173,7 @@ function ListingEditPage({
                   <button
                     key={s}
                     type="button"
+                    disabled={s === '在架' && (priceChanged || listing.productStatus !== '在架')}
                     onClick={() => setStatus(s)}
                     className={cn(
                       'inline-flex h-9 flex-1 items-center justify-center rounded-lg border text-xs font-black transition',
@@ -197,7 +203,7 @@ function ListingEditPage({
               pendingLabel="保存中"
               size="md"
               flushTop
-              disabled={!priceChanged && !statusChanged}
+              disabled={!validPrice || (!priceChanged && !statusChanged)}
             >
               保存商品
             </PrimaryActionButton>
@@ -230,7 +236,7 @@ function ListingPublishPage({
   const submit = () => {
     const missing: string[] = [];
     if (!selected) missing.push('请选择「采购方物料」');
-    if (!(Number(price) > 0)) missing.push('请填写大于 0 的「协议单价(元)」');
+    if (!Number.isFinite(Number(price)) || !(Number(price) > 0)) missing.push('请填写大于 0 的「协议单价(元)」');
     setFormErrors(missing);
     if (missing.length > 0) return;
     setError(null);
@@ -348,95 +354,10 @@ function ListingPublishPage({
 const PAGE_SIZE = 10;
 
 // 商城货架:表格化商品列表(名称/分类/协议价/状态/操作)+ 独立发布与编辑页。
-/** M-4 售后待办:采购方按订单行提出,供应商在此处理(拒绝须给理由)。 */
-function AfterSalesInbox() {
+export function ShelfPage({ canManage = false }: { canManage?: boolean }) {
   const queryClient = useQueryClient();
-  const afterSales = useSupplierMallAfterSales();
-  const handle = useSupplierMallHandleAfterSales();
-  const [replies, setReplies] = useState<Record<string, string>>({});
-  const [error, setError] = useState<string | null>(null);
-
-  const rows = (afterSales.data?.data ?? []).filter(
-    (row) => row.status === '待处理' || row.status === '处理中',
-  );
-  if (rows.length === 0) {
-    return null;
-  }
-
-  const submit = (id: string, status: string) => {
-    setError(null);
-    handle.mutate(
-      { afterSalesId: id, data: { status, reply: (replies[id] ?? '').trim() } },
-      {
-        onSuccess: () => {
-          setReplies((cur) => ({ ...cur, [id]: '' }));
-          void queryClient.invalidateQueries({
-            predicate: (q) => typeof q.queryKey[0] === 'string'
-              && (q.queryKey[0] as string).includes('/supplier/mall'),
-          });
-        },
-        onError: (e) =>
-          setError(
-            (e as { response?: { data?: { message?: string } } })?.response?.data?.message
-            ?? '处理失败,请稍后重试',
-          ),
-      },
-    );
-  };
-
-  return (
-    <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50/50 p-3">
-      <p className="text-xs font-black text-amber-900">售后待办 {rows.length} 件</p>
-      {error && <div className="mt-2"><FeedbackNotice tone="error" message={error} /></div>}
-      <div className="mt-2 space-y-2">
-        {rows.map((row) => (
-          <div key={row.id} className="flex flex-wrap items-center gap-2 rounded-md bg-white px-3 py-2">
-            <span className="text-xs font-black text-slate-900">{row.type}</span>
-            <span className="text-xs font-bold text-slate-600">
-              {row.quantity} 件 · {row.reason}
-            </span>
-            <StatusPill label={row.status ?? ''} />
-            <input
-              aria-label={`处理回复 ${row.id}`}
-              className="h-8 min-w-40 flex-1 rounded border border-slate-200 bg-white px-2 text-[11px] font-bold text-slate-700"
-              placeholder="处理说明(拒绝时必填)"
-              value={replies[row.id ?? ''] ?? ''}
-              onChange={(e) => setReplies((cur) => ({ ...cur, [row.id ?? '']: e.target.value }))}
-            />
-            <button
-              type="button"
-              disabled={handle.isPending}
-              onClick={() => row.id && submit(row.id, '已拒绝')}
-              className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-2.5 text-[11px] font-black text-slate-600 hover:bg-slate-50 disabled:opacity-50"
-            >
-              拒绝
-            </button>
-            <button
-              type="button"
-              disabled={handle.isPending}
-              onClick={() => row.id && submit(row.id, '处理中')}
-              className="inline-flex h-8 items-center rounded-md border border-blue-200 bg-white px-2.5 text-[11px] font-black text-blue-700 hover:bg-blue-50 disabled:opacity-50"
-            >
-              受理
-            </button>
-            <button
-              type="button"
-              disabled={handle.isPending}
-              onClick={() => row.id && submit(row.id, '已完成')}
-              className="inline-flex h-8 items-center rounded-md bg-blue-600 px-2.5 text-[11px] font-black text-white hover:bg-blue-700 disabled:bg-slate-300"
-            >
-              完成
-            </button>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-
-export function ShelfPage() {
-  const queryClient = useQueryClient();
+  const [view, setView] = useState('products');
+  const [productBusy, setProductBusy] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [keyword, setKeyword] = useState('');
@@ -445,7 +366,7 @@ export function ShelfPage() {
   const [mode, setMode] = useState<'list' | 'publish' | 'edit'>('list');
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const listings = useSupplierMallListings();
+  const listings = useSupplierMallListings({ query: { enabled: view === 'listings' } });
   const updateStatus = useSupplierMallUpdateStatus();
   const submitForReview = useSupplierMallUpdateProductStatus();
 
@@ -489,17 +410,28 @@ export function ShelfPage() {
     refresh();
   };
 
-  if (mode === 'publish') {
+  if (mode === 'publish' && canManage) {
     return <ListingPublishPage onBack={() => backToList()} onSaved={(m) => backToList(m)} />;
   }
   const editing = editingId ? items.find((l) => l.id === editingId) : undefined;
-  if (mode === 'edit' && editing) {
+  if (mode === 'edit' && editing && canManage) {
     return <ListingEditPage listing={editing} onBack={() => backToList()} onSaved={(m) => backToList(m)} />;
   }
 
   return (
-    <Panel title="商城货架" icon={Store} subtitle="协议价商品 · 自主调价 · 上下架 · 售后处理">
-      <AfterSalesInbox />
+    <Panel title="商城货架" icon={Store} subtitle="商品规格 · 协议价 · 上架审核 · 售后处理">
+      <fieldset className="mb-4 min-w-0 disabled:opacity-60" disabled={productBusy || updateStatus.isPending || submitForReview.isPending}>
+        <FilterTabs items={[
+          { id: 'products', label: '商品中心' },
+          { id: 'listings', label: '协议货架' },
+          { id: 'after-sales', label: '售后办理' },
+        ]} value={view} onChange={(next) => {
+          if (!productBusy && !updateStatus.isPending && !submitForReview.isPending) setView(next);
+        }} />
+      </fieldset>
+      {view === 'products' ? <div role="tabpanel" aria-label="商品中心"><ProductCenter canManage={canManage} onBusyChange={setProductBusy} /></div>
+        : view === 'after-sales' ? <div role="tabpanel" aria-label="售后办理"><SupplierMallAfterSalesPanel canManage={canManage} /></div>
+          : <div role="tabpanel" aria-label="协议货架">
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <FilterTabs
           items={['全部', '在架', '待审核', '下架'].map((s) => ({
@@ -522,13 +454,13 @@ export function ShelfPage() {
               setPage(1);
             }}
           />
-          <button
+          {canManage && <button
             type="button"
             onClick={() => setMode('publish')}
             className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-slate-900 px-4 text-xs font-black text-white transition hover:bg-slate-800"
           >
             <Plus size={14} /> 发布商品
-          </button>
+          </button>}
         </div>
       </div>
 
@@ -581,7 +513,7 @@ export function ShelfPage() {
                 <p className="mt-2 font-mono text-sm font-black text-slate-900">
                   {currency(l.price)} <span className="text-[11px] font-bold text-slate-400">/ {l.unit ?? '件'}</span>
                 </p>
-                <button
+                {canManage && <button
                   type="button"
                   onClick={() => {
                     setEditingId(l.id ?? null);
@@ -590,7 +522,7 @@ export function ShelfPage() {
                   className="mt-3 inline-flex h-8 w-full items-center justify-center rounded-md border border-slate-200 bg-white text-xs font-black text-slate-600 hover:bg-slate-50"
                 >
                   编辑商品
-                </button>
+                </button>}
               </div>
             ))}
           >
@@ -640,7 +572,7 @@ export function ShelfPage() {
                         </span>
                       </td>
                       <td className="px-5 py-5">
-                        <div className="flex items-center justify-end gap-2">
+                        {canManage && <div className="flex items-center justify-end gap-2">
                           <button
                             type="button"
                             onClick={() => {
@@ -665,7 +597,7 @@ export function ShelfPage() {
                                   { listingId: l.id, data: { status: onShelf ? '下架' : '在架' } },
                                   {
                                     onSuccess: () => {
-                                      setFeedback(onShelf ? '商品已下架。' : '商品已重新上架。');
+                                      setFeedback(onShelf ? '商品已下架。' : '规格已启用，商品需重新提交审核。');
                                       refresh();
                                     },
                                     onError: reportError,
@@ -703,7 +635,7 @@ export function ShelfPage() {
                               提交审核
                             </button>
                           )}
-                        </div>
+                        </div>}
                       </td>
                     </tr>
                   );
@@ -714,6 +646,7 @@ export function ShelfPage() {
           <Pagination page={safePage} pageSize={PAGE_SIZE} total={filtered.length} onPageChange={setPage} />
         </>
       )}
+      </div>}
     </Panel>
   );
 }

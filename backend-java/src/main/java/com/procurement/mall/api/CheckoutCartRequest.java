@@ -11,5 +11,9 @@ import java.time.LocalDate;
 public record CheckoutCartRequest(
     String addressId,
     LocalDate expectedReceiptDate,
-    String remark) {
+    @jakarta.validation.constraints.Size(max=2000) String remark,
+    @jakarta.validation.constraints.NotBlank @jakarta.validation.constraints.Size(max=100) String idempotencyKey) {
+  public CheckoutCartRequest(String addressId,LocalDate expectedReceiptDate,String remark) {
+    this(addressId,expectedReceiptDate,remark,null);
+  }
 }

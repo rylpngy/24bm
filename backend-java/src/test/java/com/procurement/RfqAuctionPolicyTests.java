@@ -64,8 +64,11 @@ class RfqAuctionPolicyTests {
   @Test
   void missingStepDefaultsToUndercuttingCurrentLowest() {
     BigDecimal lowest = new BigDecimal("9000");
-    assertThatCode(() -> RfqAuctionPolicy.requireValidBid(
+    assertThatThrownBy(() -> RfqAuctionPolicy.requireValidBid(
         "竞价", START, null, lowest, lowest, "rfq-1"))
+        .isInstanceOf(IllegalStateException.class);
+    assertThatCode(() -> RfqAuctionPolicy.requireValidBid(
+        "竞价", START, null, lowest, lowest.subtract(BigDecimal.ONE), "rfq-1"))
         .doesNotThrowAnyException();
     assertThatThrownBy(() -> RfqAuctionPolicy.requireValidBid(
         "竞价", START, null, lowest, new BigDecimal("9001"), "rfq-1"))
@@ -97,5 +100,22 @@ class RfqAuctionPolicyTests {
         RfqAuctionPolicy.extendedDeadline(deadline, deadline.plusSeconds(1))).isNull();
     org.assertj.core.api.Assertions.assertThat(
         RfqAuctionPolicy.extendedDeadline(null, deadline)).isNull();
+  }
+
+  @Test
+  void configuredSoftCloseNeverShortensDeadline() {
+    var deadline = java.time.OffsetDateTime.parse("2026-10-24T18:00:00+08:00");
+    org.assertj.core.api.Assertions.assertThat(
+        RfqAuctionPolicy.extendedDeadline(deadline, deadline.minusMinutes(9), 10, 1)).isNull();
+  }
+
+  @Test
+  void plannedStartMustPrecedeDeadlineAndBidsMustWaitForStart() {
+    var start = java.time.OffsetDateTime.parse("2026-10-24T18:00:00+08:00");
+    assertThatThrownBy(() -> RfqAuctionPolicy.requireValidSchedule("竞价", start, start))
+        .isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> RfqAuctionPolicy.requireStarted("竞价", start, start.minusNanos(1)))
+        .isInstanceOf(IllegalStateException.class);
+    assertThatCode(() -> RfqAuctionPolicy.requireStarted("竞价", start, start)).doesNotThrowAnyException();
   }
 }

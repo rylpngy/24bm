@@ -21,7 +21,7 @@ public final class BidEvaluator {
   private BidEvaluator() {}
 
   public static List<ScoredQuote> evaluate(List<Quote> quotes, int priceWeight, int deliveryWeight) {
-    if (priceWeight < 0 || deliveryWeight < 0 || priceWeight + deliveryWeight == 0) {
+    if (priceWeight < 0 || deliveryWeight < 0 || (long) priceWeight + deliveryWeight == 0) {
       throw new IllegalArgumentException("权重必须非负且不能同时为 0");
     }
     if (quotes == null || quotes.isEmpty()) {
@@ -51,7 +51,9 @@ public final class BidEvaluator {
           return new ScoredQuote(q, priceScore, deliveryScore, weighted, 0);
         })
         .sorted(Comparator.comparing(ScoredQuote::weightedScore).reversed()
-            .thenComparing(s -> s.quote().amount()))
+            .thenComparing(s -> s.quote().amount(), Comparator.nullsLast(Comparator.naturalOrder()))
+            .thenComparing(s -> s.quote().submittedAt(), Comparator.nullsLast(Comparator.naturalOrder()))
+            .thenComparing(s -> s.quote().id()))
         .toList();
 
     return java.util.stream.IntStream.range(0, scored.size())

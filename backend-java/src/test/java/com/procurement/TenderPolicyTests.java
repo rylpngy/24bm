@@ -67,6 +67,20 @@ class TenderPolicyTests {
         .hasMessageContaining("已截止");
   }
 
+  @Test
+  void invitedAndOpenAcquisitionUseTheSameExclusiveDeadline() {
+    var now = OffsetDateTime.now();
+    assertThatThrownBy(() -> TenderPolicy.requireAcquisitionWindow(
+        tender("邀请招标", "发售中", "doc", now, now.plusDays(1), now.plusDays(2)), now))
+        .hasMessageContaining("已截止");
+    assertThatThrownBy(() -> TenderPolicy.requireAcquisitionWindow(
+        tender("公开招标", "发售中", "doc", null, now.plusDays(1), now.plusDays(2)), now))
+        .hasMessageContaining("已截止");
+    assertThatThrownBy(() -> TenderPolicy.requireAcquisitionWindow(
+        tender("邀请招标", "已流标", "doc", now.plusDays(1), now.plusDays(2), now.plusDays(3)), now))
+        .hasMessageContaining("不在发售期");
+  }
+
   // ── C-3 定时开标 ─────────────────────────────────────────────
   @Test
   void openingOnlyAfterScheduledTimeAndWhileOnSale() {

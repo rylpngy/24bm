@@ -11,6 +11,7 @@ import { EnterpriseReviewsPage } from './features/reviews/enterprise-reviews-pag
 import { SupplierCreditPage } from './features/suppliers/supplier-credit-page';
 import { DictionariesPage } from './features/settings/dictionaries-page';
 import { AnnouncementsPage } from './features/announcements/announcements-page';
+import { PublicCatalogReviewsPage } from './features/mall/public-catalog-reviews-page';
 
 export function App() {
   const session = useAuthStore((s) => s.session);
@@ -55,6 +56,8 @@ export function App() {
         <TenantsPage />
       ) : activeModuleId === 'reviews' ? (
         <EnterpriseReviewsPage />
+      ) : activeModuleId === 'mall' ? (
+        <PublicCatalogReviewsPage canManage={hasPermission(granted, 'platform:*')} />
       ) : activeModuleId === 'supplier-credit' ? (
         <SupplierCreditPage />
       ) : activeModuleId === 'announcements' ? (

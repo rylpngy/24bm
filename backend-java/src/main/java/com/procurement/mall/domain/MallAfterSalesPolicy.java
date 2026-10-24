@@ -19,6 +19,8 @@ public final class MallAfterSalesPolicy {
   public static final String STATUS_PROCESSING = "处理中";
   public static final String STATUS_DONE = "已完成";
   public static final String STATUS_REJECTED = "已拒绝";
+  public static final String STATUS_CONFIRMING = "待买方确认";
+  public static final String STATUS_WITHDRAWN = "已撤回";
 
   private static final Set<String> TYPES = Set.of(TYPE_RETURN, TYPE_EXCHANGE, TYPE_REPAIR);
   private static final Set<String> SUPPLIER_TARGET_STATUSES =
@@ -42,6 +44,9 @@ public final class MallAfterSalesPolicy {
     if (quantity == null || quantity.signum() <= 0) {
       throw new IllegalArgumentException("售后数量必须大于 0");
     }
+    if (quantity.stripTrailingZeros().scale() > 2) {
+      throw new IllegalArgumentException("售后数量最多两位小数");
+    }
     if (reason == null || reason.isBlank()) {
       throw new IllegalArgumentException("请填写售后原因(供应商据此判断处理方式)");
     }
@@ -56,7 +61,7 @@ public final class MallAfterSalesPolicy {
   }
 
   public static void requireHandleable(String currentStatus, String targetStatus, String reply) {
-    if (STATUS_DONE.equals(currentStatus) || STATUS_REJECTED.equals(currentStatus)) {
+    if (!STATUS_PENDING.equals(currentStatus) && !STATUS_PROCESSING.equals(currentStatus)) {
       throw new IllegalStateException("该售后单已结束(" + currentStatus + "),不可重复处理");
     }
     if (!SUPPLIER_TARGET_STATUSES.contains(targetStatus)) {
@@ -65,6 +70,29 @@ public final class MallAfterSalesPolicy {
     if (STATUS_REJECTED.equals(targetStatus) && (reply == null || reply.isBlank())) {
       throw new IllegalArgumentException("拒绝售后必须说明理由");
     }
+    if (STATUS_DONE.equals(targetStatus)) {
+      if (!STATUS_PROCESSING.equals(currentStatus)) {
+        throw new IllegalStateException("须先进入处理中再提交买方确认");
+      }
+      if (reply == null || reply.isBlank()) {
+        throw new IllegalArgumentException("完成办理必须填写处理回复");
+      }
+    }
+  }
+
+  public static void requireCumulativeQuantity(BigDecimal ordered, BigDecimal used, BigDecimal requested) {
+    if (ordered == null || used.add(requested).compareTo(ordered) > 0) {
+      throw new IllegalStateException("累计售后数量超过订购数量");
+    }
+  }
+
+  public static void requireBuyerAction(String status, String action) {
+    boolean allowed = switch (action) {
+      case "confirm" -> STATUS_CONFIRMING.equals(status);
+      case "withdraw" -> STATUS_PENDING.equals(status);
+      default -> false;
+    };
+    if (!allowed) throw new IllegalStateException("当前状态不可确认或撤回售后");
   }
 
   public static void requireReviewable(String orderStatus, int rating) {

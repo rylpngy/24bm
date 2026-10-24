@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.util.List;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
@@ -66,6 +67,19 @@ public interface PurchaseOrderMapper {
         and supplier_id = #{supplierId,jdbcType=VARCHAR}
       """)
   PurchaseOrder findByAwardSource(
+      @Param("tenantId") String tenantId,
+      @Param("rfqId") String rfqId,
+      @Param("supplierId") String supplierId);
+
+  @Options(useCache = false, flushCache = Options.FlushCachePolicy.TRUE)
+  @Select("""
+      select id, tenant_id, rfq_id, supplier_id, amount, status, expected_receipt_date, created_at, updated_at,
+             delivery_address, contact_name, contact_phone, payment_terms
+      from purchase_orders
+      where tenant_id = #{tenantId} and rfq_id = #{rfqId,jdbcType=VARCHAR}
+        and supplier_id = #{supplierId,jdbcType=VARCHAR}
+      """)
+  PurchaseOrder findByAwardSourceFresh(
       @Param("tenantId") String tenantId,
       @Param("rfqId") String rfqId,
       @Param("supplierId") String supplierId);

@@ -90,7 +90,7 @@ public class RfqAnnouncementService {
     insertRaw(tenantId, tenderId, "定标公告", title + " 中标公示",
         "「" + title + "」" + tenderType + "已定标,中标人:" + supplierName
             + (awardAmount == null ? "" : ",中标价 ¥" + awardAmount.toPlainString())
-            + "。中标通知书已电子签章送达,特此公示。",
+            + "。本平台发布定标结果通知,特此公示。",
         tenderType, null, null, null, null, supplierName, awardAmount, null);
   }
 

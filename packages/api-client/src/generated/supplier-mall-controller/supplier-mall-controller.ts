@@ -26,6 +26,7 @@ import type {
 
 import type {
   ApiResponseListMallAfterSalesResponse,
+  ApiResponseListMallCategory,
   ApiResponseListMallListingResponse,
   ApiResponseListMallProductResponse,
   ApiResponseListSupplierMallMaterialResponse,
@@ -35,6 +36,7 @@ import type {
   HandleAfterSalesRequest,
   SaveMallProductRequest,
   SaveMallSkuRequest,
+  SupplierMallCategoriesParams,
   SupplierPublishMallListingRequest,
   UpdateMallListingPriceRequest,
   UpdateMallListingStatusRequest,
@@ -877,6 +879,93 @@ export function useSupplierMallMaterials<TData = Awaited<ReturnType<typeof suppl
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getSupplierMallMaterialsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const supplierMallCategories = (
+    params?: SupplierMallCategoriesParams,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseListMallCategory>(
+      {url: `/api/v1/supplier/mall/categories`, method: 'GET',
+        params, signal
+    },
+      );
+    }
+
+
+
+
+export const getSupplierMallCategoriesQueryKey = (params?: SupplierMallCategoriesParams,) => {
+    return [
+    `/api/v1/supplier/mall/categories`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+
+export const getSupplierMallCategoriesQueryOptions = <TData = Awaited<ReturnType<typeof supplierMallCategories>>, TError = ErrorType<ApiResponseVoid>>(params?: SupplierMallCategoriesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierMallCategories>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSupplierMallCategoriesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierMallCategories>>> = ({ signal }) => supplierMallCategories(params, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierMallCategories>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type SupplierMallCategoriesQueryResult = NonNullable<Awaited<ReturnType<typeof supplierMallCategories>>>
+export type SupplierMallCategoriesQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useSupplierMallCategories<TData = Awaited<ReturnType<typeof supplierMallCategories>>, TError = ErrorType<ApiResponseVoid>>(
+ params: undefined |  SupplierMallCategoriesParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierMallCategories>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof supplierMallCategories>>,
+          TError,
+          Awaited<ReturnType<typeof supplierMallCategories>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSupplierMallCategories<TData = Awaited<ReturnType<typeof supplierMallCategories>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: SupplierMallCategoriesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierMallCategories>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof supplierMallCategories>>,
+          TError,
+          Awaited<ReturnType<typeof supplierMallCategories>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSupplierMallCategories<TData = Awaited<ReturnType<typeof supplierMallCategories>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: SupplierMallCategoriesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierMallCategories>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useSupplierMallCategories<TData = Awaited<ReturnType<typeof supplierMallCategories>>, TError = ErrorType<ApiResponseVoid>>(
+ params?: SupplierMallCategoriesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierMallCategories>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getSupplierMallCategoriesQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

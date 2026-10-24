@@ -38,7 +38,7 @@ public final class TenderPolicy {
         || tender.openingAt() == null) {
       throw new IllegalArgumentException("获取截止/递交截止/开标时间须全部设置后方可发布: " + tender.id());
     }
-    if (tender.acquisitionDeadline().isBefore(now)) {
+    if (!now.isBefore(tender.acquisitionDeadline())) {
       throw new IllegalArgumentException("文件获取截止时间须晚于当前时间: " + tender.id());
     }
     if (tender.submissionDeadline().isBefore(tender.acquisitionDeadline())
@@ -110,10 +110,14 @@ public final class TenderPolicy {
     if (!TYPE_OPEN.equals(tender.tenderType())) {
       throw new IllegalStateException("邀请招标的文件由招标人定向发放,不可自助领取: " + tender.id());
     }
+    requireAcquisitionWindow(tender, now);
+  }
+
+  public static void requireAcquisitionWindow(Tender tender, OffsetDateTime now) {
     if (!STATUS_ON_SALE.equals(tender.status())) {
       throw new IllegalStateException("招标文件不在发售期: " + tender.id());
     }
-    if (tender.acquisitionDeadline() != null && tender.acquisitionDeadline().isBefore(now)) {
+    if (tender.acquisitionDeadline() == null || !now.isBefore(tender.acquisitionDeadline())) {
       throw new IllegalStateException("文件获取已截止: " + tender.id());
     }
   }

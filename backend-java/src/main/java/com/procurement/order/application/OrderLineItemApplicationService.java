@@ -64,6 +64,16 @@ public class OrderLineItemApplicationService {
         1);
   }
 
+  @org.springframework.transaction.annotation.Transactional
+  public String addDirectLineWithSource(String tenantId,String orderId,String description,String unit,
+      java.math.BigDecimal quantity,java.math.BigDecimal unitPrice,String skuId,int sortNo) {
+    String id="oli-"+UUID.randomUUID();
+    orderLineItemMapper.insert(id,tenantId,orderId,description,unit,quantity,unitPrice,
+        quantity.multiply(unitPrice).setScale(2,java.math.RoundingMode.HALF_UP),sortNo);
+    orderLineItemMapper.assignSourceSku(tenantId,id,skuId);
+    return id;
+  }
+
   public List<OrderLineItemResponse> listForOrder(String tenantId, String orderId) {
     List<OrderLineItem> lines = orderLineItemMapper.listByOrder(tenantId, orderId);
     if (lines == null) {

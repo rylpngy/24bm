@@ -92,6 +92,12 @@ const toLocal = (v?: string | null) => (v ? v.slice(0, 16) : '');
 const toIso = (v: string) => (v ? new Date(v).toISOString() : undefined);
 
 // C-4 评标委员会与评分表:开标后组建(≥3 单数)→ 逐评委评分(技术/商务 0-100)→
+function eligibleTenderBids(tender: TenderResponse) {
+  // Additive DTO field; generated clients are refreshed by the integration task.
+  return (tender.bids ?? []).filter((bid) =>
+    (bid as typeof bid & { evaluationEligible?: boolean | null }).evaluationEligible === true);
+}
+
 // 汇总排名(价格分自动折算),全员交卷后标记推荐中标人。
 function EvaluationSection({
   tender: t,
@@ -121,7 +127,7 @@ function EvaluationSection({
   const evaluators = t.evaluators ?? [];
   const scores = t.scores ?? [];
   const summary = t.evaluationSummary ?? [];
-  const validBids = (t.bids ?? []).filter((b) => b.sealedStatus === '已开启');
+  const validBids = eligibleTenderBids(t);
   const reportApiError = (e: unknown) =>
     onError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? '操作失败,请稍后重试');
 
@@ -153,7 +159,7 @@ function EvaluationSection({
   };
 
   const doSubmitScores = () => {
-    if (!t.id || !currentEvaluator?.id) return;
+    if (!t.id || !currentEvaluator?.id || !sheetComplete || validBids.length === 0) return;
     onError(null);
     submitScores.mutate(
       {
@@ -465,7 +471,7 @@ function AwardSection({
         </h3>
         <div className="mt-3 grid gap-2 sm:grid-cols-3">
           <MiniFact label="中标人" value={winner?.supplierName ?? '—'} />
-          <MiniFact label="中标价" value={currency(winner?.bidAmount)} />
+          <MiniFact label="中标价" value={currency(summary.find((r) => r.bidId === t.awardedBidId)?.effectiveAmount ?? winner?.bidAmount)} />
           <MiniFact label="定标时间" value={shortTime(t.awardedAt)} />
         </div>
         {t.awardNoticeHtml && (
@@ -489,7 +495,7 @@ function AwardSection({
               <span className="ml-1 font-mono">{t.executionOrderId}</span>
               <span className="ml-2 text-slate-400">供应商确认后在「采购订单」沿 发货 → 验收 → 发票 → 付款 → 合同 链继续履约。</span>
             </p>
-          ) : !canManage ? <p className="text-xs text-slate-500">尚未生成执行采购订单。</p> : (
+          ) : !canManage || !can('buyer:order:manage') ? <p className="text-xs text-slate-500">尚未生成执行采购订单。</p> : (
             <div className="flex flex-wrap items-end gap-2">
               <label className="block">
                 <span className="text-xs font-black text-slate-500">预计到货日期</span>
@@ -521,7 +527,7 @@ function AwardSection({
   const noticeTemplate = () =>
     `<p><strong>${selected?.supplierName ?? ''}:</strong></p>` +
     `<p>贵方参加本项目「${t.title ?? ''}」(招标编号 ${t.tenderNo ?? ''})的投标,经评标委员会评审,` +
-    `贵方为中标人,中标价 ${selected?.bidAmount != null ? `¥${selected.bidAmount.toLocaleString('zh-CN')}` : ''}。` +
+    `贵方为中标人,中标价 ${currency(selected?.effectiveAmount ?? selected?.bidAmount)}。` +
     `请在收到本通知书后按招标文件约定与我方签订合同。</p>`;
 
   const doAward = () => {
@@ -532,13 +538,17 @@ function AwardSection({
       { tenderId: t.id, data: { bidId: selectedBidId, awardNoticeHtml: noticeHtml } },
       {
         onSuccess: () => {
+          onFeedback('已定标,中标通知书已保存。');
           if (signature && t.id) {
             esign.mutate(
               { data: { targetType: 'tender-award', targetId: t.id, signatureImage: signature, signerName: displayName } },
-              { onSettled: refresh },
+              {
+                onSuccess: () => onFeedback('已定标,中标通知书站内签署记录已保存。'),
+                onError: () => onError('定标已完成,但通知书签署记录保存失败,请核查签署记录。'),
+                onSettled: refresh,
+              },
             );
           }
-          onFeedback('已定标并签章中标通知书,结果已公示至投标各方。');
           refresh();
         },
         onError: reportApiError,
@@ -564,7 +574,7 @@ function AwardSection({
                   selectedBidId === r.bidId
                     ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
                     : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50')}>
-                {r.rank}. {r.supplierName} · {currency(r.bidAmount)}{r.recommended ? '(推荐)' : ''}
+                {r.rank}. {r.supplierName} · {currency(r.effectiveAmount ?? r.bidAmount)}{r.recommended ? '(推荐)' : ''}
               </button>
             ))}
           </div>
@@ -608,14 +618,15 @@ function BuyerTenderStepper({ tender: t }: { tender: TenderResponse }) {
   const failed = t.status === '已流标';
   const acquisitions = t.acquisitions ?? [];
   const sealedCount = (t.bids ?? []).filter((b) => b.sealedStatus === '已密封').length;
-  const validCount = (t.bids ?? []).filter((b) => b.sealedStatus === '已开启').length;
+  const openedCount = (t.bids ?? []).filter((b) => b.sealedStatus === '已开启').length;
+  const validCount = eligibleTenderBids(t).length;
   const evaluators = t.evaluators ?? [];
   const doneEvaluators = evaluators.filter((e) => (e.scoredCount ?? 0) >= validCount && validCount > 0).length;
   const winner = (t.bids ?? []).find((b) => b.id === t.awardedBidId);
   const captions: string[] = [
     '文件与时间节点',
     `发放 ${acquisitions.length} · 领取 ${acquisitions.filter((a) => a.acquiredAt).length} · 密封 ${sealedCount}`,
-    t.openedAt ? `有效投标 ${validCount} 份` : `开标 ${shortTime(t.openingAt)}`,
+    t.openedAt ? `已开启投标 ${openedCount} 份` : `开标 ${shortTime(t.openingAt)}`,
     evaluators.length > 0 ? `评委交卷 ${doneEvaluators}/${evaluators.length}` : '待组建委员会',
     t.status === '已定标'
       ? `${winner?.supplierName ?? '已定标'}${t.executionOrderId ? ' · 已转执行' : ''}`
@@ -1161,7 +1172,7 @@ export function TendersPage() {
                 <h3 className="text-base font-black text-slate-950">{t.openedAt ? '开标唱标' : '投标递交情况'}</h3>
                 <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-black text-slate-500">
                   {t.openedAt
-                    ? `已开标 ${shortTime(t.openedAt)} · 有效投标 ${(t.bids ?? []).filter((b) => b.sealedStatus === '已开启').length} 份`
+                    ? `已开标 ${shortTime(t.openedAt)} · 已开启投标 ${(t.bids ?? []).filter((b) => b.sealedStatus === '已开启').length} 份`
                     : `密封在案 ${(t.bids ?? []).filter((b) => b.sealedStatus === '已密封').length} 份`}
                 </span>
               </div>
@@ -1304,7 +1315,7 @@ export function TendersPage() {
                         : t.status === '评标中'
                           ? '评标进行中:全体评委交卷后产生推荐中标人,即可定标并签章中标通知书。'
                           : t.status === '已定标'
-                            ? '已定标:中标通知书已签发,结果已公示至投标各方。'
+                            ? '已定标:中标通知书已保存,签署状态见签署记录。'
                             : t.status === '已流标'
                               ? '已流标:留痕在案,可一键重新招标。'
                               : '发售已截止。'}
@@ -1328,7 +1339,7 @@ export function TendersPage() {
             {canManage && t.status === '发售中' && t.openingAt && new Date(t.openingAt) <= new Date() && (
               <PrimaryActionButton flushTop size="md" onClick={() =>
                 t.id && openTender.mutate({ tenderId: t.id },
-                  { onSuccess: () => { setFeedback('已开标:密封投标解封唱标,指纹核验结果已公示。'); refresh(); }, onError: reportError })}
+                  { onSuccess: () => { setFeedback('已开标:投标报价及指纹核验结果可在项目详情查看。'); refresh(); }, onError: reportError })}
                 busy={openTender.isPending} pendingLabel="开标中">
                 <Gavel size={14} /> 开标唱标
               </PrimaryActionButton>

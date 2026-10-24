@@ -127,6 +127,7 @@ public interface ThreeWayMatchMapper {
       """;
 
   @Select("select blocking_reason from finance_invoice_closeout_checks where tenant_id=#{tenantId} and invoice_id=#{invoiceId}")
+  @org.apache.ibatis.annotations.Options(flushCache = org.apache.ibatis.annotations.Options.FlushCachePolicy.TRUE, useCache = false)
   String paymentBlockingReason(@Param("tenantId") String tenantId, @Param("invoiceId") String invoiceId);
 
   @Insert(MATCH_INSERT + " select #{id}, " + MATCH_BODY + " and i.id=#{invoiceId} " + MATCH_CONFLICT)

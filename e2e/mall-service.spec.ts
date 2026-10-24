@@ -136,10 +136,20 @@ test('售后与评价:发货后可申请售后,收货后可评价且只能评一
       headers: supHeaders, data: { status: '已拒绝' },
     });
     expect(rejectWithoutReply.ok()).toBeFalsy();
+    const processing = await request.put(`${API}/supplier/mall/after-sales/${mine!.id}`, {
+      headers: supHeaders, data: { status: '处理中', reply: 'E2E 维修受理' },
+    });
+    expect(processing.ok()).toBeTruthy();
     const handled = await request.put(`${API}/supplier/mall/after-sales/${mine!.id}`, {
-      headers: supHeaders, data: { status: '已完成', reply: 'E2E 已上门维修' },
+      headers: supHeaders, data: { status: '已完成', reply: 'E2E 已上门维修', evidenceNo: 'E2E-REPAIR-001' },
     });
     expect(handled.ok()).toBeTruthy();
+    expect((await handled.json()).data.find((row: { id: string }) => row.id === mine!.id).status).toBe('待买方确认');
+    const confirmed = await request.post(`${API}/buyer/mall/after-sales/${mine!.id}/confirm`, {
+      headers: buy, data: { note: 'E2E 维修结果已核实' },
+    });
+    expect(confirmed.ok()).toBeTruthy();
+    expect((await confirmed.json()).data.find((row: { id: string }) => row.id === mine!.id).status).toBe('已完成');
   }
 
   // 评价:同一订单行只能评一次。

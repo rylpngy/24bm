@@ -1,5 +1,6 @@
 import type { MallProductResponse } from '@24bid/api-client';
 import { cn } from '@24bid/ui';
+import { BuyerProductImages } from './buyer-product-images';
 
 export const currency = (v?: number | null) =>
   v == null ? '待询价' : `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
@@ -21,6 +22,8 @@ export function ProductCard({
         'shadow-sm shadow-slate-200/50 transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md',
       )}
     >
+      {product.mainImageKey ? <BuyerProductImages productId={product.id} name={product.name} compact /> :
+        <p className="mb-2 text-xs text-slate-400">暂无商品图片</p>}
       <div className="flex items-start justify-between gap-2">
         <p className="min-w-0 flex-1 truncate text-sm font-black text-slate-950 group-hover:text-blue-700">
           {product.name}

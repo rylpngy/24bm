@@ -6,6 +6,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
@@ -64,6 +65,12 @@ public interface RfqMapper {
       where tenant_id = #{tenantId} and id = #{id}
       """)
   Rfq findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
+
+  // All quote/round/open/invitation mutations serialize on the parent project.
+  // Clear SESSION snapshots before waiting so post-lock reads observe committed state.
+  @Options(flushCache = Options.FlushCachePolicy.TRUE, useCache = false)
+  @Select("select id from rfqs where tenant_id = #{tenantId} and id = #{id} for update")
+  String lockByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
 
   @Select("""
       select r.id, r.tenant_id, r.title, r.status, r.deadline_at, r.owner_id, r.awarded_supplier_id, r.created_at, r.updated_at, r.quote_requirement, r.delivery_requirement, r.evaluation_method, r.opened_at, r.current_round, r.final_round, r.method, r.close_reason, r.auction_start_price, r.auction_min_decrement, r.single_source_reason, r.result_announced_at, r.auction_reserve_price, r.auction_planned_start, r.auction_soft_close_trigger_minutes, r.auction_soft_close_extend_minutes, r.auction_show_rank, r.auction_show_lowest, r.auction_show_competitor_names

@@ -7,9 +7,13 @@ import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 @Mapper
 public interface OrderLineItemMapper {
+
+  @Update("update order_line_items set source_sku_id=#{skuId} where tenant_id=#{tenantId} and id=#{id}")
+  void assignSourceSku(@Param("tenantId") String tenantId,@Param("id") String id,@Param("skuId") String skuId);
 
   @Insert("""
       insert into order_line_items

@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 // 供应商自助货架:查看/发布自己的协议价商品,自主调价与上下架。
@@ -39,6 +40,12 @@ public class SupplierMallController {
   @GetMapping("/materials")
   public ApiResponse<List<SupplierMallMaterialResponse>> materials() {
     return ApiResponse.ok(mallApplicationService.listSupplierMaterials());
+  }
+
+  @GetMapping("/categories")
+  public ApiResponse<List<com.procurement.mall.domain.MallCategory>> categories(
+      @RequestParam(required = false) String tenantId) {
+    return ApiResponse.ok(mallCatalogApplicationService.listCategoriesForSupplier(tenantId));
   }
 
   @PostMapping("/listings")

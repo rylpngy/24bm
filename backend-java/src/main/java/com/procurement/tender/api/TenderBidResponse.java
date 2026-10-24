@@ -19,5 +19,7 @@ public record TenderBidResponse(
     OffsetDateTime submittedAt,
     OffsetDateTime withdrawnAt,
     // 开标解封时按内容复算 SHA-256 与密封指纹比对:true=核验通过 / false=指纹异常;开标前为 null。
-    Boolean digestVerified) {
+    Boolean digestVerified,
+    // 服务端评审资格:含指纹、截止时间、领取及预审校验;开标前为 null。
+    Boolean evaluationEligible) {
 }

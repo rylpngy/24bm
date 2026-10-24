@@ -1,11 +1,13 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, ShieldCheck, ShoppingCart, Truck } from 'lucide-react';
 import { useBuyerMallAddToCart, useBuyerMallProduct } from '@24bid/api-client';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMallPermissions } from '../../lib/use-mall-permissions';
-import { FeedbackNotice, MiniFact, PrimaryActionButton, RichTextView, cn } from '@24bid/ui';
+import { FeedbackNotice, MiniFact, PrimaryActionButton, RichTextView, MallComparisonTable, cn } from '@24bid/ui';
+import { useMallComparison } from '@24bid/api-client/mall-purchasing';
 import type { MallRoute } from '../../App';
 import { currency } from './product-card';
+import { BuyerProductImages } from './buyer-product-images';
 
 /** 规格 JSON 转可读文案:{"颜色":"黑"} → 颜色 黑;单规格商品显示 SKU 编码。 */
 function specLabel(spec?: string, skuCode?: string) {
@@ -23,17 +25,22 @@ function specLabel(spec?: string, skuCode?: string) {
 /** 商品详情:规格切换 + 阶梯价 + 起订量/步进/库存/交期 + 加购。 */
 export function MallProductDetailPage({
   productId,
+  initialSkuId,
+  initialQuantity,
   onNavigate,
 }: {
   productId: string;
+  initialSkuId?: string;
+  initialQuantity?: number;
   onNavigate: (route: MallRoute) => void;
 }) {
   const queryClient = useQueryClient();
   const { can } = useMallPermissions();
   const product = useBuyerMallProduct(productId);
   const addToCart = useBuyerMallAddToCart();
-  const [skuId, setSkuId] = useState<string | null>(null);
-  const [quantity, setQuantity] = useState<string>('');
+  const [skuId, setSkuId] = useState<string | null>(initialSkuId ?? null);
+  const [comparisonOpen, setComparisonOpen] = useState(false);
+  const [quantity, setQuantity] = useState<string>(initialQuantity ? String(initialQuantity) : '');
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,6 +49,8 @@ export function MallProductDetailPage({
   const activeSku = skus.find((s) => s.id === skuId) ?? skus[0];
   const minQty = activeSku?.minOrderQty ?? 1;
   const currentQty = Number(quantity || minQty);
+  const comparison = useMallComparison(activeSku?.id, currentQty, comparisonOpen && can('buyer:mall:read'));
+  useEffect(() => { setSkuId(initialSkuId ?? null); setQuantity(initialQuantity ? String(initialQuantity) : ''); setFeedback(null); setError(null); setComparisonOpen(false); }, [productId, initialSkuId, initialQuantity]);
 
   // 当前数量适用的阶梯档:与后端 MallCatalogPolicy.effectivePrice 同口径。
   const effectivePrice = useMemo(() => {
@@ -95,6 +104,7 @@ export function MallProductDetailPage({
 
       <div className="grid gap-5 lg:grid-cols-[1fr_22rem]">
         <section className="min-w-0 space-y-4">
+          <BuyerProductImages productId={detail.id} name={detail.name} />
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/50">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl font-black text-slate-950">{detail.name}</h1>
@@ -236,6 +246,17 @@ export function MallProductDetailPage({
           </div>
         </aside>
       </div>
+      <section className="border-t border-slate-200 pt-4">
+        <button type="button" aria-expanded={comparisonOpen} onClick={() => setComparisonOpen((value) => !value)}
+          className="inline-flex h-9 items-center rounded-md border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 hover:bg-slate-50">
+          {comparisonOpen ? '收起同目录比价' : '同目录商品比价'}
+        </button>
+        {comparisonOpen && <div className="mt-3 space-y-3">
+          {comparison.isLoading && <FeedbackNotice tone="info" message="正在核对可采购商品及当前数量适用价格…" />}
+          {comparison.isError && <FeedbackNotice tone="error" message="比价信息加载失败，请重新展开重试。" />}
+          {comparison.data && <MallComparisonTable rows={comparison.data} onSelect={(row) => onNavigate({ name: 'product', productId: row.productId, skuId: row.skuId, quantity: currentQty })} />}
+        </div>}
+      </section>
     </div>
   );
 }

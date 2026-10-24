@@ -2,6 +2,9 @@ package com.procurement.mall.api;
 
 import jakarta.validation.constraints.NotBlank;
 
-/** 供应商处理售后(M-4):处理中 / 已完成 / 已拒绝;拒绝必须说明理由。 */
-public record HandleAfterSalesRequest(@NotBlank String status, String reply) {
+/** 已完成表示提交买方确认,须先受理并填写回复及凭据;拒绝必须说明理由。 */
+public record HandleAfterSalesRequest(@NotBlank String status, String reply, String evidenceNo) {
+  public HandleAfterSalesRequest(String status, String reply) {
+    this(status, reply, null);
+  }
 }

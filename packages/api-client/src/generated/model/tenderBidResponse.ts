@@ -18,4 +18,5 @@ export interface TenderBidResponse {
   submittedAt?: string;
   withdrawnAt?: string;
   digestVerified?: boolean;
+  evaluationEligible?: boolean;
 }

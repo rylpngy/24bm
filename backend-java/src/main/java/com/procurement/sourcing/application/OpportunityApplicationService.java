@@ -20,6 +20,12 @@ import org.springframework.transaction.annotation.Transactional;
 // 公开商机与报名参与:门户访客报名登记 → 采购方审核 → 转正式邀请接通报价链路。
 @Service
 public class OpportunityApplicationService {
+  private RfqApplicationService rfqAccess;
+
+  @org.springframework.beans.factory.annotation.Autowired
+  public void setRfqAccess(RfqApplicationService rfqAccess) {
+    this.rfqAccess = java.util.Objects.requireNonNull(rfqAccess);
+  }
   private final PublicOpportunityMapper publicOpportunityMapper;
   private final RfqEnrollmentMapper rfqEnrollmentMapper;
   private final RfqInviteMapper rfqInviteMapper;
@@ -100,6 +106,7 @@ public class OpportunityApplicationService {
       throw new IllegalStateException(
           "报名企业「" + enrollment.companyName() + "」尚未入驻平台或未通过认证,请先通过「供应商邀请」引导其入驻");
     }
+    rfqAccess.requireAdditionalInvitation(rfqId, supplierId);
     boolean alreadyInvited = rfqInviteMapper.listSupplierIds(tenantId, rfqId).contains(supplierId);
     if (!alreadyInvited) {
       rfqInviteMapper.insert("rfq-invite-" + UUID.randomUUID(), tenantId, rfqId, supplierId, "已邀请");

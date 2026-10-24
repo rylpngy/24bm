@@ -178,7 +178,7 @@ class SupplierQuoteAuditLogTests {
             "tenant-1",
             "quote-1",
             "ent-supplier-sunrise",
-            BigDecimal.valueOf(116000),
+            BigDecimal.valueOf(116000).setScale(2),
             BigDecimal.valueOf(13),
             6,
             "已提交"))
@@ -210,7 +210,7 @@ class SupplierQuoteAuditLogTests {
             "tenant-1",
             "quote-1",
             "ent-supplier-sunrise",
-            BigDecimal.valueOf(116000),
+            BigDecimal.valueOf(116000).setScale(2),
             BigDecimal.valueOf(13),
             6,
             "已提交"))

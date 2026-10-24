@@ -5,12 +5,21 @@ import java.math.BigDecimal;
 import java.util.List;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
 @Mapper
 public interface InvoiceMapper {
+
+  // Lock the shared parent before any invoice/request/contract lock in payment mutations.
+  @Select("""
+      select o.id from purchase_orders o join invoices i on i.tenant_id=o.tenant_id and i.order_id=o.id
+      where i.tenant_id=#{tenantId} and i.id=#{id} for update of o
+      """)
+  @Options(flushCache = Options.FlushCachePolicy.TRUE, useCache = false)
+  String lockOrderForInvoice(@Param("tenantId") String tenantId, @Param("id") String id);
 
   @Select("""
       select min(id) as id, tenant_id, order_id, null::text as receiver_id,
@@ -29,6 +38,7 @@ public interface InvoiceMapper {
              created_at, updated_at, invoice_code, invoice_date, tax_rate
       from invoices where tenant_id=#{tenantId} and id=#{id} for update
       """)
+  @Options(flushCache = Options.FlushCachePolicy.TRUE, useCache = false)
   Invoice lockByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
 
   @Select("""

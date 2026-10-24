@@ -16,7 +16,7 @@ import { MallOrdersPage } from './features/orders/mall-orders-page';
 export type MallRoute =
   | { name: 'home' }
   | { name: 'category'; categoryId?: string; keyword?: string }
-  | { name: 'product'; productId: string }
+  | { name: 'product'; productId: string; skuId?: string; quantity?: number }
   | { name: 'cart' }
   | { name: 'checkout' }
   | { name: 'orders' };
@@ -29,7 +29,8 @@ function readRoute(): MallRoute {
   if (view === 'checkout') return { name: 'checkout' };
   if (view === 'orders') return { name: 'orders' };
   const productId = params.get('product');
-  if (productId) return { name: 'product', productId };
+  const quantity = Number(params.get('quantity'));
+  if (productId) return { name: 'product', productId, skuId: params.get('sku') ?? undefined, quantity: Number.isFinite(quantity) && quantity > 0 ? quantity : undefined };
   if (params.has('category') || params.has('q')) {
     return {
       name: 'category',
@@ -43,13 +44,15 @@ function readRoute(): MallRoute {
 function writeRoute(route: MallRoute) {
   const url = new URL(window.location.href);
   url.searchParams.delete('product');
+  url.searchParams.delete('sku');
+  url.searchParams.delete('quantity');
   url.searchParams.delete('category');
   url.searchParams.delete('q');
   url.searchParams.delete('view');
   if (route.name === 'cart' || route.name === 'checkout' || route.name === 'orders') {
     url.searchParams.set('view', route.name);
   }
-  if (route.name === 'product') url.searchParams.set('product', route.productId);
+  if (route.name === 'product') { url.searchParams.set('product', route.productId); if (route.skuId) url.searchParams.set('sku', route.skuId); if (route.quantity) url.searchParams.set('quantity', String(route.quantity)); }
   if (route.name === 'category') {
     if (route.categoryId) url.searchParams.set('category', route.categoryId);
     if (route.keyword) url.searchParams.set('q', route.keyword);
@@ -168,7 +171,7 @@ export function App() {
                 />
               )}
               {route.name === 'product' && (
-                <MallProductDetailPage productId={route.productId} onNavigate={navigate} />
+                <MallProductDetailPage productId={route.productId} initialSkuId={route.skuId} initialQuantity={route.quantity} onNavigate={navigate} />
               )}
               {route.name === 'cart' && <MallCartPage onNavigate={navigate} />}
               {route.name === 'checkout' && <MallCheckoutPage onNavigate={navigate} />}

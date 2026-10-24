@@ -49,9 +49,10 @@ test('服务端购物车:实时计价 + 失效行拦截 + 结算落收货信息'
   expect(cart.data.groups[0].lines[0].blockedReason).toContain('起订');
 
   const blockedCheckout = await request.post(`${API}/buyer/mall/cart/checkout`, {
-    headers: buy, data: {},
+    headers: buy, data: { idempotencyKey: crypto.randomUUID() },
   });
   expect(blockedCheckout.ok()).toBeFalsy();
+  expect(await blockedCheckout.text()).toContain('起订');
 
   // 改量 10:落 90 档,合计 900,恢复可结算。
   cart = await (await request.put(`${API}/buyer/mall/cart/items`, {
@@ -74,7 +75,7 @@ test('服务端购物车:实时计价 + 失效行拦截 + 结算落收货信息'
 
   // 结算:清单来自服务端购物车,成功后购物车清空。
   const checkout = await request.post(`${API}/buyer/mall/cart/checkout`, {
-    headers: buy, data: { addressId },
+    headers: buy, data: { addressId, idempotencyKey: crypto.randomUUID() },
   });
   expect(checkout.ok()).toBeTruthy();
   const orders = (await checkout.json()).data as Array<{ amount: number }>;
