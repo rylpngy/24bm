@@ -6,6 +6,7 @@ procurement:
   security:
     allow-demo-jwt-secret: false
     self-issued-login-enabled: false
+    self-issued-token-accepted: false
     tenant-header-fallback-enabled: false
 spring:
   flyway:

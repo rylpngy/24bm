@@ -74,6 +74,7 @@ procurement:
     # 自研 JWT 签发(/auth/login)开关:生产以 Keycloak 为唯一签发方时置 false 退役;
     # 默认 true 仅为 CI/测试确定性(令牌验签仍双签发器共存)。
     self-issued-login-enabled: ${SELF_LOGIN_ENABLED:true}
+    self-issued-token-accepted: ${SELF_TOKEN_ACCEPTED:true}
     # 无 Bearer 时信任 X-Tenant-Id 等请求头的旧原型兼容路径;默认关闭,生产禁止开启。
     tenant-header-fallback-enabled: ${TENANT_HEADER_FALLBACK_ENABLED:false}
     # CORS 来源白名单(逗号分隔);默认包含四端 dev、preview 与鲁东 POC 本地端口(5188)。
@@ -95,4 +96,6 @@ flowable:
 # Keycloak(OIDC):后端作为资源服务器,通过 JWKS 验签 Keycloak 令牌(与自研 JWT 双签发器共存)。
 keycloak:
   enabled: ${KEYCLOAK_ENABLED:true}
+  issuer-uri: ${KEYCLOAK_ISSUER_URI:}
+  audience: ${KEYCLOAK_AUDIENCE:}
   jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://localhost:8081/realms/24bid/protocol/openid-connect/certs}

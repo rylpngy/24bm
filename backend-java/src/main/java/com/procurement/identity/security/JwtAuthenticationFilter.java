@@ -21,17 +21,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
   private final JwtTokenService jwtTokenService;
   private final KeycloakTokenService keycloakTokenService;
   private final AuthenticatedSessionService authenticatedSessionService;
+  private final boolean acceptSelfIssuedTokens;
 
   public JwtAuthenticationFilter(
       JwtTokenService jwtTokenService, KeycloakTokenService keycloakTokenService,
-      AuthenticatedSessionService authenticatedSessionService) {
+      AuthenticatedSessionService authenticatedSessionService,
+      @org.springframework.beans.factory.annotation.Value("${procurement.security.self-issued-token-accepted:true}") boolean acceptSelfIssuedTokens) {
     this.jwtTokenService = jwtTokenService;
     this.keycloakTokenService = keycloakTokenService;
     this.authenticatedSessionService = authenticatedSessionService;
+    this.acceptSelfIssuedTokens = acceptSelfIssuedTokens;
   }
 
   // 先用自研 JWT 验签;失败再回退 Keycloak(OIDC/JWKS)。两条签发器路径共存。
   private AuthenticatedPrincipal authenticate(String token) {
+    if (!acceptSelfIssuedTokens) {
+      if (keycloakTokenService.isEnabled()) return keycloakTokenService.parse(token);
+      throw new org.springframework.security.authentication.BadCredentialsException("External identity provider required");
+    }
     try {
       return jwtTokenService.parse(token);
     } catch (RuntimeException selfJwtFailure) {

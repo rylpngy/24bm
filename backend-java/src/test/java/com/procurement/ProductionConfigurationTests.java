@@ -16,12 +16,15 @@ class ProductionConfigurationTests {
         .withProperty("app.seed.locations", "")
         .withProperty("procurement.security.allow-demo-jwt-secret", "false")
         .withProperty("procurement.security.self-issued-login-enabled", "false")
+        .withProperty("procurement.security.self-issued-token-accepted", "false")
         .withProperty("procurement.security.tenant-header-fallback-enabled", "false")
         .withProperty("spring.flyway.clean-disabled", "true")
         .withProperty("spring.flyway.baseline-on-migrate", "false")
         .withProperty("spring.flyway.out-of-order", "false")
         .withProperty("spring.flyway.validate-on-migrate", "true")
         .withProperty("keycloak.enabled", "true")
+        .withProperty("keycloak.issuer-uri", "https://identity.example.edu/realms/company")
+        .withProperty("keycloak.audience", "24bid-api")
         .withProperty("keycloak.jwk-set-uri", "https://identity.example.edu/realms/company/protocol/openid-connect/certs")
         .withProperty("procurement.security.cors-allowed-origins", "https://buyer.example.edu,https://supplier.example.edu");
   }
@@ -32,6 +35,7 @@ class ProductionConfigurationTests {
 
   @Test void rejectsUnsafeOverrides() {
     for (String key : new String[] {"procurement.security.allow-demo-jwt-secret",
+        "procurement.security.self-issued-token-accepted",
         "procurement.security.self-issued-login-enabled", "procurement.security.tenant-header-fallback-enabled",
         "spring.flyway.baseline-on-migrate", "spring.flyway.out-of-order"}) {
       assertThatThrownBy(() -> ProductionConfiguration.validate(safe().withProperty(key, "true")))
@@ -44,6 +48,10 @@ class ProductionConfigurationTests {
   }
 
   @Test void rejectsSeedsAndUnsafeIdentityEndpointsWithoutLeakingValues() {
+    assertThatThrownBy(() -> ProductionConfiguration.validate(safe().withProperty("keycloak.audience", "")))
+        .hasMessageContaining("keycloak.audience");
+    assertThatThrownBy(() -> ProductionConfiguration.validate(safe().withProperty("keycloak.issuer-uri", "")))
+        .hasMessageContaining("keycloak.issuer-uri");
     assertThatThrownBy(() -> ProductionConfiguration.validate(safe().withProperty("app.seed.locations", "classpath:db/demo")))
         .hasMessageContaining("app.seed.locations");
     for (String value : new String[] {"http://identity.example.edu/certs", "https://user:secret@id.example.edu/certs", "https://localhost/certs", "https://127.0.0.1/certs", "invalid"}) {

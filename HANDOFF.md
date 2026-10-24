@@ -2,6 +2,10 @@
 
 ## 当前状态（2026-10-24，以本节为准）
 
+PR123已完成三项CI并合并发布，原系统当前固定版本`ff2bcc4b59023e819a62307ea4a261abc7f4cffe`，目录`/Users/epl/.codex/deployments/24bid-base/ff2bcc4b5902`。四端真实登录、桌面/手机12项只读检查通过；新备份`srm-backup-1792831516995`含163表、5对象，发布及浏览器后摘要一致。原库`procurement_saas_base`及原桶`24bid-attachments`保留，本次无SQL/种子变更，未启用prod。首次CI因Keycloak镜像仓库503失败，重跑后通过，不重复修业务代码。
+
+当前后续开发分支`codex/production-recovery-identity-capacity`已完成issuer/audience验签及prod禁自签令牌、复用恢复工具和副本容量测量；1094项Java单元、236项数据库集成和7项运维测试通过。新数据库/新桶恢复163表和5对象后，登录、历史查询及摘要核验通过；700请求/并发8错误0，P95约175ms，仅本地小样本。原商城媒体元数据无对应引用，应用层商城图片下载未覆盖，5对象均已在新桶认证读取比对；不制造记录掩盖缺口。新增代码尚未随PR123发布，后续PR/CI以GitHub为准。详见`docs/production-stage-five-round-two.md`；正式客户SSO、账号同步、容量规模和RTO/RPO仍需实际环境与口径，不写成全阶段生产验收通过。以下为历史快照。
+
 第五阶段已开始，开发分支`codex/production-stage-five-readiness`，基于实际已合并并发布的PR122/main `e7224b9a81a506bbe3a891803cee04feebd049d6`。原系统5173—5176/API8080仍使用该固定发布，原库及附件保持不变。第五阶段先完成生产专用安全配置/有效属性校验、只读压测显式授权及失败阈值、生产运维文档纠偏；具体范围见`docs/production-stage-five-plan.md`和`docs/production-stage-five-operations.md`。本段为本批开发快照，不表示第五阶段已完成或已发布。正式身份、第三方供应链、支付、签章和模型联调尚缺客户环境、凭据及授权，不得标为通过；严禁在本地原系统自动启用prod配置导致演示登录失效。当前固定发布及数据核验以`/Users/epl/.codex/deployments/24bid-base/e7224b9a81a5/RESTORATION.md`为准，下方第四阶段“交付前”等均为历史过程。
 
 第四阶段“平台管理、统计与AI整合”的功能与本地验收已完成，开发分支为 `codex/platform-insights-ai-stage-four`，基线为 PR121/main `029f88a7beb4d90a8d0729c74091adc414edbb7f`，不要再次拆小轮重复实现。本轮包含平台原子配置/字典、组织多角色及并发保护、需求与招标编号、统计导出、四类通用AI及制度版本。范围、操作和真实验收见 `docs/superpowers/plans/2026-10-24-platform-insights-ai-stage-four.md`、`docs/platform-insights-ai-stage-four-guide.md`、`docs/platform-insights-ai-stage-four-acceptance.md`。Java21整仓1085单元及236数据库测试已通过；真实HTTP、桌面/手机及原157表/126旧迁移副本保留已核验。本节是交付前源码快照，PR/CI及原系统最终运行版本必须查看GitHub和 `/Users/epl/.codex/deployments/24bid-base/*/release.json`、`RESTORATION.md`，不能由此断言已发布。发布前运行基线为固定029f目录；本轮备份 `srm-backup-1792824123872` 含157表和5附件。保留 `procurement_saas_base` 与 `24bid-attachments`，严禁用隔离8095验收库替代。下方历轮“未发布”等是旧过程记录。AI仍由人工决定，未联调外部正式模型；下一阶段为生产运行与真实第三方接口条件，不重复本阶段功能。

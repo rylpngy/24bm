@@ -4,6 +4,10 @@ import com.procurement.identity.domain.AuthenticatedPrincipal;
 import com.procurement.identity.domain.IdentityScope;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.jwt.JwtClaimValidator;
+import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
@@ -15,13 +19,20 @@ import org.springframework.stereotype.Service;
 public class KeycloakTokenService {
   private final boolean enabled;
   private final String jwkSetUri;
+  private final String issuer;
+  private final String audience;
   private volatile JwtDecoder decoder;
 
+  @Autowired
   public KeycloakTokenService(
       @Value("${keycloak.enabled:true}") boolean enabled,
-      @Value("${keycloak.jwk-set-uri:}") String jwkSetUri) {
+      @Value("${keycloak.jwk-set-uri:}") String jwkSetUri,
+      @Value("${keycloak.issuer-uri:}") String issuer,
+      @Value("${keycloak.audience:}") String audience) {
     this.enabled = enabled;
     this.jwkSetUri = jwkSetUri;
+    this.issuer = issuer == null ? "" : issuer.trim();
+    this.audience = audience == null ? "" : audience.trim();
   }
 
   public boolean isEnabled() {
@@ -34,7 +45,14 @@ public class KeycloakTokenService {
       synchronized (this) {
         local = decoder;
         if (local == null) {
-          local = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
+          var nimbus = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
+          var validator = issuer.isBlank() ? JwtValidators.createDefault() : JwtValidators.createDefaultWithIssuer(issuer);
+          if (!audience.isBlank()) {
+            validator = new DelegatingOAuth2TokenValidator<>(validator,
+                new JwtClaimValidator<List<String>>("aud", values -> values != null && values.contains(audience)));
+          }
+          nimbus.setJwtValidator(validator);
+          local = nimbus;
           decoder = local;
         }
       }
