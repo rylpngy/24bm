@@ -305,7 +305,8 @@ import org.springframework.test.web.servlet.MvcResult;
     com.procurement.tender.api.SupplierTenderController.class,
     com.procurement.tenant.api.BuyerCapabilityController.class,
     com.procurement.ludongpoc.api.LudongPocController.class,
-    com.procurement.identity.api.SessionPermissionController.class
+    com.procurement.identity.api.SessionPermissionController.class,
+    com.procurement.identity.api.ExternalIdentityController.class
 })
 @Import({
     SecurityConfig.class,
@@ -320,6 +321,7 @@ import org.springframework.test.web.servlet.MvcResult;
     "procurement.security.jwt-expires-in-seconds=7200"
 })
 class HttpSecurityContractTests {
+  @MockBean private com.procurement.identity.application.ExternalIdentityService externalIdentities;
   @Test
   void budgetLifecycleRequiresAuthenticatedBuyerPortal() throws Exception {
     String supplierToken = loginAndExtractToken("""

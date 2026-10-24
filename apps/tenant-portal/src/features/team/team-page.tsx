@@ -12,6 +12,7 @@ import {
 import { ConfirmDialog, FeedbackNotice, Pagination, StatusPill, Tabs } from '@24bid/ui';
 import { BuyerMemberEditorDialog } from '../shared/buyer-member-editor-dialog';
 import { NotificationChannelPanel } from './notification-channel-panel';
+import { ExternalIdentityPanel } from './external-identity-panel';
 import { RolePermissionWorkbench } from './role-permission-workbench';
 import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
 
@@ -44,7 +45,7 @@ function TeamManagementPage({ requireEmployeeNo = false }: { requireEmployeeNo?:
   const rolesQuery = useBuyerRoleList();
   const changeStatus = useBuyerUserChangeStatus();
   const resetPassword = useBuyerUserResetPassword();
-  const [tab, setTab] = useState<'members' | 'roles' | 'notify'>('members');
+  const [tab, setTab] = useState<'members' | 'roles' | 'notify' | 'identity'>('members');
   const [keyword, setKeyword] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -179,9 +180,10 @@ function TeamManagementPage({ requireEmployeeNo = false }: { requireEmployeeNo?:
               { id: 'members', label: '团队成员', icon: Users, badge: users.length },
               { id: 'roles', label: '角色与权限', icon: ShieldCheck, badge: roles.length },
               { id: 'notify', label: '通知渠道', icon: Bell },
+              { id: 'identity', label: '统一身份', icon: KeyRound },
             ]}
             value={tab}
-            onChange={(value) => setTab(value as 'members' | 'roles' | 'notify')}
+            onChange={(value) => setTab(value as 'members' | 'roles' | 'notify' | 'identity')}
           />
         </div>
 
@@ -352,6 +354,7 @@ function TeamManagementPage({ requireEmployeeNo = false }: { requireEmployeeNo?:
 
           {tab === 'roles' && <RolePermissionWorkbench />}
           {tab === 'notify' && <NotificationChannelPanel />}
+          {tab === 'identity' && <ExternalIdentityPanel />}
         </div>
       </section>
 

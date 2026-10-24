@@ -35,3 +35,4 @@ export * from './qualification-workflow';
 
 export * from './generated/model';
 export * from './generated/controllers';
+export * from './external-identity';

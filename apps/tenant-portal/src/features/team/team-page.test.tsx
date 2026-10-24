@@ -18,6 +18,7 @@ vi.mock('@24bid/api-client', () => ({
 vi.mock('../shared/buyer-member-editor-dialog', () => ({ BuyerMemberEditorDialog: () => null }));
 vi.mock('./role-permission-workbench', () => ({ RolePermissionWorkbench: () => null }));
 vi.mock('./notification-channel-panel', () => ({ NotificationChannelPanel: () => null }));
+vi.mock('./external-identity-panel', () => ({ ExternalIdentityPanel: () => null }));
 afterEach(() => { cleanup(); vi.clearAllMocks(); api.canManage = true; });
 function show() { render(<QueryClientProvider client={new QueryClient()}><TeamPage /></QueryClientProvider>); }
 it('submits the API inactive status when disabling a member', () => {

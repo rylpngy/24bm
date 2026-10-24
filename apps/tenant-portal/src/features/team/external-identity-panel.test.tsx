@@ -1,0 +1,21 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { beforeEach, afterEach, expect, it, vi } from 'vitest';
+import { ExternalIdentityPanel } from './external-identity-panel';
+const api=vi.hoisted(()=>({list:vi.fn(),state:vi.fn(),create:vi.fn(),change:vi.fn(),remap:vi.fn(),can:true}));
+vi.mock('../../lib/use-buyer-permissions',()=>({useBuyerPermissions:()=>({can:()=>api.can})}));
+vi.mock('@24bid/api-client',()=>({externalBindings:api.list,identityReadiness:api.state,createExternalBinding:api.create,changeExternalBinding:api.change,remapExternalBinding:api.remap,useBuyerUserList:()=>({data:{data:[{id:'u1',name:'张老师',employeeNo:'1001',status:'active'}]}})}));
+beforeEach(()=>{api.can=true;api.list.mockResolvedValue({items:[],total:0,page:1,pageSize:10});api.state.mockResolvedValue({externalEnabled:true,issuerConfigured:true,issuer:'https://id.example.edu',totalBindings:0,activeBindings:0,strictMapping:true,pendingItems:['待客户联调']});api.create.mockResolvedValue({});api.change.mockResolvedValue({});});
+afterEach(()=>{cleanup();vi.resetAllMocks();});
+function show(){render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><ExternalIdentityPanel/></QueryClientProvider>);}
+it('does not expose or load management without permission',()=>{api.can=false;show();expect(screen.queryByText('新增映射')).toBeNull();expect(api.list).not.toHaveBeenCalled();});
+it('makes missing configuration explicit and disables creating bindings',async()=>{api.state.mockResolvedValue({externalEnabled:true,issuerConfigured:false,issuer:'',totalBindings:0,activeBindings:0,pendingItems:['配置issuer']});show();await screen.findByText('尚未配置');expect((screen.getByRole('button',{name:'新增映射'}) as HTMLButtonElement).disabled).toBe(true);});
+it('submits actual member/sub and reason then refreshes',async()=>{show();await waitFor(()=>expect((screen.getByRole('button',{name:'新增映射'}) as HTMLButtonElement).disabled).toBe(false));fireEvent.click(screen.getByRole('button',{name:'新增映射'}));fireEvent.change(screen.getByLabelText('映射成员'),{target:{value:'u1'}});fireEvent.change(screen.getByLabelText('外部账号标识'),{target:{value:' external-1001 '}});fireEvent.change(screen.getByLabelText('绑定依据'),{target:{value:'工号核对'}});fireEvent.click(screen.getByRole('button',{name:'保存映射'}));await waitFor(()=>expect(api.create).toHaveBeenCalledWith({userId:'u1',subject:'external-1001',reason:'工号核对'}));await screen.findByText(/映射已创建/);});
+it('preserves revision in status changes and displays backend failure',async()=>{api.list.mockResolvedValue({items:[{id:'b1',userId:'u1',name:'张老师',subject:'ext1',issuer:'https://id.example.edu',enabled:true,revision:7,userStatus:'active',reason:'核对'}],total:1});api.change.mockRejectedValue({response:{data:{message:'映射已被修改，请刷新后重试'}}});show();fireEvent.click(await screen.findByRole('button',{name:'停用'}));fireEvent.change(screen.getByLabelText(/变更原因/),{target:{value:'离岗'}});fireEvent.click(screen.getByRole('button',{name:'确认变更'}));await waitFor(()=>expect(api.change).toHaveBeenCalledWith('b1',{enabled:false,revision:7,reason:'离岗'}));await screen.findByText('映射已被修改，请刷新后重试');});
+it('shows explicit list failure without rendering stale mutations',async()=>{api.list.mockRejectedValue(new Error('offline'));show();await screen.findByText('账号映射加载失败，请刷新重试。');expect(screen.queryByRole('button',{name:'停用'})).toBeNull();});
+it('uses the separate remap endpoint and preserves its revision',async()=>{
+  api.remap.mockResolvedValue({});api.list.mockResolvedValue({items:[{id:'b2',userId:'old',name:'原成员',subject:'immutable-sub',issuer:'https://id.example.edu',enabled:true,revision:4,userStatus:'active',reason:'核验'}],total:1});
+  show();fireEvent.click(await screen.findByRole('button',{name:'重新绑定'}));expect((screen.getByLabelText('外部账号标识') as HTMLInputElement).disabled).toBe(true);
+  fireEvent.change(screen.getByLabelText('映射成员'),{target:{value:'u1'}});fireEvent.change(screen.getByLabelText('绑定依据'),{target:{value:'修正映射'}});fireEvent.click(screen.getByRole('button',{name:'保存映射'}));
+  await waitFor(()=>expect(api.remap).toHaveBeenCalledWith('b2',{userId:'u1',revision:4,reason:'修正映射'}));
+});
