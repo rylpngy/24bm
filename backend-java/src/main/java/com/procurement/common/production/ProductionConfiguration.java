@@ -22,6 +22,7 @@ public class ProductionConfiguration implements InitializingBean {
 
   public static void validate(Environment env) {
     for (String key : new String[] {"procurement.security.allow-demo-jwt-secret",
+        "procurement.security.self-issued-token-accepted",
         "procurement.security.self-issued-login-enabled", "procurement.security.tenant-header-fallback-enabled",
         "spring.flyway.baseline-on-migrate", "spring.flyway.out-of-order"}) {
       require("false".equalsIgnoreCase(env.getProperty(key)), key);
@@ -31,6 +32,8 @@ public class ProductionConfiguration implements InitializingBean {
     }
     require(env.getProperty("app.seed.locations", "").isBlank(), "app.seed.locations");
     secureUri(env.getProperty("keycloak.jwk-set-uri", ""), "keycloak.jwk-set-uri", false);
+    secureUri(env.getProperty("keycloak.issuer-uri", ""), "keycloak.issuer-uri", false);
+    require(!env.getProperty("keycloak.audience", "").isBlank(), "keycloak.audience");
     String origins = env.getProperty("procurement.security.cors-allowed-origins", "");
     require(!origins.isBlank(), "procurement.security.cors-allowed-origins");
     for (String origin : origins.split(",", -1)) {

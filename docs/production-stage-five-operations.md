@@ -6,7 +6,7 @@
 
 生产配置组件会校验最终生效属性，显式覆盖为危险值也不能通过。须提供HTTPS的Keycloak证书地址与准确HTTPS前端CORS来源；不允许通配符、路径、令牌或账户密码出现在来源中。生产启动校验不是数据库迁移前独立预检，正式启动前仍须检查部署配置并完成副本预演。只设置环境变量`SELF_LOGIN_ENABLED`不会覆盖生产YAML固定的安全值；不得使用直接Spring属性覆盖尝试放宽限制。
 
-仍需按受控部署系统注入数据库、对象存储、JWT等密钥，禁用通知书演示签署密钥，并在网关/防火墙限制Prometheus到监控网络。HTTPS校验不等于证书、realm、签发者及数据权限已经验收。不得将本地compose默认账号、Keycloak start-dev或演示realm直接用于生产。
+仍需按受控部署系统注入数据库、对象存储、JWT等密钥，禁用通知书演示签署密钥，并在网关/防火墙限制Prometheus到监控网络。配置`KEYCLOAK_ISSUER_URI`为真实realm签发者、`KEYCLOAK_AUDIENCE`为本API受众；prod要求两项完整，签名正确但签发者/受众错误、过期令牌均拒绝。prod同时拒绝历史自签JWT，不只是关闭签发按钮；本地保持兼容。每次请求仍重新读取当前账号及角色，停用或移除角色不能依赖旧令牌继续取得权限。HTTPS及这些校验不等于客户证书、realm、单点登录体验及账号同步已经验收。不得将本地compose默认账号、Keycloak start-dev或演示realm直接用于生产。
 
 ## 只读容量检查
 
@@ -18,7 +18,11 @@
 
 ## 备份恢复及身份验收
 
-已有PR122固定发布记录包含数据库/附件备份、实际最终JAR副本迁移、逐表摘要和附件SHA256核验。不重复以源代码或数据库文件存在推断可恢复。下一次恢复演练使用新建临时数据库及独立对象桶，验证登录、历史单据、附件下载和摘要；不得覆盖`procurement_saas_base`或`24bid-attachments`。
+已有PR122固定发布记录包含数据库/附件备份、实际最终JAR副本迁移、逐表摘要和附件SHA256核验。不重复以源代码或数据库文件存在推断可恢复。`pnpm recovery:drill`使用新建临时数据库及独立对象桶，验证登录、历史单据、对象原件和摘要；不得覆盖`procurement_saas_base`或`24bid-attachments`。
+
+恢复工具必填环境：`DRILL_AUTHORIZED=true`、`DRILL_BACKUP_MANIFEST`（包含dump SHA256及数据库/附件清单的备份记录）、`DRILL_RELEASE_ROOT`（现有固定发布目录）、`DRILL_JAR`、`DRILL_EXPECTED_JAR_SHA256`、`DRILL_DB_CONTAINER`（独立PostgreSQL容器）、`DRILL_SMOKE_ACCOUNT`、`DRILL_SMOKE_PASSWORD`、`DRILL_SMOKE_TENANT`、`DRILL_REPORT`（新报告路径）。当前本地驱动适配既有Docker PostgreSQL/MinIO及macOS Java21路径，不是跨平台一键生产恢复程序。
+
+可选`DRILL_LOAD_REQUESTS`、`DRILL_LOAD_CONCURRENCY`在恢复副本上执行只读压力阈值检查。可选平台账号验证已有商城媒体记录的HTTP下载；无对应记录时必须报告覆盖缺口，不能制造原有附件记录。所有对象均实际从新桶认证回读并对比SHA256。工具不删除目标，失败目标保留排查，应用子进程验证后停止；数据库及桶的清理需要另行授权。演练日志/报告按敏感文件管理，不能随代码提交备份、原件或凭据。
 
 身份专项需在客户正式Keycloak/统一认证环境验证开户、角色调整、停用、离职、现有会话权限收敛和应急管理员；不得把当前开发账号登录当作统一认证验收。
 
