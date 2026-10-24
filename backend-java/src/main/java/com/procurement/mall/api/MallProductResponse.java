@@ -27,7 +27,9 @@ public record MallProductResponse(
     int skuCount,
     List<MallSkuResponse> skus,
     List<String> mediaKeys,
-    OffsetDateTime updatedAt) {
+    OffsetDateTime updatedAt,
+    /** Immutable destination, used to load visible categories when editing; null for public products. */
+    String tenantId) {
 
   public record MallSkuResponse(
       String id,

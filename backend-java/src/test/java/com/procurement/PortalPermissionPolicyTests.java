@@ -6,6 +6,57 @@ import org.junit.jupiter.api.Test;
 
 class PortalPermissionPolicyTests {
   @Test
+  void mallCheckoutNotesRequireOrderReadRatherThanCatalogReadOrPurchase() {
+    for (String scope : java.util.List.of("buyer", "supplier")) {
+      assertThat(required(scope, "GET", "mall/orders/o/checkout-note")).isEqualTo(scope + ":order:read");
+      assertThat(required(scope, "HEAD", "mall/orders/o/checkout-note")).isEqualTo(scope + ":order:read");
+      for (String method : java.util.List.of("POST", "PUT", "PATCH", "DELETE")) {
+        assertThat(required(scope, method, "mall/orders/o/checkout-note")).isEqualTo(scope + ":*");
+      }
+    }
+    assertThat(required("buyer", "GET", "mall/products")).isEqualTo("buyer:mall:read");
+    assertThat(required("supplier", "GET", "mall/products")).isEqualTo("supplier:mall:read");
+    assertThat(required("buyer", "POST", "mall/orders")).isEqualTo("buyer:mall:purchase");
+    assertThat(required("buyer", "POST", "mall/orders/batch")).isEqualTo("buyer:mall:purchase");
+    assertThat(required("buyer", "POST", "mall/cart/checkout")).isEqualTo("buyer:mall:purchase");
+  }
+
+  @Test
+  void rfqReadsAndAuctionStreamUseReadPermissionWithoutGrantingMutations() {
+    for (String route : java.util.List.of("rfqs", "auction-stream", "rfqs/r/evaluation", "rfqs/r/result",
+        "rfqs/r/supplier-performance", "rfqs/r/notice", "rfqs/r/notice/verify", "rfqs/r/notice.pdf",
+        "rfqs/r/announcements", "rfqs/r/enrollments", "rfqs/r/clarifications", "rfqs/r/execution",
+        "rfqs/r/execution/archives/a/download")) {
+      assertThat(required("buyer", "GET", route)).as(route).isEqualTo("buyer:rfq:read");
+      assertThat(required("buyer", "HEAD", route)).as(route).isEqualTo("buyer:rfq:read");
+    }
+  }
+
+  @Test
+  void rfqManagementAndApprovalEndpointsHaveDistinctPermissions() {
+    for (String route : java.util.List.of("rfqs", "rfqs/r/open", "rfqs/r/publish", "rfqs/r/remind",
+        "rfqs/r/abort", "rfqs/r/new-round", "rfqs/r/award", "rfqs/r/notice/issue",
+        "rfqs/r/result/announce", "rfqs/r/clarifications/bulletin", "rfqs/r/clarifications/c/answer",
+        "rfqs/r/enrollments/e/accept", "rfqs/r/enrollments/e/dismiss", "rfqs/r/execution/archives")) {
+      assertThat(required("buyer", "POST", route)).as(route).isEqualTo("buyer:rfq:manage");
+    }
+    assertThat(required("buyer", "PUT", "rfqs/r")).isEqualTo("buyer:rfq:manage");
+    assertThat(required("buyer", "PUT", "rfqs/r/invitations")).isEqualTo("buyer:rfq:manage");
+    assertThat(required("buyer", "POST", "rfqs/r/award/approval")).isEqualTo("buyer:workflow:review");
+  }
+
+  @Test
+  void unknownRfqRoutesAndUnsupportedMethodsStillFailClosed() {
+    assertThat(required("buyer", "POST", "auction-stream")).isEqualTo("buyer:*");
+    assertThat(required("buyer", "GET", "auction-stream/other")).isEqualTo("buyer:*");
+    assertThat(required("buyer", "GET", "rfqs/r/unknown")).isEqualTo("buyer:*");
+    assertThat(required("buyer", "POST", "rfqs/r/unknown")).isEqualTo("buyer:*");
+    assertThat(required("buyer", "DELETE", "rfqs/r")).isEqualTo("buyer:*");
+    assertThat(required("buyer", "GET", "rfqs/r/award/approval")).isEqualTo("buyer:*");
+    assertThat(required("buyer", "PUT", "rfqs/r/award/approval")).isEqualTo("buyer:*");
+  }
+
+  @Test
   void buyerFulfillmentAndAdmissionActionsDoNotInheritUnrelatedWritePermissions() {
     assertThat(required("buyer", "GET", "orders")).isEqualTo("buyer:order:read");
     assertThat(required("buyer", "PUT", "orders/o")).isEqualTo("buyer:order:manage");

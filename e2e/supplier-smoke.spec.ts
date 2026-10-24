@@ -50,6 +50,8 @@ test('商城货架:表格列表 + 发布商品页 + 编辑商品页', async ({ p
   await loginViaKeycloak(page);
   await openModule(page, /商城货架/);
   await expect(page.getByRole('heading', { name: '商城货架', level: 3 })).toBeVisible();
+  await expect(page.getByRole('tab', { name: '商品中心', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('tab', { name: '协议货架', exact: true }).click();
   await expect(page.getByPlaceholder(/搜索商品/)).toBeVisible();
 
   // 发布商品独立页
@@ -59,6 +61,7 @@ test('商城货架:表格列表 + 发布商品页 + 编辑商品页', async ({ p
   await expect(page.getByText('销售信息')).toBeVisible();
   await page.getByRole('button', { name: '返回商品列表' }).click();
   await expect(page.getByRole('heading', { name: '商城货架', level: 3 })).toBeVisible();
+  await expect(page.getByRole('tab', { name: '协议货架', exact: true })).toHaveAttribute('aria-selected', 'true');
 
   // 编辑商品独立页(有商品时)
   const editButtons = page.getByRole('button', { name: /编辑/ });
@@ -68,6 +71,7 @@ test('商城货架:表格列表 + 发布商品页 + 编辑商品页', async ({ p
   await expect(page.getByText('协议单价(元)')).toBeVisible();
   await page.getByRole('button', { name: '取消' }).click();
   await expect(page.getByRole('heading', { name: '商城货架', level: 3 })).toBeVisible();
+  await expect(page.getByRole('tab', { name: '协议货架', exact: true })).toHaveAttribute('aria-selected', 'true');
 });
 
 test('配套功能页:发货管理 / 对账单 / 资质认证 / 员工管理', async ({ page }) => {

@@ -1,4 +1,5 @@
 import { expect, test, type APIRequestContext } from '@playwright/test';
+import { createHash } from 'node:crypto';
 import { expectLoggedIn, loginViaKeycloak, openModule } from './helpers';
 
 // Track C C-1 行为级:招标文件编制(富文本)→ 发布发售 → 台账与详情状态推进。唯一标题可重复执行。
@@ -56,10 +57,12 @@ async function seedOpenedReadyTender(request: APIRequestContext) {
     data: {
       title, tenderType: '公开招标', budget: 300000, evaluationMethod: '最低评标价法',
       documentHtml: '<p>E2E 开标唱标验证正文。</p>',
-      acquisitionDeadline: iso(6), submissionDeadline: iso(8), openingAt: iso(10),
+      acquisitionDeadline: iso(12), submissionDeadline: iso(14), openingAt: iso(16),
     },
   });
-  const id = (await created.json()).data.id as string;
+  expect(created.ok(), await created.text()).toBeTruthy();
+  const createdTender = (await created.json()).data;
+  const id = createdTender.id as string;
   expect((await request.post(`${API}/buyer/tenders/${id}/publish`, { headers: { Authorization: `Bearer ${buyer}` } })).ok()).toBeTruthy();
   expect((await request.post(`${API}/supplier/tenders/${id}/acquire`, { headers: { Authorization: `Bearer ${sup}` } })).ok()).toBeTruthy();
   expect((await request.post(`${API}/supplier/tenders/${id}/bids`, {
@@ -67,13 +70,21 @@ async function seedOpenedReadyTender(request: APIRequestContext) {
     data: { bidAmount: 258000, documentHtml: '<p>E2E 密封投标函。</p>' },
   })).ok()).toBeTruthy();
   // 等到约定开标时间(定时开标:提前开标会被规则拒绝)
-  await new Promise((r) => setTimeout(r, 11_000));
-  return { title, id, buyer };
+  await expect.poll(() => Date.now(), { timeout: 20_000 }).toBeGreaterThanOrEqual(Date.parse(createdTender.openingAt));
+  return { title, id, buyer, sup };
+}
+
+async function tenderDetail(request: APIRequestContext, buyer: string, id: string) {
+  const response = await request.get(`${API}/buyer/tenders`, { headers: { Authorization: `Bearer ${buyer}` } });
+  expect(response.ok(), await response.text()).toBeTruthy();
+  const detail = (await response.json()).data.find((t: { id: string }) => t.id === id);
+  expect(detail).toBeTruthy();
+  return detail;
 }
 
 // C-3 行为级:密封投标 → 到时开标唱标 → 报价解封公示 + 指纹核验通过。
 test('开标唱标:定时开标 → 解封报价 → 指纹核验', async ({ page, request }) => {
-  const { title } = await seedOpenedReadyTender(request);
+  const { title, id, buyer } = await seedOpenedReadyTender(request);
 
   await loginViaKeycloak(page);
   await expectLoggedIn(page, /招标管理/);
@@ -85,19 +96,29 @@ test('开标唱标:定时开标 → 解封报价 → 指纹核验', async ({ pag
   // 开标前:递交登记密封在案,底部出现开标入口
   await expect(page.getByText('投标递交情况')).toBeVisible();
   await expect(page.getByText(/密封在案 1 份/)).toBeVisible();
+  const sealed = (await tenderDetail(request, buyer, id)).bids;
+  expect(sealed).toHaveLength(1);
+  expect(sealed[0].bidAmount).toBeNull();
+  expect(sealed[0].documentHtml).toBeNull();
+  const openedResponse = page.waitForResponse(r => r.request().method() === 'POST' && r.url().endsWith(`/buyer/tenders/${id}/open`));
   await page.getByRole('button', { name: /开标唱标/ }).click();
+  expect((await openedResponse).ok()).toBeTruthy();
 
   // 开标后:金额解封公示 + 指纹核验通过
-  await expect(page.getByText(/已开标:密封投标解封唱标/)).toBeVisible();
+  await expect(page.getByText('已开标:投标报价及指纹核验结果可在项目详情查看。', { exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: '开标唱标', exact: true })).toBeVisible();
   await expect(page.getByText('¥258,000.00')).toBeVisible();
   await expect(page.getByText('核验通过', { exact: true })).toBeVisible();
-  await expect(page.getByText(/有效投标 1 份/).first()).toBeVisible();
+  await expect(page.getByText(/已开启投标 1 份/).first()).toBeVisible();
+  const opened = (await tenderDetail(request, buyer, id)).bids[0];
+  expect(opened.digestVerified).toBe(true);
+  expect(opened.evaluationEligible).toBe(true);
+  expect(opened.bidAmount).toBe(258000);
 });
 
 // C-4 行为级:开标 → 组建委员会(3 人)→ 评委交卷(UI 一人 + API 两人)→ 推荐中标标记。
 test('评标:组建委员会 → 评分交卷 → 汇总排名与推荐中标', async ({ page, request }) => {
-  const { title, id, buyer } = await seedOpenedReadyTender(request);
+  const { title, id, buyer, sup } = await seedOpenedReadyTender(request);
   expect((await request.post(`${API}/buyer/tenders/${id}/open`, { headers: { Authorization: `Bearer ${buyer}` } })).ok()).toBeTruthy();
 
   await loginViaKeycloak(page);
@@ -116,6 +137,40 @@ test('评标:组建委员会 → 评分交卷 → 汇总排名与推荐中标', 
   await expect(page.getByText('评标委员会已组建')).toBeVisible();
   await expect(page.getByText('张评委(组长)')).toBeVisible();
 
+  const detail = await tenderDetail(request, buyer, id);
+  const eligible = detail.bids.filter((b: { evaluationEligible?: boolean }) => b.evaluationEligible === true);
+  expect(eligible).toHaveLength(1);
+  const bidId = eligible[0].id;
+
+  // 问询和二次报价须在评分前完成,不能在全员交卷后改变评审依据。
+  await page.getByLabel('问询内容').fill('报价高于预算,请给出修订报价');
+  await page.getByLabel('问询类别').selectOption('二次报价');
+  const inquiryResponse = page.waitForResponse(r => r.request().method() === 'POST' && r.url().endsWith(`/buyer/tenders/${id}/inquiries`));
+  await page.getByRole('button', { name: '发出问询' }).click();
+  expect((await inquiryResponse).ok()).toBeTruthy();
+  await expect(page.getByText(/已向投标人发出二次报价/)).toBeVisible();
+  const supplierList = await request.get(`${API}/supplier/tenders`, { headers: { Authorization: `Bearer ${sup}` } });
+  expect(supplierList.ok()).toBeTruthy();
+  const supplierTender = (await supplierList.json()).data.find((t: { id: string }) => t.id === id);
+  const inquiry = supplierTender.inquiries.find((i: { kind: string }) => i.kind === '二次报价');
+  expect(inquiry?.id).toBeTruthy();
+  const pendingScore = await request.post(`${API}/buyer/tenders/${id}/scores`, {
+    headers: { Authorization: `Bearer ${buyer}` },
+    data: { evaluatorId: detail.evaluators[0].id, lines: [{ bidId, technicalScore: 90, commercialScore: 85 }] },
+  });
+  expect(pendingScore.status()).toBe(400);
+  expect((await pendingScore.json()).message).toContain('问询答复');
+  expect((await tenderDetail(request, buyer, id)).scores).toHaveLength(0);
+  const answered = await request.post(`${API}/supplier/tenders/${id}/inquiries/${inquiry.id}/answer`, {
+    headers: { Authorization: `Bearer ${sup}` }, data: { answer: 'E2E 同意下调', revisedAmount: 168000 },
+  });
+  expect(answered.ok(), await answered.text()).toBeTruthy();
+  await page.reload();
+  await openModule(page, /招标管理/);
+  await page.getByPlaceholder(/按项目名称/).fill(title);
+  await page.getByRole('button', { name: '搜索' }).click();
+  await page.locator('table tr', { hasText: title }).first().getByRole('button', { name: '详情' }).click();
+
   // 评委1 UI 交卷(显式点选组长,避免默认选中依赖排序)
   await page.getByRole('button', { name: '张评委(组长)' }).click();
   await page.getByLabel(/技术分-/).fill('90');
@@ -124,10 +179,8 @@ test('评标:组建委员会 → 评分交卷 → 汇总排名与推荐中标', 
   await expect(page.getByText(/评委「张评委」评分已提交/)).toBeVisible();
 
   // 评委2/3 API 交卷
-  const listRes = await request.get(`${API}/buyer/tenders`, { headers: { Authorization: `Bearer ${buyer}` } });
-  const detail = ((await listRes.json()).data as Array<{ id?: string; evaluators?: Array<{ id?: string }>; bids?: Array<{ id?: string }> }>).find((x) => x.id === id);
-  const bidId = detail?.bids?.[0]?.id ?? '';
-  for (const ev of (detail?.evaluators ?? []).slice(1)) {
+  expect((await tenderDetail(request, buyer, id)).evaluationSummary.some((r: { recommended: boolean }) => r.recommended)).toBe(false);
+  for (const ev of detail.evaluators.filter((e: { evaluatorName: string }) => e.evaluatorName !== '张评委')) {
     expect((await request.post(`${API}/buyer/tenders/${id}/scores`, {
       headers: { Authorization: `Bearer ${buyer}` },
       data: { evaluatorId: ev.id, lines: [{ bidId, technicalScore: 88, commercialScore: 80 }] },
@@ -143,50 +196,44 @@ test('评标:组建委员会 → 评分交卷 → 汇总排名与推荐中标', 
   await expect(page.getByText('评标汇总排名')).toBeVisible();
   await expect(page.getByText('推荐中标', { exact: true })).toBeVisible();
   await expect(page.getByText('已交卷').first()).toBeVisible();
-
-  // C-9 评标问询:UI 发出二次报价 → API 以供应商身份答复修订价 → 汇总显示修订价与「二次」标记
-  await page.getByLabel('问询内容').fill('报价高于预算,请给出修订报价');
-  await page.getByLabel('问询类别').selectOption('二次报价');
-  await page.getByRole('button', { name: '发出问询' }).click();
-  await expect(page.getByText(/已向投标人发出二次报价/)).toBeVisible();
-
-  const supLogin = await request.post(`${API}/auth/login`, {
-    data: { account: 'supplier.sales@example.com', password: 'demo123456', scope: 'SUPPLIER', supplierId: 'ent-supplier-sunrise' },
-  });
-  const sup = (await supLogin.json()).data.accessToken as string;
-  const svList = await request.get(`${API}/supplier/tenders`, { headers: { Authorization: `Bearer ${sup}` } });
-  const sv = ((await svList.json()).data as Array<{ id?: string; inquiries?: Array<{ id?: string; kind?: string }> }>).find((x) => x.id === id);
-  const inq = sv?.inquiries?.find((i) => i.kind === '二次报价');
-  expect((await request.post(`${API}/supplier/tenders/${id}/inquiries/${inq?.id}/answer`, {
-    headers: { Authorization: `Bearer ${sup}` },
-    data: { answer: 'E2E 同意下调', revisedAmount: 168000 },
-  })).ok()).toBeTruthy();
-
-  await page.reload();
-  await openModule(page, /招标管理/);
-  await page.getByPlaceholder(/按项目名称/).fill(title);
-  await page.getByRole('button', { name: '搜索' }).click();
-  await page.locator('table tr', { hasText: title }).first().getByRole('button', { name: '详情' }).click();
+  await expect(page.getByText('评委交卷 3/3', { exact: true })).toBeVisible();
   await expect(page.getByText('E2E 同意下调')).toBeVisible();
   await expect(page.getByText('¥168,000.00').first()).toBeVisible();
   await expect(page.getByText('二次', { exact: true }).first()).toBeVisible();
+  const completed = await tenderDetail(request, buyer, id);
+  expect(completed.evaluators.every((e: { scoredCount: number }) => e.scoredCount === eligible.length)).toBe(true);
+  expect(completed.evaluationSummary.find((r: { bidId: string }) => r.bidId === bidId).effectiveAmount).toBe(168000);
+  const lateInquiry = await request.post(`${API}/buyer/tenders/${id}/inquiries`, {
+    headers: { Authorization: `Bearer ${buyer}` }, data: { bidId, kind: '二次报价', question: '评分后不得变更报价' },
+  });
+  expect(lateInquiry.status()).toBe(400);
+  expect((await lateInquiry.json()).message).toContain('已有评分留痕');
+  const unchanged = await tenderDetail(request, buyer, id);
+  expect(unchanged.inquiries).toEqual(completed.inquiries);
+  expect(unchanged.scores).toEqual(completed.scores);
+  expect(unchanged.evaluationSummary).toEqual(completed.evaluationSummary);
 });
 
-// C-5 行为级:评标完成 → 定标(默认推荐)+ 手写签章通知书 → 结果卡与签章留痕。
-test('定标:签章中标通知书 → 结果公示与留痕', async ({ page, request }) => {
+// C-5:定标后另行保存站内手写签署记录,不将定标成功等同于签署成功或外部 CA 认证。
+test('定标:手写签署中标通知书 → 结果与真实签署留痕', async ({ page, request }) => {
   const { title, id, buyer } = await seedOpenedReadyTender(request);
   expect((await request.post(`${API}/buyer/tenders/${id}/open`, { headers: { Authorization: `Bearer ${buyer}` } })).ok()).toBeTruthy();
   const committee = await request.post(`${API}/buyer/tenders/${id}/committee`, {
     headers: { Authorization: `Bearer ${buyer}` },
     data: { members: [{ name: '张评委', role: '组长' }, { name: '李评委', role: '成员' }, { name: '王评委', role: '成员' }] },
   });
-  const detail = (await committee.json()).data as { evaluators?: Array<{ id?: string }>; bids?: Array<{ id?: string }> };
-  const bidId = detail.bids?.[0]?.id ?? '';
-  for (const ev of detail.evaluators ?? []) {
-    await request.post(`${API}/buyer/tenders/${id}/scores`, {
+  expect(committee.ok(), await committee.text()).toBeTruthy();
+  const detail = (await committee.json()).data;
+  const eligible = detail.bids.filter((b: { evaluationEligible?: boolean }) => b.evaluationEligible === true);
+  expect(eligible).toHaveLength(1);
+  expect(detail.evaluators).toHaveLength(3);
+  const bidId = eligible[0].id;
+  for (const ev of detail.evaluators) {
+    const scored = await request.post(`${API}/buyer/tenders/${id}/scores`, {
       headers: { Authorization: `Bearer ${buyer}` },
       data: { evaluatorId: ev.id, lines: [{ bidId, technicalScore: 90, commercialScore: 85 }] },
     });
+    expect(scored.ok(), await scored.text()).toBeTruthy();
   }
 
   await loginViaKeycloak(page);
@@ -209,11 +256,31 @@ test('定标:签章中标通知书 → 结果公示与留痕', async ({ page, re
   await page.mouse.move(box.x + 150, box.y + box.height / 2 - 10, { steps: 8 });
   await page.mouse.up();
   await expect(submit).toBeEnabled();
+  const awardResponse = page.waitForResponse(r => r.request().method() === 'POST' && r.url().endsWith(`/buyer/tenders/${id}/award`));
+  const signatureResponse = page.waitForResponse(r => r.request().method() === 'POST' && r.url().endsWith('/buyer/esign-records'));
   await submit.click();
-  await expect(page.getByText(/已定标并签章中标通知书/)).toBeVisible();
+  expect((await awardResponse).ok()).toBeTruthy();
+  const signature = await signatureResponse;
+  expect(signature.ok(), await signature.text()).toBeTruthy();
+  await expect(page.getByText('已定标,中标通知书站内签署记录已保存。', { exact: true })).toBeVisible();
   await expect(page.getByText('定标结果与中标通知书')).toBeVisible();
   await expect(page.getByText('中标人', { exact: true })).toBeVisible();
   await expect(page.getByText('招标人签章留痕')).toBeVisible();
+  const awarded = await tenderDetail(request, buyer, id);
+  expect(awarded.status).toBe('已定标');
+  expect(awarded.awardedBidId).toBe(bidId);
+  const recordsResponse = await request.get(`${API}/buyer/esign-records?targetType=tender-award&targetId=${id}`, {
+    headers: { Authorization: `Bearer ${buyer}` },
+  });
+  expect(recordsResponse.ok()).toBeTruthy();
+  const records = (await recordsResponse.json()).data;
+  expect(records).toHaveLength(1);
+  expect(records[0]).toMatchObject({ targetType: 'tender-award', targetId: id, signerScope: 'BUYER' });
+  expect(records[0].signedAt).toBeTruthy();
+  expect(records[0].signatureImage).toMatch(/^data:image\/png;base64,/);
+  const winner = awarded.bids.find((b: { id: string }) => b.id === bidId);
+  const sha = (value: string) => createHash('sha256').update(value).digest('hex');
+  expect(records[0].contentDigest).toBe(sha(`tender-award:${id}|bid:${bidId}|supplier:${winner.supplierId}|sealedDigest:${winner.contentDigest}|notice:${sha(awarded.awardNoticeHtml)}`));
 
   // C-7 中标转执行:填预计到货日期 → 生成执行采购订单 → 订单号回显
   const dateStr = new Date(Date.now() + 30 * 86400_000).toISOString().slice(0, 10);

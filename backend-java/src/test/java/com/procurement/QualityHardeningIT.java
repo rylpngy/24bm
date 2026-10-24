@@ -1288,7 +1288,9 @@ class QualityHardeningIT {
       buyerRead(token, path, 403);
     }
     for (String path : List.of("mall/cart/items", "mall/cart/checkout", "mall/listings", "mall/addresses", "mall/orders", "tenders")) {
-      financeCall(token, "POST", "/api/v1/buyer/" + path, Map.of(), 403);
+      Map<String,Object> body = path.equals("mall/cart/checkout") || path.equals("mall/orders")
+          ? Map.of("idempotencyKey", UUID.randomUUID().toString()) : Map.of();
+      financeCall(token, "POST", "/api/v1/buyer/" + path, body, 403);
     }
     jdbc.update("update roles set permissions = '[]'::jsonb where id = ?", role);
     buyerRead(token, "mall/listings", 403);
@@ -1384,15 +1386,30 @@ class QualityHardeningIT {
         Map.of("supplierId", "s-" + user, "materialId", "m-" + user, "price", 100, "unit", "件"), 200);
     String sku = listing.path("id").asText();
     assertThat(sku).isNotEmpty();
+    Map<String,Map<String,Object>> checkoutRequests = Map.of(
+        "orders", Map.of("listingId", sku, "quantity", 1),
+        "orders/batch", Map.of("items", List.of(Map.of("listingId", sku, "quantity", 1))),
+        "cart/checkout", Map.of());
+    for (var entry : checkoutRequests.entrySet()) {
+      for (String key : java.util.Arrays.asList(null, "", " \t")) {
+        var body = new java.util.HashMap<>(entry.getValue());
+        if (key != null) body.put("idempotencyKey", key);
+        var rejected = http.perform(post("/api/v1/buyer/mall/" + entry.getKey())
+            .header("Authorization", "Bearer " + token).contentType(MediaType.APPLICATION_JSON)
+            .content(json.writeValueAsString(body))).andExpect(status().isBadRequest()).andReturn();
+        assertThat(rejected.getResponse().getContentAsString()).contains("idempotencyKey");
+      }
+    }
+    assertThat(buyerRead(token, "orders", 200)).isEmpty();
     financeCall(token, "POST", "/api/v1/buyer/mall/cart/items", Map.of("skuId", sku, "quantity", 2), 200);
-    var placed = financeCall(token, "POST", "/api/v1/buyer/mall/cart/checkout", Map.of(), 200);
+    var placed = financeCall(token, "POST", "/api/v1/buyer/mall/cart/checkout", Map.of("idempotencyKey", UUID.randomUUID().toString()), 200);
     assertThat(placed).hasSize(1);
     assertThat(placed.get(0).path("amount").asInt()).isEqualTo(200);
     assertThat(buyerRead(token, "orders", 200)).hasSize(1);
     assertThat(buyerRead(token, "mall/cart", 200).path("itemCount").asInt()).isZero();
     financeCall(token, "POST", "/api/v1/buyer/mall/cart/items", Map.of("skuId", sku, "quantity", 1), 200);
     jdbc.update("update tenants set enabled_features = '[\"method:compare\",\"order\"]'::jsonb where id = ?", tenant);
-    financeCall(token, "POST", "/api/v1/buyer/mall/cart/checkout", Map.of(), 400);
+    financeCall(token, "POST", "/api/v1/buyer/mall/cart/checkout", Map.of("idempotencyKey", UUID.randomUUID().toString()), 400);
     assertThat(buyerRead(token, "mall/cart", 200).path("itemCount").asInt()).isEqualTo(1);
     assertThat(buyerRead(token, "orders", 200)).hasSize(1);
   }

@@ -123,6 +123,7 @@ public class QuoteApplicationService {
     requireNotDeclined(rfq, supplierId);
     rfqSourcingStatusTransition.requireQuotingForQuoteSubmission(rfq.status(), rfqId);
     rfqSourcingStatusTransition.requireOpenQuoteDeadline(rfq.deadlineAt(), rfqId);
+    RfqAuctionPolicy.requireStarted(rfq.method(), rfq.auctionPlannedStart(), java.time.OffsetDateTime.now());
 
     int submittedCount = quoteMapper.countSubmittedBySupplier(
         rfq.tenantId(),
@@ -188,6 +189,7 @@ public class QuoteApplicationService {
     requireNotDeclined(rfq, supplierId);
     rfqSourcingStatusTransition.requireQuotingForQuoteSubmission(rfq.status(), rfq.id());
     rfqSourcingStatusTransition.requireOpenQuoteDeadline(rfq.deadlineAt(), rfq.id());
+    RfqAuctionPolicy.requireStarted(rfq.method(), rfq.auctionPlannedStart(), java.time.OffsetDateTime.now());
 
     requireQuoteFollowsRfqItems(rfq, request.lineItems());
     BigDecimal amount = effectiveAmount(request.amount(), request.lineItems());
@@ -268,6 +270,13 @@ public class QuoteApplicationService {
       throw new IllegalArgumentException("RFQ not found for invited supplier: " + rfqId);
     }
 
+    // The lock statement flushes MyBatis local cache; this reread must not reuse the pre-lock snapshot.
+    rfqMapper.lockByTenantAndId(rfq.tenantId(), rfqId);
+    rfq = rfqMapper.findBySupplierInvite(rfqId, supplierId);
+    if (rfq == null) {
+      throw new IllegalArgumentException("RFQ invitation changed: " + rfqId);
+    }
+
     int inviteCount = rfqInviteMapper.isSupplierInvited(rfq.tenantId(), rfqId, supplierId);
     RfqQuoteInvitationPolicy.requireInvitedSupplier(inviteCount, rfqId);
 
@@ -297,7 +306,7 @@ public class QuoteApplicationService {
     }
     int sortNo = 0;
     for (QuoteLineItemRequest line : lineItems) {
-      BigDecimal lineAmount = line.quantity().multiply(line.unitPrice());
+      BigDecimal lineAmount = lineAmount(line);
       String unit = line.unit() == null || line.unit().isBlank() ? "项" : line.unit();
       quoteLineItemMapper.insert(
           newId("qli"),
@@ -342,11 +351,33 @@ public class QuoteApplicationService {
   // 提供行项时按行汇总覆盖报价头金额(头/明细一致);否则沿用供应商填写的 amount。
   private BigDecimal effectiveAmount(BigDecimal headerAmount, List<QuoteLineItemRequest> lineItems) {
     if (lineItems == null || lineItems.isEmpty()) {
-      return headerAmount;
+      if (headerAmount == null || headerAmount.signum() <= 0) {
+        throw new IllegalArgumentException("报价金额必须为正数");
+      }
+      BigDecimal rounded = headerAmount.setScale(2, java.math.RoundingMode.HALF_UP);
+      if (rounded.signum() <= 0) throw new IllegalArgumentException("报价金额须至少为 0.01");
+      return rounded;
     }
     return lineItems.stream()
-        .map(l -> l.quantity().multiply(l.unitPrice()))
+        .map(this::lineAmount)
         .reduce(BigDecimal.ZERO, BigDecimal::add);
+  }
+
+  private BigDecimal lineAmount(QuoteLineItemRequest line) {
+    if (line.quantity() == null || line.unitPrice() == null
+        || line.quantity().signum() <= 0 || line.unitPrice().signum() <= 0) {
+      throw new IllegalArgumentException("报价数量和单价必须为正数");
+    }
+    try {
+      line.quantity().setScale(2, java.math.RoundingMode.UNNECESSARY);
+      line.unitPrice().setScale(2, java.math.RoundingMode.UNNECESSARY);
+    } catch (ArithmeticException exception) {
+      throw new IllegalArgumentException("报价数量和单价最多保留两位小数", exception);
+    }
+    BigDecimal amount = line.quantity().multiply(line.unitPrice())
+        .setScale(2, java.math.RoundingMode.HALF_UP);
+    if (amount.signum() <= 0) throw new IllegalArgumentException("报价行金额须至少为 0.01");
+    return amount;
   }
 
   /**
@@ -387,11 +418,15 @@ public class QuoteApplicationService {
     }
   }
 
-  // 供应商侧:报价中封存(不回传任何他方报价);开标后唱标公开——
+  // 供应商侧:竞价报价中只返回当前轮本方报价;开标后唱标公开——
   // 各家报价头(金额/轮次/时间)对全体受邀方可见,他方 supplierId 匿名化、行项明细不下发,本方保留完整。
   private List<QuoteResponse> openedQuotesForSupplier(Rfq rfq, String supplierId) {
     if (rfq.openedAt() == null) {
-      return List.of();
+      if (!RfqAuctionPolicy.isAuction(rfq.method())) return List.of();
+      return quoteMapper.listByTenantAndRfqAndRound(rfq.tenantId(), rfq.id(), rfq.currentRound()).stream()
+          .filter(q -> supplierId.equals(q.supplierId()))
+          .map(this::toResponse)
+          .toList();
     }
     return quoteMapper.listByTenantAndRfqAndRound(rfq.tenantId(), rfq.id(), rfq.currentRound()).stream()
         .sorted(java.util.Comparator.comparing(
@@ -425,7 +460,8 @@ public class QuoteApplicationService {
         rfq.createdAt(),
         rfq.updatedAt(),
         rfqDemandMapper.listDemandIds(rfq.tenantId(), rfq.id()),
-        rfqInviteMapper.listSupplierIds(rfq.tenantId(), rfq.id()),
+        !RfqAuctionPolicy.isAuction(rfq.method()) || Boolean.TRUE.equals(rfq.auctionShowCompetitorNames())
+            ? rfqInviteMapper.listSupplierIds(rfq.tenantId(), rfq.id()) : List.of(supplierId),
         openedQuotesForSupplier(rfq, supplierId),
         rfq.quoteRequirement(),
         rfq.deliveryRequirement(),
@@ -459,24 +495,16 @@ public class QuoteApplicationService {
     if (!RfqAuctionPolicy.isAuction(rfq.method()) || Boolean.FALSE.equals(rfq.auctionShowRank())) {
       return null;
     }
-    var quotes = quoteMapper.listByTenantAndRfqAndRound(rfq.tenantId(), rfq.id(), rfq.currentRound());
-    java.util.Map<String, java.math.BigDecimal> latest = new java.util.LinkedHashMap<>();
-    for (Quote q : quotes) {
-      if (q.supplierId() != null && q.amount() != null) {
-        latest.put(q.supplierId(), q.amount());
-      }
+    var ranked = quoteMapper.listByTenantAndRfqAndRound(rfq.tenantId(), rfq.id(), rfq.currentRound()).stream()
+        .filter(q -> q.amount() != null && q.amount().signum() > 0)
+        .sorted(java.util.Comparator.comparing(Quote::amount)
+            .thenComparing(Quote::submittedAt, java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder()))
+            .thenComparing(Quote::id))
+        .toList();
+    for (int i = 0; i < ranked.size(); i++) {
+      if (supplierId.equals(ranked.get(i).supplierId())) return i + 1;
     }
-    java.math.BigDecimal mine = latest.get(supplierId);
-    if (mine == null) {
-      return null;
-    }
-    int rank = 1;
-    for (var entry : latest.entrySet()) {
-      if (!entry.getKey().equals(supplierId) && entry.getValue().compareTo(mine) < 0) {
-        rank += 1;
-      }
-    }
-    return rank;
+    return null;
   }
 
   // 供应商视角仅返回本方邀请记录(已读/拒绝状态),不暴露其他受邀方。

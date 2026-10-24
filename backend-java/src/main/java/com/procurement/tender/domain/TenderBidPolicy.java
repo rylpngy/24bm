@@ -20,7 +20,7 @@ public final class TenderBidPolicy {
     if (!TenderPolicy.STATUS_ON_SALE.equals(tender.status())) {
       throw new IllegalStateException("招标项目不在发售期,不能递交或撤回投标: " + tender.id());
     }
-    if (tender.submissionDeadline() != null && !now.isBefore(tender.submissionDeadline())) {
+    if (tender.submissionDeadline() == null || !now.isBefore(tender.submissionDeadline())) {
       throw new IllegalStateException("投标递交已截止: " + tender.id());
     }
   }
@@ -34,6 +34,9 @@ public final class TenderBidPolicy {
   public static void requireValidBid(BigDecimal amount, String documentHtml, String tenderId) {
     if (amount == null || amount.signum() <= 0) {
       throw new IllegalArgumentException("投标报价须为正数: " + tenderId);
+    }
+    if (amount.stripTrailingZeros().scale() > 2 || amount.compareTo(new BigDecimal("10000000000000000")) >= 0) {
+      throw new IllegalArgumentException("投标报价最多两位小数且不得超出金额存储范围: " + tenderId);
     }
     if (documentHtml == null || documentHtml.isBlank()) {
       throw new IllegalArgumentException("投标函正文不能为空: " + tenderId);

@@ -26,9 +26,10 @@ public class AuctionStreamBroker {
 
   private final Map<String, Subscription> subscriptions = new ConcurrentHashMap<>();
 
-  private record Subscription(SseEmitter emitter, String tenantId, String supplierId) {
+  private record Subscription(SseEmitter emitter, String tenantId, String supplierId,
+      java.util.function.Predicate<String> canRead) {
     boolean accepts(AuctionEvent event) {
-      return recipientMatches(tenantId, supplierId, event);
+      return recipientMatches(tenantId, supplierId, event) && canRead.test(event.rfqId());
     }
   }
 
@@ -44,13 +45,17 @@ public class AuctionStreamBroker {
   }
 
   /** 采购方订阅:本租户竞价事件。 */
-  public SseEmitter subscribeTenant(String tenantId) {
-    return register(new Subscription(new SseEmitter(TIMEOUT_MILLIS), tenantId, null));
+  public SseEmitter subscribeTenant(String tenantId, java.util.function.Predicate<String> canRead) {
+    return register(new Subscription(new SseEmitter(TIMEOUT_MILLIS), tenantId, null, canRead));
   }
 
   /** 供应商订阅:本方受邀竞价事件。 */
   public SseEmitter subscribeSupplier(String supplierId) {
-    return register(new Subscription(new SseEmitter(TIMEOUT_MILLIS), null, supplierId));
+    return subscribeSupplier(supplierId, id -> true);
+  }
+
+  public SseEmitter subscribeSupplier(String supplierId, java.util.function.Predicate<String> canRead) {
+    return register(new Subscription(new SseEmitter(TIMEOUT_MILLIS), null, supplierId, canRead));
   }
 
   private SseEmitter register(Subscription subscription) {
@@ -85,14 +90,12 @@ public class AuctionStreamBroker {
 
   private void dispatch(AuctionEvent event) {
     subscriptions.forEach((id, subscription) -> {
-      if (!subscription.accepts(event)) {
-        return;
-      }
       try {
+        if (!subscription.accepts(event)) return;
         subscription.emitter().send(SseEmitter.event()
             .name("auction")
             .data("{\"rfqId\":\"" + event.rfqId() + "\",\"kind\":\"" + event.kind() + "\"}"));
-      } catch (IOException | IllegalStateException e) {
+      } catch (IOException | RuntimeException e) {
         subscriptions.remove(id);
       }
     });

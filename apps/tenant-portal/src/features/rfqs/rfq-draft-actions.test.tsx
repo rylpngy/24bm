@@ -41,3 +41,17 @@ it('requires a reason before cancelling a persisted draft', () => {
   fireEvent.click(screen.getByRole('button', { name: '确认取消草稿' }));
   expect(api.abort).toHaveBeenCalledWith({ rfqId: 'rfq-1', data: { kind: '废标', reason: '重复建项' } }, expect.anything());
 });
+
+it('disables early opening for auctions but preserves compare early opening', () => {
+  const props = { budget: 100, supplierNames: {}, onBack: vi.fn() };
+  const rfq = { id: 'auction', title: '竞价', method: '竞价', status: '报价中',
+    deadlineAt: '2099-01-01T18:00:00+08:00', invitedSupplierIds: [] };
+  const view = render(<QueryClientProvider client={new QueryClient()}>
+    <RfqProjectDetail {...props} rfq={rfq} />
+  </QueryClientProvider>);
+  expect(screen.getByRole('button', { name: '截止后开标' })).toBeDisabled();
+  view.rerender(<QueryClientProvider client={new QueryClient()}>
+    <RfqProjectDetail {...props} rfq={{ ...rfq, method: '询比' }} />
+  </QueryClientProvider>);
+  expect(screen.getByRole('button', { name: '提前截标开标' })).toBeEnabled();
+});

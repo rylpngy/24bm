@@ -22,6 +22,18 @@ public class ContractAccessService {
   public void requireRead() { permissions.require("buyer:contract:read"); }
 
   public void requireContract(String id, boolean write) {
+    String tenant = requireAccess(id, write);
+    if (write && mapper.lockById(tenant, id) == null) {
+      throw new PermissionDeniedException("合同不存在或无权访问");
+    }
+  }
+
+  // Archive must acquire the shared order lock before its contract row lock.
+  public void requireArchiveAccess(String id) {
+    requireAccess(id, true);
+  }
+
+  private String requireAccess(String id, boolean write) {
     permissions.require(write ? "buyer:contract:manage" : "buyer:contract:read");
     String tenant = TenantAccessGuard.requireTenantId("contract APIs");
     var scope = scopes.currentUserDataScope();
@@ -30,9 +42,7 @@ public class ContractAccessService {
         scope.restricted() ? scope.requesterId() : null)) {
       throw new PermissionDeniedException("合同不存在或无权访问");
     }
-    if (write && mapper.lockById(tenant, id) == null) {
-      throw new PermissionDeniedException("合同不存在或无权访问");
-    }
+    return tenant;
   }
 
   public void requireOrder(String id) {

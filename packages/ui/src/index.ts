@@ -80,3 +80,7 @@ export type { FormErrorSummaryProps } from './components/form-error-summary';
 export { SectionCard, ApprovalTimeline } from './components/section-card';
 export { EvidencePanel } from './components/evidence-panel';
 export type { ApprovalTimelineNode } from './components/section-card';
+export { MallComparisonTable } from './components/mall-comparison-table';
+export type { MallComparisonQuote } from './components/mall-comparison-table';
+export { ProductImage, ProductImageGallery } from './components/product-image';
+export type { ProductImageProps, ProductGalleryImage } from './components/product-image';

@@ -42,7 +42,11 @@ public interface MallCatalogMapper {
       select
       """ + PRODUCT_COLUMNS + PRODUCT_FROM + """
       where (p.tenant_id = #{tenantId} or p.scope = 'public')
-        <if test="onShelfOnly">and p.status = '在架'</if>
+        <if test="onShelfOnly">
+          and p.status = '在架'
+          and (p.scope = 'public' or exists (select 1 from buyer_supplier_relations r
+            where r.tenant_id = p.tenant_id and r.supplier_id = p.supplier_id and r.status = '已准入'))
+        </if>
         <if test="categoryId != null">and p.category_id = #{categoryId}</if>
         <if test="keyword != null">
           and (p.name ilike '%' || #{keyword} || '%' or p.brand ilike '%' || #{keyword} || '%'
@@ -69,6 +73,61 @@ public interface MallCatalogMapper {
       + " where p.id = #{id} and p.supplier_id = #{supplierId}")
   MallProduct findProductForSupplier(
       @Param("supplierId") String supplierId, @Param("id") String id);
+
+  // Every catalog mutation locks the aggregate before touching SKUs or tier prices.
+  @Select("select " + PRODUCT_COLUMNS + PRODUCT_FROM
+      + " where p.id = #{id} and p.supplier_id = #{supplierId} for update of p")
+  MallProduct lockProductForSupplier(@Param("supplierId") String supplierId, @Param("id") String id);
+
+  @Select("select " + PRODUCT_COLUMNS + PRODUCT_FROM
+      + " where p.id = #{id} and p.tenant_id = #{tenantId} for update of p")
+  MallProduct lockProductForTenant(@Param("tenantId") String tenantId, @Param("id") String id);
+
+  @Update("""
+      update mall_skus s set price = #{price}, updated_at = now()
+      from mall_products p where p.id = s.product_id and s.id = #{id}
+        and s.product_id = #{productId} and p.supplier_id = #{supplierId}
+      """)
+  int updateSkuPriceForSupplier(@Param("supplierId") String supplierId,
+      @Param("productId") String productId, @Param("id") String id, @Param("price") BigDecimal price);
+
+  @Select("""
+      select
+      """ + SKU_COLUMNS + """
+      from mall_skus s join mall_products p on p.id = s.product_id
+      where s.id = #{id} and s.product_id = #{productId} and p.supplier_id = #{supplierId}
+      for update of s
+      """)
+  MallSku lockSkuForSupplier(@Param("supplierId") String supplierId,
+      @Param("productId") String productId, @Param("id") String id);
+
+  String SKU_COLUMNS = """
+      s.id, s.product_id, s.sku_code, s.spec::text as spec, s.material_id, s.unit, s.price,
+      s.min_order_qty, s.step_qty, s.stock_qty, s.lead_time_days, s.status, s.created_at, s.updated_at
+      """;
+
+  @Select("""
+      select count(*) from mall_categories where id = #{id}
+        and (tenant_id = #{tenantId} or tenant_id is null)
+      """)
+  int countVisibleCategory(@Param("tenantId") String tenantId, @Param("id") String id);
+
+  /** Keep the prior review evidence; only its current publication entitlement is withdrawn. */
+  @Update("""
+      update mall_products set status = '草稿', updated_at = now()
+      where id = #{id} and supplier_id = #{supplierId}
+      """)
+  int invalidatePublication(@Param("supplierId") String supplierId, @Param("id") String id);
+
+  @Update("""
+      update mall_skus s set sku_code = #{skuCode}, spec = #{spec}::jsonb,
+        material_id = #{materialId}, unit = #{unit}, updated_at = now()
+      from mall_products p where p.id = s.product_id and s.id = #{id}
+        and s.product_id = #{productId} and p.supplier_id = #{supplierId}
+      """)
+  int updateSkuIdentity(@Param("supplierId") String supplierId, @Param("productId") String productId,
+      @Param("id") String id, @Param("skuCode") String skuCode, @Param("spec") String spec,
+      @Param("materialId") String materialId, @Param("unit") String unit);
 
   @Insert("""
       insert into mall_products (
@@ -131,11 +190,6 @@ public interface MallCatalogMapper {
       @Param("tenantId") String tenantId,
       @Param("status") String status,
       @Param("comment") String comment);
-
-  String SKU_COLUMNS = """
-      s.id, s.product_id, s.sku_code, s.spec::text as spec, s.material_id, s.unit, s.price,
-      s.min_order_qty, s.step_qty, s.stock_qty, s.lead_time_days, s.status, s.created_at, s.updated_at
-      """;
 
   @Select("""
       select
@@ -299,6 +353,34 @@ public interface MallCatalogMapper {
       order by sort_order, name
       """)
   List<MallCategory> listCategories(@Param("tenantId") String tenantId);
+
+  /** Read-only union: fresh tenants can reuse real material categories without GET-side writes. */
+  @Select("""
+      select id, tenant_id, parent_id, name, sort_order, created_at from (
+        select id, tenant_id, parent_id, name, sort_order, created_at
+        from mall_categories where tenant_id = #{tenantId} or tenant_id is null
+        union all
+        select 'mc-' || m.tenant_id || '-' || md5(m.category), m.tenant_id,
+          null::text, m.category, 0, null::timestamptz
+        from materials m
+        where m.tenant_id = #{tenantId} and btrim(m.category) <> ''
+          and not exists (select 1 from mall_categories c
+            where (c.tenant_id = #{tenantId} or c.tenant_id is null) and c.name = m.category)
+        group by m.tenant_id, m.category
+      ) visible_categories order by sort_order, name, id
+      """)
+  List<MallCategory> listSupplierCategories(@Param("tenantId") String tenantId);
+
+  /** Only a real category of a material in this tenant can create the selected deterministic ID. */
+  @Insert("""
+      insert into mall_categories (id, tenant_id, name)
+      select #{categoryId}, m.tenant_id, m.category from materials m
+      where m.tenant_id = #{tenantId} and btrim(m.category) <> ''
+        and 'mc-' || m.tenant_id || '-' || md5(m.category) = #{categoryId}
+      group by m.tenant_id, m.category
+      on conflict (id) do nothing
+      """)
+  int materializeMaterialCategory(@Param("tenantId") String tenantId, @Param("categoryId") String categoryId);
 
   @Insert("""
       insert into mall_categories (id, tenant_id, parent_id, name, sort_order)

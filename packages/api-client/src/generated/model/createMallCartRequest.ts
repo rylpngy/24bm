@@ -8,6 +8,15 @@
 import type { CartItem } from './cartItem';
 
 export interface CreateMallCartRequest {
+  /**
+   * @minItems 0
+   * @maxItems 200
+   */
   items: CartItem[];
   expectedReceiptDate?: string;
+  /**
+   * @minLength 0
+   * @maxLength 100
+   */
+  idempotencyKey: string;
 }

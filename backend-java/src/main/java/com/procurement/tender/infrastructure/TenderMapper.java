@@ -68,6 +68,18 @@ public interface TenderMapper {
   @Select("select " + COLUMNS + " from tenders where tenant_id = #{tenantId} and id = #{id}")
   Tender findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
 
+  @Select("select " + COLUMNS + " from tenders where tenant_id = #{tenantId} and id = #{id} for update")
+  Tender lockByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
+
+  @Select("select id from tenants where id = #{tenantId} for update")
+  String lockTenantNumbering(@Param("tenantId") String tenantId);
+
+  @Select("select status from buyer_supplier_relations where tenant_id = #{tenantId} and supplier_id = #{supplierId} for update")
+  String lockInvitedSupplierStatus(@Param("tenantId") String tenantId, @Param("supplierId") String supplierId);
+
+  @Select("select " + COLUMNS + " from tenders where tenant_id = #{tenantId} and rebid_of_tender_id = #{id} order by created_at desc limit 1")
+  Tender findRebid(@Param("tenantId") String tenantId, @Param("id") String id);
+
   @Update("""
       update tenders set title = #{title}, tender_type = #{tenderType}, budget = #{budget},
         document_html = #{documentHtml}, evaluation_method = #{evaluationMethod},

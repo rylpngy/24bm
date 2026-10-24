@@ -448,6 +448,64 @@
         }
       }
     },
+    "/api/v1/supplier/mall/products/{productId}/media/{mediaId}/main": {
+      "put": {
+        "tags": [
+          "supplier-mall-product-media-controller"
+        ],
+        "operationId": "SupplierMallProductMedia_main",
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListMallProductMediaResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/supplier/mall/listings/{listingId}/status": {
       "put": {
         "tags": [
@@ -1813,6 +1871,94 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseNotificationSettingsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/mall/purchase-controls": {
+      "get": {
+        "tags": [
+          "buyer-mall-purchase-control-controller"
+        ],
+        "operationId": "BuyerMallPurchaseControl_get",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMallPurchaseControl"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "buyer-mall-purchase-control-controller"
+        ],
+        "operationId": "BuyerMallPurchaseControl_save",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveMallPurchaseControlRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMallPurchaseControl"
                 }
               }
             }
@@ -4610,6 +4756,251 @@
         }
       }
     },
+    "/api/v1/supplier/mall/products/{productId}/media": {
+      "get": {
+        "tags": [
+          "supplier-mall-product-media-controller"
+        ],
+        "operationId": "SupplierMallProductMedia_list",
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListMallProductMediaResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "supplier-mall-product-media-controller"
+        ],
+        "operationId": "SupplierMallProductMedia_register",
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListMallProductMediaResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/supplier/mall/products/{productId}/media/upload-ticket": {
+      "post": {
+        "tags": [
+          "supplier-mall-product-media-controller"
+        ],
+        "operationId": "SupplierMallProductMedia_ticket",
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseTicket"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/supplier/mall/products/{productId}/media/upload-sink": {
+      "post": {
+        "tags": [
+          "supplier-mall-product-media-controller"
+        ],
+        "operationId": "SupplierMallProductMedia_upload",
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "storageKey",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "token",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/supplier/mall/listings": {
       "get": {
         "tags": [
@@ -5527,6 +5918,66 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseSupplierEnterpriseResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/platform/mall/products/{productId}/review": {
+      "post": {
+        "tags": [
+          "platform-mall-catalog-review-controller"
+        ],
+        "operationId": "PlatformMallCatalogReview_review",
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewMallProductRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMallProductResponse"
                 }
               }
             }
@@ -11795,6 +12246,126 @@
         }
       }
     },
+    "/api/v1/buyer/mall/after-sales/{id}/withdraw": {
+      "post": {
+        "tags": [
+          "buyer-mall-after-sales-controller"
+        ],
+        "operationId": "BuyerMallAfterSales_withdraw",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BuyerAfterSalesActionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListMallAfterSalesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/mall/after-sales/{id}/confirm": {
+      "post": {
+        "tags": [
+          "buyer-mall-after-sales-controller"
+        ],
+        "operationId": "BuyerMallAfterSales_confirm",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BuyerAfterSalesActionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListMallAfterSalesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/mall/addresses": {
       "get": {
         "tags": [
@@ -14807,6 +15378,115 @@
         }
       }
     },
+    "/api/v1/supplier/mall/products/{productId}/media/{mediaId}/content": {
+      "get": {
+        "tags": [
+          "supplier-mall-product-media-controller"
+        ],
+        "operationId": "SupplierMallProductMedia_content",
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/supplier/mall/orders/{orderId}/checkout-note": {
+      "get": {
+        "tags": [
+          "mall-checkout-note-controller"
+        ],
+        "operationId": "MallCheckoutNote_supplier",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseString"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/supplier/mall/materials": {
       "get": {
         "tags": [
@@ -14847,6 +15527,56 @@
         }
       }
     },
+    "/api/v1/supplier/mall/categories": {
+      "get": {
+        "tags": [
+          "supplier-mall-controller"
+        ],
+        "operationId": "SupplierMall_categories",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListMallCategory"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/supplier/mall/after-sales": {
       "get": {
         "tags": [
@@ -14860,6 +15590,56 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseListMallAfterSalesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/supplier/mall/after-sales/{id}/history": {
+      "get": {
+        "tags": [
+          "supplier-mall-after-sales-controller"
+        ],
+        "operationId": "SupplierMallAfterSales_history",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListMallAfterSalesEvent"
                 }
               }
             }
@@ -15964,6 +16744,155 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponsePlatformOverviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/platform/mall/products/{productId}/media": {
+      "get": {
+        "tags": [
+          "platform-mall-product-media-controller"
+        ],
+        "operationId": "PlatformMallProductMedia_list",
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListMallProductMediaResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/platform/mall/products/{productId}/media/{mediaId}/content": {
+      "get": {
+        "tags": [
+          "platform-mall-product-media-controller"
+        ],
+        "operationId": "PlatformMallProductMedia_content",
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/platform/mall/products/pending-review": {
+      "get": {
+        "tags": [
+          "platform-mall-catalog-review-controller"
+        ],
+        "operationId": "PlatformMallCatalogReview_pendingReview",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListMallProductResponse"
                 }
               }
             }
@@ -19108,6 +20037,224 @@
         }
       }
     },
+    "/api/v1/buyer/mall/products/{productId}/review-media": {
+      "get": {
+        "tags": [
+          "buyer-mall-product-media-controller"
+        ],
+        "operationId": "BuyerMallProductMedia_reviewList",
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListMallProductMediaResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/mall/products/{productId}/review-media/{mediaId}/content": {
+      "get": {
+        "tags": [
+          "buyer-mall-product-media-controller"
+        ],
+        "operationId": "BuyerMallProductMedia_reviewContent",
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/mall/products/{productId}/media": {
+      "get": {
+        "tags": [
+          "buyer-mall-product-media-controller"
+        ],
+        "operationId": "BuyerMallProductMedia_list",
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListMallProductMediaResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/mall/products/{productId}/media/{mediaId}/content": {
+      "get": {
+        "tags": [
+          "buyer-mall-product-media-controller"
+        ],
+        "operationId": "BuyerMallProductMedia_content",
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/mall/products/pending-review": {
       "get": {
         "tags": [
@@ -19121,6 +20268,114 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseListMallProductResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/mall/orders/{orderId}/checkout-note": {
+      "get": {
+        "tags": [
+          "mall-checkout-note-controller"
+        ],
+        "operationId": "MallCheckoutNote_buyer",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseString"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/mall/comparison": {
+      "get": {
+        "tags": [
+          "buyer-mall-purchase-control-controller"
+        ],
+        "operationId": "BuyerMallPurchaseControl_compare",
+        "parameters": [
+          {
+            "name": "skuId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "quantity",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListMallComparisonRow"
                 }
               }
             }
@@ -19241,6 +20496,56 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseMallAnalyticsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/mall/after-sales/{id}/history": {
+      "get": {
+        "tags": [
+          "buyer-mall-after-sales-controller"
+        ],
+        "operationId": "BuyerMallAfterSales_history",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListMallAfterSalesEvent"
                 }
               }
             }
@@ -20547,6 +21852,64 @@
         }
       }
     },
+    "/api/v1/supplier/mall/products/{productId}/media/{mediaId}": {
+      "delete": {
+        "tags": [
+          "supplier-mall-product-media-controller"
+        ],
+        "operationId": "SupplierMallProductMedia_delete",
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListMallProductMediaResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/mall/cart/items/{skuId}": {
       "delete": {
         "tags": [
@@ -20986,6 +22349,9 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "tenantId": {
+            "type": "string"
           }
         }
       },
@@ -21113,6 +22479,51 @@
           }
         }
       },
+      "ApiResponseListMallProductMediaResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MallProductMediaResponse"
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "MallProductMediaResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "fileName": {
+            "type": "string"
+          },
+          "contentType": {
+            "type": "string"
+          },
+          "contentSize": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "main": {
+            "type": "boolean"
+          },
+          "contentUrl": {
+            "type": "string"
+          }
+        }
+      },
       "UpdateMallListingStatusRequest": {
         "required": [
           "status"
@@ -21211,6 +22622,9 @@
           },
           "reply": {
             "type": "string"
+          },
+          "evidenceNo": {
+            "type": "string"
           }
         }
       },
@@ -21271,6 +22685,9 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "financialStatus": {
+            "type": "string"
           }
         }
       },
@@ -21985,6 +23402,9 @@
             "format": "date-time"
           },
           "digestVerified": {
+            "type": "boolean"
+          },
+          "evaluationEligible": {
             "type": "boolean"
           }
         }
@@ -23025,6 +24445,64 @@
           },
           "webhookUrl": {
             "type": "string"
+          }
+        }
+      },
+      "SaveMallPurchaseControlRequest": {
+        "required": [
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "maxCheckoutAmount": {
+            "type": "number"
+          },
+          "categoryIds": {
+            "maxItems": 100,
+            "minItems": 0,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "requireAddress": {
+            "type": "boolean"
+          },
+          "reason": {
+            "maxLength": 1000,
+            "minLength": 0,
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseMallPurchaseControl": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/MallPurchaseControl"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "MallPurchaseControl": {
+        "type": "object",
+        "properties": {
+          "maxCheckoutAmount": {
+            "type": "number"
+          },
+          "categoryIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "requireAddress": {
+            "type": "boolean"
           }
         }
       },
@@ -24464,6 +25942,57 @@
           }
         }
       },
+      "RegisterRequest": {
+        "required": [
+          "storageKey"
+        ],
+        "type": "object",
+        "properties": {
+          "storageKey": {
+            "type": "string"
+          }
+        }
+      },
+      "FileRequest": {
+        "required": [
+          "fileName"
+        ],
+        "type": "object",
+        "properties": {
+          "fileName": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseTicket": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Ticket"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "Ticket": {
+        "type": "object",
+        "properties": {
+          "storageKey": {
+            "type": "string"
+          },
+          "token": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "SupplierPublishMallListingRequest": {
         "required": [
           "materialId",
@@ -25014,6 +26543,21 @@
             "type": "string"
           },
           "adminEmail": {
+            "type": "string"
+          }
+        }
+      },
+      "ReviewMallProductRequest": {
+        "required": [
+          "approved",
+          "comment"
+        ],
+        "type": "object",
+        "properties": {
+          "approved": {
+            "type": "boolean"
+          },
+          "comment": {
             "type": "string"
           }
         }
@@ -27748,23 +29292,9 @@
           }
         }
       },
-      "ReviewMallProductRequest": {
-        "required": [
-          "approved",
-          "comment"
-        ],
-        "type": "object",
-        "properties": {
-          "approved": {
-            "type": "boolean"
-          },
-          "comment": {
-            "type": "string"
-          }
-        }
-      },
       "CreateMallOrderRequest": {
         "required": [
+          "idempotencyKey",
           "listingId",
           "quantity"
         ],
@@ -27779,6 +29309,11 @@
           "expectedReceiptDate": {
             "type": "string",
             "format": "date"
+          },
+          "idempotencyKey": {
+            "maxLength": 100,
+            "minLength": 0,
+            "type": "string"
           }
         }
       },
@@ -27839,11 +29374,14 @@
       },
       "CreateMallCartRequest": {
         "required": [
+          "idempotencyKey",
           "items"
         ],
         "type": "object",
         "properties": {
           "items": {
+            "maxItems": 200,
+            "minItems": 0,
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/CartItem"
@@ -27852,6 +29390,11 @@
           "expectedReceiptDate": {
             "type": "string",
             "format": "date"
+          },
+          "idempotencyKey": {
+            "maxLength": 100,
+            "minLength": 0,
+            "type": "string"
           }
         }
       },
@@ -27895,6 +29438,9 @@
         }
       },
       "CheckoutCartRequest": {
+        "required": [
+          "idempotencyKey"
+        ],
         "type": "object",
         "properties": {
           "addressId": {
@@ -27905,6 +29451,13 @@
             "format": "date"
           },
           "remark": {
+            "maxLength": 2000,
+            "minLength": 0,
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "maxLength": 100,
+            "minLength": 0,
             "type": "string"
           }
         }
@@ -27932,6 +29485,17 @@
             "type": "number"
           },
           "reason": {
+            "type": "string"
+          }
+        }
+      },
+      "BuyerAfterSalesActionRequest": {
+        "required": [
+          "note"
+        ],
+        "type": "object",
+        "properties": {
+          "note": {
             "type": "string"
           }
         }
@@ -29702,6 +31266,98 @@
           },
           "message": {
             "type": "string"
+          }
+        }
+      },
+      "ApiResponseListMallCategory": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MallCategory"
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "MallCategory": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "parentId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ApiResponseListMallAfterSalesEvent": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MallAfterSalesEvent"
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "MallAfterSalesEvent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "afterSalesId": {
+            "type": "string"
+          },
+          "actorId": {
+            "type": "string"
+          },
+          "actorRole": {
+            "type": "string"
+          },
+          "fromStatus": {
+            "type": "string"
+          },
+          "toStatus": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "evidenceNo": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -32478,6 +34134,68 @@
           },
           "message": {
             "type": "string"
+          }
+        }
+      },
+      "ApiResponseListMallComparisonRow": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MallComparisonRow"
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "MallComparisonRow": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "string"
+          },
+          "skuId": {
+            "type": "string"
+          },
+          "productName": {
+            "type": "string"
+          },
+          "brand": {
+            "type": "string"
+          },
+          "supplierName": {
+            "type": "string"
+          },
+          "skuCode": {
+            "type": "string"
+          },
+          "spec": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "unitPrice": {
+            "type": "number"
+          },
+          "total": {
+            "type": "number"
+          },
+          "leadTimeDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "stockQty": {
+            "type": "number"
+          },
+          "sameSpecification": {
+            "type": "boolean"
           }
         }
       },

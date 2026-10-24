@@ -47,6 +47,7 @@ public class MallApplicationService {
   private final AuditLogApplicationService auditLogApplicationService;
   private final TenantCapabilityApplicationService tenantCapabilityApplicationService;
   private final com.procurement.identity.application.DataScopeService scopes;
+  private final MallPurchaseControlApplicationService purchaseControls;
 
   public MallApplicationService(
       MallListingMapper mallListingMapper,
@@ -56,7 +57,8 @@ public class MallApplicationService {
       PurchaseOrderApplicationService purchaseOrderApplicationService,
       AuditLogApplicationService auditLogApplicationService,
       TenantCapabilityApplicationService tenantCapabilityApplicationService,
-      com.procurement.identity.application.DataScopeService scopes) {
+      com.procurement.identity.application.DataScopeService scopes,
+      MallPurchaseControlApplicationService purchaseControls) {
     this.mallListingMapper = mallListingMapper;
     this.mallCatalogMapper = mallCatalogMapper;
     this.mallCartMapper = mallCartMapper;
@@ -65,6 +67,7 @@ public class MallApplicationService {
     this.auditLogApplicationService = auditLogApplicationService;
     this.tenantCapabilityApplicationService = tenantCapabilityApplicationService;
     this.scopes = scopes;
+    this.purchaseControls = purchaseControls;
   }
 
   public List<MallListingResponse> listCurrentTenantListings(String status, String keyword) {
@@ -154,12 +157,25 @@ public class MallApplicationService {
   // 目录直购:在架商品 × 数量 → 商城锚点 RFQ(方式=商城,已定标) + 采购订单(含单行明细)。
   @Transactional
   public MallOrderResponse createDirectOrder(CreateMallOrderRequest request) {
+    return purchaseControls.idempotent("direct",request.idempotencyKey(),request,
+        () -> List.of(createDirectOrderInternal(request))).getFirst();
+  }
+
+  private MallOrderResponse createDirectOrderInternal(CreateMallOrderRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer mall APIs");
     tenantCapabilityApplicationService.requireMethodEnabled(
         tenantId, ProcurementMethodCatalog.MALL.code());
+    purchaseControls.lockCatalog(List.of(request.listingId()));
     CartLine line = resolveLine(tenantId, request.listingId(), request.quantity());
+    requireFulfillableQuantity(request.quantity());
 
-    BigDecimal amount = line.unitPrice().multiply(request.quantity());
+    BigDecimal amount = lineAmount(line);
+    MallAddress address = resolveAddress(tenantId,null);
+    purchaseControls.requireAllowed(amount,java.util.Arrays.asList(line.product().categoryId()),address!=null);
+    LocalDate earliest = LocalDate.now().plusDays(line.sku().leadTimeDays());
+    if(request.expectedReceiptDate()!=null && request.expectedReceiptDate().isBefore(earliest)) {
+      throw new IllegalArgumentException("期望到货日期不能早于商品承诺交期: "+earliest);
+    }
     String rfqId = rfqApplicationService.createMallAnchor(
         "商城直购:" + line.product().name(), line.product().supplierId());
     // 交期:未指定时按 SKU 承诺交期推算,而不是一律「下单 +7 天」。
@@ -171,10 +187,9 @@ public class MallApplicationService {
         line.product().supplierId(),
         amount,
         expectedReceiptDate,
-        line.product().name(),
-        line.sku().unit(),
-        request.quantity(),
-        line.unitPrice());
+        List.of(new PurchaseOrderApplicationService.DirectOrderLine(line.product().name()+" · "+line.sku().skuCode()+" "+line.sku().spec(),
+            line.sku().unit(),request.quantity(),line.unitPrice(),line.sku().id())),
+        formatAddress(address),address==null?null:address.receiver(),address==null?null:address.phone());
     deductStockIfTracked(tenantId, line);
     auditLogApplicationService.recordTenantAction(
         "mall_order.created", AuditTargetType.PURCHASE_ORDER, orderId);
@@ -195,15 +210,22 @@ public class MallApplicationService {
    */
   @Transactional
   public List<MallOrderResponse> checkoutServerCart(CheckoutCartRequest request) {
+    return purchaseControls.idempotent("cart",request.idempotencyKey(),request,
+        () -> checkoutServerCartInternal(request));
+  }
+
+  private List<MallOrderResponse> checkoutServerCartInternal(CheckoutCartRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer mall APIs");
     tenantCapabilityApplicationService.requireMethodEnabled(
         tenantId, ProcurementMethodCatalog.MALL.code());
     String userId = TenantAccessGuard.requireUserId("buyer mall APIs");
+    mallCartMapper.lockCart(tenantId,userId);
     List<com.procurement.mall.domain.MallCartItem> items =
         mallCartMapper.listItems(tenantId, userId);
     if (items.isEmpty()) {
       throw new IllegalStateException("购物车是空的,先加购再结算");
     }
+    purchaseControls.lockCatalog(items.stream().map(com.procurement.mall.domain.MallCartItem::skuId).toList());
     MallAddress address = resolveAddress(tenantId, request.addressId());
     List<MallOrderResponse> orders = placeOrders(
         tenantId,
@@ -212,6 +234,7 @@ public class MallApplicationService {
             .toList(),
         request.expectedReceiptDate(),
         address);
+    orders.forEach(order -> purchaseControls.saveCheckoutNote(order.orderId(),request.remark()));
     mallCartMapper.clearCart(tenantId, userId);
     return orders;
   }
@@ -243,10 +266,16 @@ public class MallApplicationService {
   // 购物车结算:逐项校验在架与数量,按供应商合并成单(每供应商一张锚点 RFQ + 多行订单)。
   @Transactional
   public List<MallOrderResponse> checkoutCart(CreateMallCartRequest request) {
+    return purchaseControls.idempotent("batch",request.idempotencyKey(),request,
+        () -> checkoutCartInternal(request));
+  }
+
+  private List<MallOrderResponse> checkoutCartInternal(CreateMallCartRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer mall APIs");
     // M-0:商城直采未开通即拒绝下单。
     tenantCapabilityApplicationService.requireMethodEnabled(
         tenantId, ProcurementMethodCatalog.MALL.code());
+    purchaseControls.lockCatalog(request.items().stream().map(CreateMallCartRequest.CartItem::listingId).toList());
     return placeOrders(
         tenantId,
         request.items().stream()
@@ -254,7 +283,7 @@ public class MallApplicationService {
             .map(item -> resolveLine(tenantId, item.listingId(), item.quantity()))
             .toList(),
         request.expectedReceiptDate(),
-        null);
+        resolveAddress(tenantId,null));
   }
 
   /**
@@ -268,6 +297,11 @@ public class MallApplicationService {
       List<CartLine> allLines,
       LocalDate requestedReceiptDate,
       MallAddress address) {
+    if(allLines.stream().map(line -> line.sku().id()).distinct().count()!=allLines.size()) {
+      throw new IllegalArgumentException("结算清单存在重复规格，请合并数量后重新提交");
+    }
+    BigDecimal total=allLines.stream().map(MallApplicationService::lineAmount).reduce(BigDecimal.ZERO,BigDecimal::add);
+    purchaseControls.requireAllowed(total,allLines.stream().map(l->l.product().categoryId()).toList(),address!=null);
     java.util.LinkedHashMap<String, java.util.List<CartLine>> bySupplier =
         new java.util.LinkedHashMap<>();
     for (CartLine line : allLines) {
@@ -279,6 +313,11 @@ public class MallApplicationService {
     java.util.List<MallOrderResponse> orders = new java.util.ArrayList<>();
     for (java.util.Map.Entry<String, java.util.List<CartLine>> entry : bySupplier.entrySet()) {
       java.util.List<CartLine> lines = entry.getValue();
+      requireFulfillableQuantity(lines.stream().map(CartLine::quantity).reduce(BigDecimal.ZERO,BigDecimal::add));
+      LocalDate earliest=LocalDate.now().plusDays(lines.stream().mapToInt(l->l.sku().leadTimeDays()).max().orElse(0));
+      if(requestedReceiptDate!=null && requestedReceiptDate.isBefore(earliest)) {
+        throw new IllegalArgumentException("期望到货日期不能早于商品承诺交期: "+earliest);
+      }
       LocalDate expectedReceiptDate = requestedReceiptDate != null
           ? requestedReceiptDate
           : LocalDate.now().plusDays(lines.stream()
@@ -286,7 +325,7 @@ public class MallApplicationService {
               .max()
               .orElse(7));
       BigDecimal amount = lines.stream()
-          .map(l -> l.unitPrice().multiply(l.quantity()))
+          .map(MallApplicationService::lineAmount)
           .reduce(BigDecimal.ZERO, BigDecimal::add);
       BigDecimal totalQuantity = lines.stream()
           .map(CartLine::quantity)
@@ -302,7 +341,7 @@ public class MallApplicationService {
           expectedReceiptDate,
           lines.stream()
               .map(l -> new PurchaseOrderApplicationService.DirectOrderLine(
-                  l.product().name(), l.sku().unit(), l.quantity(), l.unitPrice()))
+                  l.product().name()+" · "+l.sku().skuCode()+" "+l.sku().spec(),l.sku().unit(),l.quantity(),l.unitPrice(),l.sku().id()))
               .toList(),
           formatAddress(address),
           address == null ? null : address.receiver(),
@@ -326,6 +365,18 @@ public class MallApplicationService {
   /** 结算行:单价由服务端按阶梯价重算,不取前端传值。 */
   private record CartLine(
       MallProduct product, MallSku sku, BigDecimal quantity, BigDecimal unitPrice) {
+  }
+
+  private static BigDecimal lineAmount(CartLine line) {
+    return line.unitPrice().multiply(line.quantity()).setScale(2,java.math.RoundingMode.HALF_UP);
+  }
+
+  private static void requireFulfillableQuantity(BigDecimal quantity) {
+    // Existing delivery/receipt headers use integer totals; do not create an unfulfillable order.
+    try { quantity.intValueExact(); }
+    catch(ArithmeticException invalid) {
+      throw new IllegalArgumentException("当前履约总数量须为整数且不超过2147483647，请按供应商核对计量数量后再结算");
+    }
   }
 
   private CartLine resolveLine(String tenantId, String skuId, BigDecimal quantity) {
@@ -425,11 +476,16 @@ public class MallApplicationService {
   public MallListingResponse supplierUpdatePrice(String listingId, UpdateMallListingPriceRequest request) {
     String supplierId = TenantAccessGuard.requireSupplierId("supplier mall APIs");
     MallPolicy.requirePublishable(request.price());
-    // listingId 即 skuId;沿用既有起订量/步进/库存/交期,仅改价。
+    // Only use the unlocked read to locate the aggregate; the hook rereads the SKU under lock.
     MallSku sku = requireOwnSku(supplierId, listingId);
-    mallCatalogMapper.updateSkuForSupplier(
-        listingId, supplierId, request.price(), sku.minOrderQty(), sku.stepQty(),
-        sku.stockQty(), sku.leadTimeDays());
+    sku = MallCatalogApplicationService.prepareLegacyListingMutation(
+        mallCatalogMapper, mallListingMapper, sku.productId(), listingId, true);
+    MallCatalogPolicy.requireValidSku(request.price(), sku.minOrderQty(), sku.stepQty(), sku.leadTimeDays());
+    MallCatalogPolicy.requireValidTiers(request.price(),
+        mallCatalogMapper.listTiersForSupplier(supplierId, listingId));
+    if (mallCatalogMapper.updateSkuPriceForSupplier(supplierId, sku.productId(), listingId, request.price()) == 0) {
+      throw new IllegalStateException("规格更新失败,请刷新后重试");
+    }
     MallProduct product = mallCatalogMapper.findProductForSupplier(supplierId, sku.productId());
     auditLogApplicationService.recordTenantAction(
         product.tenantId(), "mall_listing.price_changed", AuditTargetType.MALL_LISTING, listingId);
@@ -443,15 +499,17 @@ public class MallApplicationService {
       throw new IllegalArgumentException("未知的货架状态: " + request.status());
     }
     MallSku sku = requireOwnSku(supplierId, listingId);
+    sku = MallCatalogApplicationService.prepareLegacyListingMutation(
+        mallCatalogMapper, mallListingMapper, sku.productId(), listingId,
+        MallListingStatus.ON_SHELF.equals(request.status()));
     MallProduct product = mallCatalogMapper.findProductForSupplier(supplierId, sku.productId());
-    // 商品未通过审核时,把规格切到「在架」也不会真的可售(requireOrderable 两者都看)。
-    // 这里直接拦下并给出下一步,避免供应商反复点上架却看不出为什么没生效。
-    if (MallListingStatus.ON_SHELF.equals(request.status())
-        && !MallCatalogPolicy.STATUS_ON_SHELF.equals(product.status())) {
-      throw new IllegalStateException(
-          "商品当前为「" + product.status() + "」,上架需由采购方审核通过,请先提交审核");
+    if (MallListingStatus.ON_SHELF.equals(request.status())) {
+      MallCatalogPolicy.requireValidSku(sku.price(), sku.minOrderQty(), sku.stepQty(), sku.leadTimeDays());
+      MallCatalogPolicy.requireValidTiers(sku.price(), mallCatalogMapper.listTiersForSupplier(supplierId, listingId));
     }
-    mallCatalogMapper.updateSkuStatusForSupplier(listingId, supplierId, request.status());
+    if (mallCatalogMapper.updateSkuStatusForSupplier(listingId, supplierId, request.status()) == 0) {
+      throw new IllegalStateException("规格更新失败,请刷新后重试");
+    }
     auditLogApplicationService.recordTenantAction(
         product.tenantId(), "mall_listing.status_changed", AuditTargetType.MALL_LISTING, listingId);
     return toListingResponse(product, mallCatalogMapper.findSkuForTenant(product.tenantId(), listingId));

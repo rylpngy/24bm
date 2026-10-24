@@ -24,4 +24,5 @@ export interface MallProductResponse {
   skus?: MallSkuResponse[];
   mediaKeys?: string[];
   updatedAt?: string;
+  tenantId?: string;
 }

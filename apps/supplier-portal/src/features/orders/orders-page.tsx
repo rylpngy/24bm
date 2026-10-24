@@ -1,6 +1,7 @@
 import { Fragment, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ShoppingCart } from 'lucide-react';
+import { OrderCheckoutNote } from './order-checkout-note';
 import {
   type PurchaseOrderResponse,
   useSupplierDeliveryCreate,
@@ -167,6 +168,7 @@ export function OrdersPage({ canConfirm = false, canShip = false, canInvoice = f
     const invEditing = invForm?.orderId === o.id;
     return (
       <div className="space-y-3">
+        {o.sourceMethod === '商城' && o.id && <OrderCheckoutNote orderId={o.id} />}
         <p className="text-xs font-bold">剩余可发 {attributable(o) ? remaining(o) : '待核对'} · 已发累计 {history(o.id).reduce((s, d) => s + (d.shippedQuantity ?? 0), 0)}</p>
         {!attributable(o) && <FeedbackNotice tone="info" message="订单或历史批次缺少可核对行明细，暂停数量续办。" />}
         {history(o.id).map(d => <p key={d.id} className="break-words text-xs">{d.id} · {d.trackingNo} · 本批 {d.shippedQuantity ?? '待核对'}</p>)}

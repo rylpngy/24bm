@@ -16,20 +16,23 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 public class AuctionStreamController {
 
   private final AuctionStreamBroker auctionStreamBroker;
+  private final com.procurement.sourcing.application.RfqApplicationService rfqService;
 
-  public AuctionStreamController(AuctionStreamBroker auctionStreamBroker) {
+  public AuctionStreamController(AuctionStreamBroker auctionStreamBroker,
+      com.procurement.sourcing.application.RfqApplicationService rfqService) {
     this.auctionStreamBroker = auctionStreamBroker;
+    this.rfqService = rfqService;
   }
 
   @GetMapping(value = "/api/v1/buyer/auction-stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
   public SseEmitter buyerStream() {
     return auctionStreamBroker.subscribeTenant(
-        TenantAccessGuard.requireTenantId("buyer auction stream"));
+        TenantAccessGuard.requireTenantId("buyer auction stream"), rfqService.currentReadFilter());
   }
 
   @GetMapping(value = "/api/v1/supplier/auction-stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
   public SseEmitter supplierStream() {
-    return auctionStreamBroker.subscribeSupplier(
-        TenantAccessGuard.requireSupplierId("supplier auction stream"));
+    String supplierId = TenantAccessGuard.requireSupplierId("supplier auction stream");
+    return auctionStreamBroker.subscribeSupplier(supplierId, rfqService.currentSupplierReadFilter());
   }
 }

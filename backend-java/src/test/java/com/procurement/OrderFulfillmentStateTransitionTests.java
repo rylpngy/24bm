@@ -3,7 +3,6 @@ package com.procurement;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -34,7 +33,6 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.dao.DuplicateKeyException;
 
 class OrderFulfillmentStateTransitionTests {
 
@@ -235,19 +233,9 @@ class OrderFulfillmentStateTransitionTests {
             OffsetDateTime.parse("2026-06-15T10:00:00+08:00")));
     when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1"))
         .thenReturn(rfq("rfq-1", "tenant-1", "已定标", "supplier-1"));
-    when(purchaseOrderMapper.findByAwardSource("tenant-1", "rfq-1", "supplier-1"))
-        .thenReturn(null)
+    when(purchaseOrderMapper.findByAwardSource("tenant-1", "rfq-1", "supplier-1")).thenReturn(null);
+    when(purchaseOrderMapper.findByAwardSourceFresh("tenant-1", "rfq-1", "supplier-1"))
         .thenReturn(order("po-existing", "tenant-1", "supplier-1", "待供应商确认"));
-    doThrow(new DuplicateKeyException("duplicate award order"))
-        .when(purchaseOrderMapper)
-        .insert(
-            anyString(),
-            org.mockito.ArgumentMatchers.eq("tenant-1"),
-            org.mockito.ArgumentMatchers.eq("rfq-1"),
-            org.mockito.ArgumentMatchers.eq("supplier-1"),
-            org.mockito.ArgumentMatchers.eq(BigDecimal.valueOf(100)),
-            org.mockito.ArgumentMatchers.eq("待供应商确认"),
-            org.mockito.ArgumentMatchers.eq(LocalDate.parse("2026-06-20")));
 
     PurchaseOrderApplicationService service = new PurchaseOrderApplicationService(
           TestOrderAccess.unrestricted(),
@@ -263,6 +251,12 @@ class OrderFulfillmentStateTransitionTests {
     var response = service.createFromAward(new CreatePurchaseOrderRequest("award-1", LocalDate.parse("2026-06-20")));
 
     org.assertj.core.api.Assertions.assertThat(response.id()).isEqualTo("po-existing");
+    var sequence = org.mockito.Mockito.inOrder(purchaseOrderMapper);
+    sequence.verify(purchaseOrderMapper).findByAwardSource("tenant-1", "rfq-1", "supplier-1");
+    sequence.verify(purchaseOrderMapper).lockSupplierAdmissionStatus("tenant-1", "supplier-1");
+    sequence.verify(purchaseOrderMapper).findByAwardSourceFresh("tenant-1", "rfq-1", "supplier-1");
+    verify(purchaseOrderMapper, never()).insert(anyString(), anyString(), anyString(), anyString(),
+        org.mockito.ArgumentMatchers.any(), anyString(), org.mockito.ArgumentMatchers.any());
     verify(auditLogApplicationService, never()).recordTenantAction(
         org.mockito.ArgumentMatchers.eq("purchase_order.created"),
         org.mockito.ArgumentMatchers.eq("purchase_order"),

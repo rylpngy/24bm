@@ -8,8 +8,12 @@ import java.time.LocalDate;
 import java.util.List;
 
 public record CreateMallCartRequest(
-    @NotEmpty List<CartItem> items,
-    LocalDate expectedReceiptDate) {
+    @NotEmpty @jakarta.validation.constraints.Size(max=200) List<@NotNull @jakarta.validation.Valid CartItem> items,
+    LocalDate expectedReceiptDate,
+    @NotBlank @jakarta.validation.constraints.Size(max=100) String idempotencyKey) {
+  public CreateMallCartRequest(List<CartItem> items,LocalDate expectedReceiptDate) {
+    this(items,expectedReceiptDate,null);
+  }
 
   public record CartItem(@NotBlank String listingId, @NotNull BigDecimal quantity) {
   }

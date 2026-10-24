@@ -33,11 +33,24 @@ public final class RfqAuctionPolicy {
     if (Duration.between(now, deadlineAt).compareTo(window) > 0) {
       return null;
     }
-    return now.plus(extension);
+    OffsetDateTime extended = now.plus(extension);
+    return extended.isAfter(deadlineAt) ? extended : null;
   }
 
   public static boolean isAuction(String method) {
     return RfqMethod.AUCTION.equals(RfqMethod.orDefault(method));
+  }
+
+  public static void requireValidSchedule(String method, OffsetDateTime start, OffsetDateTime deadline) {
+    if (isAuction(method) && start != null && (deadline == null || !start.isBefore(deadline))) {
+      throw new IllegalArgumentException("竞价开始时间必须早于截止时间");
+    }
+  }
+
+  public static void requireStarted(String method, OffsetDateTime start, OffsetDateTime now) {
+    if (isAuction(method) && start != null && now.isBefore(start)) {
+      throw new IllegalStateException("竞价尚未到计划开始时间");
+    }
   }
 
   // 创建竞价项目时的参数校验:起拍价必填且为正;步长可缺省(默认 0,即只须低于当前最低价)。
@@ -79,7 +92,7 @@ public final class RfqAuctionPolicy {
     }
     BigDecimal decrement = minDecrement == null ? BigDecimal.ZERO : minDecrement;
     BigDecimal ceiling = currentLowest.subtract(decrement);
-    if (amount.compareTo(ceiling) > 0) {
+    if (amount.compareTo(currentLowest) >= 0 || amount.compareTo(ceiling) > 0) {
       throw new IllegalStateException(
           "竞价出价须比当前最低价 " + currentLowest.toPlainString()
               + " 至少再降 " + decrement.toPlainString() + ": " + rfqId);

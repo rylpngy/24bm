@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMallPermissions } from '../../lib/use-mall-permissions';
 import { ArrowLeft, CheckCircle2, MapPin, Plus } from 'lucide-react';
@@ -11,6 +11,8 @@ import {
 import { FeedbackNotice, PrimaryActionButton, cn } from '@24bid/ui';
 import type { MallRoute } from '../../App';
 import { currency } from '../catalog/product-card';
+import { useMallPurchaseControl } from '@24bid/api-client/mall-purchasing';
+import { checkoutIntent, type CheckoutIntent } from './checkout-intent';
 
 const inputCls =
   'h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 outline-none focus:border-blue-300';
@@ -23,6 +25,9 @@ export function MallCheckoutPage({ onNavigate }: { onNavigate: (route: MallRoute
   const addresses = useBuyerMallAddresses();
   const addAddress = useBuyerMallAddAddress();
   const checkout = useBuyerMallCheckoutServerCart();
+  const controls = useMallPurchaseControl();
+  const intent = useRef<CheckoutIntent | undefined>(undefined);
+  const submitting = useRef(false);
 
   const list = addresses.data?.data ?? [];
   const [addressId, setAddressId] = useState<string | null>(null);
@@ -45,13 +50,17 @@ export function MallCheckoutPage({ onNavigate }: { onNavigate: (route: MallRoute
     );
 
   const submit = () => {
+    if (submitting.current) return;
+    submitting.current = true;
     setError(null);
+    intent.current = checkoutIntent(intent.current, JSON.stringify({ groups, address: selected?.id, expectedReceiptDate, remark: remark.trim() }));
     checkout.mutate(
       {
         data: {
           addressId: selected?.id,
           expectedReceiptDate: expectedReceiptDate || undefined,
           remark: remark.trim() || undefined,
+          ...{ idempotencyKey: intent.current.key },
         },
       },
       {
@@ -67,12 +76,13 @@ export function MallCheckoutPage({ onNavigate }: { onNavigate: (route: MallRoute
           });
         },
         onError: reportError,
+        onSettled: () => { submitting.current = false; },
       },
     );
   };
 
-  if (cart.isError || addresses.isError) return <FeedbackNotice tone="error" message="结算信息加载失败，请刷新重试。" />;
-  if (cart.isLoading || addresses.isLoading) return <FeedbackNotice tone="info" message="正在加载结算信息…" />;
+  if (cart.isError || addresses.isError || controls.isError) return <FeedbackNotice tone="error" message="结算信息加载失败，请刷新重试。" />;
+  if (cart.isLoading || addresses.isLoading || controls.isLoading) return <FeedbackNotice tone="info" message="正在加载结算信息…" />;
   if (placed) {
     return (
       <div className="mx-auto max-w-lg rounded-lg border border-slate-200 bg-white p-10 text-center">
@@ -266,6 +276,11 @@ export function MallCheckoutPage({ onNavigate }: { onNavigate: (route: MallRoute
         <aside className="lg:sticky lg:top-20 lg:self-start">
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/50">
             <h2 className="text-base font-black text-slate-950">提交订单</h2>
+            <dl className="mt-3 space-y-2 border-b border-slate-100 pb-3 text-xs text-slate-600">
+              <div className="flex flex-wrap justify-between gap-2"><dt>单次直采限额</dt><dd className="font-bold">{controls.data?.maxCheckoutAmount == null ? '未设置' : currency(controls.data.maxCheckoutAmount)}</dd></div>
+              <div className="flex flex-wrap justify-between gap-2"><dt>企业收货地址</dt><dd className="font-bold">{controls.data?.requireAddress ? '必须选择' : '可线下约定'}</dd></div>
+              {!!controls.data?.categoryIds.length && <div className="font-bold text-amber-700">企业已限定可采购分类，提交时统一校验。</div>}
+            </dl>
             <p className="mt-3 text-xs font-bold text-slate-600">
               收货人 <b className="text-slate-900">{selected?.receiver ?? '未选择'}</b>
             </p>
@@ -278,7 +293,7 @@ export function MallCheckoutPage({ onNavigate }: { onNavigate: (route: MallRoute
                 fullWidth
                 busy={checkout.isPending}
                 pendingLabel="提交中"
-                disabled={view?.hasBlockedItems || (view?.itemCount ?? 0) === 0}
+                disabled={view?.hasBlockedItems || (view?.itemCount ?? 0) === 0 || (!!controls.data?.requireAddress && !selected)}
                 onClick={submit}
               >
                 提交订单

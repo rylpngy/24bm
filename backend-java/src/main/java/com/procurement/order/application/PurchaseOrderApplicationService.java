@@ -20,7 +20,6 @@ import com.procurement.tenant.application.TenantFeatureApplicationService;
 import com.procurement.tenant.domain.TenantFeatureKey;
 import java.util.List;
 import java.util.UUID;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -184,23 +183,21 @@ public class PurchaseOrderApplicationService {
 
     requireAdmittedSupplier(tenantId, award.supplierId());
 
-    String orderId = newId("po");
-    try {
-      purchaseOrderMapper.insert(
-          orderId,
-          tenantId,
-          award.rfqId(),
-          award.supplierId(),
-          award.amount(),
-          PurchaseOrderStatus.PENDING_SUPPLIER_CONFIRMATION,
-          request.expectedReceiptDate());
-    } catch (DuplicateKeyException exception) {
-      PurchaseOrder concurrentOrder = purchaseOrderMapper.findByAwardSource(tenantId, award.rfqId(), award.supplierId());
-      if (concurrentOrder != null) {
-        return toResponse(concurrentOrder);
-      }
-      throw exception;
+    // The admission row lock serializes creators; discard an earlier cached null after waiting.
+    existingOrder = purchaseOrderMapper.findByAwardSourceFresh(tenantId, award.rfqId(), award.supplierId());
+    if (existingOrder != null) {
+      return toResponse(existingOrder);
     }
+
+    String orderId = newId("po");
+    purchaseOrderMapper.insert(
+        orderId,
+        tenantId,
+        award.rfqId(),
+        award.supplierId(),
+        award.amount(),
+        PurchaseOrderStatus.PENDING_SUPPLIER_CONFIRMATION,
+        request.expectedReceiptDate());
     // 从中标报价复制行项明细,贯通「报价→订单」行级追溯。
     orderLineItemApplicationService.copyFromQuote(tenantId, orderId, award.quoteId());
     auditLogApplicationService.recordTenantAction(
@@ -218,7 +215,10 @@ public class PurchaseOrderApplicationService {
 
   // 商城直购行(跨模块编排用的简单命令对象,避免暴露 api DTO)。
   public record DirectOrderLine(
-      String description, String unit, java.math.BigDecimal quantity, java.math.BigDecimal unitPrice) {
+      String description, String unit, java.math.BigDecimal quantity, java.math.BigDecimal unitPrice,String sourceSkuId) {
+    public DirectOrderLine(String description,String unit,java.math.BigDecimal quantity,java.math.BigDecimal unitPrice) {
+      this(description,unit,quantity,unitPrice,null);
+    }
   }
 
   // 商城直购订单:由商城模块编排调用,锚点 RFQ 已就位;返回订单号(避免跨模块暴露 api DTO)。
@@ -280,9 +280,15 @@ public class PurchaseOrderApplicationService {
         amount,
         PurchaseOrderStatus.PENDING_SUPPLIER_CONFIRMATION,
         expectedReceiptDate);
+    int sortNo=0;
     for (DirectOrderLine line : lines) {
-      orderLineItemApplicationService.addDirectLine(
-          tenantId, orderId, line.description(), line.unit(), line.quantity(), line.unitPrice());
+      if(line.sourceSkuId()==null) {
+        orderLineItemApplicationService.addDirectLine(
+            tenantId, orderId, line.description(), line.unit(), line.quantity(), line.unitPrice());
+      } else {
+        orderLineItemApplicationService.addDirectLineWithSource(tenantId,orderId,line.description(),line.unit(),
+            line.quantity(),line.unitPrice(),line.sourceSkuId(),++sortNo);
+      }
     }
     auditLogApplicationService.recordTenantAction(
         PurchaseOrderAuditAction.CREATED,

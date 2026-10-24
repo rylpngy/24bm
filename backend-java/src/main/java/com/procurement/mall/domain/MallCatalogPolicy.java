@@ -71,6 +71,9 @@ public final class MallCatalogPolicy {
   /** 上架校验:价格为正、起订量与步进为正、交期非负。 */
   public static void requireValidSku(BigDecimal price, BigDecimal minOrderQty, BigDecimal stepQty,
       Integer leadTimeDays) {
+    requireStoredDecimal(price);
+    requireStoredDecimal(minOrderQty);
+    requireStoredDecimal(stepQty);
     if (price == null || price.signum() <= 0) {
       throw new IllegalArgumentException("协议单价必须大于 0");
     }
@@ -85,16 +88,41 @@ public final class MallCatalogPolicy {
     }
   }
 
+  public static void requireValidStock(BigDecimal stock) {
+    requireStoredDecimal(stock);
+    if (stock != null && stock.signum() < 0) {
+      throw new IllegalArgumentException("库存不能为负");
+    }
+  }
+
+  private static void requireStoredDecimal(BigDecimal value) {
+    if (value != null && (value.stripTrailingZeros().scale() > 2
+        || value.abs().compareTo(new BigDecimal("1000000000000")) >= 0)) {
+      throw new IllegalArgumentException("金额和数量最多支持两位小数及十二位整数");
+    }
+  }
+
   /** 阶梯价校验:档位数量与单价为正,且单价随数量递减(否则阶梯没有意义)。 */
   public static void requireValidTiers(BigDecimal basePrice, List<MallTierPrice> tiers) {
     if (tiers == null || tiers.isEmpty()) {
       return;
     }
+    for (MallTierPrice tier : tiers) {
+      if (tier == null || tier.minQty() == null || tier.price() == null) {
+        throw new IllegalArgumentException("阶梯数量与单价不能为空");
+      }
+      requireStoredDecimal(tier.minQty());
+      requireStoredDecimal(tier.price());
+    }
     List<MallTierPrice> sorted = tiers.stream()
         .sorted(Comparator.comparing(MallTierPrice::minQty))
         .toList();
     BigDecimal previous = basePrice;
+    BigDecimal previousQty = null;
     for (MallTierPrice tier : sorted) {
+      if (previousQty != null && previousQty.compareTo(tier.minQty()) == 0) {
+        throw new IllegalArgumentException("阶梯档位数量不能重复");
+      }
       if (tier.minQty() == null || tier.minQty().signum() <= 0) {
         throw new IllegalArgumentException("阶梯档位的起订数量必须大于 0");
       }
@@ -106,6 +134,7 @@ public final class MallCatalogPolicy {
             "阶梯价需随数量递减:" + trim(tier.minQty()) + " 档的单价高于上一档");
       }
       previous = tier.price();
+      previousQty = tier.minQty();
     }
   }
 

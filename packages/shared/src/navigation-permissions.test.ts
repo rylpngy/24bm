@@ -2,6 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { buyerAdminModules, hasPermission, platformNavigation, supplierNavigation, visiblePortalModules } from './navigation';
 
 describe('navigation permission matching', () => {
+  it('reserves public catalog review for full platform reviewers', () => {
+    expect(visiblePortalModules(platformNavigation, ['platform:*']).map(m => m.id)).toContain('mall');
+    expect(visiblePortalModules(platformNavigation, ['platform:enterprise:manage']).map(m => m.id)).not.toContain('mall');
+    expect(visiblePortalModules(platformNavigation, ['platform:mall:read']).map(m => m.id)).not.toContain('mall');
+  });
   it('gates cooperation invitations with supplier profile read', () => {
     expect(visiblePortalModules(supplierNavigation, ['supplier:profile:read']).map(m => m.id)).toContain('cooperation-invitations');
     expect(visiblePortalModules(supplierNavigation, ['supplier:profile:manage']).map(m => m.id)).not.toContain('cooperation-invitations');

@@ -148,13 +148,18 @@ public class RfqApplicationService {
   public RfqResponse openBids(String rfqId, boolean force) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer RFQ APIs");
     String userId = TenantAccessGuard.requireUserId("buyer RFQ APIs");
+    rfqMapper.lockByTenantAndId(tenantId, rfqId);
     Rfq rfq = rfqMapper.findByTenantAndId(tenantId, rfqId);
     if (rfq == null) {
       throw new IllegalArgumentException("RFQ not found in tenant scope: " + rfqId);
     }
     requireWriteAccess(rfq);
     rfqSourcingStatusTransition.requireQuotingForOpen(rfq.status(), rfqId);
-    rfqSourcingStatusTransition.requireDeadlinePassedOrForce(rfq.deadlineAt(), force, rfqId);
+    if (RfqAuctionPolicy.isAuction(rfq.method()) && rfq.deadlineAt() == null) {
+      throw new IllegalStateException("竞价缺少可核验的截止时间");
+    }
+    rfqSourcingStatusTransition.requireDeadlinePassedOrForce(
+        rfq.deadlineAt(), force && !RfqAuctionPolicy.isAuction(rfq.method()), rfqId);
 
     int opened = rfqMapper.openBids(tenantId, rfqId, RfqStatus.QUOTING, RfqStatus.OPENED, userId);
     if (opened == 0) {
@@ -169,6 +174,7 @@ public class RfqApplicationService {
   public RfqResponse startNewRound(
       String rfqId, java.time.OffsetDateTime deadlineAt, boolean finalRound, String note) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer RFQ APIs");
+    rfqMapper.lockByTenantAndId(tenantId, rfqId);
     Rfq rfq = rfqMapper.findByTenantAndId(tenantId, rfqId);
     if (rfq == null) {
       throw new IllegalArgumentException("RFQ not found in tenant scope: " + rfqId);
@@ -177,6 +183,7 @@ public class RfqApplicationService {
     if (!RfqStatus.OPENED.equals(rfq.status())) {
       throw new IllegalStateException("Only opened RFQs can start a new round: " + rfqId);
     }
+    if (rfq.finalRound()) throw new IllegalStateException("最终轮报价后不可再发起新一轮: " + rfqId);
     rfqSourcingStatusTransition.requireFutureDeadline(deadlineAt, rfqId);
 
     int updated = rfqMapper.startNewRound(tenantId, rfqId, deadlineAt, finalRound);
@@ -202,6 +209,7 @@ public class RfqApplicationService {
   @Transactional
   public RfqResponse abortRfq(String rfqId, String kind, String reason) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer RFQ APIs");
+    rfqMapper.lockByTenantAndId(tenantId, rfqId);
     Rfq rfq = rfqMapper.findByTenantAndId(tenantId, rfqId);
     if (rfq == null) {
       throw new IllegalArgumentException("RFQ not found in tenant scope: " + rfqId);
@@ -239,7 +247,7 @@ public class RfqApplicationService {
   public List<RfqResponse> listCurrentTenantRfqs(String status, String keyword) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer RFQ APIs");
     DataScope dataScope = dataScopeService.currentUserDataScope();
-    if (dataScope.blocksAll()) {
+    if (dataScope == null || dataScope.blocksAll()) {
       return List.of();
     }
     List<String> scopeDepartmentIds = dataScope.restricted() && dataScope.requesterId() == null
@@ -253,6 +261,7 @@ public class RfqApplicationService {
             scopeDepartmentIds,
             requesterId)
         .stream()
+        .filter(rfq -> canRead(rfq, dataScope))
         .map(this::toResponse)
         .toList();
   }
@@ -292,13 +301,14 @@ public class RfqApplicationService {
     List<String> invitedSupplierIds =
         request.invitedSupplierIds() == null ? List.of() : request.invitedSupplierIds();
     validateSuppliers(tenantId, invitedSupplierIds);
-    if (!draft) {
+    if (!draft || RfqMethod.SINGLE_SOURCE.equals(method) && !invitedSupplierIds.isEmpty()) {
       // 直接发布路径:创建时即校验家数;草稿路径在发布时校验(供应商在选商步骤补充)。
       RfqMethod.requireSupplierCount(method, invitedSupplierIds.size());
     }
     RfqAuctionPolicy.requireValidParams(
         method, request.auctionStartPrice(), request.auctionMinDecrement());
     RfqMethod.requireSourceJustification(method, request.singleSourceReason());
+    RfqAuctionPolicy.requireValidSchedule(method, request.auctionPlannedStart(), request.deadlineAt());
 
     String rfqId = newId("rfq");
     rfqMapper.insert(
@@ -347,6 +357,7 @@ public class RfqApplicationService {
   @Transactional
   public RfqResponse update(String rfqId, UpdateRfqRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer RFQ APIs");
+    rfqMapper.lockByTenantAndId(tenantId, rfqId);
     Rfq rfq = rfqMapper.findByTenantAndId(tenantId, rfqId);
     if (rfq == null) {
       throw new IllegalArgumentException("RFQ not found: " + rfqId);
@@ -360,6 +371,21 @@ public class RfqApplicationService {
     List<String> supplierIds = request.invitedSupplierIds() == null
         ? rfqInviteMapper.listSupplierIds(tenantId, rfqId) : request.invitedSupplierIds();
     if (request.invitedSupplierIds() != null) validateSuppliers(tenantId, supplierIds);
+    requireSingleSource(rfq, supplierIds, draft);
+    RfqAuctionPolicy.requireValidSchedule(rfq.method(), rfq.auctionPlannedStart(), request.deadlineAt());
+    boolean fixedInvitations = !draft && (RfqAuctionPolicy.isAuction(rfq.method())
+        || RfqMethod.SINGLE_SOURCE.equals(rfq.method()));
+    if (fixedInvitations && request.invitedSupplierIds() != null
+        && !new java.util.HashSet<>(supplierIds).equals(
+            new java.util.HashSet<>(rfqInviteMapper.listSupplierIds(tenantId, rfqId)))) {
+      throw new IllegalStateException("已发布的竞价/单一来源项目不可更换受邀供应商");
+    }
+    if (!draft && RfqAuctionPolicy.isAuction(rfq.method())) {
+      rfqSourcingStatusTransition.requireOpenQuoteDeadline(rfq.deadlineAt(), rfqId);
+      if (request.deadlineAt() == null || request.deadlineAt().isBefore(rfq.deadlineAt())) {
+        throw new IllegalStateException("已发布竞价不可缩短报价截止时间");
+      }
+    }
 
     if (!draft && supplierIds.isEmpty()) {
       throw new IllegalArgumentException("报价中的项目须保留受邀供应商");
@@ -378,7 +404,7 @@ public class RfqApplicationService {
       throw new IllegalStateException("RFQ status changed before update could be saved: " + rfqId);
     }
 
-    if (request.invitedSupplierIds() != null) {
+    if (request.invitedSupplierIds() != null && !fixedInvitations) {
       rfqInviteMapper.deleteByRfq(tenantId, rfqId);
       for (String supplierId : supplierIds) {
         rfqInviteMapper.insert(newId("rfq-invite"), tenantId, rfqId, supplierId, RfqInviteStatus.INVITED);
@@ -450,6 +476,7 @@ public class RfqApplicationService {
     }
     List<String> target = supplierIds == null ? List.of() : supplierIds;
     validateSuppliers(tenantId, target);
+    requireSingleSource(rfq, target, true);
     rfqInviteMapper.deleteByRfq(tenantId, rfqId);
     for (String supplierId : target) {
       rfqInviteMapper.insert(newId("rfq-invite"), tenantId, rfqId, supplierId, RfqInviteStatus.INVITED);
@@ -472,6 +499,11 @@ public class RfqApplicationService {
       throw new IllegalStateException("发布前请先在「选择供应商」步骤邀请供应商: " + rfqId);
     }
     RfqMethod.requireSupplierCount(RfqMethod.orDefault(rfq.method()), supplierIds.size());
+    if (RfqAuctionPolicy.isAuction(rfq.method()) || RfqMethod.SINGLE_SOURCE.equals(rfq.method())) {
+      validateSuppliers(tenantId, supplierIds);
+    }
+    requireSingleSource(rfq, supplierIds, false);
+    RfqAuctionPolicy.requireValidSchedule(rfq.method(), rfq.auctionPlannedStart(), rfq.deadlineAt());
     // 邀请家数不足参考门槛:不阻断发布,审计留痕(依法必招项目由采购人自行把关)。
     String supplierAdvisory = RfqMethod.supplierCountAdvisory(rfq.method(), supplierIds.size());
     if (supplierAdvisory != null) {
@@ -536,6 +568,7 @@ public class RfqApplicationService {
   }
 
   private Rfq requireRfq(String tenantId, String rfqId) {
+    rfqMapper.lockByTenantAndId(tenantId, rfqId);
     Rfq rfq = rfqMapper.findByTenantAndId(tenantId, rfqId);
     if (rfq == null) {
       throw new IllegalArgumentException("RFQ not found in tenant scope: " + rfqId);
@@ -546,6 +579,63 @@ public class RfqApplicationService {
 
   public void requireWriteAccess(String rfqId) {
     requireRfq(TenantAccessGuard.requireTenantId("buyer RFQ APIs"), rfqId);
+  }
+
+  public void requireReadAccess(String rfqId) {
+    Rfq rfq = rfqMapper.findByTenantAndId(TenantAccessGuard.requireTenantId("buyer RFQ APIs"), rfqId);
+    if (rfq == null || !canRead(rfq, dataScopeService.currentUserDataScope())) {
+      throw new com.procurement.common.tenant.PermissionDeniedException("当前数据范围无权访问该询比项目");
+    }
+  }
+
+  public void requireAwardSupplier(Rfq rfq, String supplierId) {
+    List<String> invited = rfqInviteMapper.listSupplierIds(rfq.tenantId(), rfq.id());
+    requireSingleSource(rfq, invited, false);
+    if (RfqMethod.SINGLE_SOURCE.equals(rfq.method())) {
+      if (!invited.contains(supplierId)) throw new IllegalStateException("定标供应商必须为单一来源受邀方");
+      validateSuppliers(rfq.tenantId(), invited);
+    }
+  }
+
+  private void requireSingleSource(Rfq rfq, List<String> invited, boolean draft) {
+    if (!RfqMethod.SINGLE_SOURCE.equals(rfq.method())) return;
+    RfqMethod.requireSourceJustification(rfq.method(), rfq.singleSourceReason());
+    if (!draft || !invited.isEmpty()) RfqMethod.requireSupplierCount(rfq.method(), invited.size());
+  }
+
+  public java.util.function.Predicate<String> currentReadFilter() {
+    String tenantId = TenantAccessGuard.requireTenantId("buyer auction stream");
+    String userId = TenantAccessGuard.requireUserId("buyer auction stream");
+    return id -> {
+      Rfq rfq = rfqMapper.findByTenantAndId(tenantId, id);
+      return rfq != null && canRead(rfq, dataScopeService.userDataScope(tenantId, userId));
+    };
+  }
+
+  public java.util.function.Predicate<String> currentSupplierReadFilter() {
+    String supplierId = TenantAccessGuard.requireSupplierId("supplier auction stream");
+    return id -> rfqMapper.findBySupplierInvite(id, supplierId) != null;
+  }
+
+  private boolean canRead(Rfq rfq, DataScope scope) {
+    if (scope == null || scope.blocksAll()) return false;
+    if (!scope.restricted()) return true;
+    var demands = rfqDemandMapper.listDemandAccess(rfq.tenantId(), rfq.id());
+    if (demands.isEmpty()) return scope.requesterId() != null && scope.requesterId().equals(rfq.ownerId());
+    return demands.stream().allMatch(d -> d.demandId() != null && (scope.requesterId() != null
+        ? scope.requesterId().equals(d.requesterId()) : scope.departmentIds().contains(d.departmentId())));
+  }
+
+  public void requireAdditionalInvitation(String rfqId, String supplierId) {
+    Rfq rfq = requireRfq(TenantAccessGuard.requireTenantId("buyer RFQ APIs"), rfqId);
+    rfqSourcingStatusTransition.requireQuotingForQuoteSubmission(rfq.status(), rfqId);
+    rfqSourcingStatusTransition.requireOpenQuoteDeadline(rfq.deadlineAt(), rfqId);
+    List<String> invited = rfqInviteMapper.listSupplierIds(rfq.tenantId(), rfqId);
+    if ((RfqMethod.SINGLE_SOURCE.equals(rfq.method()) || RfqAuctionPolicy.isAuction(rfq.method()))
+        && !invited.contains(supplierId)) {
+      throw new IllegalStateException("已发布竞价/单一来源不可通过公开报名追加供应商");
+    }
+    validateSuppliers(rfq.tenantId(), List.of(supplierId));
   }
 
   private void requireWriteAccess(Rfq rfq) {

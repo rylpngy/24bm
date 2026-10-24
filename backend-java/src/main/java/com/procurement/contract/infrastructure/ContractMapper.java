@@ -7,12 +7,20 @@ import java.time.LocalDate;
 import java.util.List;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
 @Mapper
 public interface ContractMapper {
+
+  @Select("""
+      select o.id from purchase_orders o join contracts c on c.tenant_id=o.tenant_id and c.related_order_id=o.id
+      where c.tenant_id=#{tenantId} and c.id=#{id} for update of o
+      """)
+  @Options(flushCache = Options.FlushCachePolicy.TRUE, useCache = false)
+  String lockOrderForContract(@Param("tenantId") String tenantId, @Param("id") String id);
 
   @Select("""
       select id, tenant_id, contract_no, contract_name, related_order_id, supplier_id,
@@ -31,6 +39,7 @@ public interface ContractMapper {
   ContractLedger findByTenantAndOrderId(@Param("tenantId") String tenantId, @Param("orderId") String orderId);
 
   @Select("select id from contracts where tenant_id = #{tenantId} and id = #{id} for update")
+  @Options(flushCache = Options.FlushCachePolicy.TRUE, useCache = false)
   String lockById(@Param("tenantId") String tenantId, @Param("id") String id);
 
   String VISIBLE_ORDERS = """
@@ -128,6 +137,7 @@ public interface ContractMapper {
       where tenant_id = #{tenantId} and contract_id = #{contractId}
         and blocking_reason is not null
       """)
+  @Options(flushCache = Options.FlushCachePolicy.TRUE, useCache = false)
   int countArchiveBlockers(
       @Param("tenantId") String tenantId,
       @Param("contractId") String contractId);

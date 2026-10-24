@@ -36,7 +36,7 @@ class AuctionStreamBrokerTests {
   @DisplayName("订阅注册后计入连接数,已结束的订阅在下一次投递时被清理")
   void closedSubscriptionsAreReaped() {
     AuctionStreamBroker broker = new AuctionStreamBroker();
-    SseEmitter buyer = broker.subscribeTenant("tenant-acme");
+    SseEmitter buyer = broker.subscribeTenant("tenant-acme", id -> true);
     broker.subscribeSupplier("sup-1");
     assertThat(broker.subscriptionCount()).isEqualTo(2);
 
@@ -52,12 +52,21 @@ class AuctionStreamBrokerTests {
   @DisplayName("向已断开的订阅投递不抛出,并清理该订阅")
   void dispatchToBrokenSubscriptionIsSafe() {
     AuctionStreamBroker broker = new AuctionStreamBroker();
-    SseEmitter emitter = broker.subscribeTenant("tenant-acme");
+    SseEmitter emitter = broker.subscribeTenant("tenant-acme", id -> true);
     emitter.completeWithError(new java.io.IOException("client gone"));
 
     broker.onEvent(EVENT);
     broker.heartbeat();
 
     assertThat(broker.subscriptionCount()).isZero();
+  }
+
+  @Test
+  void unreadableRecordIsNotDeliveredEvenWithinTenant() {
+    AuctionStreamBroker broker = new AuctionStreamBroker();
+    SseEmitter denied = broker.subscribeTenant("tenant-acme", id -> false);
+    denied.complete();
+    broker.onEvent(EVENT);
+    assertThat(broker.subscriptionCount()).isEqualTo(1);
   }
 }

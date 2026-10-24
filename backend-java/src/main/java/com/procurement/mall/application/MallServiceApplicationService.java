@@ -6,6 +6,7 @@ import com.procurement.mall.api.CreateAfterSalesRequest;
 import com.procurement.mall.api.CreateMallReviewRequest;
 import com.procurement.mall.api.HandleAfterSalesRequest;
 import com.procurement.mall.domain.MallAfterSales;
+import com.procurement.mall.domain.MallAfterSalesEvent;
 import com.procurement.mall.domain.MallAfterSalesPolicy;
 import com.procurement.mall.domain.MallReview;
 import com.procurement.mall.infrastructure.MallServiceMapper;
@@ -61,6 +62,7 @@ public class MallServiceApplicationService {
   public List<MallAfterSales> applyAfterSales(CreateAfterSalesRequest request) {
     access.requireOrder(request.orderId(), "buyer:mall:purchase");
     String tenantId = TenantAccessGuard.requireTenantId("buyer mall APIs");
+    requireLockedOrder(tenantId, request.orderId());
     PurchaseOrderQueryService.OrderLineView line =
         purchaseOrderQueryService.findLineForTenant(tenantId, request.orderId(), request.orderLineId());
     if (line == null) {
@@ -69,11 +71,14 @@ public class MallServiceApplicationService {
     MallAfterSalesPolicy.requireApplicable(
         line.orderStatus(), request.type(), request.quantity(), request.reason());
     MallAfterSalesPolicy.requireWithinOrderedQuantity(line.quantity(), request.quantity());
+    MallAfterSalesPolicy.requireCumulativeQuantity(line.quantity(),
+        mallServiceMapper.claimedQuantity(tenantId, request.orderLineId()), request.quantity());
 
     String id = "mas-" + UUID.randomUUID();
     mallServiceMapper.insertAfterSales(
         id, tenantId, request.orderId(), request.orderLineId(), line.supplierId(),
         request.type(), request.quantity(), request.reason().trim());
+    recordEvent(id, "buyer", null, MallAfterSalesPolicy.STATUS_PENDING, request.reason().trim(), null);
     auditLogApplicationService.recordTenantAction(
         "mall_after_sales.applied", AUDIT_TARGET, id);
     notificationApplicationService.notifyActiveSupplierUsers(
@@ -86,18 +91,23 @@ public class MallServiceApplicationService {
   public List<MallReview> submitReview(CreateMallReviewRequest request) {
     access.requireOrder(request.orderId(), "buyer:mall:purchase");
     String tenantId = TenantAccessGuard.requireTenantId("buyer mall APIs");
+    requireLockedOrder(tenantId, request.orderId());
     PurchaseOrderQueryService.OrderLineView line =
         purchaseOrderQueryService.findLineForTenant(tenantId, request.orderId(), request.orderLineId());
     if (line == null) {
       throw new IllegalArgumentException("订单行不存在: " + request.orderLineId());
     }
     MallAfterSalesPolicy.requireReviewable(line.orderStatus(), request.rating());
+    String actualProduct = mallServiceMapper.sourceProduct(tenantId, request.orderId(), request.orderLineId());
+    if (request.productId() != null && !request.productId().equals(actualProduct)) {
+      throw new IllegalArgumentException("评价商品必须与订单来源SKU一致，历史无来源订单不可绑定商品");
+    }
     if (mallServiceMapper.countReviewForLine(tenantId, request.orderLineId()) > 0) {
       throw new IllegalStateException("该订单行已评价过,不可重复评价");
     }
     String id = "mrv-" + UUID.randomUUID();
     mallServiceMapper.insertReview(
-        id, tenantId, request.orderId(), request.orderLineId(), request.productId(),
+        id, tenantId, request.orderId(), request.orderLineId(), actualProduct,
         line.supplierId(), request.rating(),
         request.content() == null ? "" : request.content().trim());
     auditLogApplicationService.recordTenantAction("mall_review.submitted", AUDIT_TARGET, id);
@@ -133,17 +143,79 @@ public class MallServiceApplicationService {
     if (current == null) {
       throw new IllegalArgumentException("售后单不存在或不属于本供应商: " + afterSalesId);
     }
+    requireLockedOrder(current.tenantId(), current.orderId());
+    current = mallServiceMapper.lockForSupplier(supplierId, afterSalesId);
+    if (current == null) throw new IllegalStateException("售后单已变更，请刷新");
     MallAfterSalesPolicy.requireHandleable(current.status(), request.status(), request.reply());
-    mallServiceMapper.handleBySupplier(
-        afterSalesId, supplierId, request.status(),
-        request.reply() == null ? null : request.reply().trim());
+    boolean completing = MallAfterSalesPolicy.STATUS_DONE.equals(request.status());
+    if (completing && (request.evidenceNo() == null || request.evidenceNo().isBlank())) {
+      throw new IllegalArgumentException("完成办理必须填写处理凭据编号");
+    }
+    String target = completing ? MallAfterSalesPolicy.STATUS_CONFIRMING : request.status();
+    if (mallServiceMapper.handleBySupplier(
+        afterSalesId, supplierId, target,
+        request.reply() == null ? null : request.reply().trim(), current.status()) != 1) {
+      throw new IllegalStateException("售后状态已变更，请刷新");
+    }
+    recordEvent(afterSalesId, "supplier", current.status(), target, request.reply(), request.evidenceNo());
     auditLogApplicationService.recordTenantAction(
         current.tenantId(), "mall_after_sales.handled", AUDIT_TARGET,
-        afterSalesId + " → " + request.status());
+        afterSalesId + " → " + target);
     notificationApplicationService.notifyActiveTenantUsers(
         current.tenantId(), "商城售后处理结果",
-        current.type() + "申请已" + request.status()
+        current.type() + "申请状态：" + target
         + (request.reply() == null || request.reply().isBlank() ? "" : ":" + request.reply().trim()));
     return listAfterSalesForSupplier();
+  }
+
+  @Transactional
+  public List<MallAfterSales> buyerAction(String id, String action, String note) {
+    MallAfterSales current = requireBuyerCase(id, "buyer:mall:purchase");
+    requireLockedOrder(current.tenantId(), current.orderId());
+    current = mallServiceMapper.lockForBuyer(current.tenantId(), id);
+    if (current == null) throw new IllegalStateException("售后单已变更，请刷新");
+    MallAfterSalesPolicy.requireBuyerAction(current.status(), action);
+    if (note == null || note.isBlank()) throw new IllegalArgumentException("请填写确认或撤回说明");
+    String target = action.equals("confirm") ? MallAfterSalesPolicy.STATUS_DONE : MallAfterSalesPolicy.STATUS_WITHDRAWN;
+    if (mallServiceMapper.buyerTransition(current.tenantId(), id, current.status(), target) != 1) {
+      throw new IllegalStateException("售后状态已变更，请刷新");
+    }
+    recordEvent(id, "buyer", current.status(), target, note.trim(), null);
+    auditLogApplicationService.recordTenantAction("mall_after_sales." + action, AUDIT_TARGET, id);
+    notificationApplicationService.notifyActiveSupplierUsers(current.tenantId(), current.supplierId(),
+        "商城售后反馈", current.type() + "申请" + target + "：" + note.trim());
+    return visibleAfterSales("buyer:mall:purchase");
+  }
+
+  public List<MallAfterSalesEvent> buyerHistory(String id) {
+    requireBuyerCase(id, "buyer:order:read");
+    return mallServiceMapper.history(TenantAccessGuard.requireTenantId("buyer mall history"), null, id);
+  }
+
+  public List<MallAfterSalesEvent> supplierHistory(String id) {
+    String supplierId = TenantAccessGuard.requireSupplierId("supplier mall APIs");
+    if (mallServiceMapper.findForSupplier(supplierId, id) == null) {
+      throw new IllegalArgumentException("售后单不存在或不属于本供应商");
+    }
+    return mallServiceMapper.history(null, supplierId, id);
+  }
+
+  private MallAfterSales requireBuyerCase(String id, String permission) {
+    MallAfterSales current = mallServiceMapper.findForBuyer(
+        TenantAccessGuard.requireTenantId("buyer mall APIs"), id);
+    if (current == null) throw new IllegalArgumentException("售后单不存在或不属于本企业");
+    access.requireOrder(current.orderId(), permission);
+    return current;
+  }
+
+  private void requireLockedOrder(String tenantId, String orderId) {
+    if (mallServiceMapper.lockOrder(tenantId, orderId) == null) {
+      throw new IllegalArgumentException("订单不存在");
+    }
+  }
+
+  private void recordEvent(String id, String role, String from, String to, String note, String evidence) {
+    mallServiceMapper.insertEvent("mase-" + UUID.randomUUID(), id, TenantAccessGuard.requireUserId("mall after-sales history"), role,
+        from, to, note == null ? null : note.trim(), evidence == null ? null : evidence.trim());
   }
 }

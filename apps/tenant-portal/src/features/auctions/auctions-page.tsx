@@ -227,7 +227,8 @@ export function AuctionsPage({ onNavigate }: { onNavigate: (moduleId: string) =>
     // 排行榜:每家供应商最新一笔,按金额升序;未出价受邀方垫底。
     const latestBySupplier = new Map<string, (typeof quotes)[number]>();
     asc.forEach((q) => q.supplierId && latestBySupplier.set(q.supplierId, q));
-    const ranked = Array.from(latestBySupplier.values()).sort((a, b) => (a.amount ?? 0) - (b.amount ?? 0));
+    const ranked = Array.from(latestBySupplier.values()).sort((a, b) => (a.amount ?? 0) - (b.amount ?? 0)
+      || (a.submittedAt ?? '').localeCompare(b.submittedAt ?? '') || (a.id ?? '').localeCompare(b.id ?? ''));
     const waiting = (r.invitedSupplierIds ?? []).filter((sid) => !latestBySupplier.has(sid));
     const stage = stageOf(r);
     const maxAmount = Math.max(...ranked.map((q) => q.amount ?? 0), 1);
@@ -333,7 +334,7 @@ export function AuctionsPage({ onNavigate }: { onNavigate: (moduleId: string) =>
             <>
               <button
                 type="button"
-                disabled={open.isPending}
+                disabled={open.isPending || !r.deadlineAt || new Date(r.deadlineAt).getTime() > Date.now()}
                 onClick={() => setConfirmAction('open-early')}
                 className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-blue-600 px-4 text-sm font-black text-white hover:bg-blue-700 disabled:bg-slate-300"
               >
@@ -503,13 +504,13 @@ export function AuctionsPage({ onNavigate }: { onNavigate: (moduleId: string) =>
           open={confirmAction === 'open-early'}
           tone="primary"
           title="结束竞价并开标"
-          message="结束后供应商无法继续出价,进入评标定标环节。确认继续?"
+          message="竞价截止后开标，进入评标定标环节。确认继续?"
           confirmLabel="确认开标"
           busy={open.isPending}
           onCancel={() => setConfirmAction(null)}
           onConfirm={() => {
             r.id && open.mutate(
-              { rfqId: r.id, data: { force: true } },
+              { rfqId: r.id, data: { force: false } },
               { onSuccess: () => { setConfirmAction(null); refresh(); }, onError: (e) => { setConfirmAction(null); reportError(e); } },
             );
           }}

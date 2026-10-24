@@ -2,6 +2,12 @@
 
 ## 当前状态（2026-10-24，以本节为准）
 
+第三阶段“商城与采购方式”在`codex/mall-procurement-stage-three`进入PR前冻结与收尾，起点为已合并发布的PR120/main `8b30c3052f108c4ca1e50d6a075090f689de31c8`。原系统固定目录`/Users/epl/.codex/deployments/24bid-base/8b30c3052f10`，5173—5176/API8080仍服务原库`procurement_saas_base`和原附件桶。原152表、5附件备份为`srm-backup-1792813460657`。商品/SKU复审、真实商品图片与审核预览、商品分类及后代分类筛选、真实比价、采购控制、强制提交编号的幂等结算、订单SKU来源、售后生命周期和竞价/单一来源/企业招标整改已实现。V223/V225/V228仅在隔离环境及原数据副本核验；未合并PR、未部署原系统，不得视为已上线。范围见`docs/superpowers/plans/2026-10-24-mall-procurement-stage-three.md`，操作及边界见`docs/mall-procurement-stage-three-guide.md`。不修改历史迁移，不混入未跟踪客户文档，不清库或替换原数据。以下阶段二“进入PR”等是历史快照。
+
+本次冻结依据主任务最新验收报告：Java21执行`mvn -q -Pintegration verify`退出0，991项非IT单元测试、190项IT，失败0；最新商城真实HTTP 6项检查GREEN，含分类及超限上传最终HTTP413；此前三采购方式真实HTTP 8项检查、101次请求GREEN。Franklin既有桌面/手机26张截图、11项检查通过；最后分类/图库定向浏览器复验也已通过，另计6项检查、8张截图（1440/390宽），错误0、横向溢出0，主任务已检查手机首屏标题及价格。报告`/tmp/mall-stage3-targeted-1792816799123/result.json`记录未访问8080/5173、未写业务数据。样本3件商品均为同一分类，跨分类排除仅有单测覆盖；单图样本未实测多缩略图切换。尚待PR/CI、受保护合并、原库/附件备份复核、固定构建部署和四端发布后核验。站内履约、付款登记及售后状态不代表真实资金支付/退款；外部支付、CA和第三方集成未在本阶段交付。
+
+最终前端检查已由主任务确认：独立运行`pnpm test`，108个文件、536项测试、失败0，耗时33.33秒；七包类型检查及四端构建通过；OpenAPI 359条路径已同步，日期检查及`git diff --check`通过。此前两次超时确认为资源争用，定向24项及独立全量536项均已通过，未为此修改源码。最后分类/图库定向浏览器复验已完成；PR CI、合并及原系统部署仍待完成。文档按此状态冻结，不把本地检查通过写成已发布。
+
 第二阶段采购主流程收口：分支 `codex/procurement-stage-two-closeout`，基于已合并并发布的 PR119/main `4912535db2aacabee55a2bf42568609e4c57e722`。已补需求退回重提及撤回、草稿取消释放、跨部门实付分摊、多批发收货、质量处置复核、合同与付款防绕过、项目执行台账和真实附件归档。范围及操作见 `docs/superpowers/plans/2026-10-24-procurement-stage-two-closeout.md`、`docs/procurement-stage-two-guide.md`。本地886项Java单测、135项数据库集成、407项前端测试、七包类型、两端构建、真实HTTP及桌面/手机通过。提交本节时正进入PR/CI交付，合并状态应查询GitHub；实际发布版本须查 `/Users/epl/.codex/deployments/24bid-base/*/release.json` 及同目录 `RESTORATION.md`，不能仅凭下方历史记录判定。开发起点原系统固定目录为 `4912535db2aa`，数据库必须保留 `procurement_saas_base`、附件桶 `24bid-attachments`。备份 `srm-backup-1792809223229` 包含149张表和5个原附件，副本迁移V218—V222及旧记录指纹核验通过。不要重复开发、导入验收数据或将隔离8095/5197/5198当成原5173。下方“第一阶段尚未切换”等均为历史过程。
 
 第一阶段SRM整体收口：开发分支 `codex/srm-stage-one-closeout`，包含同期绩效、不可变版本四维权重模板、任务锁定版本及历史评分快照、合作邀请双端事务通知、统一入口与六类XLSX台账。阶段范围及验收见 `docs/superpowers/plans/2026-10-24-srm-stage-one-closeout.md`，使用说明见 `docs/srm-stage-one-guide.md`。已通过前端371测试、七包类型检查、Java相关回归及45项PostgreSQL集成；原库备份副本V217迁移通过，147表原字段内容及117条旧迁移记录一致。原系统尚未切换，PR、CI和最终部署以本节后续交付记录为准，不要将隔离验收当作已发布。

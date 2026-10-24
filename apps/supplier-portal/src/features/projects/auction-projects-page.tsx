@@ -3,7 +3,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Gavel } from 'lucide-react';
 import {
   useAuctionStream,
-  useSupplierQuoteListList,
   useSupplierQuoteListRfqs,
   type RfqResponse,
 } from '@24bid/api-client';
@@ -30,6 +29,7 @@ export function AuctionProjectsPage({ onOpenProject }: { onOpenProject: (rfqId: 
   // G-1 竞价实时推送:SSE 通道畅通时由服务端事件驱动刷新;断流回落 5s 轮询(改造前行为)。
   const token = useAuthStore((s) => s.session?.token);
   const [streamLive, setStreamLive] = useState(false);
+  const [now, setNow] = useState(Date.now);
   const rfqs = useSupplierQuoteListRfqs(undefined, {
     query: {
       refetchInterval: (query) =>
@@ -44,6 +44,11 @@ export function AuctionProjectsPage({ onOpenProject }: { onOpenProject: (rfqId: 
   const hasLiveAuction = (rfqs.data?.data ?? []).some(
     (r) => r.method === '竞价' && r.status === '报价中',
   );
+  useEffect(() => {
+    if (!hasLiveAuction) return;
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [hasLiveAuction]);
   const onAuctionEvent = useCallback(() => {
     void queryClient.invalidateQueries({
       predicate: (q) => typeof q.queryKey[0] === 'string'
@@ -54,12 +59,10 @@ export function AuctionProjectsPage({ onOpenProject }: { onOpenProject: (rfqId: 
     scope: 'supplier', token, enabled: hasLiveAuction, onEvent: onAuctionEvent,
   });
   useEffect(() => setStreamLive(auctionStream.live), [auctionStream.live]);
-  const quotes = useSupplierQuoteListList();
   const [filter, setFilter] = useState('全部');
   const [keyword, setKeyword] = useState('');
   const [page, setPage] = useState(1);
 
-  const quoteList = quotes.data?.data ?? [];
   const all = (rfqs.data?.data ?? []).filter((r) => r.method === '竞价');
 
   const kw = keyword.trim().toLowerCase();
@@ -71,12 +74,18 @@ export function AuctionProjectsPage({ onOpenProject }: { onOpenProject: (rfqId: 
   const safePage = Math.min(page, pageCount);
   const pageItems = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
-  const live = all.filter((r) => r.status === '报价中').length;
-  const leading = all.filter((r) => r.status === '报价中' && r.auctionMyRank === 1).length;
+  const isLive = (r: RfqResponse) => r.status === '报价中'
+    && (!r.auctionPlannedStart || new Date(r.auctionPlannedStart).getTime() <= now)
+    && !!r.deadlineAt && new Date(r.deadlineAt).getTime() > now;
+  const phase = (r: RfqResponse) => r.status !== '报价中' ? r.status
+    : r.auctionPlannedStart && new Date(r.auctionPlannedStart).getTime() > now ? '待开始'
+      : isLive(r) ? '竞价中' : '已截止';
+  const live = all.filter(isLive).length;
+  const leading = all.filter((r) => isLive(r) && r.auctionMyRank === 1).length;
   const awarded = all.filter((r) => r.status === '已定标' && r.awardedSupplierId === supplierId).length;
   const myLatest = (rfqId?: string) =>
-    quoteList
-      .filter((q) => q.rfqId === rfqId)
+    (all.find((r) => r.id === rfqId)?.quotes ?? [])
+      .filter((q) => q.supplierId === supplierId)
       .sort((a, b) => (b.submittedAt ?? '').localeCompare(a.submittedAt ?? ''))[0]?.amount;
 
   return (
@@ -140,7 +149,7 @@ export function AuctionProjectsPage({ onOpenProject }: { onOpenProject: (rfqId: 
                     </p>
                     <p className="mt-1 font-mono text-[11px] font-bold text-slate-400">{r.id}</p>
                   </div>
-                  {r.status && <StatusPill label={r.status === '报价中' ? '竞价中' : r.status} />}
+                  {r.status && <StatusPill label={phase(r) ?? r.status} />}
                 </div>
                 <button
                   type="button"
@@ -170,7 +179,7 @@ export function AuctionProjectsPage({ onOpenProject }: { onOpenProject: (rfqId: 
                 {pageItems.map((r, i) => {
                   const invitation = (r.invitations ?? [])[0];
                   const state = inviteState(invitation);
-                  const liveNow = r.status === '报价中';
+                  const liveNow = isLive(r);
                   return (
                     <tr key={r.id} className="hover:bg-amber-50/30">
                       <td className="px-2 py-5 text-center font-mono font-black text-slate-400">
@@ -189,7 +198,7 @@ export function AuctionProjectsPage({ onOpenProject }: { onOpenProject: (rfqId: 
                             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-500" /> LIVE 竞价中
                           </span>
                         ) : (
-                          r.status && <StatusPill label={r.status} />
+                          r.status && <StatusPill label={phase(r) ?? r.status} />
                         )}
                         {r.status === '已定标' && (
                           <p className={cn('mt-1 text-[11px] font-black', r.awardedSupplierId === supplierId ? 'text-emerald-600' : 'text-slate-400')}>

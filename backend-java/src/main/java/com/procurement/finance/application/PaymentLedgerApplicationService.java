@@ -127,8 +127,12 @@ public class PaymentLedgerApplicationService {
 
   private Invoice lock(String invoiceId, String permission) {
     access.requireInvoice(invoiceId, permission);
-    var invoice = invoices.lockByTenantAndId(TenantAccessGuard.requireTenantId("payment ledger"), invoiceId);
+    String tenant = TenantAccessGuard.requireTenantId("payment ledger");
+    String order = invoices.lockOrderForInvoice(tenant, invoiceId);
+    if (order == null) throw new IllegalArgumentException("发票关联订单不存在");
+    var invoice = invoices.lockByTenantAndId(tenant, invoiceId);
     if (invoice == null) throw new IllegalArgumentException("发票不存在");
+    if (!order.equals(invoice.orderId())) throw new IllegalStateException("发票关联订单已变化，请刷新重试");
     payments.requireFinanceEnabled(invoice.tenantId());
     return invoice;
   }

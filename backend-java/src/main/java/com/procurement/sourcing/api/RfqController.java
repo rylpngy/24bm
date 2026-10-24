@@ -81,6 +81,7 @@ public class RfqController {
   // 绩效联动定标(采购方):各报价供应商最新历史绩效(总分+分级),供定标参考。
   @GetMapping("/{rfqId}/supplier-performance")
   public ApiResponse<List<RfqSupplierPerformanceResponse>> supplierPerformance(@PathVariable String rfqId) {
+    rfqApplicationService.requireReadAccess(rfqId);
     return ApiResponse.ok(rfqSupplierPerformanceApplicationService.listForRfq(rfqId));
   }
 
@@ -93,18 +94,21 @@ public class RfqController {
   // 中标通知书签发状态。
   @GetMapping("/{rfqId}/notice")
   public ApiResponse<AwardNoticeResponse> notice(@PathVariable String rfqId) {
+    rfqApplicationService.requireReadAccess(rfqId);
     return ApiResponse.ok(awardNoticeApplicationService.get(rfqId));
   }
 
   // 中标通知书验签(防伪):重算数字签名与落库比对,检测是否被篡改。
   @GetMapping("/{rfqId}/notice/verify")
   public ApiResponse<AwardNoticeVerifyResponse> verifyNotice(@PathVariable String rfqId) {
+    rfqApplicationService.requireReadAccess(rfqId);
     return ApiResponse.ok(awardNoticeApplicationService.verify(rfqId));
   }
 
   // 中标通知书 PDF(已签发,含电子签章)。
   @GetMapping("/{rfqId}/notice.pdf")
   public ResponseEntity<byte[]> noticePdf(@PathVariable String rfqId) {
+    rfqApplicationService.requireReadAccess(rfqId);
     byte[] pdf = awardNoticeApplicationService.renderPdf(rfqId);
     return ResponseEntity.ok()
         .contentType(MediaType.APPLICATION_PDF)
@@ -115,6 +119,7 @@ public class RfqController {
   // 定标结果公示(采购方):中标人 + 中标通知书 + 本轮报价排名。
   @GetMapping("/{rfqId}/result")
   public ApiResponse<RfqResultResponse> result(@PathVariable String rfqId) {
+    rfqApplicationService.requireReadAccess(rfqId);
     return ApiResponse.ok(rfqResultApplicationService.resultForBuyer(rfqId));
   }
 
@@ -144,6 +149,7 @@ public class RfqController {
   // 结果公告:定标后向全体受邀方公示中标结果。
   @GetMapping("/{rfqId}/announcements")
   public ApiResponse<java.util.List<RfqAnnouncementResponse>> listAnnouncements(@PathVariable String rfqId) {
+    // The shared announcement service selects the tender or RFQ permission and creator scope.
     return ApiResponse.ok(rfqAnnouncementService.listForRfq(rfqId));
   }
 
@@ -156,6 +162,7 @@ public class RfqController {
   // 公开商机报名管理:列表 / 受理(转正式邀请) / 忽略。
   @GetMapping("/{rfqId}/enrollments")
   public ApiResponse<java.util.List<RfqEnrollmentResponse>> listEnrollments(@PathVariable String rfqId) {
+    rfqApplicationService.requireReadAccess(rfqId);
     return ApiResponse.ok(opportunityApplicationService.listEnrollments(rfqId));
   }
 
@@ -195,6 +202,7 @@ public class RfqController {
   // 澄清答疑(采购方):查看该 RFQ 全部澄清。
   @GetMapping("/{rfqId}/clarifications")
   public ApiResponse<List<RfqClarificationResponse>> clarifications(@PathVariable String rfqId) {
+    rfqApplicationService.requireReadAccess(rfqId);
     return ApiResponse.ok(rfqClarificationApplicationService.listForBuyer(rfqId));
   }
 

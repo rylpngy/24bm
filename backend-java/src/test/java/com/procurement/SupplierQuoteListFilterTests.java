@@ -84,7 +84,7 @@ class SupplierQuoteListFilterTests {
             "tenant-1",
             "quote-1",
             "ent-supplier-sunrise",
-            BigDecimal.valueOf(116000),
+            BigDecimal.valueOf(116000).setScale(2),
             BigDecimal.valueOf(13),
             6,
             "已提交"))
@@ -104,7 +104,7 @@ class SupplierQuoteListFilterTests {
         "tenant-1",
         "quote-1",
         "ent-supplier-sunrise",
-        BigDecimal.valueOf(116000),
+        BigDecimal.valueOf(116000).setScale(2),
         BigDecimal.valueOf(13),
         6,
         "已提交");
@@ -187,7 +187,7 @@ class SupplierQuoteListFilterTests {
             eq("tenant-1"),
             eq("rfq-1"),
             eq("ent-supplier-sunrise"),
-            eq(BigDecimal.valueOf(116000)),
+            eq(BigDecimal.valueOf(116000).setScale(2)),
             eq(BigDecimal.valueOf(13)),
             eq(6),
             eq("已提交"),

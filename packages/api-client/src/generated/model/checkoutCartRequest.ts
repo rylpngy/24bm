@@ -9,5 +9,14 @@
 export interface CheckoutCartRequest {
   addressId?: string;
   expectedReceiptDate?: string;
+  /**
+   * @minLength 0
+   * @maxLength 2000
+   */
   remark?: string;
+  /**
+   * @minLength 0
+   * @maxLength 100
+   */
+  idempotencyKey: string;
 }

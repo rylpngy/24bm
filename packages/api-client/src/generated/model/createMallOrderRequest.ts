@@ -10,4 +10,9 @@ export interface CreateMallOrderRequest {
   listingId: string;
   quantity: number;
   expectedReceiptDate?: string;
+  /**
+   * @minLength 0
+   * @maxLength 100
+   */
+  idempotencyKey: string;
 }

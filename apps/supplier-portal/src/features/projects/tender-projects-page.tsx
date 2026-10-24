@@ -34,6 +34,11 @@ import { currency, shortTime } from './shared';
 
 const PAGE_SIZE = 10;
 
+function acquisitionOpen(t: TenderResponse) {
+  return t.status === '发售中' && !!t.acquisitionDeadline
+    && new Date(t.acquisitionDeadline).getTime() > Date.now();
+}
+
 const typeTone: Record<string, string> = {
   公开招标: 'bg-blue-50 text-blue-700',
   邀请招标: 'bg-violet-50 text-violet-700',
@@ -54,7 +59,7 @@ const acqTone: Record<string, string> = {
 
 
 // ── 招标参与六阶段(与采购端项目详情步进器同口径) ─────────────────
-// 招标(公告/领取)→ 投标(制作/报价/签章/加密递交)→ 开标(解封唱标/核验)
+// 招标(公告/领取)→ 投标(制作/报价/站内密封)→ 开标(解封唱标/核验)
 // → 评标(委员会评审,过程保密)→ 定标(结果/通知书)→ 标后(执行订单履约)。
 const TENDER_STAGES = ['招标', '投标', '开标', '评标', '定标', '标后'] as const;
 
@@ -191,13 +196,17 @@ function BidSubmissionSection({
       {
         onSuccess: (res) => {
           const bid = res.data;
+          onFeedback('投标已密封递交。开标前招标人不可见内容,密封指纹已保存。');
           if (signature && bid?.id) {
             esign.mutate(
               { data: { targetType: 'tender-bid', targetId: bid.id, signatureImage: signature, signerName: displayName } },
-              { onSettled: refresh },
+              {
+                onSuccess: () => onFeedback('投标已密封递交,站内电子签署记录已保存。'),
+                onError: () => onError('投标已递交,但签署记录保存失败,请核查签署记录。'),
+                onSettled: refresh,
+              },
             );
           }
-          onFeedback('投标已密封递交并完成电子签署。开标前招标人不可见内容,密封指纹已归档。');
           setAmount('');
           setDoc('');
           setSignature(null);
@@ -231,7 +240,7 @@ function BidSubmissionSection({
     <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="flex items-center gap-2 text-base font-black text-slate-950">
-          <Lock size={18} className="text-blue-600" /> 投标递交(加密密封)
+          <Lock size={18} className="text-blue-600" /> 投标递交(站内密封)
         </h3>
         {myBid && (
           <span className={cn('rounded-md px-2 py-0.5 text-[11px] font-black',
@@ -312,7 +321,7 @@ function OpeningRollSection({ tender }: { tender: TenderResponse }) {
           <Gavel size={18} className="text-blue-600" /> 开标唱标公示
         </h3>
         <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-black text-slate-500">
-          已开标 {shortTime(tender.openedAt)} · 有效投标 {bids.filter((b) => b.sealedStatus === '已开启').length} 份
+          已开标 {shortTime(tender.openedAt)} · 已开启投标 {bids.filter((b) => b.sealedStatus === '已开启').length} 份
         </span>
       </div>
       <p className="mt-1 text-[11px] font-bold text-slate-400">
@@ -438,7 +447,7 @@ function InquiryAnswerCard({
   );
 }
 
-// C-5 中标结果:定标后全体可见方公示中标人;中标人可读中标通知书全文(招标人已签章)。
+// 定标后显示实际中标结果;签署状态不能由定标状态推断。
 function AwardResultSection({ tender }: { tender: TenderResponse }) {
   const mySupplierId = (tender.acquisitions ?? [])[0]?.supplierId;
   const winner = (tender.bids ?? []).find((b) => b.id === tender.awardedBidId);
@@ -456,13 +465,13 @@ function AwardResultSection({ tender }: { tender: TenderResponse }) {
       </div>
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
         <MiniFact label="中标人" value={winner?.supplierName ?? '—'} />
-        <MiniFact label="中标价" value={currency(winner?.bidAmount)} />
+        <MiniFact label="原始投标报价" value={currency(winner?.bidAmount)} />
       </div>
       {isWinner ? (
         <div className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50/40 p-4">
-          <p className="text-xs font-black text-emerald-800">恭喜,贵方为本项目中标人。中标通知书(招标人已电子签章):</p>
+          <p className="text-xs font-black text-emerald-800">贵方为本项目中标人。中标通知书:</p>
           {tender.awardNoticeHtml && <RichTextView html={tender.awardNoticeHtml} className="mt-2" />}
-          <p className="mt-2 text-[11px] font-bold text-slate-500">请按招标文件约定与招标人签订合同;通知书签章指纹与贵方投标密封凭证绑定,可核验。</p>
+          <p className="mt-2 text-[11px] font-bold text-slate-500">最终中标金额以中标通知书及定标公告为准。请按招标文件约定办理后续合同。</p>
           {tender.executionOrderId && (
             <p className="mt-1.5 text-[11px] font-black text-blue-800">
               执行采购订单 <span className="font-mono">{tender.executionOrderId}</span> 已生成,请前往「销售订单」确认并按交期履约。
@@ -476,7 +485,7 @@ function AwardResultSection({ tender }: { tender: TenderResponse }) {
   );
 }
 
-// 招标项目(供应商侧,Track C C-1/C-2):领取文件后阅读正文并加密递交投标。
+// 领取文件后阅读正文并在站内密封递交投标。
 export function TenderProjectsPage() {
   const queryClient = useQueryClient();
   const tenders = useSupplierTenderList();
@@ -490,7 +499,7 @@ export function TenderProjectsPage() {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const all = tenders.data?.data ?? [];
+  const all = tenders.isError ? [] : tenders.data?.data ?? [];
   const selected = selectedId ? all.find((t) => t.id === selectedId) : undefined;
 
   const refresh = () =>
@@ -526,6 +535,8 @@ export function TenderProjectsPage() {
   const safePage = Math.min(page, pageCount);
   const pageItems = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
   const acquiredCount = all.filter((t) => acquisitionState(t) === '已领取').length;
+
+  if (tenders.isError) return <FeedbackNotice tone="error" message="招标项目加载失败，请刷新重试。" />;
 
   // ── 详情:要素 + 正文(领取后) ───────────────────────────────
   if (selected) {
@@ -568,7 +579,7 @@ export function TenderProjectsPage() {
             {/* F-1 资格预审:实行预审的项目须先申请并通过审查,方可领取招标文件 */}
             {t.prequalificationRequired && (() => {
               const mine = (t.prequalifications ?? [])[0];
-              const canApply = t.status === '发售中' && (!mine || mine.status === '未通过');
+              const canApply = acquisitionOpen(t) && (!mine || mine.status === '未通过');
               return (
                 <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
                   <div className="flex flex-wrap items-center justify-between gap-2">
@@ -644,7 +655,9 @@ export function TenderProjectsPage() {
                       : '公开招标发售期内可自助领取。'}
                   </p>
                   {/* F-1:实行资格预审的项目,预审通过前不给出领取入口(后端同样拦截) */}
-                  {t.prequalificationRequired && (t.prequalifications ?? [])[0]?.status !== '已通过' ? (
+                  {!acquisitionOpen(t) ? (
+                    <p className="mt-2 text-xs font-black text-slate-600">文件获取已截止或项目不在发售期。</p>
+                  ) : t.prequalificationRequired && (t.prequalifications ?? [])[0]?.status !== '已通过' ? (
                     <p className="mt-2 text-xs font-black text-violet-700">
                       本项目实行资格预审,请先在上方提交资格预审申请并通过审查。
                     </p>
@@ -656,7 +669,7 @@ export function TenderProjectsPage() {
                 </div>
               )}
             </section>
-            {/* ── 阶段二 · 投标:制作投标函 + 报价 + 电子签章 + 加密密封递交 ── */}
+            {/* ── 阶段二 · 投标:制作投标函 + 报价 + 站内密封递交 ── */}
             {state === '已领取' && !t.openedAt && (
               <BidSubmissionSection tender={t} onFeedback={setFeedback} onError={setError} />
             )}
@@ -726,7 +739,7 @@ export function TenderProjectsPage() {
             <FeedbackNotice tone="info" message={t.status === '已流标'
               ? `本项目已流标(${t.failureReason ?? '原因见招标人公告'});如重新招标将另行发布,请留意新项目。`
               : t.awardedBidId
-              ? '本项目已定标:中标结果公示如左,中标人可查阅招标人签章的中标通知书。'
+              ? '本项目已定标,中标人可查阅中标通知书。'
               : t.openedAt
                 ? '本项目已开标唱标:各家报价与指纹核验结果公示如左;评标与中标结果请留意后续通知。'
                 : '递交即密封:开标前招标人不可见投标内容;截止前可撤回并重投(重投覆盖为新密封)。'} />
@@ -835,13 +848,13 @@ export function TenderProjectsPage() {
                       <td className="px-5 py-5 text-right">
                         <div className="flex justify-end gap-2">
                           {/* F-1:实行资格预审的项目在台账页引导进详情申请,不给出直接领取 */}
-                          {state !== '已领取' && t.status === '发售中'
+                          {state !== '已领取' && acquisitionOpen(t)
                             && t.prequalificationRequired && (t.prequalifications ?? [])[0]?.status !== '已通过' && (
                             <span className="inline-flex h-8 items-center rounded-md bg-violet-50 px-3 text-xs font-black text-violet-700">
                               需资格预审
                             </span>
                           )}
-                          {state !== '已领取' && t.status === '发售中'
+                          {state !== '已领取' && acquisitionOpen(t)
                             && !(t.prequalificationRequired && (t.prequalifications ?? [])[0]?.status !== '已通过') && (
                             <button type="button" onClick={() => doAcquire(t.id)} disabled={acquire.isPending}
                               className="inline-flex h-8 items-center rounded-md bg-blue-600 px-3 text-xs font-black text-white hover:bg-blue-700 disabled:bg-slate-300">

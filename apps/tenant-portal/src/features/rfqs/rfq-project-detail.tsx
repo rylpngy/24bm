@@ -331,7 +331,7 @@ export function RfqProjectDetail({
               </button>
               <button
                 type="button"
-                disabled={open.isPending}
+                disabled={open.isPending || (rfq.method === '竞价' && !deadlinePassed)}
                 onClick={() => {
                   if (!rfq.id) return;
                   if (deadlinePassed) {
@@ -342,7 +342,7 @@ export function RfqProjectDetail({
                 }}
                 className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-blue-600 px-3 text-xs font-black text-white hover:bg-blue-700 disabled:bg-slate-300"
               >
-                <LockOpen size={14} /> {deadlinePassed ? '开标' : '提前截标开标'}
+                <LockOpen size={14} /> {deadlinePassed ? '开标' : rfq.method === '竞价' ? '截止后开标' : '提前截标开标'}
               </button>
               <button
                 type="button"

@@ -275,9 +275,17 @@ public class ContractApplicationService {
   public ContractResponse updateCurrentTenantContractArchiveStatus(
       String contractId,
       UpdateContractArchiveStatusRequest request) {
-    contractAccess.requireContract(contractId, true);
+    contractAccess.requireArchiveAccess(contractId);
     String tenantId = TenantAccessGuard.requireTenantId("buyer contract APIs");
+    // Match payment/after-sales lock order; fresh queries discard any pre-lock SESSION snapshots.
+    String orderId = contractMapper.lockOrderForContract(tenantId, contractId);
+    if (orderId == null || contractMapper.lockById(tenantId, contractId) == null) {
+      throw new IllegalStateException("合同关联订单或合同已变化，请刷新重试");
+    }
     ContractLedger contract = requireContract(tenantId, contractId);
+    if (!orderId.equals(contract.relatedOrderId())) {
+      throw new IllegalStateException("合同关联订单已变化，请刷新重试");
+    }
     if (!"已归档".equals(request.archiveStatus()) && !"未归档".equals(request.archiveStatus())) {
       throw new IllegalArgumentException("不支持的合同归档状态");
     }

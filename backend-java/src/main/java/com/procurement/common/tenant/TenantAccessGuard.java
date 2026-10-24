@@ -17,6 +17,14 @@ public final class TenantAccessGuard {
     return require(TenantContext.userId(), "User context is required for " + apiName + ".");
   }
 
+  public static String requirePlatformUserId(String apiName) {
+    String userId = requireUserId(apiName);
+    if (TenantContext.tenantId() != null || TenantContext.supplierId() != null) {
+      throw new PermissionDeniedException("Platform context is required for " + apiName + ".");
+    }
+    return userId;
+  }
+
   private static String require(String value, String message) {
     if (value == null || value.isBlank()) {
       throw new IllegalStateException(message);

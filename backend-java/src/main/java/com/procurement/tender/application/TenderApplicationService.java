@@ -135,6 +135,7 @@ public class TenderApplicationService {
         tenantId, ProcurementMethodCatalog.TENDER.code());
     String userId = TenantAccessGuard.requireUserId("buyer tender APIs");
     requireTenderType(request.tenderType());
+    tenderMapper.lockTenantNumbering(tenantId);
     String id = "tender-" + UUID.randomUUID();
     String prefix = "ZB" + LocalDate.now().format(NO_DATE);
     String tenderNo = prefix
@@ -151,7 +152,7 @@ public class TenderApplicationService {
   @Transactional
   public TenderResponse updateDraft(String tenderId, SaveTenderRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer tender APIs");
-    Tender tender = requireTender(tenantId, tenderId);
+    Tender tender = requireTenderForUpdate(tenantId, tenderId);
     TenderPolicy.requireDrafting(tender.status(), tenderId);
     requireTenderType(request.tenderType());
     tenderMapper.updateDraft(
@@ -166,7 +167,11 @@ public class TenderApplicationService {
   @Transactional
   public TenderResponse publish(String tenderId) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer tender APIs");
-    Tender tender = requireTender(tenantId, tenderId);
+    Tender tender = requireTenderForUpdate(tenantId, tenderId);
+    tenantCapabilityApplicationService.requireMethodEnabled(tenantId, ProcurementMethodCatalog.TENDER.code());
+    if (!"综合评分法".equals(tender.evaluationMethod()) && !"最低评标价法".equals(tender.evaluationMethod())) {
+      throw new IllegalArgumentException("评标办法须为综合评分法或最低评标价法");
+    }
     TenderPolicy.requirePublishable(tender, OffsetDateTime.now());
     tenderMapper.updateStatus(tenantId, tenderId, TenderPolicy.STATUS_ON_SALE, OffsetDateTime.now());
     auditLogApplicationService.recordCurrentTenantAction(
@@ -185,11 +190,19 @@ public class TenderApplicationService {
   @Transactional
   public TenderResponse distribute(String tenderId, DistributeTenderRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer tender APIs");
-    Tender tender = requireTender(tenantId, tenderId);
+    Tender tender = requireTenderForUpdate(tenantId, tenderId);
     TenderPolicy.requireInvitedDistribution(tender);
-    for (String supplierId : request.supplierIds()) {
-      acquisitionMapper.insertIgnore(
+    TenderPolicy.requireAcquisitionWindow(tender, OffsetDateTime.now());
+    for (String supplierId : request.supplierIds().stream().distinct().sorted().toList()) {
+      if (!"已准入".equals(tenderMapper.lockInvitedSupplierStatus(tenantId, supplierId))) {
+        throw new IllegalArgumentException("受邀供应商须为本企业已准入供应商: " + supplierId);
+      }
+      int inserted = acquisitionMapper.insertIgnore(
           "tacq-" + UUID.randomUUID(), tenantId, tenderId, supplierId, "邀请发放", null);
+      if (inserted > 0) {
+        notificationApplicationService.notifyActiveSupplierUsers(
+            tenantId, supplierId, "招标邀请", tender.title() + " 已向贵方发放招标文件,请在获取截止前领取。");
+      }
     }
     auditLogApplicationService.recordCurrentTenantAction(
         "tender.distributed", AUDIT_TARGET, tenderId, "定向发放 " + request.supplierIds().size() + " 家");
@@ -202,7 +215,7 @@ public class TenderApplicationService {
   @Transactional
   public TenderResponse openTender(String tenderId) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer tender APIs");
-    Tender tender = requireTender(tenantId, tenderId);
+    Tender tender = requireTenderForUpdate(tenantId, tenderId);
     OffsetDateTime now = OffsetDateTime.now();
     TenderPolicy.requireOpenable(tender, now);
     tenderMapper.markOpened(tenantId, tenderId, TenderPolicy.STATUS_OPENED, now);
@@ -211,7 +224,7 @@ public class TenderApplicationService {
         "tender.opened", AUDIT_TARGET, tenderId,
         "「" + tender.title() + "」开标,解封密封投标 " + unsealed + " 份");
     notificationApplicationService.notifyActiveTenantUsers(
-        tenantId, "开标唱标", tender.title() + " 已开标,投标报价与指纹核验结果已公示。");
+        tenantId, "开标唱标", tender.title() + " 已开标,投标报价与指纹核验结果可在项目详情查看。");
     return toResponse(requireTender(tenantId, tenderId),
         acquisitionMapper.listByTender(tenantId, tenderId), true);
   }
@@ -222,7 +235,7 @@ public class TenderApplicationService {
   @Transactional
   public TenderResponse setPrequalificationRequired(String tenderId, SetPrequalificationRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer tender APIs");
-    Tender tender = requireTender(tenantId, tenderId);
+    Tender tender = requireTenderForUpdate(tenantId, tenderId);
     TenderPrequalificationPolicy.requireToggleable(tender);
     tenderMapper.updatePrequalificationRequired(tenantId, tenderId, request.required());
     auditLogApplicationService.recordCurrentTenantAction(
@@ -237,7 +250,8 @@ public class TenderApplicationService {
   public TenderResponse reviewPrequalification(
       String tenderId, String applicationId, ReviewPrequalificationRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer tender APIs");
-    Tender tender = requireTender(tenantId, tenderId);
+    Tender tender = requireTenderForUpdate(tenantId, tenderId);
+    TenderPolicy.requireAcquisitionWindow(tender, OffsetDateTime.now());
     TenderPrequalification application = prequalificationMapper.listByTender(tenantId, tenderId).stream()
         .filter(a -> a.id().equals(applicationId))
         .findFirst()
@@ -265,6 +279,7 @@ public class TenderApplicationService {
   public TenderResponse applyPrequalification(String tenderId, ApplyPrequalificationRequest request) {
     String supplierId = TenantAccessGuard.requireSupplierId("supplier tender APIs");
     Tender tender = findTenderForSupplier(tenderId, supplierId);
+    TenderPolicy.requireAcquisitionWindow(tender, OffsetDateTime.now());
     TenderPrequalification existing = myPrequalification(tender, supplierId);
     TenderPrequalificationPolicy.requireApplicable(tender, existing, request.application());
     prequalificationMapper.upsert(
@@ -298,9 +313,14 @@ public class TenderApplicationService {
   @Transactional
   public TenderResponse executeTender(String tenderId, ExecuteTenderRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer tender APIs");
-    Tender tender = requireTender(tenantId, tenderId);
+    Tender tender = requireTenderForUpdate(tenantId, tenderId);
+    permissions.require("buyer:order:manage");
+    if (TenderPolicy.STATUS_AWARDED.equals(tender.status()) && tender.executionOrderId() != null) {
+      return toResponse(tender, acquisitionMapper.listByTender(tenantId, tenderId), true);
+    }
     TenderPolicy.requireExecutable(tender);
     TenderBid awarded = findAwardedBid(tender);
+    requireValidOpenedBid(tender, awarded);
     BigDecimal executionAmount = effectiveAmount(awarded, inquiryMapper.listByTender(tenantId, tenderId));
     String anchorRfqId = rfqApplicationService.createTenderAnchor(
         tender.title() + "(招标转执行)", awarded.supplierId());
@@ -314,7 +334,7 @@ public class TenderApplicationService {
     }
     auditLogApplicationService.recordCurrentTenantAction(
         "tender.executed", AUDIT_TARGET, tenderId,
-        "中标转执行:采购订单 " + orderId + "(中标价 " + awarded.bidAmount() + ")");
+        "中标转执行:采购订单 " + orderId + "(中标价 " + executionAmount + ")");
     return toResponse(requireTender(tenantId, tenderId),
         acquisitionMapper.listByTender(tenantId, tenderId), true);
   }
@@ -323,7 +343,7 @@ public class TenderApplicationService {
   @Transactional
   public TenderResponse failTender(String tenderId, FailTenderRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer tender APIs");
-    Tender tender = requireTender(tenantId, tenderId);
+    Tender tender = requireTenderForUpdate(tenantId, tenderId);
     TenderPolicy.requireFailable(tender, request.reason());
     tenderMapper.markFailed(
         tenantId, tenderId, TenderPolicy.STATUS_FAILED, OffsetDateTime.now(), request.reason().trim());
@@ -331,6 +351,11 @@ public class TenderApplicationService {
         "tender.failed", AUDIT_TARGET, tenderId, "宣布流标:" + request.reason().trim());
     notificationApplicationService.notifyActiveTenantUsers(
         tenantId, "招标流标", tender.title() + " 已宣布流标,可复用要素重新招标。");
+    for (TenderAcquisition acquisition : acquisitionMapper.listByTender(tenantId, tenderId)) {
+      notificationApplicationService.notifyActiveSupplierUsers(
+          tenantId, acquisition.supplierId(), "招标流标",
+          tender.title() + " 已宣布流标,原因:" + request.reason().trim());
+    }
     rfqAnnouncementService.onTenderFailed(
         tenantId, tenderId, tender.title(), tender.tenderType(), request.reason().trim());
     return toResponse(requireTender(tenantId, tenderId),
@@ -343,8 +368,15 @@ public class TenderApplicationService {
   public TenderResponse rebidTender(String tenderId) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer tender APIs");
     String userId = TenantAccessGuard.requireUserId("buyer tender APIs");
-    Tender origin = requireTender(tenantId, tenderId);
+    Tender origin = requireTenderForUpdate(tenantId, tenderId);
     TenderPolicy.requireRebiddable(origin);
+    Tender existing = tenderMapper.findRebid(tenantId, tenderId);
+    if (existing != null) {
+      scopes.requireCreatorAccess(existing.ownerId());
+      return toResponse(existing, acquisitionMapper.listByTender(tenantId, existing.id()), true);
+    }
+    tenantCapabilityApplicationService.requireMethodEnabled(tenantId, ProcurementMethodCatalog.TENDER.code());
+    tenderMapper.lockTenantNumbering(tenantId);
     String id = "tender-" + UUID.randomUUID();
     String prefix = "ZB" + LocalDate.now().format(NO_DATE);
     String tenderNo = prefix
@@ -354,6 +386,7 @@ public class TenderApplicationService {
         TenderPolicy.STATUS_DRAFTING, origin.documentHtml(), origin.evaluationMethod(),
         origin.bidBondAmount(), null, null, null, userId);
     tenderMapper.markRebidOf(tenantId, id, origin.id());
+    tenderMapper.updatePrequalificationRequired(tenantId, id, origin.prequalificationRequired());
     auditLogApplicationService.recordCurrentTenantAction(
         "tender.rebid", AUDIT_TARGET, id, "由流标项目「" + origin.title() + "」(" + origin.tenderNo() + ")重新招标");
     return toResponse(requireTender(tenantId, id), List.of(), true);
@@ -364,12 +397,16 @@ public class TenderApplicationService {
   @Transactional
   public TenderResponse sendInquiry(String tenderId, SendTenderInquiryRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer tender APIs");
-    Tender tender = requireTender(tenantId, tenderId);
+    Tender tender = requireTenderForUpdate(tenantId, tenderId);
     TenderBid bid = bidMapper.listByTender(tenantId, tenderId).stream()
         .filter(b -> b.id().equals(request.bidId()))
         .findFirst()
         .orElse(null);
     TenderInquiryPolicy.requireInquiryOpen(tender, bid, request.kind());
+    requireValidOpenedBid(tender, bid);
+    if (evaluationMapper.countScores(tenantId, tenderId) > 0) {
+      throw new IllegalStateException("已有评分留痕,不可再发起会改变评审依据的问询或二次报价");
+    }
     inquiryMapper.insert(
         "tinq-" + UUID.randomUUID(), tenantId, tenderId, bid.id(), request.kind(), request.question().trim());
     String supplierName = supplierProfileApplicationService.findSupplierDisplayName(bid.supplierId());
@@ -395,6 +432,9 @@ public class TenderApplicationService {
         .orElseThrow(() -> new IllegalArgumentException("问询不存在或不属于本方投标: " + inquiryId));
     TenderInquiryPolicy.requireAnswerable(tender, inquiry);
     TenderInquiryPolicy.requireValidAnswer(inquiry.kind(), request.answer(), request.revisedAmount());
+    if (TenderInquiryPolicy.KIND_REQUOTE.equals(inquiry.kind())) {
+      TenderBidPolicy.requireValidBid(request.revisedAmount(), request.answer(), tenderId);
+    }
     int updated = inquiryMapper.answer(
         inquiryId, tender.tenantId(), request.answer().trim(), request.revisedAmount(), OffsetDateTime.now());
     if (updated == 0) {
@@ -424,12 +464,17 @@ public class TenderApplicationService {
   @Transactional
   public TenderResponse awardTender(String tenderId, AwardTenderRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer tender APIs");
-    Tender tender = requireTender(tenantId, tenderId);
+    Tender tender = requireTenderForUpdate(tenantId, tenderId);
     TenderBid bid = bidMapper.listByTender(tenantId, tenderId).stream()
         .filter(b -> b.id().equals(request.bidId()))
         .findFirst()
         .orElse(null);
     TenderPolicy.requireAwardable(tender, bid, request.awardNoticeHtml());
+    requireValidOpenedBid(tender, bid);
+    if (evaluationSummary(tender, evaluationMapper.listEvaluators(tenantId, tenderId),
+        evaluationMapper.listScores(tenantId, tenderId)).stream().noneMatch(TenderBidEvaluationSummary::recommended)) {
+      throw new IllegalStateException("须全体评委对全部有效投标完成完整评分并完成问询答复后方可定标");
+    }
     BigDecimal awardAmount = effectiveAmount(bid, inquiryMapper.listByTender(tenantId, tenderId));
     tenderMapper.markAwarded(
         tenantId, tenderId, TenderPolicy.STATUS_AWARDED, bid.id(),
@@ -439,7 +484,9 @@ public class TenderApplicationService {
         "tender.awarded", AUDIT_TARGET, tenderId,
         "定标:中标人「" + winnerName + "」,中标价 " + awardAmount + "(含二次报价修订)");
     notificationApplicationService.notifyActiveTenantUsers(
-        tenantId, "招标定标", tender.title() + " 已定标,中标人「" + winnerName + "」,请签章中标通知书。");
+        tenantId, "招标定标", tender.title() + " 已定标,中标人「" + winnerName + "」,中标通知书已保存。");
+    notificationApplicationService.notifyActiveSupplierUsers(
+        tenantId, bid.supplierId(), "中标通知", tender.title() + " 已确定贵方中标,请查阅项目中标通知书。");
     rfqAnnouncementService.onTenderAwarded(
         tenantId, tenderId, tender.title(), tender.tenderType(), winnerName, awardAmount);
     return toResponse(requireTender(tenantId, tenderId),
@@ -467,7 +514,7 @@ public class TenderApplicationService {
   @Transactional
   public TenderResponse formCommittee(String tenderId, FormCommitteeRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer tender APIs");
-    Tender tender = requireTender(tenantId, tenderId);
+    Tender tender = requireTenderForUpdate(tenantId, tenderId);
     List<String> names = request.members().stream().map(FormCommitteeRequest.Member::name).toList();
     TenderEvaluationPolicy.requireCommitteeFormable(
         tender, names, evaluationMapper.countScores(tenantId, tenderId) > 0);
@@ -492,7 +539,10 @@ public class TenderApplicationService {
   @Transactional
   public TenderResponse submitScores(String tenderId, SubmitScoresRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer tender APIs");
-    Tender tender = requireTender(tenantId, tenderId);
+    Tender tender = requireTenderForUpdate(tenantId, tenderId);
+    if (inquiryMapper.listByTender(tenantId, tenderId).stream().anyMatch(i -> i.answeredAt() == null)) {
+      throw new IllegalStateException("须完成问询答复后再提交评分");
+    }
     TenderEvaluator evaluator = evaluationMapper.listEvaluators(tenantId, tenderId).stream()
         .filter(e -> e.id().equals(request.evaluatorId()))
         .findFirst()
@@ -503,6 +553,7 @@ public class TenderApplicationService {
     for (SubmitScoresRequest.Line line : request.lines()) {
       TenderBid bid = bidsById.get(line.bidId());
       TenderEvaluationPolicy.requireScorable(tender, bid);
+      requireValidOpenedBid(tender, bid);
       TenderEvaluationPolicy.requireValidScore(line.technicalScore(), line.commercialScore(), line.bidId());
       evaluationMapper.upsertScore(
           "tscore-" + UUID.randomUUID(), tenantId, tenderId, line.bidId(), evaluator.id(),
@@ -517,6 +568,7 @@ public class TenderApplicationService {
 
   // ── 供应商:可见清单 / 领取 ──────────────────────────────────
   public List<TenderResponse> listSupplierTenders() {
+    permissions.require("supplier:tender:read");
     String supplierId = TenantAccessGuard.requireSupplierId("supplier tender APIs");
     List<TenderAcquisition> mine = acquisitionMapper.listBySupplier(supplierId);
     var mineByTender = new java.util.HashMap<String, TenderAcquisition>();
@@ -547,6 +599,10 @@ public class TenderApplicationService {
         .findFirst()
         .orElse(null);
     OffsetDateTime now = OffsetDateTime.now();
+    if (existing != null && existing.acquiredAt() != null) {
+      return supplierView(tender, existing, supplierId);
+    }
+    TenderPolicy.requireAcquisitionWindow(tender, now);
     // F-1:实行资格预审的项目,须预审通过方可领取招标文件(投标以已领取为前提)。
     TenderPrequalificationPolicy.requirePrequalified(tender, myPrequalification(tender, supplierId));
     if (existing == null) {
@@ -575,6 +631,7 @@ public class TenderApplicationService {
     OffsetDateTime now = OffsetDateTime.now();
     TenderBidPolicy.requireSubmissionWindow(tender, now);
     TenderBidPolicy.requireAcquired(myAcquisition(tenderId, supplierId), tenderId);
+    TenderPrequalificationPolicy.requirePrequalified(tender, myPrequalification(tender, supplierId));
     TenderBidPolicy.requireValidBid(request.bidAmount(), request.documentHtml(), tenderId);
     String digest = sha256(bidDigestPayload(
         tenderId, supplierId, request.bidAmount(), request.documentHtml()));
@@ -603,6 +660,7 @@ public class TenderApplicationService {
 
   // 电子签署入口:取本方投标(esign 计算内容指纹用),非本方或不存在即抛错。
   public TenderBid findSupplierOwnBid(String bidId) {
+    permissions.require("supplier:tender:read");
     String supplierId = TenantAccessGuard.requireSupplierId("supplier tender APIs");
     return bidMapper.listBySupplier(supplierId).stream()
         .filter(b -> b.id().equals(bidId))
@@ -628,7 +686,7 @@ public class TenderApplicationService {
     if (bid == null) return null;
     return new TenderBidResponse(
         bid.id(), bid.tenderId(), bid.supplierId(), null, bid.bidAmount(), bid.documentHtml(),
-        bid.contentDigest(), bid.sealedStatus(), bid.submittedAt(), bid.withdrawnAt(), null);
+        bid.contentDigest(), bid.sealedStatus(), bid.submittedAt(), bid.withdrawnAt(), null, null);
   }
 
   // 买方封存视图:开标(C-3)前只回递交登记——供应商名/时间/密封状态/指纹,金额与正文置空。
@@ -637,12 +695,12 @@ public class TenderApplicationService {
         bid.id(), bid.tenderId(), bid.supplierId(),
         supplierProfileApplicationService.findSupplierDisplayName(bid.supplierId()),
         null, null, bid.contentDigest(), bid.sealedStatus(), bid.submittedAt(), bid.withdrawnAt(),
-        null);
+        null, null);
   }
 
   // 唱标视图(开标后):金额与核验结果公示;投标函正文仅买方或本方可见,他方不下发。
   // 已撤回的投标保留登记但不解封内容(金额/正文均不公示)。
-  private TenderBidResponse openedBidView(TenderBid bid, boolean withDocument) {
+  private TenderBidResponse openedBidView(Tender tender, TenderBid bid, boolean withDocument) {
     boolean withdrawn = TenderBidPolicy.WITHDRAWN.equals(bid.sealedStatus());
     return new TenderBidResponse(
         bid.id(), bid.tenderId(), bid.supplierId(),
@@ -650,13 +708,13 @@ public class TenderApplicationService {
         withdrawn ? null : bid.bidAmount(),
         withdrawn || !withDocument ? null : bid.documentHtml(),
         bid.contentDigest(), bid.sealedStatus(), bid.submittedAt(), bid.withdrawnAt(),
-        withdrawn ? null : verifyBidDigest(bid));
+        withdrawn ? null : verifyBidDigest(bid), isValidOpenedBid(tender, bid));
   }
 
   // 唱标排序:有效投标按报价升序;已撤回的殿后留痕。
   private List<TenderBidResponse> openingRoll(Tender tender, java.util.function.Predicate<TenderBid> withDocument) {
     return bidMapper.listByTender(tender.tenantId(), tender.id()).stream()
-        .map(b -> openedBidView(b, withDocument.test(b)))
+        .map(b -> openedBidView(tender, b, withDocument.test(b)))
         .sorted(java.util.Comparator
             .comparing((TenderBidResponse r) -> r.bidAmount() == null)
             .thenComparing(TenderBidResponse::bidAmount,
@@ -688,13 +746,17 @@ public class TenderApplicationService {
   }
 
   private Tender findTenderForSupplier(String tenderId, String supplierId) {
-    return acquisitionMapper.listTendersBySupplier(supplierId).stream()
+    permissions.require("supplier:tender:manage");
+    Tender visible = acquisitionMapper.listTendersBySupplier(supplierId).stream()
         .filter(t -> t.id().equals(tenderId))
         .findFirst()
         .or(() -> acquisitionMapper.listOpenOnSale().stream()
             .filter(t -> t.id().equals(tenderId))
             .findFirst())
         .orElseThrow(() -> new IllegalArgumentException("招标项目不存在或不可见: " + tenderId));
+    Tender locked = tenderMapper.lockByTenantAndId(visible.tenantId(), tenderId);
+    if (locked == null) throw new IllegalArgumentException("招标项目不存在或不可见: " + tenderId);
+    return locked;
   }
 
   // 供应商视角:未领取(无 acquired_at)时不下发招标文件正文;领取记录仅含本方。
@@ -753,6 +815,8 @@ public class TenderApplicationService {
             .toList();
     List<TenderEvaluator> evaluators = evaluationMapper.listEvaluators(tender.tenantId(), tender.id());
     List<TenderScore> scores = evaluationMapper.listScores(tender.tenantId(), tender.id());
+    var eligibleBidIds = bids.stream().filter(b -> Boolean.TRUE.equals(b.evaluationEligible()))
+        .map(TenderBidResponse::id).collect(java.util.stream.Collectors.toSet());
     var bidsById = new java.util.HashMap<String, TenderBid>();
     bidMapper.listByTender(tender.tenantId(), tender.id()).forEach(b -> bidsById.put(b.id(), b));
     List<TenderInquiryResponse> inquiries = inquiryMapper.listByTender(tender.tenantId(), tender.id()).stream()
@@ -776,7 +840,10 @@ public class TenderApplicationService {
         evaluators.stream()
             .map(e -> new TenderEvaluatorResponse(
                 e.id(), e.evaluatorName(), e.evaluatorRole(),
-                (int) scores.stream().filter(s -> s.evaluatorId().equals(e.id())).count()))
+                (int) scores.stream().filter(s -> s.evaluatorId().equals(e.id()))
+                    .filter(s -> eligibleBidIds.contains(s.bidId()))
+                    .filter(s -> validScore(s.technicalScore()) && validScore(s.commercialScore()))
+                    .map(TenderScore::bidId).distinct().count()))
             .toList(),
         scores.stream()
             .map(s -> new TenderScoreResponse(
@@ -800,7 +867,7 @@ public class TenderApplicationService {
   private List<TenderBidEvaluationSummary> evaluationSummary(
       Tender tender, List<TenderEvaluator> evaluators, List<TenderScore> scores) {
     List<TenderBid> validBids = bidMapper.listByTender(tender.tenantId(), tender.id()).stream()
-        .filter(b -> "已开启".equals(b.sealedStatus()))
+        .filter(b -> isValidOpenedBid(tender, b))
         .toList();
     if (validBids.isEmpty() || evaluators.isEmpty()) {
       return List.of();
@@ -812,12 +879,17 @@ public class TenderApplicationService {
         .filter(java.util.Objects::nonNull)
         .min(java.util.Comparator.naturalOrder())
         .orElse(null);
-    boolean complete = validBids.stream().allMatch(b -> evaluators.stream().allMatch(e ->
-        scores.stream().anyMatch(s -> s.bidId().equals(b.id()) && s.evaluatorId().equals(e.id()))));
+    boolean complete = evaluators.size() >= 3 && evaluators.size() % 2 == 1
+        && allInquiries.stream().noneMatch(i -> i.answeredAt() == null)
+        && validBids.stream().allMatch(b -> evaluators.stream().allMatch(e ->
+            scores.stream().anyMatch(s -> s.bidId().equals(b.id()) && s.evaluatorId().equals(e.id())
+                && validScore(s.technicalScore()) && validScore(s.commercialScore()))));
 
     record Row(TenderBid bid, BigDecimal avgTech, BigDecimal avgComm, BigDecimal priceScore, BigDecimal composite, BigDecimal effective) {}
     List<Row> rows = validBids.stream().map(b -> {
-      List<TenderScore> mine = scores.stream().filter(s -> s.bidId().equals(b.id())).toList();
+      List<TenderScore> mine = scores.stream().filter(s -> s.bidId().equals(b.id()))
+          .filter(s -> evaluators.stream().anyMatch(e -> e.id().equals(s.evaluatorId())))
+          .filter(s -> validScore(s.technicalScore()) && validScore(s.commercialScore())).toList();
       BigDecimal avgTech = average(mine.stream().map(TenderScore::technicalScore).toList());
       BigDecimal avgComm = average(mine.stream().map(TenderScore::commercialScore).toList());
       BigDecimal effective = effectiveByBid.get(b.id());
@@ -858,6 +930,45 @@ public class TenderApplicationService {
     if (present.isEmpty()) return null;
     return present.stream().reduce(BigDecimal.ZERO, BigDecimal::add)
         .divide(BigDecimal.valueOf(present.size()), 2, RoundingMode.HALF_UP);
+  }
+
+  private static boolean validScore(BigDecimal score) {
+    return score != null && score.signum() >= 0 && score.compareTo(BigDecimal.valueOf(100)) <= 0;
+  }
+
+  private boolean isValidOpenedBid(Tender tender, TenderBid bid) {
+    if (bid == null || !"已开启".equals(bid.sealedStatus())
+        || !tender.id().equals(bid.tenderId()) || !tender.tenantId().equals(bid.tenantId())
+        || bid.withdrawnAt() != null || bid.bidAmount() == null || bid.bidAmount().signum() <= 0
+        || bid.documentHtml() == null || bid.documentHtml().isBlank() || !verifyBidDigest(bid)
+        || bid.submittedAt() == null || tender.submissionDeadline() == null
+        || !bid.submittedAt().isBefore(tender.submissionDeadline())) return false;
+    boolean acquired = acquisitionMapper.listByTender(tender.tenantId(), tender.id()).stream()
+        .anyMatch(a -> a.supplierId().equals(bid.supplierId()) && a.acquiredAt() != null
+            && !a.acquiredAt().isAfter(bid.submittedAt()));
+    BigDecimal effective = effectiveAmount(bid, inquiryMapper.listByTender(tender.tenantId(), tender.id()));
+    if (effective.signum() <= 0 || effective.stripTrailingZeros().scale() > 2
+        || effective.compareTo(new BigDecimal("10000000000000000")) >= 0) return false;
+    return acquired && (!tender.prequalificationRequired()
+        || prequalificationMapper.listByTender(tender.tenantId(), tender.id()).stream()
+            .anyMatch(a -> a.supplierId().equals(bid.supplierId())
+                && TenderPrequalificationPolicy.STATUS_PASSED.equals(a.status())
+                && a.reviewedAt() != null && !a.reviewedAt().isAfter(bid.submittedAt())));
+  }
+
+  private void requireValidOpenedBid(Tender tender, TenderBid bid) {
+    if (!isValidOpenedBid(tender, bid)) {
+      throw new IllegalStateException("须为指纹核验通过、按时递交且已领取并符合预审资格的有效投标");
+    }
+  }
+
+  private Tender requireTenderForUpdate(String tenantId, String tenderId) {
+    requireTender(tenantId, tenderId);
+    // Every tender command, including supplier writes, takes this lock before checking state.
+    Tender tender = tenderMapper.lockByTenantAndId(tenantId, tenderId);
+    if (tender == null) throw new IllegalArgumentException("Tender not found in tenant scope: " + tenderId);
+    scopes.requireCreatorAccess(tender.ownerId());
+    return tender;
   }
 
   private Tender requireTender(String tenantId, String tenderId) {
