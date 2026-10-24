@@ -1,0 +1,28 @@
+# Activate explicitly with SPRING_PROFILES_ACTIVE=prod. Local preview is unchanged.
+app:
+  seed:
+    locations: ''
+procurement:
+  security:
+    allow-demo-jwt-secret: false
+    self-issued-login-enabled: false
+    tenant-header-fallback-enabled: false
+spring:
+  flyway:
+    clean-disabled: true
+    baseline-on-migrate: false
+    out-of-order: false
+    validate-on-migrate: true
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
+  endpoint:
+    health:
+      show-details: never
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

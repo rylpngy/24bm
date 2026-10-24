@@ -47,6 +47,8 @@ jobs:
         run: node scripts/check-test-dates.mjs
       - name: Unit tests (Vitest)
         run: pnpm test
+      - name: Operations tool tests
+        run: pnpm test:operations
       - name: Production build
         run: pnpm build:all
 
