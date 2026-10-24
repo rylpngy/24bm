@@ -60,6 +60,18 @@ test('付款批次提交审批后进入统一流程状态与我发起台账', as
   // 统一 Flowable 台账是流程已发起的权威验收信号，避免依赖业务页的瞬时刷新文案。
   await page.goto('/?module=approvals');
   await page.getByRole('button', { name: '我发起的' }).click();
-  await page.getByPlaceholder('搜索业务单号、节点或发起人').fill('PB-2026-0001');
+  await page.getByRole('textbox', { name: '搜索流程台账' }).fill('PB-2026-0001');
+  const searched = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return url.pathname === '/api/v1/buyer/workflow/instances/page'
+      && url.searchParams.get('view') === 'initiated'
+      && url.searchParams.get('keyword') === 'PB-2026-0001';
+  });
+  await page.getByRole('button', { name: '搜索', exact: true }).click();
+  const response = await searched;
+  expect(response.ok()).toBeTruthy();
+  const result = (await response.json()).data;
+  expect(result.total).toBeGreaterThan(0);
+  expect(result.items.some((item: { businessId: string }) => item.businessId === 'PB-2026-0001')).toBeTruthy();
   await expect(page.getByText('PB-2026-0001').first()).toBeVisible({ timeout: 15_000 });
 });
