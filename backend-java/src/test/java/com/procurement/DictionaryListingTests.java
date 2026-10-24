@@ -13,7 +13,9 @@ class DictionaryListingTests {
 
   private final DictionaryMapper dictionaryMapper = org.mockito.Mockito.mock(DictionaryMapper.class);
   private final DictionaryApplicationService dictionaryApplicationService =
-      new DictionaryApplicationService(dictionaryMapper);
+      new DictionaryApplicationService(dictionaryMapper,
+          org.mockito.Mockito.mock(com.procurement.audit.application.AuditLogApplicationService.class),
+          new com.fasterxml.jackson.databind.ObjectMapper());
 
   @Test
   void listActiveDictionaryEntriesByType() {

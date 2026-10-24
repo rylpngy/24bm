@@ -77,4 +77,58 @@ class DepartmentManagerAssignmentTests {
         org.mockito.ArgumentMatchers.anyString(),
         org.mockito.ArgumentMatchers.anyString());
   }
+
+  @Test
+  void appointsExistingDepartmentMemberWithoutMovingThem() {
+    TenantContext.set("tenant-1", null, "buyer-owner");
+    when(departmentMapper.findByTenantAndId("tenant-1", "dept-purchase"))
+        .thenReturn(new Department("dept-purchase", "tenant-1", "采购部", null, "active"));
+    when(buyerUserMapper.findByTenantAndId("tenant-1", "user-1")).thenReturn(new BuyerUser(
+        "user-1", "tenant-1", "Member", "", "", "active", "dept-purchase", "role-buyer-requester"));
+    when(departmentMapper.existsActiveMemberByTenantAndDepartment("tenant-1", "dept-purchase", "user-1"))
+        .thenReturn(true);
+    service.updateDepartment("dept-purchase", new UpdateDepartmentRequest("采购部", "", "user-1", false));
+    verify(departmentMapper).updateDetails("tenant-1", "dept-purchase", "采购部", "", "user-1");
+    verify(buyerUserMapper, never()).updateDepartment(
+        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString());
+  }
+
+  @Test
+  void inactiveMemberCannotBeAppointedEvenWithTransferConsent() {
+    TenantContext.set("tenant-1", null, "buyer-owner");
+    when(departmentMapper.findByTenantAndId("tenant-1", "dept-purchase"))
+        .thenReturn(new Department("dept-purchase", "tenant-1", "采购部", null, "active"));
+    when(buyerUserMapper.findByTenantAndId("tenant-1", "user-1")).thenReturn(new BuyerUser(
+        "user-1", "tenant-1", "Member", "", "", "inactive", "dept-other", "role-buyer-requester"));
+    assertThatThrownBy(() -> service.updateDepartment("dept-purchase",
+        new UpdateDepartmentRequest("采购部", "", "user-1", true)))
+        .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("在职成员");
+    verify(buyerUserMapper, never()).updateDepartment(
+        org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString());
+  }
+
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.ValueSource(strings = {"appointment", "transfer", "clear"})
+  void locksTenantBeforePermissionsAndManagerValidationForEveryManagerChange(String operation) {
+    TenantContext.set("tenant-1", null, "buyer-owner");
+    when(departmentMapper.findByTenantAndId("tenant-1", "dept-purchase"))
+        .thenReturn(new Department("dept-purchase", "tenant-1", "采购部", null, "active"));
+    boolean transfer = "transfer".equals(operation);
+    String managerId = "clear".equals(operation) ? null : "user-1";
+    if (managerId != null) {
+      when(buyerUserMapper.findByTenantAndId("tenant-1", managerId)).thenReturn(new BuyerUser(
+          managerId, "tenant-1", "Member", "", "", "active",
+          transfer ? "dept-other" : "dept-purchase", "role-buyer-requester"));
+      when(buyerUserMapper.updateDepartment("tenant-1", managerId, "dept-purchase")).thenReturn(1);
+      when(departmentMapper.existsActiveMemberByTenantAndDepartment("tenant-1", "dept-purchase", managerId))
+          .thenReturn(true);
+    }
+    service.updateDepartment("dept-purchase", new UpdateDepartmentRequest("采购部", "", managerId, transfer));
+    verify(buyerUserMapper, never()).lockAdministrationTenant("tenant-1");
+    var order = org.mockito.Mockito.inOrder(buyerUserMapper, permissionService, departmentMapper);
+    order.verify(departmentMapper).lockAdministrationTenant("tenant-1");
+    order.verify(permissionService).require("buyer:role:manage");
+    order.verify(departmentMapper).findByTenantAndId("tenant-1", "dept-purchase");
+    if (managerId != null) order.verify(buyerUserMapper).findByTenantAndId("tenant-1", managerId);
+  }
 }

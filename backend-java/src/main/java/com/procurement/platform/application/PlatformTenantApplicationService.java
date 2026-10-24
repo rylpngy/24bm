@@ -11,6 +11,9 @@ import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.platform.api.TenantPlanChangeResponse;
 import com.procurement.platform.api.TenantResponse;
 import com.procurement.platform.api.UpdateTenantPlanRequest;
+import com.procurement.platform.api.UpdateTenantConfigurationRequest;
+import com.procurement.platform.domain.TenantPlanCatalog;
+import com.procurement.tenant.domain.TenantFeatureKey;
 import com.procurement.platform.domain.PlatformBuyerRoleDefaults;
 import com.procurement.platform.domain.PlatformDefaultApprovalTemplate;
 import com.procurement.platform.domain.PlatformTenant;
@@ -63,12 +66,14 @@ public class PlatformTenantApplicationService {
   @Transactional
   public TenantResponse createBuyerTenant(CreateTenantRequest request) {
     String enabledFeaturesJson = writeFeatures(request.enabledFeatures());
+    String plan = TenantPlanCatalog.canonical(request.plan());
+    requireUserLimit(request.userLimit());
     String buyerOwnerRoleId = buyerOwnerRoleId(request.tenantId());
     String buyerOwnerUserId = buyerOwnerUserId(request.tenantId());
     platformTenantMapper.insertTenant(
         request.tenantId(),
         request.name(),
-        request.plan(),
+        plan,
         PlatformTenantStatus.ACTIVE,
         enabledFeaturesJson,
         request.userLimit());
@@ -116,23 +121,25 @@ public class PlatformTenantApplicationService {
 
   @Transactional
   public TenantResponse updateTenantPlan(String tenantId, UpdateTenantPlanRequest request) {
+    String plan = TenantPlanCatalog.canonical(request.plan());
+    requireUserLimit(request.userLimit());
     PlatformTenant before = platformTenantMapper.findById(tenantId);
     if (before == null) {
       throw new IllegalArgumentException("Tenant not found: " + tenantId);
     }
-    int updated = platformTenantMapper.updatePlan(tenantId, request.plan(), request.userLimit());
+    int updated = platformTenantMapper.updatePlan(tenantId, plan, request.userLimit());
     if (updated == 0) {
       throw new IllegalArgumentException("Tenant not found: " + tenantId);
     }
     int beforeLimit = before.userLimit() == null ? 0 : before.userLimit();
     int afterLimit = request.userLimit() == null ? 0 : request.userLimit();
     // 套餐或用户上限有变化才留痕。
-    if (!before.plan().equals(request.plan()) || beforeLimit != afterLimit) {
+    if (TenantPlanCatalog.rank(before.plan()) != TenantPlanCatalog.rank(plan) || beforeLimit != afterLimit) {
       tenantPlanChangeMapper.insert(
           "planchg-" + UUID.randomUUID(),
           tenantId,
           before.plan(),
-          request.plan(),
+          plan,
           beforeLimit,
           afterLimit,
           TenantAccessGuard.requireUserId("tenant plan APIs"));
@@ -145,17 +152,48 @@ public class PlatformTenantApplicationService {
     return toResponse(platformTenantMapper.findById(tenantId));
   }
 
+  @Transactional
+  public TenantResponse updateConfiguration(String tenantId, UpdateTenantConfigurationRequest request) {
+    String plan = TenantPlanCatalog.canonical(request.plan());
+    requireUserLimit(request.userLimit());
+    String features = writeFeatures(request.enabledFeatures());
+    String actorId = TenantAccessGuard.requireUserId("tenant configuration APIs");
+    PlatformTenant before = platformTenantMapper.lockById(tenantId);
+    if (before == null) throw new IllegalArgumentException("Tenant not found: " + tenantId);
+    if (platformTenantMapper.updateConfiguration(tenantId, plan, request.userLimit(), features) != 1) {
+      throw new IllegalStateException("租户配置保存失败，请刷新后重试");
+    }
+    int beforeLimit = before.userLimit() == null ? 0 : before.userLimit();
+    if (TenantPlanCatalog.rank(before.plan()) != TenantPlanCatalog.rank(plan) || beforeLimit != request.userLimit()) {
+      tenantPlanChangeMapper.insert("planchg-" + UUID.randomUUID(), tenantId,
+          before.plan(), plan, beforeLimit, request.userLimit(), actorId);
+    }
+    auditLogApplicationService.recordTenantAction(tenantId, "tenant.configuration.updated", AuditTargetType.TENANT,
+        tenantId, "before=" + configurationDetail(before.plan(), before.userLimit(), readFeatures(before.enabledFeaturesJson()))
+            + "; after=" + configurationDetail(plan, request.userLimit(), request.enabledFeatures()));
+    return toResponse(platformTenantMapper.findById(tenantId));
+  }
+
+  private String configurationDetail(String plan, Integer limit, List<String> features) {
+    try {
+      return objectMapper.writeValueAsString(java.util.Map.of("plan", plan, "userLimit", limit == null ? 0 : limit,
+          "enabledFeatures", features));
+    } catch (JsonProcessingException e) { throw new IllegalStateException("Unable to serialize configuration", e); }
+  }
+
+  private void requireUserLimit(Integer userLimit) {
+    if (userLimit == null || userLimit < 1) throw new IllegalArgumentException("用户上限必须为正整数");
+  }
+
   public List<TenantPlanChangeResponse> listPlanChanges(String tenantId) {
     return tenantPlanChangeMapper.listByTenant(tenantId).stream()
         .map(this::toPlanChangeResponse)
         .toList();
   }
 
-  private static final List<String> PLAN_RANK = List.of("MVP", "Growth", "Enterprise");
-
   private TenantPlanChangeResponse toPlanChangeResponse(TenantPlanChange c) {
-    int from = PLAN_RANK.indexOf(c.fromPlan());
-    int to = PLAN_RANK.indexOf(c.toPlan());
+    int from = TenantPlanCatalog.rank(c.fromPlan());
+    int to = TenantPlanCatalog.rank(c.toPlan());
     String direction;
     if (from >= 0 && to >= 0 && to > from) {
       direction = "升级";
@@ -225,6 +263,7 @@ public class PlatformTenantApplicationService {
   }
 
   private String writeFeatures(List<String> enabledFeatures) {
+    TenantFeatureKey.validate(enabledFeatures);
     try {
       return objectMapper.writeValueAsString(enabledFeatures == null ? List.of() : enabledFeatures);
     } catch (JsonProcessingException exception) {

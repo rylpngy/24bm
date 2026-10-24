@@ -73,7 +73,7 @@ public class PaymentBatchApplicationService {
       UpdatePaymentBatchStatusRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("payment batch APIs");
     permissionService.require("buyer:payment:register");
-    tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
+    tenantFeatureApplicationService.requireHistoricalFulfillment(tenantId, TenantFeatureKey.FINANCE);
     PaymentBatch paymentBatch = paymentBatchMapper.findByTenantAndPaymentBatchNo(tenantId, paymentBatchNo);
     if (paymentBatch == null) {
       throw new IllegalArgumentException("Payment batch not found in tenant scope: " + paymentBatchNo);

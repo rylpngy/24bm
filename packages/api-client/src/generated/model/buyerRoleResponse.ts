@@ -13,4 +13,5 @@ export interface BuyerRoleResponse {
   permissions?: string[];
   dataScope?: string;
   builtIn?: boolean;
+  protectedRole?: boolean;
 }

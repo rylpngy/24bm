@@ -164,10 +164,10 @@ test('采购分析:KPI 与图表由后端真实聚合驱动', async ({ page }) =
   await page.getByRole('button', { name: /登录 \/ 注册/ }).click();
   await page.getByRole('button', { name: /登录系统/ }).click();
 
-  await expect(page.getByText('累计支出')).toBeVisible();
-  await expect(page.getByText('月度支出趋势')).toBeVisible();
-  await expect(page.getByText('品类支出占比')).toBeVisible();
-  await expect(page.getByText('供应商支出排行')).toBeVisible();
+  await expect(page.getByText('订单金额', { exact: true }).first()).toBeVisible();
+  await expect(page.getByText('月度订单金额', { exact: true })).toBeVisible();
+  await expect(page.getByText('需求参考金额估算', { exact: true })).toBeVisible();
+  await expect(page.getByText('供应商订单金额排行', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: /导出报表/ })).toBeVisible();
   // 假数据元素已移除:虚构行情/虚构大额订单供应商不再出现。
   await expect(page.getByText('关键价格指标')).toHaveCount(0);

@@ -12,8 +12,13 @@ export interface CreateBuyerUserRequest {
   email?: string;
   status: string;
   departmentId: string;
-  roleId: string;
+  roleId?: string;
   initialPassword: string;
   employeeNo?: string;
   jobTitle?: string;
+  /**
+   * @minItems 1
+   * @maxItems 2147483647
+   */
+  roleIds?: string[];
 }

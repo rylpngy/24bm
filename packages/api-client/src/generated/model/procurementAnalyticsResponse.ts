@@ -9,6 +9,7 @@ import type { MonthlySpendResponse } from './monthlySpendResponse';
 import type { SupplierSpendResponse } from './supplierSpendResponse';
 import type { StatusSliceResponse } from './statusSliceResponse';
 import type { CategorySpendResponse } from './categorySpendResponse';
+import type { ProcurementAnalyticsMetadataResponse } from './procurementAnalyticsMetadataResponse';
 
 export interface ProcurementAnalyticsResponse {
   totalSpend?: number;
@@ -20,4 +21,6 @@ export interface ProcurementAnalyticsResponse {
   supplierSpend?: SupplierSpendResponse[];
   statusDistribution?: StatusSliceResponse[];
   categorySpend?: CategorySpendResponse[];
+  categoryDemandEstimate?: CategorySpendResponse[];
+  metadata?: ProcurementAnalyticsMetadataResponse;
 }

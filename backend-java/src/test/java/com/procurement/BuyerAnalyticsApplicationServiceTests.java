@@ -3,6 +3,7 @@ package com.procurement;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
 
 import com.procurement.buyer.api.ProcurementAnalyticsResponse;
 import com.procurement.buyer.application.BuyerAnalyticsApplicationService;
@@ -32,17 +33,17 @@ class BuyerAnalyticsApplicationServiceTests {
   @Test
   void aggregatesSpendConcentrationAndSavings() {
     TenantContext.set("tenant-1", null, "buyer-user");
-    when(mapper.supplierSpend("tenant-1", com.procurement.identity.domain.DataScope.unrestricted()))
+    when(mapper.supplierSpend(eq("tenant-1"), eq(com.procurement.identity.domain.DataScope.unrestricted()), any()))
         .thenReturn(List.of(
             new SupplierSpend("sup-a", "甲供应商", new BigDecimal("80000"), 3),
             new SupplierSpend("sup-b", "乙供应商", new BigDecimal("20000"), 1)));
-    when(mapper.monthlySpend("tenant-1", com.procurement.identity.domain.DataScope.unrestricted()))
+    when(mapper.monthlySpend(eq("tenant-1"), eq(com.procurement.identity.domain.DataScope.unrestricted()), any()))
         .thenReturn(List.of(new MonthlySpend("2026-06", new BigDecimal("100000"), 4)));
-    when(mapper.statusDistribution("tenant-1", com.procurement.identity.domain.DataScope.unrestricted()))
+    when(mapper.statusDistribution(eq("tenant-1"), eq(com.procurement.identity.domain.DataScope.unrestricted()), any()))
         .thenReturn(List.of(new StatusSlice("已收货", 2, new BigDecimal("60000"))));
-    when(mapper.biddingSavings("tenant-1", com.procurement.identity.domain.DataScope.unrestricted())).thenReturn(new BigDecimal("7000"));
+    when(mapper.biddingSavings(eq("tenant-1"), eq(com.procurement.identity.domain.DataScope.unrestricted()), any())).thenReturn(new BigDecimal("7000"));
 
-    ProcurementAnalyticsResponse a = service.procurementAnalytics();
+    ProcurementAnalyticsResponse a = service.procurementAnalytics(java.time.LocalDate.parse("2026-06-01"), java.time.LocalDate.parse("2026-06-30"), null, null);
 
     assertThat(a.totalSpend()).isEqualByComparingTo("100000");
     assertThat(a.orderCount()).isEqualTo(4);
@@ -56,10 +57,10 @@ class BuyerAnalyticsApplicationServiceTests {
   @Test
   void emptyDataYieldsZerosAndNullShare() {
     TenantContext.set("tenant-1", null, "buyer-user");
-    when(mapper.supplierSpend("tenant-1", com.procurement.identity.domain.DataScope.unrestricted())).thenReturn(List.of());
-    when(mapper.monthlySpend("tenant-1", com.procurement.identity.domain.DataScope.unrestricted())).thenReturn(List.of());
-    when(mapper.statusDistribution("tenant-1", com.procurement.identity.domain.DataScope.unrestricted())).thenReturn(List.of());
-    when(mapper.biddingSavings("tenant-1", com.procurement.identity.domain.DataScope.unrestricted())).thenReturn(null);
+    when(mapper.supplierSpend(eq("tenant-1"), eq(com.procurement.identity.domain.DataScope.unrestricted()), any())).thenReturn(List.of());
+    when(mapper.monthlySpend(eq("tenant-1"), eq(com.procurement.identity.domain.DataScope.unrestricted()), any())).thenReturn(List.of());
+    when(mapper.statusDistribution(eq("tenant-1"), eq(com.procurement.identity.domain.DataScope.unrestricted()), any())).thenReturn(List.of());
+    when(mapper.biddingSavings(eq("tenant-1"), eq(com.procurement.identity.domain.DataScope.unrestricted()), any())).thenReturn(null);
 
     ProcurementAnalyticsResponse a = service.procurementAnalytics();
 

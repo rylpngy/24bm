@@ -7,6 +7,8 @@ reports = pathlib.Path(sys.argv[1])
 required = (
     'DatabaseMigrationIT', 'UnifiedWorkflowRuntimeIT',
     'LudongPocEmployeeReuseIT', 'QualityHardeningIT',
+    'BuyerAdminIntegrityPostgresIT', 'ProcurementAnalyticsPostgresIT',
+    'AiBackendPostgresIT', 'NumberingCreationPostgresIT', 'NumberingMigrationPostgresIT',
 )
 for suite in required:
     report = reports / f'TEST-com.procurement.{suite}.xml'

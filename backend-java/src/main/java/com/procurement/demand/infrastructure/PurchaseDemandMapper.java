@@ -181,14 +181,13 @@ public interface PurchaseDemandMapper {
 
   @Select(value = """
       insert into demand_number_sequences (prefix, last_value)
-      select #{prefix}, coalesce(
-        (select last_value from demand_number_sequences where prefix = #{prefix}),
-        (select max(substring(id from length(#{prefix}) + 1)::bigint)
+      select #{prefix}, greatest(
+        coalesce((select last_value from demand_number_sequences where prefix = #{prefix}), 0),
+        coalesce((select max(substring(id from length(#{prefix}) + 1)::bigint)
          from purchase_demands where starts_with(id, #{prefix})
-           and substring(id from length(#{prefix}) + 1) ~ '^[0-9]+$'),
-        0) + 1
+           and substring(id from length(#{prefix}) + 1) ~ '^[0-9]{1,18}$'), 0)) + 1
       on conflict (prefix) do update
-        set last_value = demand_number_sequences.last_value + 1
+        set last_value = greatest(demand_number_sequences.last_value + 1, excluded.last_value)
       returning last_value
       """, affectData = true)
   long allocateSequence(@Param("prefix") String prefix);

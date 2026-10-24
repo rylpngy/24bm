@@ -24,6 +24,8 @@ const AnalyticsPage = lazy(() => import('./features/analytics/analytics-page').t
 const BudgetsPage = lazy(() => import('./features/budgets/budgets-page').then((module) => ({ default: module.BudgetsPage })));
 const AuditPage = lazy(() => import('./features/audit/audit-page').then((module) => ({ default: module.AuditPage })));
 const TeamPage = lazy(() => import('./features/team/team-page').then((module) => ({ default: module.TeamPage })));
+const NumberingRulesPage = lazy(() => import('./features/settings/numbering-rules-page').then((module) => ({ default: module.NumberingRulesPage })));
+const AiPoliciesPage = lazy(() => import('./features/ai/ai-policies-page').then((module) => ({ default: module.AiPoliciesPage })));
 const OrgStructurePage = lazy(() => import('./features/org/org-structure-page').then((module) => ({ default: module.OrgStructurePage })));
 const ProcessEnginePage = lazy(() => import('./features/process/process-engine-page').then((module) => ({ default: module.ProcessEnginePage })));
 const LudongPocApp = lazy(() => import('./features/ludong-poc/ludong-poc-app').then((module) => ({ default: module.LudongPocApp })));
@@ -59,23 +61,25 @@ function TenantPortalApp() {
   const permsQuery = useSessionPermissions(session?.userId);
   const grantedKey = (permsQuery.isError ? [] : permsQuery.data?.data?.permissions ?? []).join(',');
 
-  // M-0 采购方式能力:未开通的方式,其模块不进导航(后端同口径拒绝,不是仅隐藏)。
+  // Procurement capabilities gate new work; explicitly retained historical modules remain readable.
   const capabilityQuery = useBuyerCapabilityCapabilities({ query: { enabled: !!session } });
   const capability = capabilityQuery.data?.data;
   const enabledModuleKey = (capability?.moduleIds ?? []).join(',');
   const gatedModuleKey = (capability?.methodGatedModuleIds ?? []).join(',');
+  const historicalModuleKey = (capability?.historicalModuleIds ?? []).join(',');
 
   const visibleModules = useMemo(() => {
     const granted = grantedKey ? grantedKey.split(',') : [];
     const enabled = enabledModuleKey ? enabledModuleKey.split(',') : [];
     const gated = gatedModuleKey ? gatedModuleKey.split(',') : [];
+    const historical = historicalModuleKey ? historicalModuleKey.split(',') : [];
     return buyerNavigation.modules.filter((m) => {
       if (m.requiredPermission && !hasPermission(granted, m.requiredPermission)) return false;
-      // 能力未加载完成前不误伤:只有拿到清单后才对「受方式管辖」的模块过滤。
-      if (gated.length > 0 && gated.includes(m.id) && !enabled.includes(m.id)) return false;
+      // Do not hide historical fulfillment when a procurement method is disabled.
+      if (gated.length > 0 && gated.includes(m.id) && !enabled.includes(m.id) && !historical.includes(m.id)) return false;
       return true;
     });
-  }, [grantedKey, enabledModuleKey, gatedModuleKey]);
+  }, [grantedKey, enabledModuleKey, gatedModuleKey, historicalModuleKey]);
 
   // 当前模块若因权限收紧而不可见,回落到首页看板。
   useEffect(() => {
@@ -119,6 +123,9 @@ function TenantPortalApp() {
       accountLabel={`${session.displayName} · ${session.tenantId}`}
     >
       <PageErrorBoundary key={activeModuleId}><Suspense fallback={<PageLoading />}>
+      {capabilityQuery.isError && <FeedbackNotice tone="error" message="业务能力配置加载失败，新增业务开通状态尚未确认，请刷新后重试。" />}
+      {historicalModuleKey.split(',').includes(activeModuleId) && gatedModuleKey.split(',').includes(activeModuleId)
+        && !enabledModuleKey.split(',').includes(activeModuleId) && <FeedbackNotice tone="info" message="此采购方式已停止新增业务，仍可按权限查看历史资料并办理既有业务；新增操作须先由平台开通。" />}
       {!permitted ? (
         <Panel title={activeModule?.label ?? '无权限'} icon={ShieldAlert} subtitle="访问受限">
           <FeedbackNotice
@@ -162,6 +169,10 @@ function TenantPortalApp() {
         <OrgStructurePage />
       ) : activeModuleId === 'team' ? (
         <TeamPage />
+      ) : activeModuleId === 'numbering-rules' ? (
+        <NumberingRulesPage />
+      ) : activeModuleId === 'ai-policies' ? (
+        <AiPoliciesPage />
       ) : activeModuleId === 'audit' ? (
         <AuditPage />
       ) : activeModuleId === 'contracts' ? (

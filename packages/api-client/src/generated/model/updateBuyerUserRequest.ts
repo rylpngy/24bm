@@ -11,7 +11,12 @@ export interface UpdateBuyerUserRequest {
   mobile?: string;
   email?: string;
   departmentId: string;
-  roleId: string;
+  roleId?: string;
   employeeNo?: string;
   jobTitle?: string;
+  /**
+   * @minItems 1
+   * @maxItems 2147483647
+   */
+  roleIds?: string[];
 }

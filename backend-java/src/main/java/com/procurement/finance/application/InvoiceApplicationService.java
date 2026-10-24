@@ -172,7 +172,7 @@ public class InvoiceApplicationService {
     if (invoice == null) {
       throw new IllegalArgumentException("Invoice not found for supplier scope: " + invoiceId);
     }
-    tenantFeatureApplicationService.requireEnabled(invoice.tenantId(), TenantFeatureKey.FINANCE);
+    tenantFeatureApplicationService.requireHistoricalFulfillment(invoice.tenantId(), TenantFeatureKey.FINANCE);
     int updated = invoiceMapper.updateSupplierReconciliationNote(
         invoice.tenantId(),
         invoice.id(),

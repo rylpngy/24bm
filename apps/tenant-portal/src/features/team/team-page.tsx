@@ -13,6 +13,7 @@ import { ConfirmDialog, FeedbackNotice, Pagination, StatusPill, Tabs } from '@24
 import { BuyerMemberEditorDialog } from '../shared/buyer-member-editor-dialog';
 import { NotificationChannelPanel } from './notification-channel-panel';
 import { RolePermissionWorkbench } from './role-permission-workbench';
+import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
 
 interface Feedback {
   tone: 'success' | 'error' | 'info';
@@ -30,7 +31,13 @@ function errorMessage(error: unknown, fallback: string) {
   return typeof message === 'string' && message.trim() ? message : fallback;
 }
 
-export function TeamPage({ requireEmployeeNo = false }: { requireEmployeeNo?: boolean }) {
+export function TeamPage(props: { requireEmployeeNo?: boolean }) {
+  const { can } = useBuyerPermissions();
+  if (!can('buyer:role:manage')) return <FeedbackNotice tone="error" message="仅企业全权管理员可管理组织、成员与角色。" />;
+  return <TeamManagementPage {...props} />;
+}
+
+function TeamManagementPage({ requireEmployeeNo = false }: { requireEmployeeNo?: boolean }) {
   const queryClient = useQueryClient();
   const usersQuery = useBuyerUserList();
   const departmentsQuery = useDepartmentList();
@@ -109,12 +116,12 @@ export function TeamPage({ requireEmployeeNo = false }: { requireEmployeeNo?: bo
 
   const refresh = () =>
     queryClient.invalidateQueries({
-      predicate: (query) => /^\/api\/v1\/buyer\/(users|departments|roles)/.test(String(query.queryKey[0] || '')),
+      predicate: (query) => /^\/api\/v1\/(buyer\/(users|departments|roles)|auth\/permissions)/.test(String(query.queryKey[0] || '')),
     });
 
   const confirmStatusChange = () => {
     if (!statusTarget?.id) return;
-    const nextStatus = statusTarget.status === 'active' ? 'disabled' : 'active';
+    const nextStatus = statusTarget.status === 'active' ? 'inactive' : 'active';
     changeStatus.mutate(
       { userId: statusTarget.id, data: { status: nextStatus } },
       {
@@ -233,7 +240,7 @@ export function TeamPage({ requireEmployeeNo = false }: { requireEmployeeNo?: bo
                 >
                   <option value="">全部状态</option>
                   <option value="active">在职</option>
-                  <option value="disabled">已停用</option>
+                  <option value="inactive">已停用</option>
                 </select>
                 {(keyword || departmentFilter || statusFilter) && (
                   <button

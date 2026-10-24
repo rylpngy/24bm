@@ -10,7 +10,7 @@ import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
 @Mapper
-public interface BuyerRoleMapper {
+public interface BuyerRoleMapper extends BuyerAdministrationMapper {
 
   @Select("""
       select id, tenant_id, name, permissions::text as permissions_json, data_scope

@@ -140,6 +140,7 @@ public class DepartmentApplicationService {
   @Transactional
   public DepartmentResponse updateDepartment(String departmentId, UpdateDepartmentRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer department APIs");
+    departmentMapper.lockAdministrationTenant(tenantId);
     requireTeamManagement();
     Department current = departmentMapper.findByTenantAndId(tenantId, departmentId);
     if (current == null || !DepartmentStatus.ACTIVE.equals(current.status())) {

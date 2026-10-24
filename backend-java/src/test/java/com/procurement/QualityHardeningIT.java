@@ -385,7 +385,7 @@ class QualityHardeningIT {
     jdbc.update("update roles set data_scope='department' where id=?", role);
     jdbc.update("update users set department_id=null where id=?", user);
     assertThat(exportRows(token, "invoices")).hasSize(1);
-    assertThat(exportRows(token, "procurement-analytics")).contains(List.of("合计", "0", "0"));
+    assertThat(exportRows(token, "procurement-analytics")).contains(List.of("合计", "0", "0.00"));
     jdbc.update("update roles set permissions='[]'::jsonb where id=?", role);
     for (String report : List.of("invoices", "reconciliation", "procurement-analytics")) {
       http.perform(get("/api/v1/buyer/reports/" + report).header("Authorization", "Bearer " + token))
@@ -1121,7 +1121,9 @@ class QualityHardeningIT {
     for (String id : List.of(own, same, below)) {
       jdbc.update("insert into materials(id,tenant_id,code,name,category,unit,reference_price) values (?,?,?,'Material','Test category','unit',10)", "mat-" + id, tenant, id);
       jdbc.update("insert into purchase_demand_items(id,tenant_id,demand_id,material_id,quantity) values (?,?,?,?,1)", "item-" + id, tenant, "d-" + id, "mat-" + id);
-      jdbc.update("insert into quotes(id,tenant_id,rfq_id,supplier_id,amount,tax_rate,delivery_days,status) values (?,?,?,?,120,0,1,'已提交')", "q-" + id, tenant, "r-" + id, "s-" + id);
+      jdbc.update("insert into quotes(id,tenant_id,rfq_id,supplier_id,amount,tax_rate,delivery_days,status,round) values (?,?,?,?,100,0,1,'已中选',1)", "q-" + id, tenant, "r-" + id, "s-" + id);
+      jdbc.update("insert into enterprises(id,name,type) values (?,'Comparable supplier','supplier')", "comparison-s-" + id);
+      jdbc.update("insert into quotes(id,tenant_id,rfq_id,supplier_id,amount,tax_rate,delivery_days,status,round) values (?,?,?,?,120,0,1,'未中选',1)", "comparison-q-" + id, tenant, "r-" + id, "comparison-s-" + id);
       jdbc.update("insert into award_decisions(id,tenant_id,rfq_id,quote_id,supplier_id,amount,reason,approved_status) values (?,?,?,?,?,100,'Test','已通过')", "ad-" + id, tenant, "r-" + id, "q-" + id, "s-" + id);
       jdbc.update("update rfqs set awarded_supplier_id=? where id=?", "s-" + id, "r-" + id);
     }
@@ -1507,9 +1509,10 @@ class QualityHardeningIT {
     try (var workbook = new org.apache.poi.xssf.usermodel.XSSFWorkbook(
         new java.io.ByteArrayInputStream(result.getResponse().getContentAsByteArray()))) {
       List<List<String>> rows = new ArrayList<>();
+      var formatter = new org.apache.poi.ss.usermodel.DataFormatter(java.util.Locale.ROOT);
       for (var row : workbook.getSheetAt(0)) {
         List<String> values = new ArrayList<>();
-        for (var cell : row) values.add(cell.getStringCellValue());
+        for (var cell : row) values.add(formatter.formatCellValue(cell));
         rows.add(values);
       }
       return rows;

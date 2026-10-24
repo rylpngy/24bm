@@ -5,6 +5,7 @@ import {
   usePlatformAnnouncementList,
   usePlatformAnnouncementPublish,
   usePlatformAnnouncementWithdraw,
+  useDictionaryList,
 } from '@24bid/api-client';
 import {
   FeedbackNotice,
@@ -29,6 +30,12 @@ export function AnnouncementsPage({ canManage = false }: { canManage?: boolean }
   const list = usePlatformAnnouncementList();
   const publish = usePlatformAnnouncementPublish();
   const withdraw = usePlatformAnnouncementWithdraw();
+  const audiences = useDictionaryList({ type: 'announcement_audience' });
+  const historyParams = { type: 'announcement_audience', includeInactive: true };
+  const audienceHistory = useDictionaryList(historyParams);
+  const audienceOptions = audiences.isError ? [] : audiences.data?.data ?? [];
+  const audienceLabels = { ...AUDIENCE_LABELS, ...Object.fromEntries(
+    (audienceHistory.isError ? [] : audienceHistory.data?.data ?? []).map(a => [a.code ?? '', a.label ?? a.code])) };
   const [showForm, setShowForm] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [title, setTitle] = useState('');
@@ -58,9 +65,11 @@ export function AnnouncementsPage({ canManage = false }: { canManage?: boolean }
       predicate: (q) => typeof q.queryKey[0] === 'string' && (q.queryKey[0] as string).includes('/platform/announcements'),
     });
 
-  const submit = () =>
+  const selectedAudience = audienceOptions.some(a => a.code === audience) ? audience : audienceOptions[0]?.code ?? '';
+  const submit = () => {
+    if (!canManage || audiences.isError || !selectedAudience) return;
     publish.mutate(
-      { data: { title, content, audience } },
+      { data: { title, content, audience: selectedAudience } },
       {
         onSuccess: () => {
           setShowForm(false);
@@ -72,6 +81,7 @@ export function AnnouncementsPage({ canManage = false }: { canManage?: boolean }
         },
       },
     );
+  };
 
   const onWithdraw = (id: string) =>
     withdraw.mutate({ announcementId: id }, { onSuccess: () => { setFeedback('公告已撤回'); refresh(); } });
@@ -124,10 +134,8 @@ export function AnnouncementsPage({ canManage = false }: { canManage?: boolean }
             </div>
             <div>
               <label className="text-xs font-black text-slate-500">受众</label>
-              <select className={inputCls} value={audience} onChange={(e) => setAudience(e.target.value)}>
-                <option value="all">全部</option>
-                <option value="buyer">采购方</option>
-                <option value="supplier">供应商</option>
+              <select aria-label="公告受众" className={inputCls} value={selectedAudience} onChange={(e) => setAudience(e.target.value)} disabled={audiences.isError || audiences.isLoading}>
+                {audienceOptions.map(a => <option key={a.code} value={a.code}>{a.label}</option>)}
               </select>
             </div>
           </div>
@@ -135,7 +143,8 @@ export function AnnouncementsPage({ canManage = false }: { canManage?: boolean }
             <label className="text-xs font-black text-slate-500">正文</label>
             <RichTextEditor value={content} onChange={setContent} placeholder="公告正文:支持小标题、加粗、列表、引用等富文本排版。" minHeight={140} />
           </div>
-          <PrimaryActionButton onClick={submit} busy={publish.isPending} pendingLabel="发布中" disabled={!title || !richTextToPlain(content)}>
+          {audiences.isError && <div role="alert"><FeedbackNotice tone="error" message="受众选项加载失败，请重试。" /></div>}
+          <PrimaryActionButton onClick={submit} busy={publish.isPending} pendingLabel="发布中" disabled={!title || !richTextToPlain(content) || !selectedAudience || audiences.isError || audiences.isLoading}>
             发布公告
           </PrimaryActionButton>
         </div>
@@ -158,7 +167,7 @@ export function AnnouncementsPage({ canManage = false }: { canManage?: boolean }
                   <div className="min-w-0">
                     <p className="break-words font-black text-slate-950">{a.title}</p>
                     <p className="mt-1 text-xs font-bold text-slate-500">
-                      受众 {AUDIENCE_LABELS[a.audience ?? ''] ?? a.audience} · {a.createdAt?.slice(0, 10)}
+                      受众 {audienceLabels[a.audience ?? ''] ?? a.audience} · {a.createdAt?.slice(0, 10)}
                     </p>
                   </div>
                   <StatusPill label={active ? '已发布' : '已撤回'} />

@@ -22,7 +22,8 @@ import type {
 
 import type {
   ApiResponseProcurementAnalyticsResponse,
-  ApiResponseVoid
+  ApiResponseVoid,
+  BuyerAnalyticsProcurementParams
 } from '.././model';
 
 import { customInstance } from '../../http-client';
@@ -32,13 +33,14 @@ import type { ErrorType } from '../../http-client';
 
 
 export const buyerAnalyticsProcurement = (
-
+    params?: BuyerAnalyticsProcurementParams,
  signal?: AbortSignal
 ) => {
 
 
       return customInstance<ApiResponseProcurementAnalyticsResponse>(
-      {url: `/api/v1/buyer/analytics/procurement`, method: 'GET', signal
+      {url: `/api/v1/buyer/analytics/procurement`, method: 'GET',
+        params, signal
     },
       );
     }
@@ -46,23 +48,23 @@ export const buyerAnalyticsProcurement = (
 
 
 
-export const getBuyerAnalyticsProcurementQueryKey = () => {
+export const getBuyerAnalyticsProcurementQueryKey = (params?: BuyerAnalyticsProcurementParams,) => {
     return [
-    `/api/v1/buyer/analytics/procurement`
+    `/api/v1/buyer/analytics/procurement`, ...(params ? [params]: [])
     ] as const;
     }
 
 
-export const getBuyerAnalyticsProcurementQueryOptions = <TData = Awaited<ReturnType<typeof buyerAnalyticsProcurement>>, TError = ErrorType<ApiResponseVoid>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerAnalyticsProcurement>>, TError, TData>>, }
+export const getBuyerAnalyticsProcurementQueryOptions = <TData = Awaited<ReturnType<typeof buyerAnalyticsProcurement>>, TError = ErrorType<ApiResponseVoid>>(params?: BuyerAnalyticsProcurementParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerAnalyticsProcurement>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getBuyerAnalyticsProcurementQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getBuyerAnalyticsProcurementQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerAnalyticsProcurement>>> = ({ signal }) => buyerAnalyticsProcurement(signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerAnalyticsProcurement>>> = ({ signal }) => buyerAnalyticsProcurement(params, signal);
 
 
 
@@ -76,7 +78,7 @@ export type BuyerAnalyticsProcurementQueryError = ErrorType<ApiResponseVoid>
 
 
 export function useBuyerAnalyticsProcurement<TData = Awaited<ReturnType<typeof buyerAnalyticsProcurement>>, TError = ErrorType<ApiResponseVoid>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerAnalyticsProcurement>>, TError, TData>> & Pick<
+ params: undefined |  BuyerAnalyticsProcurementParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerAnalyticsProcurement>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof buyerAnalyticsProcurement>>,
           TError,
@@ -86,7 +88,7 @@ export function useBuyerAnalyticsProcurement<TData = Awaited<ReturnType<typeof b
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useBuyerAnalyticsProcurement<TData = Awaited<ReturnType<typeof buyerAnalyticsProcurement>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerAnalyticsProcurement>>, TError, TData>> & Pick<
+ params?: BuyerAnalyticsProcurementParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerAnalyticsProcurement>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof buyerAnalyticsProcurement>>,
           TError,
@@ -96,16 +98,16 @@ export function useBuyerAnalyticsProcurement<TData = Awaited<ReturnType<typeof b
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useBuyerAnalyticsProcurement<TData = Awaited<ReturnType<typeof buyerAnalyticsProcurement>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerAnalyticsProcurement>>, TError, TData>>, }
+ params?: BuyerAnalyticsProcurementParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerAnalyticsProcurement>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
 export function useBuyerAnalyticsProcurement<TData = Awaited<ReturnType<typeof buyerAnalyticsProcurement>>, TError = ErrorType<ApiResponseVoid>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerAnalyticsProcurement>>, TError, TData>>, }
+ params?: BuyerAnalyticsProcurementParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerAnalyticsProcurement>>, TError, TData>>, }
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getBuyerAnalyticsProcurementQueryOptions(options)
+  const queryOptions = getBuyerAnalyticsProcurementQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

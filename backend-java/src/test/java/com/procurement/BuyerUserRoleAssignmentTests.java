@@ -170,4 +170,36 @@ class BuyerUserRoleAssignmentTests {
         "dept-it",
         "role-buyer-requester");
   }
+
+  @Test
+  void createRejectsUnsupportedStatusBeforeInsert() {
+    TenantContext.set("tenant-1", null, "buyer-owner");
+    when(tenantEntitlementMapper.findUserLimit("tenant-1")).thenReturn(10);
+    when(departmentMapper.existsActiveByTenantAndId("tenant-1", "dept-it")).thenReturn(true);
+    when(buyerUserMapper.existsBuyerRoleByTenantAndId("tenant-1", "role-buyer-requester")).thenReturn(true);
+    when(buyerUserMapper.findByTenantAndId(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString()))
+        .thenAnswer(invocation -> user(invocation.getArgument(1)));
+    assertThatThrownBy(() -> buyerUserApplicationService.createUser(new CreateBuyerUserRequest(
+        "Name", null, null, "disabled", "dept-it", "role-buyer-requester", "password")))
+        .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("Unsupported buyer user status");
+  }
+
+  @Test
+  void optionalRoleIdsAreValidatedBeforeCreatingTheMember() throws Exception {
+    TenantContext.set("tenant-1", null, "buyer-owner");
+    when(tenantEntitlementMapper.findUserLimit("tenant-1")).thenReturn(10);
+    when(departmentMapper.existsActiveByTenantAndId("tenant-1", "dept-it")).thenReturn(true);
+    when(buyerUserMapper.existsBuyerRoleByTenantAndId("tenant-1", "role-a")).thenReturn(true);
+    when(buyerUserMapper.findByTenantAndId(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString()))
+        .thenAnswer(invocation -> user(invocation.getArgument(1)));
+    var request = new com.fasterxml.jackson.databind.ObjectMapper()
+        .configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+        .readValue("""
+            {"name":"Member","status":"active","departmentId":"dept-it","roleId":"role-a",
+             "roleIds":["role-a","role-other"],"initialPassword":"password"}
+            """, CreateBuyerUserRequest.class);
+    assertThatThrownBy(() -> buyerUserApplicationService.createUser(request))
+        .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("role-other");
+    verify(buyerUserMapper, never()).assignRole(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString());
+  }
 }

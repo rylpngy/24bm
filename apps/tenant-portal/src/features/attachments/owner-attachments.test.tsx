@@ -4,7 +4,9 @@ import { beforeEach, expect, it, vi } from 'vitest';
 import { OwnerAttachments } from './owner-attachments';
 
 const state = vi.hoisted(() => ({ check: vi.fn(), get: vi.fn(), denied: false }));
+vi.mock('../../lib/auth-store', () => ({ useAuthStore: (selector: (value: unknown) => unknown) => selector({ session: { userId: 'buyer-user' } }) }));
 vi.mock('@24bid/api-client', () => ({
+  useSessionPermissions: () => ({ data: { data: { permissions: [] } } }),
   axiosInstance: { get: state.get }, checkAttachmentIntegrity: state.check,
   useAttachmentList: () => ({ isError: state.denied, data: { data: [{ id: 'a1', fileName: '测试附件.txt' }] } }),
   useAttachmentCreate: () => ({}), useAttachmentCreateUploadTicket: () => ({}),

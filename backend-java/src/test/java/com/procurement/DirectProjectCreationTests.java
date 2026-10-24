@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -116,13 +117,16 @@ class DirectProjectCreationTests {
   void registrarWritesApprovedDemandWithDirectSource() {
     TenantContext.set("tenant-1", null, "buyer-user");
     when(departmentMapper.existsActiveByTenantAndId("tenant-1", "dept-it")).thenReturn(true);
-    when(purchaseDemandMapper.countByTenantAndIdPrefix(eq("tenant-1"), anyString())).thenReturn(0);
+    when(purchaseDemandMapper.allocateSequence(anyString())).thenReturn(1L);
 
     String demandId = realRegistrar.registerApproved(
         "直录·机房耗材紧急采购", "dept-it", BigDecimal.valueOf(30000),
         List.of(new DirectDemandRegistrar.DirectLineItem("mat-cable", 10)));
 
     assertThat(demandId).startsWith("IT");
+    assertThat(demandId).endsWith("001");
+    verify(purchaseDemandMapper).allocateSequence(anyString());
+    verify(purchaseDemandMapper, never()).countByTenantAndIdPrefix(anyString(), anyString());
     verify(purchaseDemandMapper).insert(
         eq(demandId), eq("tenant-1"), eq("直录·机房耗材紧急采购"), eq("dept-it"), eq("buyer-user"),
         eq(BigDecimal.valueOf(30000)), eq("已通过"), any(), eq("常规"), anyString(), eq("直录登记"));

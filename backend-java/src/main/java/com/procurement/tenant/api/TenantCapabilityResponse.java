@@ -13,7 +13,10 @@ import java.util.List;
 public record TenantCapabilityResponse(
     List<MethodCapability> methods,
     List<String> moduleIds,
-    List<String> methodGatedModuleIds) {
+    List<String> methodGatedModuleIds,
+    List<String> enabledFeatures,
+    List<String> newBusinessModuleIds,
+    List<String> historicalModuleIds) {
 
   public record MethodCapability(String code, String label, boolean inCreateWizard) {}
 }

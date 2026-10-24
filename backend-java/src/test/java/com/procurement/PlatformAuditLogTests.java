@@ -77,7 +77,7 @@ class PlatformAuditLogTests {
             auditLogApplicationService,
             passwordEncoder,
         org.mockito.Mockito.mock(com.procurement.platform.infrastructure.TenantPlanChangeMapper.class));
-    when(platformTenantMapper.updatePlan("tenant-1", "pro", 120)).thenReturn(1);
+    when(platformTenantMapper.updatePlan("tenant-1", "Growth", 120)).thenReturn(1);
     when(platformTenantMapper.findById("tenant-1"))
         .thenReturn(new PlatformTenant(
             "tenant-1",
@@ -89,7 +89,7 @@ class PlatformAuditLogTests {
 
     platformTenantApplicationService.updateTenantPlan(
         "tenant-1",
-        new UpdateTenantPlanRequest("pro", 120));
+        new UpdateTenantPlanRequest("Growth", 120));
 
     verify(auditLogApplicationService).recordTenantAction(
         "tenant-1",

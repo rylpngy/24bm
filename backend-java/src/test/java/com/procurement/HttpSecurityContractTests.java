@@ -215,6 +215,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 @WebMvcTest(controllers = {
+    com.procurement.ai.api.AiReviewController.class,
+    com.procurement.numbering.api.BuyerNumberingRuleController.class,
     HealthController.class,
     DictionaryController.class,
     PlatformDictionaryController.class,
@@ -317,6 +319,85 @@ import org.springframework.test.web.servlet.MvcResult;
     "procurement.security.jwt-expires-in-seconds=7200"
 })
 class HttpSecurityContractTests {
+  @Test
+  void tenantConfigurationCatalogReadDoesNotGrantCombinedConfigurationWrite() throws Exception {
+    String token = loginAndExtractToken("""
+        {"account":"platform","password":"demo123456","scope":"PLATFORM"}
+        """);
+    when(portalPermissions.currentUserHas("platform:tenant:read")).thenReturn(true);
+    when(portalPermissions.currentUserHas("platform:tenant:manage")).thenReturn(false);
+    mockMvc.perform(get("/api/v1/platform/tenants/configuration-catalog")
+        .header("Authorization", "Bearer " + token))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.data.plans[0].code").value("MVP"));
+    mockMvc.perform(put("/api/v1/platform/tenants/tenant-acme/configuration")
+        .header("Authorization", "Bearer " + token).contentType(MediaType.APPLICATION_JSON)
+        .content("{\"plan\":\"MVP\",\"userLimit\":10,\"enabledFeatures\":[]}"))
+        .andExpect(status().isForbidden());
+    org.mockito.Mockito.verify(platformTenantApplicationService, org.mockito.Mockito.never())
+        .updateConfiguration(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.any());
+  }
+  @MockBean
+  private com.procurement.ai.application.AiReviewApplicationService aiReviews;
+  @MockBean
+  private com.procurement.ai.application.AiPolicyApplicationService aiPolicies;
+
+  @Test
+  void genericAiRequiresPortalAndDistinctReadUseManagePermissions() throws Exception {
+    String supplierToken = loginAndExtractToken("""
+        {"account":"supplier","password":"demo123456","scope":"SUPPLIER","supplierId":"ent-supplier-sunrise"}
+        """);
+    String buyerToken = loginAndExtractToken("""
+        {"account":"buyer","password":"demo123456","scope":"BUYER","tenantId":"tenant-acme"}
+        """);
+    String path = "/api/v1/buyer/ai/reviews";
+    mockMvc.perform(get(path)).andExpect(status().isForbidden());
+    mockMvc.perform(get(path).header("Authorization", "Bearer " + supplierToken)).andExpect(status().isForbidden());
+    when(portalPermissions.currentUserHas("buyer:ai:read")).thenReturn(false);
+    when(portalPermissions.currentUserHas("buyer:ai:use")).thenReturn(false);
+    when(portalPermissions.currentUserHas("buyer:ai:manage")).thenReturn(false);
+    mockMvc.perform(get(path).param("subjectType", "demand").param("subjectId", "d1")
+        .header("Authorization", "Bearer " + buyerToken)).andExpect(status().isForbidden());
+    mockMvc.perform(post(path).header("Authorization", "Bearer " + buyerToken)
+        .contentType(MediaType.APPLICATION_JSON).content("{\"subjectType\":\"demand\",\"subjectId\":\"d1\"}"))
+        .andExpect(status().isForbidden());
+    mockMvc.perform(post(path + "/r1/feedback").header("Authorization", "Bearer " + buyerToken)
+        .contentType(MediaType.APPLICATION_JSON).content("{\"findingId\":\"f1\",\"disposition\":\"adopted\"}"))
+        .andExpect(status().isForbidden());
+    mockMvc.perform(get("/api/v1/buyer/ai/policies").header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isForbidden());
+    org.mockito.Mockito.verifyNoInteractions(aiReviews, aiPolicies);
+    when(portalPermissions.currentUserHas("buyer:ai:read")).thenReturn(true);
+    when(aiReviews.history("demand", "d1", 10)).thenReturn(List.of());
+    mockMvc.perform(get(path).param("subjectType", "demand").param("subjectId", "d1")
+        .header("Authorization", "Bearer " + buyerToken)).andExpect(status().isOk());
+    mockMvc.perform(post(path).header("Authorization", "Bearer " + buyerToken)
+        .contentType(MediaType.APPLICATION_JSON).content("{\"subjectType\":\"demand\",\"subjectId\":\"d1\"}"))
+        .andExpect(status().isForbidden());
+  }
+  @MockBean
+  private com.procurement.numbering.application.NumberingApplicationService numberingService;
+
+  @Test
+  void numberingConfigurationRequiresEnterpriseAdministration() throws Exception {
+    String supplierToken = loginAndExtractToken("""
+        {"account":"supplier","password":"demo123456","scope":"SUPPLIER","supplierId":"ent-supplier-sunrise"}
+        """);
+    String buyerToken = loginAndExtractToken("""
+        {"account":"buyer","password":"demo123456","scope":"BUYER","tenantId":"tenant-acme"}
+        """);
+    String path = "/api/v1/buyer/numbering-rules";
+    mockMvc.perform(get(path)).andExpect(status().isForbidden());
+    mockMvc.perform(get(path).header("Authorization", "Bearer " + supplierToken)).andExpect(status().isForbidden());
+    when(portalPermissions.currentUserHas("buyer:role:manage")).thenReturn(false);
+    mockMvc.perform(get(path).header("Authorization", "Bearer " + buyerToken)).andExpect(status().isForbidden());
+    mockMvc.perform(put(path + "/demand").header("Authorization", "Bearer " + buyerToken)
+        .contentType(MediaType.APPLICATION_JSON).content("{}"))
+        .andExpect(status().isForbidden());
+    org.mockito.Mockito.verifyNoInteractions(numberingService);
+    when(portalPermissions.currentUserHas("buyer:role:manage")).thenReturn(true);
+    when(numberingService.list()).thenReturn(List.of());
+    mockMvc.perform(get(path).header("Authorization", "Bearer " + buyerToken)).andExpect(status().isOk());
+  }
   private static final String LOCAL_DEMO_PASSWORD_HASH =
       "$2y$10$HKSnHnokVMkEYDQUlfB/e..3beDCFeM8KKj9.ZpFHGPTQeTjIKP.O";
 

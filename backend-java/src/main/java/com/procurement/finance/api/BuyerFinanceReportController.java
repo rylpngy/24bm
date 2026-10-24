@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.format.annotation.DateTimeFormat;
+import java.time.LocalDate;
 
 @RestController
 @io.swagger.v3.oas.annotations.tags.Tag(name = "buyer-finance-action-controller")
@@ -41,8 +43,12 @@ public class BuyerFinanceReportController {
   @GetMapping("/reports/procurement-analytics")
   @io.swagger.v3.oas.annotations.Operation(operationId = "BuyerFinanceAction_exportProcurementAnalytics")
   public ResponseEntity<ByteArrayResource> exportProcurementAnalytics(
-      @RequestParam(required = false, defaultValue = "xlsx") String format) {
-    return download(financeReportApplicationService.exportProcurementAnalytics(format));
+      @RequestParam(required = false, defaultValue = "xlsx") String format,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+      @RequestParam(required = false) String supplierId,
+      @RequestParam(required = false) String status) {
+    return download(financeReportApplicationService.exportProcurementAnalytics(format, fromDate, toDate, supplierId, status));
   }
 
   private ResponseEntity<ByteArrayResource> download(

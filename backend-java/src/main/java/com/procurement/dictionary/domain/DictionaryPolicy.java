@@ -1,5 +1,8 @@
 package com.procurement.dictionary.domain;
 
+import java.util.Map;
+import java.util.Set;
+
 /**
  * 字典维护规则(D-4):
  * - type/code 为主键,创建后不可修改,只能停用后新增(保证既有业务数据引用不失效);
@@ -11,6 +14,19 @@ public final class DictionaryPolicy {
   public static final String STATUS_ACTIVE = "active";
   public static final String STATUS_INACTIVE = "inactive";
   private static final String KEY_PATTERN = "[a-z0-9_-]+";
+  private static final Map<String, Set<String>> SYSTEM_CODES = Map.of(
+      "payment_status", Set.of("pending", "partial_paid", "paid"),
+      "announcement_audience", Set.of("all", "buyer", "supplier"),
+      "supplier_user_status", Set.of("active", "inactive"),
+      "attachment_visibility", Set.of("tenant", "buyer_internal", "supplier_shared"));
+
+  public static boolean extensible(String type) { return !SYSTEM_CODES.containsKey(type); }
+
+  public static void requireSupportedCode(String type, String code) {
+    if (SYSTEM_CODES.containsKey(type) && !SYSTEM_CODES.get(type).contains(code)) {
+      throw new IllegalArgumentException("系统字典不支持新增业务状态: " + type + "/" + code);
+    }
+  }
 
   private DictionaryPolicy() {}
 

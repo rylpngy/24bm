@@ -38,7 +38,7 @@ test('供应商信用:信用榜与画像详情', async ({ page }) => {
   }
 });
 
-// D-4 平台运营配置:字典类型/条目维护(恒定元素断言)。
+// D-4 固定业务代码不可扩展，既有条目的名称与排序仍可维护。
 test('运营配置:字典类型与条目维护', async ({ page }) => {
   await loginViaKeycloak(page);
   await expectLoggedIn(page, /租户列表/);
@@ -46,8 +46,11 @@ test('运营配置:字典类型与条目维护', async ({ page }) => {
   await expect(page.getByRole('heading', { name: '运营配置', level: 3 })).toBeVisible();
   await expect(page.getByText('字典类型').first()).toBeVisible();
   await expect(page.getByText('条目总数')).toBeVisible();
-  await expect(page.getByRole('button', { name: /新增条目/ })).toBeVisible();
+  await page.getByRole('button', { name: /公告受众.*announcement_audience/ }).click();
+  await expect(page.getByRole('button', { name: /新增条目/ })).toHaveCount(0);
   await expect(page.getByRole('columnheader', { name: '编码' })).toBeVisible();
+  await expect(page.getByRole('textbox', { name: '名称-buyer', exact: true })).toBeEditable();
+  await expect(page.getByRole('spinbutton', { name: '排序-buyer', exact: true })).toBeEditable();
 });
 
 test('租户列表 / 企业审核 / 公告 渲染', async ({ page }) => {

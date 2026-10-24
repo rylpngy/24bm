@@ -23,13 +23,16 @@ public class BuyerCapabilityController {
   @GetMapping
   public ApiResponse<TenantCapabilityResponse> capabilities() {
     String tenantId = TenantAccessGuard.requireTenantId("buyer capability APIs");
-    var methods = tenantCapabilityApplicationService.enabledMethods(tenantId);
+    var features = tenantCapabilityApplicationService.enabledFeatures(tenantId);
+    var methods = TenantCapabilityApplicationService.effectiveMethods(features);
     return ApiResponse.ok(new TenantCapabilityResponse(
         methods.stream()
             .map(m -> new TenantCapabilityResponse.MethodCapability(
                 m.code(), m.label(), m.inCreateWizard()))
             .toList(),
         methods.stream().flatMap(m -> m.moduleIds().stream()).distinct().toList(),
-        ProcurementMethodCatalog.allMethodModuleIds()));
+        ProcurementMethodCatalog.allMethodModuleIds(), features,
+        TenantCapabilityApplicationService.newBusinessModuleIds(features),
+        TenantCapabilityApplicationService.historicalModuleIds()));
   }
 }

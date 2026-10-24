@@ -12,7 +12,10 @@ public final class BuyerPermissionCatalog {
 
   public static final List<Point> POINTS = List.of(
       new Point("buyer:*", "全部权限(管理员)", "全局"),
-      new Point("buyer:role:manage", "管理角色与权限", "管理"),
+      new Point("buyer:role:manage", "企业全权管理员（组织、角色与配置）", "管理"),
+      new Point("buyer:ai:read", "查看AI评审记录（仍需业务数据权限）", "AI辅助"),
+      new Point("buyer:ai:use", "发起AI评审与记录人工反馈", "AI辅助"),
+      new Point("buyer:ai:manage", "维护AI制度依据版本", "AI辅助"),
       new Point("buyer:analytics:read", "查看采购分析", "报表"),
       new Point("buyer:budget:read", "查看部门预算", "预算"),
       new Point("buyer:budget:manage", "设置部门预算", "预算"),

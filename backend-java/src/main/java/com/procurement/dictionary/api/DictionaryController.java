@@ -21,7 +21,9 @@ public class DictionaryController {
   }
 
   @GetMapping
-  public ApiResponse<List<DictionaryEntryResponse>> list(@RequestParam @NotBlank String type) {
-    return ApiResponse.ok(dictionaryApplicationService.listByType(type));
+  public ApiResponse<List<DictionaryEntryResponse>> list(@RequestParam @NotBlank String type,
+      @RequestParam(defaultValue = "false") boolean includeInactive) {
+    return ApiResponse.ok(includeInactive ? dictionaryApplicationService.listWithHistory(type)
+        : dictionaryApplicationService.listByType(type));
   }
 }

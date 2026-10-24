@@ -27,6 +27,7 @@ import {
 } from '@24bid/api-client';
 import { FeedbackNotice, PrimaryActionButton, ShellState, StatusPill, cn } from '@24bid/ui';
 import { WorkflowSubmitDialog } from '../workflow/workflow-submit-dialog';
+import { AiReviewButton } from '../ai/ai-review-button';
 import { WorkflowStatusPanel } from '../workflow/workflow-instance-panel';
 import { DemandCreateForm } from './demand-create-form';
 import { useAuthStore } from '../../lib/auth-store';
@@ -364,6 +365,7 @@ export function DemandDetail({
 
       <div className="grid gap-5 xl:grid-cols-[1fr_24rem]">
         <div className="space-y-5">
+          <AiReviewButton subjectType="demand" subjectId={demand.id ?? ''} />
           <div className="grid gap-4 md:grid-cols-3">
             <MetricCard icon={WalletCards} label="需求预算" value={currency(demand.budget)} tone="bg-blue-50 text-blue-600" />
             <MetricCard icon={CalendarDays} label="期望交期" value={demand.expectedDeliveryDate ?? '待定'} tone="bg-violet-50 text-violet-600" />

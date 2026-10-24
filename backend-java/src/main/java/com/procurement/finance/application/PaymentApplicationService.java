@@ -144,7 +144,7 @@ public class PaymentApplicationService {
   private InvoiceResponse applyPaymentStatus(String invoiceId, String paymentStatus, String evidence, String remark) {
     String tenantId = TenantAccessGuard.requireTenantId("payment APIs");
     financeAccess.requireInvoice(invoiceId, "buyer:payment:register");
-    tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
+    tenantFeatureApplicationService.requireHistoricalFulfillment(tenantId, TenantFeatureKey.FINANCE);
     Invoice invoice = invoiceMapper.findByTenantAndId(tenantId, invoiceId);
     if (invoice == null) {
       throw new IllegalArgumentException("Invoice not found in tenant scope: " + invoiceId);
@@ -168,7 +168,7 @@ public class PaymentApplicationService {
   }
 
   public void requireFinanceEnabled(String tenantId) {
-    tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
+    tenantFeatureApplicationService.requireHistoricalFulfillment(tenantId, TenantFeatureKey.FINANCE);
   }
 
   @Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)

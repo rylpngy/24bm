@@ -10,7 +10,7 @@ import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
 @Mapper
-public interface BuyerUserMapper {
+public interface BuyerUserMapper extends BuyerAdministrationMapper {
 
   @Select("""
       select u.id, u.tenant_id, u.name, u.mobile, u.email, u.status, u.department_id, min(r.id) as role_id, u.employee_no, u.job_title
@@ -133,7 +133,6 @@ public interface BuyerUserMapper {
       join roles r on r.id = ur.role_id
       where u.tenant_id = #{tenantId}
         and u.id = #{userId}
-        and u.status = 'active'
         and r.tenant_id = #{tenantId}
         and r.scope = 'buyer'
       order by r.id

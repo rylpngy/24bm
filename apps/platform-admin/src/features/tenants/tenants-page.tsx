@@ -1,12 +1,11 @@
 import { useMemo, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Building2, CheckCircle2, PauseCircle, Plus, Users } from 'lucide-react';
 import {
   usePlatformTenantDisable,
   usePlatformTenantEnable,
   usePlatformTenantList,
-  usePlatformTenantUpdateFeatures,
-  usePlatformTenantUpdatePlan,
+  axiosInstance,
 } from '@24bid/api-client';
 import {
   FeedbackNotice,
@@ -22,34 +21,23 @@ import {
 import { TenantUsagePanel } from './tenant-usage-panel';
 import { EnterpriseOnboardingPanel } from './enterprise-onboarding-panel';
 
-const PLAN_OPTIONS = ['MVP', '标准版', '企业版'];
-// 模块级开关(既有语义,勿改键名——后端 TenantFeatureKey 与之对应)。
-const FEATURE_DEFS = [
-  { key: 'rfq', label: '寻源立项' },
-  { key: 'order', label: '订单履约' },
-  { key: 'finance', label: '财务付款' },
-];
-
-// M-0 采购方式开关:键与后端 ProcurementMethodCatalog 的 featureKey 一一对应。
-// 一个 method:* 都不勾 = 未做精细配置 → 后端按「全部方式放行」处理(存量租户不减能力)。
-const METHOD_DEFS = [
-  { key: 'method:compare', label: '询比采购' },
-  { key: 'method:auction', label: '竞价采购' },
-  { key: 'method:mall', label: '商城直采' },
-  { key: 'method:single-source', label: '单一来源' },
-  { key: 'method:tender', label: '招标采购' },
-];
+type Catalog = { plans: { code: string; label: string }[]; features: { key: string; label: string; configurable?: boolean }[];
+  methods: { featureKey: string; label: string }[] };
 const PAGE_SIZE = 8;
 
 // 租户列表:指标卡 + 工具条(筛选/搜索)+ 序号表格 + 分页,样式对齐采购端列表页。
-export function TenantsPage() {
+export function TenantsPage({ canManage = false, canReadUsage = false, canCreateSupplier = false }:
+  { canManage?: boolean; canReadUsage?: boolean; canCreateSupplier?: boolean }) {
   const queryClient = useQueryClient();
   const tenants = usePlatformTenantList();
   const enable = usePlatformTenantEnable();
   const disable = usePlatformTenantDisable();
-  const updatePlan = usePlatformTenantUpdatePlan();
-  const updateFeatures = usePlatformTenantUpdateFeatures();
+  const catalog = useQuery({ queryKey: ['/api/v1/platform/tenants/configuration-catalog'], enabled: canManage,
+    queryFn: async ({ signal }) => (await axiosInstance.get<{ data: Catalog }>('/api/v1/platform/tenants/configuration-catalog', { signal })).data.data });
+  const updateConfiguration = useMutation({ mutationFn: ({ tenantId, data }: { tenantId: string; data: { plan: string; userLimit: number; enabledFeatures: string[] } }) =>
+    axiosInstance.put(`/api/v1/platform/tenants/${encodeURIComponent(tenantId)}/configuration`, data) });
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [keyword, setKeyword] = useState('');
   const [page, setPage] = useState(1);
@@ -58,7 +46,7 @@ export function TenantsPage() {
   const [usageId, setUsageId] = useState<string | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
-  const list = tenants.data?.data ?? [];
+  const list = tenants.isError ? [] : tenants.data?.data ?? [];
   const activeCount = list.filter((t) => t.status === 'active').length;
   const totalUserLimit = list.reduce((sum, t) => sum + (t.userLimit ?? 0), 0);
 
@@ -82,10 +70,12 @@ export function TenantsPage() {
     });
 
   const toggle = (tenantId: string, name: string, active: boolean) => {
+    if (!canManage) return;
+    setError(null); setFeedback(null);
     const m = active ? disable : enable;
     m.mutate(
       { tenantId },
-      { onSuccess: () => { setFeedback(`租户「${name}」已${active ? '停用' : '启用'}`); refresh(); } },
+      { onSuccess: () => { setFeedback(`租户「${name}」已${active ? '停用' : '启用'}`); refresh(); }, onError: reportError },
     );
   };
 
@@ -93,34 +83,39 @@ export function TenantsPage() {
     setUsageId(null);
     setEditId(t.id ?? null);
     setDraft({
-      plan: t.plan ?? 'MVP',
+      plan: ({ '标准版': 'Growth', '企业版': 'Enterprise' } as Record<string, string>)[t.plan ?? ''] ?? t.plan ?? 'MVP',
       userLimit: String(t.userLimit ?? 10),
       features: [...(t.enabledFeatures ?? [])],
     });
   };
 
-  const toggleFeature = (key: string) =>
-    setDraft((d) =>
-      d ? { ...d, features: d.features.includes(key) ? d.features.filter((k) => k !== key) : [...d.features, key] } : d,
-    );
+  const toggleFeature = (key: string) => setDraft(d => {
+    if (!d) return d;
+    const features = d.features.includes(key) || (key === 'method:mall' && d.features.includes('mall'))
+      ? d.features.filter(k => k !== key && !(key === 'method:mall' && k === 'mall')) : [...d.features, key];
+    if (key.startsWith('method:') && !features.some(k => k.startsWith('method:'))) features.push('method:none');
+    return { ...d, features };
+  });
+
+  const mode = draft?.features.includes('method:none') ? 'none' : draft?.features.some(k => k.startsWith('method:')) ? 'selected' : 'inherit';
+  const setMode = (value: string) => setDraft(d => d ? { ...d, features: [
+    ...d.features.filter(k => !k.startsWith('method:')),
+    ...(value === 'none' ? ['method:none'] : value === 'selected' ? (catalog.data?.methods.map(m => m.featureKey) ?? []) : []),
+  ] } : d);
+  const reportError = (e: unknown) => setError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? '保存失败，请重试');
 
   const saveConfig = (tenantId: string) => {
-    if (!draft) return;
-    updatePlan.mutate(
-      { tenantId, data: { plan: draft.plan, userLimit: Number(draft.userLimit) || 1 } },
+    if (!draft || !canManage || !catalog.data || catalog.isError) return;
+    const limit = Number(draft.userLimit);
+    if (!Number.isInteger(limit) || limit < 1) { setError('用户上限必须为正整数'); return; }
+    setFeedback(null); setError(null);
+    updateConfiguration.mutate(
+      { tenantId, data: { plan: draft.plan, userLimit: limit, enabledFeatures: draft.features } },
       {
         onSuccess: () => {
-          updateFeatures.mutate(
-            { tenantId, data: { enabledFeatures: draft.features } },
-            {
-              onSuccess: () => {
-                setFeedback('租户套餐与功能开关已更新');
-                setEditId(null);
-                refresh();
-              },
-            },
-          );
+          setFeedback('租户套餐与功能开关已更新'); setEditId(null); refresh();
         },
+        onError: reportError,
       },
     );
   };
@@ -150,18 +145,18 @@ export function TenantsPage() {
             placeholder="按名称 / 租户 ID / 套餐搜索"
             onSearch={(k) => { setKeyword(k); setPage(1); }}
           />
-          <button
+          {canManage && <button
             type="button"
             onClick={() => setShowOnboarding((v) => !v)}
             className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-slate-900 px-4 text-xs font-black text-white transition hover:bg-slate-800"
           >
             <Plus size={14} /> {showOnboarding ? '收起开通' : '开通新企业'}
-          </button>
+          </button>}
         </div>
 
-        {showOnboarding && (
+        {canManage && showOnboarding && (
           <div className="mb-4">
-            <EnterpriseOnboardingPanel embedded />
+            <EnterpriseOnboardingPanel embedded canCreateSupplier={canCreateSupplier} />
           </div>
         )}
 
@@ -170,10 +165,12 @@ export function TenantsPage() {
             <FeedbackNotice tone="success" message={feedback} />
           </div>
         )}
+        {error && <div role="alert"><FeedbackNotice tone="error" message={error} /></div>}
+        {canManage && catalog.isError && <FeedbackNotice tone="error" message="配置目录加载失败，请重试。" />}
 
         {tenants.isLoading ? (
           <FeedbackNotice tone="info" message="正在加载租户…" />
-        ) : filtered.length === 0 ? (
+        ) : tenants.isError ? <div role="alert"><FeedbackNotice tone="error" message="租户加载失败或权限已变更，请重试。" /></div> : filtered.length === 0 ? (
           <FeedbackNotice tone="info" message={keyword || statusFilter !== 'all' ? '没有符合条件的租户。' : '暂无租户,可通过上方「企业开通」创建。'} />
         ) : (
           <>
@@ -217,21 +214,21 @@ export function TenantsPage() {
                         </td>
                         <td className="px-4 py-4">
                           <div className="flex flex-wrap justify-end gap-1.5">
-                            <button
+                            {canManage && <button
                               type="button"
                               onClick={() => (editId === t.id ? setEditId(null) : startEdit(t))}
                               className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-2.5 text-xs font-black text-slate-700 hover:bg-slate-50"
                             >
                               {editId === t.id ? '收起' : '编辑'}
-                            </button>
-                            <button
+                            </button>}
+                            {canReadUsage && <button
                               type="button"
                               onClick={() => { setEditId(null); setUsageId((cur) => (cur === t.id ? null : t.id ?? null)); }}
                               className="inline-flex h-8 items-center rounded-md border border-indigo-200 bg-white px-2.5 text-xs font-black text-indigo-700 hover:bg-indigo-50"
                             >
                               用量
-                            </button>
-                            <button
+                            </button>}
+                            {canManage && <button
                               type="button"
                               onClick={() => t.id && toggle(t.id, t.name ?? '', active)}
                               disabled={busy}
@@ -242,7 +239,7 @@ export function TenantsPage() {
                               }
                             >
                               {busy ? '处理中' : active ? '停用' : '启用'}
-                            </button>
+                            </button>}
                           </div>
                         </td>
                       </tr>
@@ -255,32 +252,34 @@ export function TenantsPage() {
           </>
         )}
 
-        {usageId && focused?.id && (
+        {canReadUsage && usageId && focused?.id && (
           <div className="mt-4">
             <p className="mb-2 text-sm font-black text-slate-900">「{focused.name}」用量与计费</p>
             <TenantUsagePanel tenantId={focused.id} />
           </div>
         )}
 
-        {editId && draft && focused && (
+        {canManage && editId && draft && focused && (
           <div className="mt-4 rounded-lg border border-blue-100 bg-blue-50/40 p-4">
             <p className="text-sm font-black text-blue-800">「{focused.name}」套餐与功能开关</p>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <div>
                 <label className="text-[11px] font-black text-slate-500">套餐</label>
                 <select
+                  aria-label="套餐"
                   className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                   value={draft.plan}
                   onChange={(e) => setDraft({ ...draft, plan: e.target.value })}
                 >
-                  {PLAN_OPTIONS.map((p) => (
-                    <option key={p} value={p}>{p}</option>
+                  {catalog.data?.plans.map((p) => (
+                    <option key={p.code} value={p.code}>{p.label}</option>
                   ))}
                 </select>
               </div>
               <div>
                 <label className="text-[11px] font-black text-slate-500">用户上限</label>
                 <input
+                  aria-label="用户上限"
                   type="number"
                   min={1}
                   className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
@@ -292,21 +291,27 @@ export function TenantsPage() {
             <div className="mt-3">
               <p className="text-[11px] font-black text-slate-500">功能开关</p>
               <div className="mt-2 flex flex-wrap gap-4">
-                {FEATURE_DEFS.map((f) => (
+                {catalog.data?.features.map((f) => (
                   <label key={f.key} className="inline-flex items-center gap-2 text-xs font-bold text-slate-700">
-                    <input type="checkbox" checked={draft.features.includes(f.key)} onChange={() => toggleFeature(f.key)} />
+                    <input type="checkbox" checked={draft.features.includes(f.key)} disabled={f.configurable === false || updateConfiguration.isPending} onChange={() => toggleFeature(f.key)} />
                     {f.label}
                   </label>
                 ))}
               </div>
               <p className="mt-4 text-[11px] font-black text-slate-500">采购方式(可自由组合)</p>
-              <p className="mt-1 text-[11px] font-bold text-slate-400">
-                一个都不勾表示不做限制(沿用全部方式);勾选后仅所选方式可用,工作台菜单与立项接口同步收紧。
-              </p>
               <div className="mt-2 flex flex-wrap gap-4">
-                {METHOD_DEFS.map((f) => (
-                  <label key={f.key} className="inline-flex items-center gap-2 text-xs font-bold text-slate-700">
-                    <input type="checkbox" checked={draft.features.includes(f.key)} onChange={() => toggleFeature(f.key)} />
+                {[['inherit', '继承全部'], ['selected', '指定方式'], ['none', '全部关闭']].map(([value, label]) => (
+                  <label key={value} className="inline-flex items-center gap-2 text-xs font-bold text-slate-700">
+                    <input type="radio" name="method-mode" value={value} checked={mode === value} onChange={() => setMode(value)} />{label}
+                  </label>
+                ))}
+              </div>
+              <div className="mt-2 flex flex-wrap gap-4">
+                {mode === 'selected' && catalog.data?.methods.map((f) => (
+                  <label key={f.featureKey} className="inline-flex items-center gap-2 text-xs font-bold text-slate-700">
+                    <input type="checkbox" checked={draft.features.includes(f.featureKey) || (f.featureKey === 'method:mall' && draft.features.includes('mall'))} onChange={() => {
+                      toggleFeature(f.featureKey);
+                    }} />
                     {f.label}
                   </label>
                 ))}
@@ -314,7 +319,8 @@ export function TenantsPage() {
             </div>
             <PrimaryActionButton
               onClick={() => focused.id && saveConfig(focused.id)}
-              busy={updatePlan.isPending || updateFeatures.isPending}
+              busy={updateConfiguration.isPending}
+              disabled={!catalog.data || catalog.isError || (mode === 'selected' && !draft.features.some(k => k.startsWith('method:')))}
               pendingLabel="保存中"
             >
               保存配置

@@ -67,6 +67,7 @@ public final class ProcurementMethodCatalog {
    */
   public static List<MethodDefinition> enabledMethods(List<String> enabledFeatures) {
     List<String> features = enabledFeatures == null ? List.of() : enabledFeatures;
+    if (features.contains(TenantFeatureKey.METHODS_NONE)) return List.of();
     boolean configured = features.stream().anyMatch(f -> f.startsWith(METHOD_KEY_PREFIX));
     if (!configured) {
       return ALL;

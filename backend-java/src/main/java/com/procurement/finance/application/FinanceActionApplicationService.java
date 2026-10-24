@@ -182,7 +182,7 @@ public class FinanceActionApplicationService {
     String tenantId = TenantAccessGuard.requireTenantId("payment block resolution APIs");
     String userId = TenantAccessGuard.requireUserId("payment block resolution APIs");
     permissionService.require("buyer:payment:register");
-    tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
+    tenantFeatureApplicationService.requireHistoricalFulfillment(tenantId, TenantFeatureKey.FINANCE);
     financeAccess.requireBatch(request.paymentBatchNo(), "buyer:payment:register");
     requirePaymentBatchNotArchived(tenantId, request.paymentBatchNo());
     validateBlockResolutionReferences(tenantId, request);
@@ -218,7 +218,7 @@ public class FinanceActionApplicationService {
       UpdatePaymentBlockResolutionStatusRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("payment block resolution APIs");
     permissionService.require("buyer:payment:register");
-    tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
+    tenantFeatureApplicationService.requireHistoricalFulfillment(tenantId, TenantFeatureKey.FINANCE);
     PaymentBlockResolution resolution = paymentBlockResolutionMapper.findByTenantAndId(tenantId, resolutionId);
     if (resolution == null) {
       throw new IllegalArgumentException("Payment block resolution not found in tenant scope: " + resolutionId);
@@ -290,7 +290,7 @@ public class FinanceActionApplicationService {
       RegisterPaymentRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("payment execution record APIs");
     permissionService.require("buyer:payment:register");
-    tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
+    tenantFeatureApplicationService.requireHistoricalFulfillment(tenantId, TenantFeatureKey.FINANCE);
     RegisterPaymentRequest effectiveRequest =
         request == null ? new RegisterPaymentRequest("已付款") : request;
     PaymentExecutionRecord record = paymentExecutionRecordMapper.findByTenantAndId(tenantId, executionRecordId);
@@ -401,7 +401,7 @@ public class FinanceActionApplicationService {
   public ThreeWayMatchRebuildResponse rebuildCurrentTenantThreeWayMatches() {
     String tenantId = TenantAccessGuard.requireTenantId("three-way match APIs");
     permissionService.require("buyer:payment:register");
-    tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
+    tenantFeatureApplicationService.requireHistoricalFulfillment(tenantId, TenantFeatureKey.FINANCE);
     var scope = financeAccess.requireScope("buyer:payment:register");
     var invoices = invoiceMapper.listVisible(tenantId, null, null, null, scope);
     for (var invoice : invoices) {
@@ -416,7 +416,7 @@ public class FinanceActionApplicationService {
     String tenantId = TenantAccessGuard.requireTenantId("three-way match APIs");
     String userId = TenantAccessGuard.requireUserId("three-way match APIs");
     permissionService.require("buyer:payment:register");
-    tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
+    tenantFeatureApplicationService.requireHistoricalFulfillment(tenantId, TenantFeatureKey.FINANCE);
     ThreeWayMatch match = threeWayMatchMapper.findByTenantAndId(tenantId, matchId);
     if (match == null) {
       throw new IllegalArgumentException("Three-way match not found in tenant scope: " + matchId);
@@ -455,7 +455,7 @@ public class FinanceActionApplicationService {
     String tenantId = TenantAccessGuard.requireTenantId("three-way match APIs");
     String userId = TenantAccessGuard.requireUserId("three-way match APIs");
     permissionService.require("buyer:payment:register");
-    tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
+    tenantFeatureApplicationService.requireHistoricalFulfillment(tenantId, TenantFeatureKey.FINANCE);
     financeAccess.requireInvoice(invoiceId, "buyer:payment:register");
     Invoice invoice = requireTenantInvoice(tenantId, invoiceId);
     ThreeWayMatchLineResponse line =
@@ -533,7 +533,7 @@ public class FinanceActionApplicationService {
     String tenantId = TenantAccessGuard.requireTenantId("payment request APIs");
     String userId = TenantAccessGuard.requireUserId("payment request APIs");
     permissionService.require("buyer:payment:register"); // 发起付款申请须具备该权限
-    tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
+    tenantFeatureApplicationService.requireHistoricalFulfillment(tenantId, TenantFeatureKey.FINANCE);
     financeAccess.requireInvoice(request.invoiceId(), "buyer:payment:register");
     Invoice invoice = requireTenantInvoice(tenantId, request.invoiceId());
     ensureAmountVarianceHandledBeforePaymentRequest(tenantId, invoice);
@@ -608,7 +608,7 @@ public class FinanceActionApplicationService {
       UpdatePaymentRequestStatusRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("payment request APIs");
     permissionService.require("buyer:payment:register");
-    tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
+    tenantFeatureApplicationService.requireHistoricalFulfillment(tenantId, TenantFeatureKey.FINANCE);
     PaymentRequest paymentRequest = paymentRequestMapper.findByTenantAndId(tenantId, paymentRequestId);
     if (paymentRequest == null) {
       throw new IllegalArgumentException("Payment request not found in tenant scope: " + paymentRequestId);
@@ -655,7 +655,7 @@ public class FinanceActionApplicationService {
     String tenantId = TenantAccessGuard.requireTenantId("variance handling APIs");
     String userId = TenantAccessGuard.requireUserId("variance handling APIs");
     permissionService.require("buyer:payment:register");
-    tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
+    tenantFeatureApplicationService.requireHistoricalFulfillment(tenantId, TenantFeatureKey.FINANCE);
     Invoice invoice = requireTenantInvoice(tenantId, request.invoiceId());
     PurchaseOrder order = purchaseOrderMapper.findByTenantAndId(tenantId, invoice.orderId());
     BigDecimal varianceAmount = order == null ? BigDecimal.ZERO : invoice.amount().subtract(order.amount());
@@ -682,7 +682,7 @@ public class FinanceActionApplicationService {
       UpdateVarianceHandlingStatusRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("variance handling APIs");
     permissionService.require("buyer:payment:register");
-    tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
+    tenantFeatureApplicationService.requireHistoricalFulfillment(tenantId, TenantFeatureKey.FINANCE);
     VarianceHandling varianceHandling = varianceHandlingMapper.findByTenantAndId(tenantId, varianceHandlingId);
     if (varianceHandling == null) {
       throw new IllegalArgumentException("Variance handling not found in tenant scope: " + varianceHandlingId);
@@ -723,7 +723,7 @@ public class FinanceActionApplicationService {
       String varianceHandlingId, ApproveVarianceHandlingRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("variance handling APIs");
     permissionService.require("buyer:variance:approve"); // 财务经理签核须具备该权限
-    tenantFeatureApplicationService.requireEnabled(tenantId, TenantFeatureKey.FINANCE);
+    tenantFeatureApplicationService.requireHistoricalFulfillment(tenantId, TenantFeatureKey.FINANCE);
     VarianceHandling varianceHandling =
         varianceHandlingMapper.findByTenantAndId(tenantId, varianceHandlingId);
     if (varianceHandling == null) {

@@ -29,6 +29,17 @@ public class TenantFeatureApplicationService {
     }
   }
 
+  /** Existing records retain fulfillment/rectification access; callers still enforce record scope and state. */
+  public void requireHistoricalFulfillment(String tenantId, String featureKey) {
+    if (!com.procurement.tenant.domain.TenantFeatureKey.ORDER.equals(featureKey)
+        && !com.procurement.tenant.domain.TenantFeatureKey.FINANCE.equals(featureKey)) {
+      throw new IllegalArgumentException("历史履约仅支持订单与财务模块");
+    }
+    if (tenantFeatureMapper.findEnabledFeaturesJson(tenantId) == null) {
+      throw new IllegalArgumentException("租户不存在: " + tenantId);
+    }
+  }
+
   private List<String> readFeatures(String featuresJson) {
     if (featuresJson == null || featuresJson.isBlank()) {
       return List.of();
