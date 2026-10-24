@@ -382,6 +382,13 @@ public class UnifiedWorkflowApplicationService {
     return toHistoryResponse(tenantId, instance);
   }
 
+  public WorkflowBusinessSummary getCurrentTenantBusinessSummary(String businessType, String businessId) {
+    var history = getCurrentTenantBusinessHistory(businessType, businessId);
+    return history == null ? null : new WorkflowBusinessSummary(
+        history.workflowInstanceId(), history.status(), history.initiatorName(), history.createdAt(),
+        history.completedByName(), history.completedAt());
+  }
+
   public List<WorkflowInstanceLedgerResponse> listCurrentTenantInstances(String view, int requestedLimit) {
     String tenantId = TenantAccessGuard.requireTenantId("unified workflow APIs");
     String userId = TenantAccessGuard.requireUserId("unified workflow APIs");

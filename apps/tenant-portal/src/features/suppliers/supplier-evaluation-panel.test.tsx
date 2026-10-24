@@ -3,7 +3,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, expect, it, vi } from 'vitest';
 import { SupplierEvaluationPanel } from './supplier-evaluation-panel';
 
-const mocks = vi.hoisted(() => ({ write: true, create: vi.fn(), confirm: vi.fn(), metrics: vi.fn() }));
+const mocks = vi.hoisted(() => ({ write: true, create: vi.fn(), confirm: vi.fn(), metrics: vi.fn(), enabled: true, templateError: false }));
+vi.mock('@24bid/api-client/supplier-evaluation-templates', async original => ({
+  ...await original<object>(),
+  useEvaluationTemplates: () => ({ isError: mocks.templateError, data: { data: [{ id: 'version-1', templateId: 'group-1', name: '质量优先', version: 2, qualityWeight: 100, deliveryWeight: 0, priceWeight: 0, serviceWeight: 0, enabled: mocks.enabled }] } }),
+  useScoredSupplierEvaluations: () => ({ data: { data: [{ id: 'evaluation-1', period: '2026-Q2', totalScore: 95, suggestedTier: '优选', scoring: { templateVersionId: 'old', templateId: 'old-group', templateName: '历史模板', version: 1, qualityWeight: 0, deliveryWeight: 100, priceWeight: 0, serviceWeight: 0 } }] } }),
+  useCreateScoredSupplierEvaluation: () => ({ mutate: mocks.create }),
+}));
 vi.mock('../../lib/use-buyer-permissions', () => ({ useBuyerPermissions: () => ({ can: () => mocks.write }) }));
 vi.mock('@24bid/api-client', () => ({
   useSupplierEvaluationAutoScore: () => ({ data: { data: { hasData: false } } }),
@@ -13,7 +19,7 @@ vi.mock('@24bid/api-client', () => ({
   useSupplierEvaluationCreateEvaluation: () => ({ mutate: mocks.create }),
   useSupplierEvaluationConfirmTier: () => ({ mutate: mocks.confirm }),
 }));
-afterEach(() => { cleanup(); vi.clearAllMocks(); mocks.write = true; });
+afterEach(() => { cleanup(); vi.clearAllMocks(); mocks.write = true; mocks.enabled = true; mocks.templateError = false; });
 function mount() { render(<QueryClientProvider client={new QueryClient()}><SupplierEvaluationPanel relationId="relation-1" /></QueryClientProvider>); }
 it('starts without scores and blocks an incomplete evaluation', () => {
   mount();
@@ -102,5 +108,21 @@ it('blocks out-of-range scores and a previously recorded period', () => {
   fireEvent.change(screen.getByLabelText('质量（权重 35%）'), { target: { value: '90' } });
   fireEvent.change(screen.getByLabelText('考核周期'), { target: { value: '2026-Q2' } });
   expect(screen.getByRole('alert').textContent).toContain('已有考核单');
+  expect((screen.getByRole('button', { name: '提交考核单' }) as HTMLButtonElement).disabled).toBe(true);
+});
+it('uses the selected version for live totals and submission while preserving historical scoring', () => {
+  mount();
+  fireEvent.change(screen.getByLabelText('考核模板'), { target: { value: 'version-1' } });
+  for (const [label, score] of [['质量（权重 100%）', '80'], ['交付（权重 0%）', '0'], ['价格（权重 0%）', '0'], ['服务（权重 0%）', '0']]) fireEvent.change(screen.getByLabelText(label), { target: { value: score } });
+  expect(screen.getByText('80.00')).toBeTruthy();
+  expect(screen.getByText('历史模板 · v1 · 质量 0% / 交付 100% / 价格 0% / 服务 0%')).toBeTruthy();
+  fireEvent.change(screen.getByLabelText('考核依据'), { target: { value: '验收记录' } });
+  fireEvent.click(screen.getByRole('button', { name: '提交考核单' }));
+  expect(mocks.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ templateVersionId: 'version-1' }) }), expect.anything());
+});
+it('does not offer disabled templates or permit submission when template loading fails', () => {
+  mocks.enabled = false; mocks.templateError = true; mount();
+  expect(screen.queryByRole('option', { name: '质量优先 · v2' })).toBeNull();
+  expect(screen.getByText('模板加载失败，暂不能提交。')).toBeTruthy();
   expect((screen.getByRole('button', { name: '提交考核单' }) as HTMLButtonElement).disabled).toBe(true);
 });

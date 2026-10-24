@@ -25,18 +25,21 @@ public class SupplierInvitationApplicationService {
   private final ObjectMapper objectMapper;
   private final PermissionService permissions;
   private final AuditLogApplicationService audit;
+  private final InvitationNotificationService notifications;
 
   public SupplierInvitationApplicationService(
       SupplierInvitationMapper invitationMapper,
       BuyerSupplierRelationMapper relationMapper,
       ObjectMapper objectMapper,
       PermissionService permissions,
-      AuditLogApplicationService audit) {
+      AuditLogApplicationService audit,
+      InvitationNotificationService notifications) {
     this.invitationMapper = invitationMapper;
     this.relationMapper = relationMapper;
     this.objectMapper = objectMapper;
     this.permissions = permissions;
     this.audit = audit;
+    this.notifications = notifications;
   }
 
   public List<SupplierInvitationResponse> listInvitations() {
@@ -139,7 +142,9 @@ public class SupplierInvitationApplicationService {
     audit.recordTenantAction(
         tenantId, "supplier_invitation.create", "supplier_invitation", id,
         supplierId == null ? "采购方创建线下邀请记录，未发送平台邀请" : "采购方向平台供应商发起合作邀请");
-    return toResponse(invitationMapper.findByTenantAndId(tenantId, id));
+    SupplierInvitation created = invitationMapper.findByTenantAndId(tenantId, id);
+    notifications.notifyEvent(created, "create");
+    return toResponse(created);
   }
 
   @Transactional
@@ -204,7 +209,9 @@ public class SupplierInvitationApplicationService {
     audit.recordTenantAction(
         tenantId, "supplier_invitation." + action, "supplier_invitation", id,
         actorSide + "办理邀请：" + target + (invitation.supplierId() == null ? "（线下反馈记录）" : ""));
-    return toResponse(invitationMapper.findByTenantAndId(tenantId, id));
+    SupplierInvitation updated = invitationMapper.findByTenantAndId(tenantId, id);
+    notifications.notifyEvent(updated, action);
+    return toResponse(updated);
   }
 
   private SupplierInvitationResponse toResponse(SupplierInvitation i) {

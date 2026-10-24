@@ -13,4 +13,5 @@ export interface CreateSupplierEvaluationRequest {
   priceScore: number;
   serviceScore: number;
   comment?: string;
+  templateVersionId?: string;
 }

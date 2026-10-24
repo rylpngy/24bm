@@ -42,7 +42,7 @@ public final class PortalPermissionPolicy {
         case "tenders" -> "tender";
         case "orders", "deliveries" -> "order";
         case "receipts" -> "receipt";
-        case "suppliers", "supplier-invitations" -> "supplier";
+        case "suppliers", "supplier-invitations", "supplier-evaluation-templates" -> "supplier";
         case "analytics" -> "analytics";
         case "budgets" -> "budget";
         case "audit-logs" -> "audit";

@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
 @RequestMapping("/api/v1/buyer/suppliers")
@@ -31,8 +32,9 @@ public class SupplierEvaluationController {
 
   // 按实测履约(收货验收/准时率)自动生成绩效评分建议。
   @GetMapping("/{relationId}/auto-score")
-  public ApiResponse<AutoScoreSuggestionResponse> autoScore(@PathVariable String relationId) {
-    return ApiResponse.ok(evaluationApplicationService.autoScore(relationId));
+  public ApiResponse<AutoScoreSuggestionResponse> autoScore(@PathVariable String relationId,
+      @RequestParam(required = false) String period) {
+    return ApiResponse.ok(evaluationApplicationService.autoScore(relationId, period));
   }
 
   @PostMapping("/{relationId}/evaluations")

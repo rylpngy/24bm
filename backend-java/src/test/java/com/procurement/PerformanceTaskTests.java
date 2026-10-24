@@ -23,7 +23,8 @@ class PerformanceTaskTests {
   final PerformanceTaskApplicationService service = new PerformanceTaskApplicationService(
       mapper, mock(BuyerSupplierRelationMapper.class), evaluations, mock(PermissionService.class),
       mock(com.procurement.audit.application.AuditLogApplicationService.class),
-      mock(com.procurement.supplier.application.PerformanceTaskNotificationService.class));
+      mock(com.procurement.supplier.application.PerformanceTaskNotificationService.class),
+      mock(com.procurement.supplier.application.SupplierEvaluationTemplateService.class));
   @AfterEach void clear() { TenantContext.clear(); }
 
   @Test void periodIsNormalizedAndStrict() {

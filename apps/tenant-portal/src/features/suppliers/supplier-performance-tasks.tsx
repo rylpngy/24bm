@@ -3,11 +3,11 @@ import { createPortal } from 'react-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus, RefreshCw, X } from 'lucide-react';
 import {
-  type PerformanceTask, type PerformanceTaskDraft, type PerformanceTaskEvaluation,
-  listBuyerPerformanceTasks, listPerformanceAssignees, createPerformanceTask,
-  evaluatePerformanceTask, requestPerformanceRemediation, reviewPerformanceTask,
+  listPerformanceAssignees,
+  requestPerformanceRemediation, reviewPerformanceTask,
   usePerformanceEvidence,
 } from '@24bid/api-client';
+import { type PerformanceTask, type PerformanceTaskDraft, type PerformanceTaskEvaluation, listBuyerPerformanceTasks, createPerformanceTask, evaluatePerformanceTask, useEvaluationTemplates, legacyScoring, scoringDescription, evaluationDimensions, calculateEvaluationTotal } from '@24bid/api-client/supplier-evaluation-templates';
 import { EvidencePanel, FeedbackNotice, Pagination, StatusPill } from '@24bid/ui';
 import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
 import { useAuthStore } from '../../lib/auth-store';
@@ -76,18 +76,22 @@ export function SupplierPerformanceTasks({ relationId }: { relationId: string })
 }
 
 function CreateTaskDialog({ relationId, onClose, refresh, onComplete }: { relationId: string; onClose: () => void; refresh: () => Promise<unknown>; onComplete: () => void }) {
+  const templates = useEvaluationTemplates();
+  const availableTemplates = (templates.data?.data ?? []).filter(t => t.enabled);
   const [draft, setDraft] = useState<PerformanceTaskDraft>(() => ({ period: `${new Date().getFullYear()}-Q${Math.floor(new Date().getMonth() / 3) + 1}`, assigneeId: '', dueDate: '' }));
   const assignees = useQuery({ queryKey: [`/api/v1/buyer/suppliers/${relationId}/performance-assignees`], queryFn: ({ signal }) => listPerformanceAssignees(relationId, signal) });
   const lock = useRef(false);
   const create = useMutation({ mutationFn: () => createPerformanceTask(relationId, { ...draft, period: draft.period.trim() }), onSuccess: async () => { await refresh(); onComplete(); }, onSettled: () => { lock.current = false; } });
-  const valid = /^(\d{4}|\d{4}-(Q[1-4]|0[1-9]|1[0-2]))$/.test(draft.period.trim()) && !!draft.dueDate && !assignees.isError && (assignees.data?.data ?? []).some(a => a.id === draft.assigneeId);
+  const valid = !templates.isPending && !templates.isError && (!draft.templateVersionId || availableTemplates.some(t => t.id === draft.templateVersionId)) && /^(\d{4}|\d{4}-(Q[1-4]|0[1-9]|1[0-2]))$/.test(draft.period.trim()) && !!draft.dueDate && !assignees.isError && (assignees.data?.data ?? []).some(a => a.id === draft.assigneeId);
   return <TaskDialog title="新建考核任务" busy={create.isPending} onClose={onClose}>
     <form onSubmit={event => { event.preventDefault(); if (!valid || lock.current || create.isPending) return; lock.current = true; create.mutate(); }} className="space-y-4">
       <fieldset disabled={create.isPending} className="grid min-w-0 gap-3 sm:grid-cols-2">
         <label className="text-sm font-bold">任务周期 *<input aria-label="任务周期" required value={draft.period} onChange={e => setDraft({ ...draft, period: e.target.value })} className={inputClass} /></label>
         <label className="text-sm font-bold">考核人 *<select aria-label="考核人" required value={draft.assigneeId} onChange={e => setDraft({ ...draft, assigneeId: e.target.value })} className={inputClass}><option value="">请选择</option>{(assignees.data?.data ?? []).map(a => <option key={a.id} value={a.id}>{a.displayName}</option>)}</select></label>
         <label className="text-sm font-bold">考核截止日期 *<input aria-label="考核截止日期" type="date" required value={draft.dueDate} onChange={e => setDraft({ ...draft, dueDate: e.target.value })} className={inputClass} /></label>
+        <label className="min-w-0 text-sm font-bold">考核模板<select aria-label="任务考核模板" value={draft.templateVersionId ?? ''} disabled={templates.isPending || templates.isError} onChange={e => setDraft({ ...draft, templateVersionId: e.target.value || undefined })} className={inputClass}><option value="">默认模板 · v0</option>{availableTemplates.map(t => <option key={t.id} value={t.id}>{t.name} · v{t.version}</option>)}{draft.templateVersionId && !availableTemplates.some(t => t.id === draft.templateVersionId) && <option value={draft.templateVersionId}>所选模板已不可用</option>}</select></label>
       </fieldset>
+      {templates.isError && <div role="alert"><FeedbackNotice tone="error" message="模板加载失败。" /><button type="button" className={buttonClass} onClick={() => void templates.refetch()}>重试模板</button></div>}
       {assignees.isError && <div role="alert"><FeedbackNotice tone="error" message="考核人加载失败。" /><button type="button" className={buttonClass} onClick={() => void assignees.refetch()}>重试</button></div>}
       {create.isError && <div role="alert"><FeedbackNotice tone="error" message={errorMessage(create.error)} /></div>}
       <button type="submit" disabled={!valid || create.isPending} className={buttonClass}>{create.isPending ? '创建中…' : '创建任务'}</button>
@@ -96,6 +100,7 @@ function CreateTaskDialog({ relationId, onClose, refresh, onComplete }: { relati
 }
 
 function TaskDetail({ task, canManage, refreshing, refreshError, notice, userId, onClose, refresh, onComplete }: { task: PerformanceTask; canManage: boolean; refreshing: boolean; refreshError: boolean; notice: string; userId?: string; onClose: () => void; refresh: (updated?: PerformanceTask) => Promise<unknown>; onComplete: () => void }) {
+  const scoring = task.scoring ?? legacyScoring;
   const evidence = usePerformanceEvidence(task.id, task.version, task.relationId);
   // A refetch must not attach an existing draft to a newer remediation round.
   const [expectedVersion] = useState(task.version);
@@ -129,10 +134,12 @@ function TaskDetail({ task, canManage, refreshing, refreshError, notice, userId,
     {staleDraft && <div role="alert" className="mb-3"><FeedbackNotice tone="error" message="任务已更新，草稿已保留，请重新打开任务后提交。" /></div>}
     {notice && <div className="mb-3"><FeedbackNotice tone="success" message={notice} /></div>}
     <div className="flex flex-wrap items-center gap-3 text-sm"><strong>{task.period}</strong><StatusPill label={statusNames[task.status] ?? task.status} /><span>{task.assigneeName}</span><span>截止 {task.dueDate}</span>{task.totalScore != null && <span>{task.totalScore}分</span>}</div>
+    <p className="mt-2 break-words text-xs text-slate-500">{scoringDescription(scoring)}</p>
     {task.requirement && <div className="mt-4"><h4 className="text-sm font-bold">整改要求</h4><p className="mt-1 whitespace-pre-wrap break-words text-sm">{task.requirement}</p></div>}
     {task.response && <div className="mt-4"><h4 className="text-sm font-bold">整改反馈</h4><p className="mt-1 whitespace-pre-wrap break-words text-sm">{task.response}</p></div>}
     <fieldset disabled={mutation.isPending} className="mt-4 min-w-0 space-y-3">
-      {evaluate && <><div className="grid gap-3 sm:grid-cols-2">{(['qualityScore', 'deliveryScore', 'priceScore', 'serviceScore'] as const).map((key, index) => <label key={key} className="text-sm font-bold">{['质量评分', '交付评分', '价格评分', '服务评分'][index]} *<input aria-label={['质量评分', '交付评分', '价格评分', '服务评分'][index]} type="number" min={0} max={100} step="0.01" required value={scores[key]} onChange={e => setScores({ ...scores, [key]: e.target.value })} className={inputClass} /></label>)}</div>
+      {evaluate && <><div className="grid gap-3 sm:grid-cols-2">{evaluationDimensions.map(({ key, weight, label }) => <label key={key} className="text-sm font-bold">{label}评分（权重 {scoring[weight]}%） *<input aria-label={`${label}评分`} type="number" min={0} max={100} step="0.01" required value={scores[key]} onChange={e => setScores({ ...scores, [key]: e.target.value })} className={inputClass} /></label>)}</div>
+        <p className="text-sm font-bold">综合分(实时)：{validScores ? calculateEvaluationTotal(scores, scoring).toFixed(2) : '—'}</p>
         <label className="block text-sm font-bold">任务考核依据 *<textarea aria-label="任务考核依据" required maxLength={2000} value={comment} onChange={e => setComment(e.target.value)} className={`${inputClass} min-h-24`} /></label>
         <button type="button" disabled={!validScores || !comment.trim() || submitDisabled} className={buttonClass} onClick={() => submit('evaluate')}>提交任务考核</button></>}
       {request && <><label className="block text-sm font-bold">整改要求 *<textarea aria-label="整改要求" required maxLength={2000} value={requirement} onChange={e => setRequirement(e.target.value)} className={`${inputClass} min-h-24`} /></label>

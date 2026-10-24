@@ -21,8 +21,11 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ApiResponseListSupplierPerformanceComparisonResponse,
   ApiResponseSupplierFulfillmentMetricsResponse,
-  ApiResponseVoid
+  ApiResponseVoid,
+  SupplierFulfillmentFulfillmentMetricsParams,
+  SupplierFulfillmentPerformanceComparisonParams
 } from '.././model';
 
 import { customInstance } from '../../http-client';
@@ -33,12 +36,14 @@ import type { ErrorType } from '../../http-client';
 
 export const supplierFulfillmentFulfillmentMetrics = (
     supplierId: string,
+    params?: SupplierFulfillmentFulfillmentMetricsParams,
  signal?: AbortSignal
 ) => {
 
 
       return customInstance<ApiResponseSupplierFulfillmentMetricsResponse>(
-      {url: `/api/v1/buyer/suppliers/${supplierId}/fulfillment-metrics`, method: 'GET', signal
+      {url: `/api/v1/buyer/suppliers/${supplierId}/fulfillment-metrics`, method: 'GET',
+        params, signal
     },
       );
     }
@@ -46,23 +51,25 @@ export const supplierFulfillmentFulfillmentMetrics = (
 
 
 
-export const getSupplierFulfillmentFulfillmentMetricsQueryKey = (supplierId?: string,) => {
+export const getSupplierFulfillmentFulfillmentMetricsQueryKey = (supplierId?: string,
+    params?: SupplierFulfillmentFulfillmentMetricsParams,) => {
     return [
-    `/api/v1/buyer/suppliers/${supplierId}/fulfillment-metrics`
+    `/api/v1/buyer/suppliers/${supplierId}/fulfillment-metrics`, ...(params ? [params]: [])
     ] as const;
     }
 
 
-export const getSupplierFulfillmentFulfillmentMetricsQueryOptions = <TData = Awaited<ReturnType<typeof supplierFulfillmentFulfillmentMetrics>>, TError = ErrorType<ApiResponseVoid>>(supplierId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierFulfillmentFulfillmentMetrics>>, TError, TData>>, }
+export const getSupplierFulfillmentFulfillmentMetricsQueryOptions = <TData = Awaited<ReturnType<typeof supplierFulfillmentFulfillmentMetrics>>, TError = ErrorType<ApiResponseVoid>>(supplierId: string,
+    params?: SupplierFulfillmentFulfillmentMetricsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierFulfillmentFulfillmentMetrics>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getSupplierFulfillmentFulfillmentMetricsQueryKey(supplierId);
+  const queryKey =  queryOptions?.queryKey ?? getSupplierFulfillmentFulfillmentMetricsQueryKey(supplierId,params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierFulfillmentFulfillmentMetrics>>> = ({ signal }) => supplierFulfillmentFulfillmentMetrics(supplierId, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierFulfillmentFulfillmentMetrics>>> = ({ signal }) => supplierFulfillmentFulfillmentMetrics(supplierId,params, signal);
 
 
 
@@ -76,7 +83,8 @@ export type SupplierFulfillmentFulfillmentMetricsQueryError = ErrorType<ApiRespo
 
 
 export function useSupplierFulfillmentFulfillmentMetrics<TData = Awaited<ReturnType<typeof supplierFulfillmentFulfillmentMetrics>>, TError = ErrorType<ApiResponseVoid>>(
- supplierId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierFulfillmentFulfillmentMetrics>>, TError, TData>> & Pick<
+ supplierId: string,
+    params: undefined |  SupplierFulfillmentFulfillmentMetricsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierFulfillmentFulfillmentMetrics>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof supplierFulfillmentFulfillmentMetrics>>,
           TError,
@@ -86,7 +94,8 @@ export function useSupplierFulfillmentFulfillmentMetrics<TData = Awaited<ReturnT
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useSupplierFulfillmentFulfillmentMetrics<TData = Awaited<ReturnType<typeof supplierFulfillmentFulfillmentMetrics>>, TError = ErrorType<ApiResponseVoid>>(
- supplierId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierFulfillmentFulfillmentMetrics>>, TError, TData>> & Pick<
+ supplierId: string,
+    params?: SupplierFulfillmentFulfillmentMetricsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierFulfillmentFulfillmentMetrics>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof supplierFulfillmentFulfillmentMetrics>>,
           TError,
@@ -96,16 +105,105 @@ export function useSupplierFulfillmentFulfillmentMetrics<TData = Awaited<ReturnT
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useSupplierFulfillmentFulfillmentMetrics<TData = Awaited<ReturnType<typeof supplierFulfillmentFulfillmentMetrics>>, TError = ErrorType<ApiResponseVoid>>(
- supplierId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierFulfillmentFulfillmentMetrics>>, TError, TData>>, }
+ supplierId: string,
+    params?: SupplierFulfillmentFulfillmentMetricsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierFulfillmentFulfillmentMetrics>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
 export function useSupplierFulfillmentFulfillmentMetrics<TData = Awaited<ReturnType<typeof supplierFulfillmentFulfillmentMetrics>>, TError = ErrorType<ApiResponseVoid>>(
- supplierId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierFulfillmentFulfillmentMetrics>>, TError, TData>>, }
+ supplierId: string,
+    params?: SupplierFulfillmentFulfillmentMetricsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierFulfillmentFulfillmentMetrics>>, TError, TData>>, }
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getSupplierFulfillmentFulfillmentMetricsQueryOptions(supplierId,options)
+  const queryOptions = getSupplierFulfillmentFulfillmentMetricsQueryOptions(supplierId,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const supplierFulfillmentPerformanceComparison = (
+    params: SupplierFulfillmentPerformanceComparisonParams,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseListSupplierPerformanceComparisonResponse>(
+      {url: `/api/v1/buyer/suppliers/performance-comparison`, method: 'GET',
+        params, signal
+    },
+      );
+    }
+
+
+
+
+export const getSupplierFulfillmentPerformanceComparisonQueryKey = (params?: SupplierFulfillmentPerformanceComparisonParams,) => {
+    return [
+    `/api/v1/buyer/suppliers/performance-comparison`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+
+export const getSupplierFulfillmentPerformanceComparisonQueryOptions = <TData = Awaited<ReturnType<typeof supplierFulfillmentPerformanceComparison>>, TError = ErrorType<ApiResponseVoid>>(params: SupplierFulfillmentPerformanceComparisonParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierFulfillmentPerformanceComparison>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSupplierFulfillmentPerformanceComparisonQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierFulfillmentPerformanceComparison>>> = ({ signal }) => supplierFulfillmentPerformanceComparison(params, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierFulfillmentPerformanceComparison>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type SupplierFulfillmentPerformanceComparisonQueryResult = NonNullable<Awaited<ReturnType<typeof supplierFulfillmentPerformanceComparison>>>
+export type SupplierFulfillmentPerformanceComparisonQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useSupplierFulfillmentPerformanceComparison<TData = Awaited<ReturnType<typeof supplierFulfillmentPerformanceComparison>>, TError = ErrorType<ApiResponseVoid>>(
+ params: SupplierFulfillmentPerformanceComparisonParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierFulfillmentPerformanceComparison>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof supplierFulfillmentPerformanceComparison>>,
+          TError,
+          Awaited<ReturnType<typeof supplierFulfillmentPerformanceComparison>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSupplierFulfillmentPerformanceComparison<TData = Awaited<ReturnType<typeof supplierFulfillmentPerformanceComparison>>, TError = ErrorType<ApiResponseVoid>>(
+ params: SupplierFulfillmentPerformanceComparisonParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierFulfillmentPerformanceComparison>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof supplierFulfillmentPerformanceComparison>>,
+          TError,
+          Awaited<ReturnType<typeof supplierFulfillmentPerformanceComparison>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSupplierFulfillmentPerformanceComparison<TData = Awaited<ReturnType<typeof supplierFulfillmentPerformanceComparison>>, TError = ErrorType<ApiResponseVoid>>(
+ params: SupplierFulfillmentPerformanceComparisonParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierFulfillmentPerformanceComparison>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useSupplierFulfillmentPerformanceComparison<TData = Awaited<ReturnType<typeof supplierFulfillmentPerformanceComparison>>, TError = ErrorType<ApiResponseVoid>>(
+ params: SupplierFulfillmentPerformanceComparisonParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierFulfillmentPerformanceComparison>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getSupplierFulfillmentPerformanceComparisonQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

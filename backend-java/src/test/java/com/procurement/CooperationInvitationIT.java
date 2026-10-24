@@ -112,6 +112,28 @@ class CooperationInvitationIT {
     assertThat(jdbc.queryForObject("select count(*) from audit_logs where tenant_id=? and action='supplier_invitation.accept'",Long.class,a)).isEqualTo(2);
   }
 
+  @Test void invitationsNotifyActualRecipientsAndDoNotLeakOfflineNotes() {
+    jdbc.update("insert into users(id,supplier_id,name,status) values (?,?,'停用用户','disabled'),(?,?,'只读用户','active')",
+        s+"disabled", s, s+"reader", s);
+    jdbc.update("insert into roles(id,supplier_id,scope,name,permissions) values (?,?,'supplier','只读','[\"supplier:profile:read\"]')", role+"read", s);
+    jdbc.update("insert into user_roles(user_id,role_id) values (?,?)", s+"reader", role+"read");
+    var invitation = create(s);
+    assertThat(jdbc.queryForObject("select count(*) from notifications where tenant_id=? and recipient_id=? and title='收到供应商合作邀请'", Long.class, a, supplier)).isEqualTo(1);
+    assertThat(jdbc.queryForObject("select count(*) from notifications where recipient_id in (?,?)", Long.class, s+"disabled", s+"reader")).isZero();
+    supplier();
+    service.respondSupplier(invitation.id(), new RespondSupplierInvitationRequest("accept"));
+    assertThat(jdbc.queryForObject("select count(*) from notifications where tenant_id=? and recipient_id=? and title='供应商已接受合作邀请'", Long.class, a, buyer)).isEqualTo(1);
+    assertThatThrownBy(() -> service.respondSupplier(invitation.id(), new RespondSupplierInvitationRequest("accept"))).isInstanceOf(IllegalStateException.class);
+    assertThat(jdbc.queryForObject("select count(*) from notifications where tenant_id=? and recipient_id=?", Long.class, a, buyer)).isEqualTo(1);
+    var offline = create(null);
+    service.respond(offline.id(), new RespondSupplierInvitationRequest("accept"));
+    assertThat(jdbc.queryForObject("select count(*) from notifications where tenant_id=?", Long.class, a)).isEqualTo(2);
+    var withdrawn = create(s);
+    service.respond(withdrawn.id(), new RespondSupplierInvitationRequest("withdraw"));
+    assertThat(jdbc.queryForObject("select count(*) from notifications where tenant_id=? and recipient_id=? and title='供应商合作邀请已撤回'", Long.class, a, supplier)).isEqualTo(1);
+    assertThat(jdbc.queryForObject("select count(*) from notifications where tenant_id=? and content like '%邀请说明%'", Long.class, a)).isZero();
+  }
+
   @Test void acceptAndWithdrawRaceHasExactlyOneTransitionAndAudit() throws Exception {
     var invitation=create(s);
     var results=race(() -> supplierRespond(invitation.id(),"accept"),() -> {

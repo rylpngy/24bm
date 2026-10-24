@@ -239,6 +239,8 @@ import org.springframework.test.web.servlet.MvcResult;
     BuyerSupplierController.class,
     com.procurement.supplier.api.SupplierExitController.class,
     com.procurement.supplier.api.SupplierCooperationInvitationController.class,
+    com.procurement.supplier.api.SupplierEvaluationTemplateController.class,
+    com.procurement.supplier.api.SupplierExportController.class,
     com.procurement.supplier.api.SupplierExitItemsController.class,
     BuyerSupplierDiscoveryController.class,
     BuyerSupplierInvitationController.class,
@@ -448,6 +450,12 @@ class HttpSecurityContractTests {
 
   @MockBean
   private com.procurement.supplier.application.SupplierFulfillmentMetricsService supplierFulfillmentMetricsService;
+
+  @MockBean
+  private com.procurement.supplier.application.SupplierEvaluationTemplateService supplierEvaluationTemplateService;
+
+  @MockBean
+  private com.procurement.supplier.application.SupplierExportService supplierExportService;
 
   @MockBean
   private SupplierProfileApplicationService supplierProfileApplicationService;
@@ -746,6 +754,16 @@ class HttpSecurityContractTests {
         .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"))
         .andExpect(header().string("Access-Control-Allow-Methods", org.hamcrest.Matchers.containsString("PUT")))
         .andExpect(header().string("Access-Control-Allow-Headers", org.hamcrest.Matchers.containsString("authorization")));
+  }
+
+  @Test
+  void vitePreflightCanPatchEvaluationTemplateStatus() throws Exception {
+    mockMvc.perform(options("/api/v1/buyer/supplier-evaluation-templates/template-1/enabled")
+            .header("Origin", "http://localhost:5173")
+            .header("Access-Control-Request-Method", "PATCH")
+            .header("Access-Control-Request-Headers", "authorization,content-type"))
+        .andExpect(status().isOk())
+        .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"));
   }
 
   @Test

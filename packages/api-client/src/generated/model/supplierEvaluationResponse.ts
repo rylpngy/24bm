@@ -5,6 +5,7 @@
  * 多租户采购协同管理 SaaS 后端契约（平台 / 采购方 / 供应商三端）。
  * OpenAPI spec version: v1
  */
+import type { SupplierEvaluationScoring } from './supplierEvaluationScoring';
 
 export interface SupplierEvaluationResponse {
   id?: string;
@@ -19,4 +20,5 @@ export interface SupplierEvaluationResponse {
   comment?: string;
   evaluatedBy?: string;
   createdAt?: string;
+  scoring?: SupplierEvaluationScoring;
 }

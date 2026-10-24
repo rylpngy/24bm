@@ -6,6 +6,14 @@ import { SupplierPerformanceTasks } from './supplier-performance-tasks';
 
 const mocks = vi.hoisted(() => ({ manage: true, read: true, userId: 'assignee', status: 'assigned', version: 3,
   create: vi.fn(), evaluate: vi.fn(), request: vi.fn(), review: vi.fn(), list: vi.fn() }));
+vi.mock('@24bid/api-client/supplier-evaluation-templates', async original => ({
+  ...await original<object>(),
+  useEvaluationTemplates: () => ({ data: { data: [
+    { id: 'new-version', templateId: 'group', name: '启用模板', version: 2, enabled: true },
+    { id: 'locked-version', templateId: 'group-disabled', name: '已禁用模板', version: 1, enabled: false },
+  ] } }),
+  listBuyerPerformanceTasks: mocks.list, createPerformanceTask: mocks.create, evaluatePerformanceTask: mocks.evaluate,
+}));
 vi.mock('../../lib/use-buyer-permissions', () => ({ useBuyerPermissions: () => ({ can: (p: string) => p.endsWith(':manage') ? mocks.manage : mocks.read }) }));
 vi.mock('../../lib/auth-store', () => ({ useAuthStore: (select: (s: unknown) => unknown) => select({ session: { userId: mocks.userId } }) }));
 vi.mock('@24bid/api-client', () => ({
@@ -17,7 +25,7 @@ vi.mock('@24bid/api-client', () => ({
 }));
 afterEach(() => { cleanup(); focusManager.setFocused(undefined); vi.clearAllMocks(); mocks.manage = true; mocks.read = true; mocks.userId = 'assignee'; mocks.status = 'assigned'; mocks.version = 3; });
 async function mount() {
-  mocks.list.mockImplementation(async () => ({ data: [{ id: 'task-1', version: mocks.version, relationId: 'rel-1', period: '2026-Q4', assigneeId: 'assignee', assigneeName: '张评审', dueDate: '2026-12-31', status: mocks.status, history: [{ action: 'created', actorName: '管理员', comment: '任务已分派', createdAt: '2026-10-01' }] }] }));
+  mocks.list.mockImplementation(async () => ({ data: [{ id: 'task-1', version: mocks.version, relationId: 'rel-1', period: '2026-Q4', assigneeId: 'assignee', assigneeName: '张评审', dueDate: '2026-12-31', status: mocks.status, scoring: { templateVersionId: 'locked-version', templateId: 'group-disabled', templateName: '已禁用模板', version: 1, qualityWeight: 100, deliveryWeight: 0, priceWeight: 0, serviceWeight: 0 }, history: [{ action: 'created', actorName: '管理员', comment: '任务已分派', createdAt: '2026-10-01' }] }] }));
   render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })}><SupplierPerformanceTasks relationId="rel-1" /></QueryClientProvider>);
   if (mocks.read) await screen.findByRole('button', { name: '查看任务' });
 }
@@ -30,6 +38,26 @@ it('requires explicit assignee and due date for creation', async () => {
   fireEvent.change(screen.getByLabelText('考核人'), { target: { value: 'assignee' } });
   fireEvent.change(screen.getByLabelText('考核截止日期'), { target: { value: '2026-12-31' } });
   expect(screen.getByRole('button', { name: '创建任务' })).toBeEnabled();
+});
+it('locks the selected version at creation and excludes disabled versions', async () => {
+  mocks.create.mockResolvedValue({}); await mount(); fireEvent.click(screen.getByRole('button', { name: '新建考核任务' }));
+  await screen.findByRole('option', { name: '张评审' });
+  expect(screen.queryByRole('option', { name: '已禁用模板 · v1' })).not.toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText('任务考核模板'), { target: { value: 'new-version' } });
+  fireEvent.change(screen.getByLabelText('考核人'), { target: { value: 'assignee' } });
+  fireEvent.change(screen.getByLabelText('考核截止日期'), { target: { value: '2026-12-31' } });
+  fireEvent.click(screen.getByRole('button', { name: '创建任务' }));
+  await waitFor(() => expect(mocks.create).toHaveBeenCalledWith('rel-1', expect.objectContaining({ templateVersionId: 'new-version' })));
+});
+it('uses a disabled assigned snapshot without permitting a template change', async () => {
+  mocks.evaluate.mockRejectedValue(new Error('offline')); await mount(); fireEvent.click(screen.getByRole('button', { name: '查看任务' }));
+  expect(screen.queryByLabelText('任务考核模板')).not.toBeInTheDocument();
+  expect(screen.getByText('已禁用模板 · v1 · 质量 100% / 交付 0% / 价格 0% / 服务 0%')).toBeInTheDocument();
+  for (const name of ['质量评分', '交付评分', '价格评分', '服务评分']) fireEvent.change(screen.getByLabelText(name), { target: { value: name === '质量评分' ? '80' : '0' } });
+  expect(screen.getByText('综合分(实时)：80.00')).toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText('任务考核依据'), { target: { value: '验收记录' } });
+  fireEvent.click(screen.getByRole('button', { name: '提交任务考核' }));
+  await waitFor(() => expect(mocks.evaluate).toHaveBeenCalledWith('rel-1', 'task-1', { qualityScore: 80, deliveryScore: 0, priceScore: 0, serviceScore: 0, comment: '验收记录' }));
 });
 it('does not let an owner evaluate another assignee task', async () => {
   mocks.userId = 'owner'; await mount(); fireEvent.click(screen.getByRole('button', { name: '查看任务' }));

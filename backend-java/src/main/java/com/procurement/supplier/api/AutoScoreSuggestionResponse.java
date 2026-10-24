@@ -2,7 +2,7 @@ package com.procurement.supplier.api;
 
 import java.math.BigDecimal;
 
-// 按实测履约数据生成的绩效评分建议:质量=合格率、交付=准时率,价格/服务取默认基准。
+// Only observed quality/delivery scores are populated; price/service/total/tier remain null.
 public record AutoScoreSuggestionResponse(
     BigDecimal qualityScore,
     BigDecimal deliveryScore,

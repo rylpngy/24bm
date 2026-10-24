@@ -11,11 +11,9 @@ import com.procurement.supplier.domain.BuyerSupplierRelation;
 import com.procurement.supplier.domain.SupplierCooperationTier;
 import com.procurement.supplier.domain.SupplierEvaluation;
 import com.procurement.supplier.domain.SupplierEvaluationPeriod;
-import com.procurement.supplier.domain.SupplierFulfillmentMetrics;
 import com.procurement.supplier.domain.SupplierPerformanceScoring;
 import com.procurement.supplier.infrastructure.BuyerSupplierRelationMapper;
 import com.procurement.supplier.infrastructure.SupplierEvaluationMapper;
-import com.procurement.supplier.infrastructure.SupplierFulfillmentMetricsMapper;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
@@ -25,46 +23,44 @@ import org.springframework.transaction.annotation.Transactional;
 /** SRM 绩效考核：多维周期评估 + 综合分驱动的生命周期标记建议与调级。 */
 @Service
 public class SupplierEvaluationApplicationService {
-  private static final BigDecimal DEFAULT_DIMENSION = new BigDecimal("80");
-
   private final SupplierEvaluationMapper evaluationMapper;
   private final BuyerSupplierRelationMapper relationMapper;
-  private final SupplierFulfillmentMetricsMapper metricsMapper;
+  private final SupplierFulfillmentMetricsService metrics;
+  private final SupplierEvaluationTemplateService templates;
   private final AuditLogApplicationService audit;
 
   public SupplierEvaluationApplicationService(
       SupplierEvaluationMapper evaluationMapper,
       BuyerSupplierRelationMapper relationMapper,
-      SupplierFulfillmentMetricsMapper metricsMapper,
-      AuditLogApplicationService audit) {
+      SupplierFulfillmentMetricsService metrics,
+      AuditLogApplicationService audit,
+      SupplierEvaluationTemplateService templates) {
     this.evaluationMapper = evaluationMapper;
     this.relationMapper = relationMapper;
-    this.metricsMapper = metricsMapper;
+    this.metrics = metrics;
+    this.templates = templates;
     this.audit = audit;
   }
 
-  // 按实测履约自动评分:质量=合格率、交付=准时率;价格/服务无客观数据,取默认基准 80。
   public AutoScoreSuggestionResponse autoScore(String relationId) {
+    return autoScore(relationId, null);
+  }
+
+  public AutoScoreSuggestionResponse autoScore(String relationId, String period) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer supplier evaluation APIs");
     BuyerSupplierRelation relation = requireRelation(tenantId, relationId);
-    SupplierFulfillmentMetrics m = metricsMapper.aggregate(tenantId, relation.supplierId());
-    int receiptCount = m == null ? 0 : m.receiptCount();
+    var m = metrics.metricsForSupplier(relation.supplierId(), period);
+    int receiptCount = m.receiptCount();
     if (receiptCount == 0) {
       return new AutoScoreSuggestionResponse(
           null, null, null, null, null, null, 0, false,
           "暂无收货验收数据,无法按实测履约自动评分。");
     }
-    BigDecimal quality = m.totalReceived() > 0
-        ? BigDecimal.valueOf(Math.round(m.totalQualified() * 100f / m.totalReceived()))
-        : DEFAULT_DIMENSION;
-    BigDecimal delivery = BigDecimal.valueOf(Math.round(m.onTimeCount() * 100f / receiptCount));
-    BigDecimal total =
-        SupplierPerformanceScoring.totalScore(quality, delivery, DEFAULT_DIMENSION, DEFAULT_DIMENSION);
-    String tier = SupplierPerformanceScoring.suggestTier(total);
+    BigDecimal quality = m.derivedQualityScore() == null ? null : BigDecimal.valueOf(m.derivedQualityScore());
+    BigDecimal delivery = m.derivedDeliveryScore() == null ? null : BigDecimal.valueOf(m.derivedDeliveryScore());
     return new AutoScoreSuggestionResponse(
-        quality, delivery, DEFAULT_DIMENSION, DEFAULT_DIMENSION, total, tier, receiptCount, true,
-        "基于 " + receiptCount + " 次收货验收:质量=合格率 " + quality + "、交付=准时率 " + delivery
-            + ";价格/服务取默认基准 80。");
+        quality, delivery, null, null, null, null, receiptCount, quality != null || delivery != null,
+        "基于可见收货验收数据，仅提供实测质量/交付参考；价格、服务需人工评分后计算综合分。");
   }
 
   public List<SupplierEvaluationResponse> listEvaluations(String relationId) {
@@ -122,7 +118,9 @@ public class SupplierEvaluationApplicationService {
       throw new IllegalStateException("该周期已存在考核单: " + period);
     }
 
-    BigDecimal total = SupplierPerformanceScoring.totalScore(
+    var scoring = taskId == null ? templates.selectForCreate(request.templateVersionId())
+        : templates.assigned(tenantId, evaluationMapper.taskTemplateVersionId(tenantId, taskId));
+    BigDecimal total = scoring.total(
         request.qualityScore(), request.deliveryScore(), request.priceScore(), request.serviceScore());
     String suggestedTier = SupplierPerformanceScoring.suggestTier(total);
 
@@ -139,7 +137,8 @@ public class SupplierEvaluationApplicationService {
         total,
         suggestedTier,
         request.comment(),
-        userId);
+        userId,
+        templates.snapshot(scoring));
 
     audit.recordCurrentTenantAction("supplier_evaluation.created", AuditTargetType.BUYER_SUPPLIER_RELATION,
         relationId, "考核单=" + id + "，周期=" + period + "，综合分=" + total + "，建议层级=" + suggestedTier);
@@ -188,6 +187,7 @@ public class SupplierEvaluationApplicationService {
         e.suggestedTier(),
         e.comment(),
         e.evaluatedBy(),
-        e.createdAt());
+        e.createdAt(),
+        templates.readSnapshot(evaluationMapper.scoringSnapshot(e.tenantId(), e.id())));
   }
 }

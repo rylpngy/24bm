@@ -17,4 +17,5 @@ export interface SupplierInvitationResponse {
   linkedToKnownSupplier?: boolean;
   createdAt?: string;
   respondedAt?: string;
+  buyerName?: string;
 }

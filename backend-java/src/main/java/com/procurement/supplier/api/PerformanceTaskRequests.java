@@ -7,7 +7,11 @@ import java.time.LocalDate;
 public final class PerformanceTaskRequests {
   private PerformanceTaskRequests() {}
   public record Create(@NotBlank String period, @NotBlank String assigneeId,
-      @NotNull LocalDate dueDate) {}
+      @NotNull LocalDate dueDate, String templateVersionId) {
+    public Create(String period, String assigneeId, LocalDate dueDate) {
+      this(period, assigneeId, dueDate, null);
+    }
+  }
   public record Evaluate(@NotNull BigDecimal qualityScore, @NotNull BigDecimal deliveryScore,
       @NotNull BigDecimal priceScore, @NotNull BigDecimal serviceScore, @NotBlank @Size(max = 10000) String comment) {}
   public record Remediation(@NotBlank @Size(max = 10000) String requirement,

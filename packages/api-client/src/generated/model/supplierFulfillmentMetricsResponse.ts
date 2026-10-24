@@ -16,4 +16,8 @@ export interface SupplierFulfillmentMetricsResponse {
   qualifiedRate?: number;
   derivedQualityScore?: number;
   derivedDeliveryScore?: number;
+  period?: string;
+  startDate?: string;
+  endDateExclusive?: string;
+  scheduledReceiptCount?: number;
 }

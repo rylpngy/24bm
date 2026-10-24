@@ -2,21 +2,13 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   useSupplierEvaluationConfirmTier,
-  useSupplierEvaluationCreateEvaluation,
-  useSupplierEvaluationListEvaluations,
   getSupplierPeriodFulfillment,
 } from '@24bid/api-client';
+import { useScoredSupplierEvaluations, useCreateScoredSupplierEvaluation, useEvaluationTemplates, evaluationDimensions as DIMENSIONS, legacyScoring, templateScoring, scoringDescription, calculateEvaluationTotal } from '@24bid/api-client/supplier-evaluation-templates';
 import { suggestTier } from '@24bid/shared';
 import { FeedbackNotice, MiniFact, PrimaryActionButton, StatusPill } from '@24bid/ui';
 import { currentPerformanceQuarter, isPerformancePeriod } from './performance-period';
 import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
-
-const DIMENSIONS = [
-  { key: 'qualityScore', label: '质量', weight: 0.35 },
-  { key: 'deliveryScore', label: '交付', weight: 0.3 },
-  { key: 'priceScore', label: '价格', weight: 0.2 },
-  { key: 'serviceScore', label: '服务', weight: 0.15 },
-] as const;
 
 type DimKey = (typeof DIMENSIONS)[number]['key'];
 
@@ -40,7 +32,13 @@ export function SupplierEvaluationPanel({
   const [selectedEvaluation, setSelectedEvaluation] = useState('');
   const [feedback, setFeedback] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
 
-  const history = useSupplierEvaluationListEvaluations(relationId);
+  const history = useScoredSupplierEvaluations(relationId);
+  const templates = useEvaluationTemplates();
+  const [templateVersionId, setTemplateVersionId] = useState('');
+  const availableTemplates = (templates.data?.data ?? []).filter(t => t.enabled);
+  const selectedTemplate = (templates.data?.data ?? []).find(t => t.id === templateVersionId);
+  const scoring = selectedTemplate ? templateScoring(selectedTemplate) : legacyScoring;
+  const templateReady = !templates.isPending && !templates.isError && (!templateVersionId || !!selectedTemplate?.enabled);
   const validPeriod = isPerformancePeriod(period);
   const metrics = useQuery({
     queryKey: ['/api/v1/buyer/suppliers', supplierId, 'fulfillment-metrics', period.trim()],
@@ -51,13 +49,11 @@ export function SupplierEvaluationPanel({
   const fulfillment = validPeriod && !metrics.isError && !metrics.isFetching && periodMatches ? metrics.data?.data : undefined;
   const qualityAvailable = !!fulfillment && fulfillment.totalReceived > 0 && fulfillment.derivedQualityScore != null;
   const deliveryAvailable = !!fulfillment && fulfillment.scheduledReceiptCount > 0 && fulfillment.derivedDeliveryScore != null;
-  const create = useSupplierEvaluationCreateEvaluation();
+  const create = useCreateScoredSupplierEvaluation();
   const confirm = useSupplierEvaluationConfirmTier();
 
   const validScores = DIMENSIONS.every(d => scores[d.key] !== '' && Number.isFinite(scores[d.key]) && Number(scores[d.key]) >= 0 && Number(scores[d.key]) <= 100);
-  const total = Math.round(
-    DIMENSIONS.reduce((sum, d) => sum + Number(scores[d.key]) * d.weight, 0) * 100,
-  ) / 100;
+  const total = calculateEvaluationTotal(scores, scoring);
   const tier = suggestTier(total);
 
   const refresh = () =>
@@ -69,13 +65,13 @@ export function SupplierEvaluationPanel({
   const evaluations = history.data?.data ?? [];
   const saved = evaluations.find(e => e.id === selectedEvaluation);
   const duplicate = evaluations.some(e => e.period === period.trim());
-  const canSubmit = canWrite && validPeriod && validScores && comment.trim().length > 0 && !duplicate && !history.isLoading && !history.isError;
+  const canSubmit = canWrite && templateReady && validPeriod && validScores && comment.trim().length > 0 && !duplicate && !history.isLoading && !history.isError;
   const failed = (error: unknown) => setFeedback({ tone: 'error', message: (error as { response?: { data?: { message?: string } } })?.response?.data?.message ?? '操作失败，请重试。' });
   const submit = () => {
     if (!canSubmit || create.isPending) return;
     setFeedback(null);
     create.mutate(
-      { relationId, data: { period: period.trim(), qualityScore: Number(scores.qualityScore), deliveryScore: Number(scores.deliveryScore), priceScore: Number(scores.priceScore), serviceScore: Number(scores.serviceScore), comment: comment.trim() } },
+      { relationId, data: { ...(templateVersionId ? { templateVersionId } : {}), period: period.trim(), qualityScore: Number(scores.qualityScore), deliveryScore: Number(scores.deliveryScore), priceScore: Number(scores.priceScore), serviceScore: Number(scores.serviceScore), comment: comment.trim() } },
       { onSuccess: response => { setSelectedEvaluation(response.data?.id ?? ''); setFeedback({ tone: 'success', message: '考核单已保存，合作层级尚未调整。' }); void refresh(); }, onError: failed },
     );
   };
@@ -85,6 +81,15 @@ export function SupplierEvaluationPanel({
       <p className="text-sm font-black text-indigo-900">绩效考核</p>
       {feedback && <div className="mt-3"><FeedbackNotice {...feedback} /></div>}
       {history.isError && <FeedbackNotice tone="error" message="考核历史加载失败，暂不能提交或调级。" />}
+      <label className="mt-3 block min-w-0 text-xs font-bold text-slate-600">考核模板
+        <select aria-label="考核模板" value={templateVersionId} onChange={e => setTemplateVersionId(e.target.value)} disabled={!canWrite || create.isPending || templates.isPending || templates.isError} className="mt-1 h-9 w-full min-w-0 rounded-md border border-slate-200 bg-white px-2 text-sm">
+          <option value="">默认模板 · v0</option>
+          {availableTemplates.map(t => <option key={t.id} value={t.id}>{t.name} · v{t.version}</option>)}
+          {templateVersionId && !selectedTemplate?.enabled && <option value={templateVersionId}>所选模板已不可用</option>}
+        </select>
+      </label>
+      {templates.isError && <div className="mt-2"><FeedbackNotice tone="error" message="模板加载失败，暂不能提交。" /><button type="button" onClick={() => void templates.refetch()} className="min-h-9 text-xs text-blue-700">重试模板</button></div>}
+      <p className="mt-2 break-words text-xs text-slate-500">{templateReady ? scoringDescription(scoring) : '模板待确认'}</p>
 
       {supplierId && <section className="mt-3 border-y border-emerald-200 py-3">
         <p className="text-xs font-black text-emerald-800">所选周期履约参考</p>
@@ -142,10 +147,10 @@ export function SupplierEvaluationPanel({
         {DIMENSIONS.map((d) => (
           <div key={d.key}>
             <label className="text-xs font-black text-slate-500">
-              {d.label}（权重 {Math.round(d.weight * 100)}%）
+              {d.label}（权重 {scoring[d.weight]}%）
             </label>
             <input
-              aria-label={`${d.label}（权重 ${Math.round(d.weight * 100)}%）`}
+              aria-label={`${d.label}（权重 ${scoring[d.weight]}%）`}
               disabled={!canWrite || create.isPending}
               type="number"
               min={0}
@@ -169,10 +174,10 @@ export function SupplierEvaluationPanel({
       {canWrite && (!validScores || !comment.trim()) && <p className="mt-2 text-xs text-amber-700">请填写四项0至100分的评分及考核依据。</p>}
 
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
-        <MiniFact label="综合分(实时)" value={validScores ? total.toFixed(2) : '—'} />
+        <MiniFact label="综合分(实时)" value={validScores && templateReady ? total.toFixed(2) : '—'} />
         <div className="flex items-center gap-2 rounded-lg border border-slate-100 bg-white/80 px-3 py-2">
           <span className="text-[11px] font-black text-slate-400">建议标记</span>
-          <StatusPill label={validScores ? tier : '待评分'} />
+          <StatusPill label={validScores && templateReady ? tier : '待评分'} />
         </div>
       </div>
 
@@ -213,10 +218,11 @@ export function SupplierEvaluationPanel({
             {evaluations.map((e) => (
               <div
                 key={e.id}
-                className="flex items-center justify-between rounded-lg border border-slate-200 bg-white p-3"
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white p-3"
               >
                 <div className="min-w-0">
                   <p className="text-sm font-black text-slate-900">{e.period}</p>
+                  <p className="mt-1 break-words text-xs text-slate-500">{scoringDescription(e.scoring)}</p>
                   <p className="mt-0.5 text-xs font-bold text-slate-500">
                     质 {e.qualityScore} · 交 {e.deliveryScore} · 价 {e.priceScore} · 服 {e.serviceScore}
                   </p>

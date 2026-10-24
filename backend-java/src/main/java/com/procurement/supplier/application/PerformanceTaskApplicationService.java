@@ -27,16 +27,18 @@ public class PerformanceTaskApplicationService {
   private final PermissionService permissions;
   private final AuditLogApplicationService audit;
   private final PerformanceTaskNotificationService notifications;
+  private final SupplierEvaluationTemplateService templates;
 
   public PerformanceTaskApplicationService(PerformanceTaskMapper mapper, BuyerSupplierRelationMapper relations,
       SupplierEvaluationApplicationService evaluations, PermissionService permissions, AuditLogApplicationService audit,
-      PerformanceTaskNotificationService notifications) {
+      PerformanceTaskNotificationService notifications, SupplierEvaluationTemplateService templates) {
     this.mapper = mapper;
     this.relations = relations;
     this.evaluations = evaluations;
     this.permissions = permissions;
     this.audit = audit;
     this.notifications = notifications;
+    this.templates = templates;
   }
 
   public List<PerformanceTaskResponse> listBuyer(String relationId) {
@@ -61,12 +63,13 @@ public class PerformanceTaskApplicationService {
     Assignee assignee = mapper.assignees(tenantId()).stream()
         .filter(a -> a.id().equals(request.assigneeId())).findFirst()
         .orElseThrow(() -> new IllegalArgumentException("负责人必须是本企业具备供应商管理权限的在职采购用户"));
+    var scoring = templates.selectForCreate(request.templateVersionId());
     String id = "perf-" + UUID.randomUUID();
     var task = new PerformanceTask(id, relation.tenantId(), relation.supplierId(), relation.id(),
         relation.supplierName(), null, period, assignee.id(), assignee.displayName(), request.dueDate(),
         "assigned", null, null, null, null, 0L);
     try {
-      mapper.insert(task);
+      mapper.insertWithTemplate(task, scoring.templateVersionId());
     } catch (DuplicateKeyException ex) {
       throw new IllegalStateException("该供应商本周期已存在考核任务", ex);
     }
@@ -210,7 +213,8 @@ public class PerformanceTaskApplicationService {
   private PerformanceTaskResponse response(PerformanceTask task) {
     return new PerformanceTaskResponse(task.id(), task.relationId(), task.supplierName(), task.buyerName(),
         task.period(), task.assigneeId(), task.assigneeName(), task.dueDate(), task.status(), task.evaluationId(),
-        task.totalScore(), task.requirement(), task.response(), mapper.history(task.id()), task.version());
+        task.totalScore(), task.requirement(), task.response(), mapper.history(task.id()), task.version(),
+        templates.assigned(task.tenantId(), mapper.templateVersionId(task.tenantId(), task.id())));
   }
 
   private String tenantId() { return TenantAccessGuard.requireTenantId("performance tasks"); }
