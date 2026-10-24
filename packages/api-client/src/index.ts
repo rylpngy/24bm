@@ -21,12 +21,14 @@ export * from './performance-tasks';
 export * from './supplier-team-roles';
 export * from './supplier-exit-risk';
 export * from './supplier-exit-items';
+export type { SupplierExitItem, SupplierExitItemsPage } from './supplier-exit-items';
 export * from './supplier-cooperation-invitations';
 export * from './performance-evidence';
 export * from './demand-queries';
 export * from './payment-ledger';
 export * from './payment-reviews';
 export * from './attachment-integrity';
+export * from './supplier-period-performance';
 export * from './session-permissions';
 
 export * from './generated/model';

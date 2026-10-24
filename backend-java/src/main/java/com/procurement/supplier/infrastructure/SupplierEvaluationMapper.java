@@ -36,11 +36,11 @@ public interface SupplierEvaluationMapper {
       insert into supplier_evaluations (
         id, tenant_id, supplier_id, period,
         quality_score, delivery_score, price_score, service_score,
-        total_score, suggested_tier, comment, evaluated_by
+        total_score, suggested_tier, comment, evaluated_by, scoring_snapshot
       ) values (
         #{id}, #{tenantId}, #{supplierId}, #{period},
         #{qualityScore}, #{deliveryScore}, #{priceScore}, #{serviceScore},
-        #{totalScore}, #{suggestedTier}, #{comment}, #{evaluatedBy}
+        #{totalScore}, #{suggestedTier}, #{comment}, #{evaluatedBy}, cast(#{scoringSnapshot} as jsonb)
       )
       """)
   void insert(
@@ -55,7 +55,14 @@ public interface SupplierEvaluationMapper {
       @Param("totalScore") BigDecimal totalScore,
       @Param("suggestedTier") String suggestedTier,
       @Param("comment") String comment,
-      @Param("evaluatedBy") String evaluatedBy);
+      @Param("evaluatedBy") String evaluatedBy,
+      @Param("scoringSnapshot") String scoringSnapshot);
+
+  @Select("select scoring_snapshot::text from supplier_evaluations where tenant_id=#{tenantId} and id=#{id}")
+  String scoringSnapshot(@Param("tenantId") String tenantId, @Param("id") String id);
+
+  @Select("select template_version_id from supplier_performance_tasks where tenant_id=#{tenantId} and id=#{taskId}")
+  String taskTemplateVersionId(@Param("tenantId") String tenantId, @Param("taskId") String taskId);
 
   @Select("""
       select id, tenant_id, supplier_id, period,

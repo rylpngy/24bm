@@ -10,4 +10,10 @@ export interface SupplierExitRiskResponse {
   unreceivedOrderCount?: number;
   unpaidInvoiceCount?: number;
   unpaidInvoiceFaceAmount?: number;
+  unarchivedContractCount?: number;
+  openAfterSalesCount?: number;
+  uninvoicedOrderCount?: number;
+  paymentVerificationRequiredCount?: number;
+  remainingInvoiceAmount?: number;
+  blocked?: boolean;
 }

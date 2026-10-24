@@ -6,6 +6,7 @@
  * OpenAPI spec version: v1
  */
 import type { Event } from './event';
+import type { SupplierEvaluationScoring } from './supplierEvaluationScoring';
 
 export interface PerformanceTaskResponse {
   id?: string;
@@ -23,4 +24,5 @@ export interface PerformanceTaskResponse {
   response?: string;
   history?: Event[];
   version?: number;
+  scoring?: SupplierEvaluationScoring;
 }

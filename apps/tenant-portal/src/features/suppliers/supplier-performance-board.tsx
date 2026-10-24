@@ -1,181 +1,89 @@
 import { useState } from 'react';
-import { Award, ChevronRight, Gauge, Star, TrendingUp } from 'lucide-react';
-import { useBuyerSupplierList } from '@24bid/api-client';
-import { FeedbackNotice, Pagination, Panel, SearchInput, StatusPill } from '@24bid/ui';
+import { useQuery } from '@tanstack/react-query';
+import { ChevronRight, Gauge, RefreshCw } from 'lucide-react';
+import { listSupplierPerformanceComparison } from '@24bid/api-client';
+import { FeedbackNotice, Pagination, Panel } from '@24bid/ui';
+import { currentPerformanceQuarter, isPerformancePeriod } from './performance-period';
 
-const RANK_COLORS = ['text-amber-500', 'text-slate-400', 'text-orange-400'];
 const PAGE_SIZE = 8;
+const numberText = (value: number | null | undefined) => value == null ? '—' : String(value);
+const percent = (value: number | null | undefined) => value == null ? '无样本' : `${value}%`;
 
-function scoreLevel(score: number) {
-  if (score >= 90) return '优秀';
-  if (score >= 75) return '良好';
-  if (score >= 60) return '关注';
-  return '预警';
-}
-
-function scoreBadgeTone(score: number) {
-  if (score >= 90) return 'border-emerald-100 bg-emerald-50 text-emerald-700';
-  if (score >= 75) return 'border-blue-100 bg-blue-50 text-blue-700';
-  if (score >= 60) return 'border-amber-100 bg-amber-50 text-amber-700';
-  return 'border-red-100 bg-red-50 text-red-700';
-}
-
-function metricTone(value: number) {
-  if (value >= 90) return 'text-emerald-600';
-  if (value >= 75) return 'text-blue-600';
-  if (value >= 60) return 'text-amber-600';
-  return 'text-red-600';
-}
-
-const summaryItems = [
-  { key: 'scored', label: '已评分', icon: Gauge, tone: 'text-blue-600 bg-blue-50' },
-  { key: 'avg', label: '平均绩效', icon: TrendingUp, tone: 'text-emerald-600 bg-emerald-50' },
-  { key: 'top', label: '最高绩效', icon: Star, tone: 'text-amber-600 bg-amber-50' },
-  { key: 'aLevel', label: 'A 级', icon: Award, tone: 'text-violet-600 bg-violet-50' },
-] as const;
-
-// 绩效看板:跨供应商绩效排名(评分降序)+ 生命周期标记 + 最近考核分。
 export function SupplierPerformanceBoard({ onOpen }: { onOpen: (id: string) => void }) {
+  const [period, setPeriod] = useState(currentPerformanceQuarter);
   const [keyword, setKeyword] = useState('');
   const [page, setPage] = useState(1);
-  const query = useBuyerSupplierList();
-  const all = query.data?.data ?? [];
-  const kw = keyword.toLowerCase();
-  const scored = all
-    .filter((s) => s.performanceScore != null)
-    .filter((s) => !kw || (s.supplierName ?? '').toLowerCase().includes(kw))
-    .sort((a, b) => (b.performanceScore ?? 0) - (a.performanceScore ?? 0));
-
-  const scores = scored.map((s) => s.performanceScore ?? 0);
-  const avg =
-    scores.length > 0 ? Math.round((scores.reduce((x, y) => x + y, 0) / scores.length) * 10) / 10 : null;
-  const pageCount = Math.max(1, Math.ceil(scored.length / PAGE_SIZE));
-  const safePage = Math.min(page, pageCount);
-  const pageItems = scored.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
-
-  return (
-    <Panel title="绩效看板" icon={Gauge} subtitle="跨供应商绩效排名 · 分级 · 最近考核">
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-          {summaryItems.map((item) => {
-            const Icon = item.icon;
-            const value =
-              item.key === 'scored'
-                ? scored.length
-                : item.key === 'avg'
-                  ? avg == null
-                    ? '—'
-                    : avg
-                  : item.key === 'top'
-                    ? scores.length
-                      ? Math.max(...scores)
-                      : '—'
-                    : all.filter((s) => s.level === 'A').length;
-
-            return (
-              <span
-                key={item.key}
-                className="inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-black text-slate-600 shadow-sm shadow-slate-200/40"
-              >
-                <span className={`flex h-5 w-5 items-center justify-center rounded-md ${item.tone}`}>
-                  <Icon size={12} />
-                </span>
-                {item.label}
-                <strong className="font-mono text-sm text-slate-950">{value}</strong>
-              </span>
-            );
-          })}
+  const validPeriod = isPerformancePeriod(period);
+  const query = useQuery({
+    queryKey: ['/api/v1/buyer/suppliers/performance-comparison', period.trim()],
+    enabled: validPeriod,
+    queryFn: async ({ signal }) => {
+      const result = await listSupplierPerformanceComparison(period.trim(), signal);
+      if (!Array.isArray(result.data)) throw new Error('绩效响应不完整');
+      return result;
+    },
+  });
+  const all = validPeriod && !query.isError ? query.data?.data ?? [] : [];
+  const rows = all.filter(row => row.supplierName.toLowerCase().includes(keyword.trim().toLowerCase()))
+    .slice().sort((a, b) => a.totalScore == null ? (b.totalScore == null ? 0 : 1)
+      : b.totalScore == null ? -1 : b.totalScore - a.totalScore);
+  const scored = rows.filter(row => row.totalScore != null);
+  const avg = scored.length ? Math.round(scored.reduce((sum, row) => sum + row.totalScore!, 0) / scored.length * 100) / 100 : null;
+  const safePage = Math.min(page, Math.max(1, Math.ceil(rows.length / PAGE_SIZE)));
+  return <Panel title="同期绩效对比" icon={Gauge} subtitle="">
+    <div className="mb-4 flex flex-wrap items-end gap-3">
+      <label className="w-full min-w-0 text-xs font-bold text-slate-600 sm:w-auto">考核周期
+        <input aria-label="考核周期" value={period} placeholder="YYYY / YYYY-Q1 / YYYY-MM"
+          onChange={event => { setPeriod(event.target.value); setPage(1); }}
+          className="mt-1 block h-9 w-full rounded-md border border-slate-200 px-3 text-sm sm:w-56" />
+      </label>
+      <label className="min-w-0 flex-1 text-xs font-bold text-slate-600">搜索供应商
+        <input value={keyword} onChange={event => { setKeyword(event.target.value); setPage(1); }}
+          className="mt-1 block h-9 w-full rounded-md border border-slate-200 px-3 text-sm" />
+      </label>
+      <button type="button" aria-label="刷新绩效" title="刷新绩效" disabled={!validPeriod || query.isFetching}
+        onClick={() => void query.refetch()} className="h-9 rounded-md border border-slate-200 px-3 disabled:opacity-50"><RefreshCw size={16} /></button>
+    </div>
+    {!validPeriod ? <FeedbackNotice tone="error" message="请填写有效的比较周期：YYYY、YYYY-Q1 至 Q4 或 YYYY-MM。" />
+      : query.isError ? <div className="space-y-3"><FeedbackNotice tone="error" message="绩效加载失败，请重试。" />
+        <button type="button" disabled={query.isFetching} onClick={() => void query.refetch()} className="min-h-9 rounded-md border px-3 text-sm">重试</button></div>
+      : query.isPending ? <FeedbackNotice tone="info" message="正在加载同期绩效…" />
+      : <>
+        <div className="mb-3 flex flex-wrap gap-4 text-xs font-bold text-slate-600">
+          <span>已考核 <strong aria-label="已考核数量">{scored.length}</strong></span>
+          <span>平均绩效 <strong aria-label="平均绩效">{numberText(avg)}</strong></span>
+          <span>最高绩效 <strong>{numberText(scored[0]?.totalScore)}</strong></span>
         </div>
-        <SearchInput
-          className="mb-0 ml-auto"
-          placeholder="按供应商名称搜索"
-          onSearch={(k) => {
-            setKeyword(k);
-            setPage(1);
-          }}
-        />
-      </div>
-
-      {query.isLoading ? (
-        <FeedbackNotice tone="info" message="正在加载绩效数据…" />
-      ) : scored.length === 0 ? (
-        <FeedbackNotice tone="info" message={keyword ? '没有符合条件的供应商。' : '暂无已评分供应商。'} />
-      ) : (
-        <>
-        <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm shadow-slate-200/50">
-          <div className="hidden grid-cols-[48px_minmax(220px,1.5fr)_120px_minmax(260px,1.2fr)_110px_32px] items-center gap-3 border-b border-slate-100 bg-slate-50 px-4 py-2.5 text-xs font-black text-slate-500 lg:grid">
-            <span>排名</span>
-            <span>供应商</span>
-            <span>综合评级</span>
-            <span>评分构成(综合 / 最近实测)</span>
-            <span>最近考核</span>
-            <span />
-          </div>
-          {pageItems.map((s, i) => {
-            const rank = (safePage - 1) * PAGE_SIZE + i;
-            const score = s.performanceScore ?? 0;
-            const lastEvaluation = s.lastEvaluationScore;
-            const delta = lastEvaluation != null ? Math.round((lastEvaluation - score) * 10) / 10 : null;
-            return (
-              <div
-                key={s.id}
-                onClick={() => s.id && onOpen(s.id)}
-                className="grid cursor-pointer gap-3 border-b border-slate-100 px-4 py-3 transition last:border-b-0 hover:bg-blue-50/30 lg:grid-cols-[48px_minmax(220px,1.5fr)_120px_minmax(260px,1.2fr)_110px_32px] lg:items-center"
-              >
-                <span
-                  className={`w-7 text-center font-mono text-lg font-black ${
-                    RANK_COLORS[rank] ?? 'text-slate-300'
-                  }`}
-                >
-                  {rank + 1}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="break-words font-black text-slate-950">{s.supplierName}</p>
-                    {s.cooperationTier && <StatusPill label={s.cooperationTier} />}
-                  </div>
-                  <p className="mt-1 text-xs font-bold text-slate-400">
-                    {s.categories?.slice(0, 2).join('、') || '未维护品类'} · 供应商等级 {s.level ?? '—'}
-                  </p>
+        {rows.length === 0 ? <FeedbackNotice tone="info" message="没有符合条件的供应商。" /> :
+          <ul className="divide-y divide-slate-200">
+            {rows.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE).map(row => <li key={row.relationId}
+              className="grid min-w-0 gap-3 py-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <strong className="break-all text-sm text-slate-950">{row.supplierName}</strong>
+                  <span className="text-xs font-bold text-blue-700">{row.totalScore == null ? '未考核' : `排名 ${scored.indexOf(row) + 1} · 综合 ${row.totalScore}`}</span>
+                  <button type="button" aria-label={`查看${row.supplierName}`} title="查看供应商详情" onClick={() => onOpen(row.relationId)}
+                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-slate-200"><ChevronRight size={16} /></button>
                 </div>
-                <div>
-                  <p className="lg:hidden text-[11px] font-black text-slate-400">综合评级</p>
-                  <span
-                    className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-black ${scoreBadgeTone(score)}`}
-                  >
-                    <strong className="font-mono text-base leading-none">{score}</strong>
-                    {scoreLevel(score)}
-                  </span>
+                <p className="mt-1 break-words text-xs text-slate-500">当前状态 {row.status || '—'} · 当前等级 {row.level || '—'} · 当前合作层级 {row.cooperationTier || '—'}</p>
+                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-700">
+                  <span>质量 {row.totalScore == null ? '—' : numberText(row.qualityScore)}</span>
+                  <span>交付 {row.totalScore == null ? '—' : numberText(row.deliveryScore)}</span>
+                  <span>价格 {row.totalScore == null ? '—' : numberText(row.priceScore)}</span>
+                  <span>服务 {row.totalScore == null ? '—' : numberText(row.serviceScore)}</span>
                 </div>
-                <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs font-black text-slate-500">
-                  <span className="whitespace-nowrap">
-                    综合 <strong className={`font-mono text-sm ${metricTone(score)}`}>{score}</strong>
-                  </span>
-                  <span className="hidden text-slate-200 sm:inline">|</span>
-                  <span className="whitespace-nowrap">
-                    最近实测{' '}
-                    <strong className={`font-mono text-sm ${lastEvaluation != null ? metricTone(lastEvaluation) : 'text-slate-300'}`}>
-                      {lastEvaluation ?? '—'}
-                    </strong>
-                  </span>
-                  {delta != null && (
-                    <span className={`whitespace-nowrap font-mono ${delta >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-                      {delta >= 0 ? '↗' : '↘'}{Math.abs(delta)}
-                    </span>
-                  )}
-                </div>
-                <div>
-                  <p className="lg:hidden text-[11px] font-black text-slate-400">最近考核</p>
-                  <p className="font-mono text-sm font-black text-slate-700">{s.lastEvaluationScore ?? '—'}</p>
-                </div>
-                <ChevronRight size={15} className="text-slate-300" />
+                <p title={row.evaluatedAt ?? undefined} className="mt-1 break-all text-xs text-slate-500">考核时间 {row.evaluatedAt?.slice(0, 16).replace('T', ' ') ?? '—'}</p>
               </div>
-            );
-          })}
-        </div>
-        <Pagination page={safePage} pageSize={PAGE_SIZE} total={scored.length} onPageChange={setPage} />
-        </>
-      )}
-    </Panel>
-  );
+              <div className="min-w-0 space-y-1 break-words text-xs text-slate-600">
+                <p>本期已登记收货准时率：{percent(row.onTimeRate)}</p>
+                <p>合格率：{percent(row.qualifiedRate)}</p>
+                <p>有预计日期 / 总验收：{numberText(row.scheduledReceiptCount)} / {numberText(row.receiptCount)} · 准时 {numberText(row.onTimeCount)}</p>
+                <p>收货数量 / 合格数量：{numberText(row.totalReceived)} / {numberText(row.totalQualified)}</p>
+                <p className="text-slate-400">按收货登记时间归属周期</p>
+              </div>
+            </li>)}
+          </ul>}
+        <Pagination page={safePage} pageSize={PAGE_SIZE} total={rows.length} onPageChange={setPage} />
+      </>}
+  </Panel>;
 }

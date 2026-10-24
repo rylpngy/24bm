@@ -18,8 +18,9 @@ class SupplierInvitationApplicationServiceTests {
   final BuyerSupplierRelationMapper relations = mock(BuyerSupplierRelationMapper.class);
   final PermissionService permissions = mock(PermissionService.class);
   final AuditLogApplicationService audit = mock(AuditLogApplicationService.class);
+  final com.procurement.supplier.application.InvitationNotificationService notices = mock(com.procurement.supplier.application.InvitationNotificationService.class);
   final SupplierInvitationApplicationService service = new SupplierInvitationApplicationService(
-      invitations,relations,new ObjectMapper(),permissions,audit);
+      invitations,relations,new ObjectMapper(),permissions,audit,notices);
   SupplierInvitation pending(String supplierId) {
     return new SupplierInvitation("inv","tenant",supplierId,"真实供应商",null,"设备","合作邀请","待回复",null,null,null,"采购企业");
   }

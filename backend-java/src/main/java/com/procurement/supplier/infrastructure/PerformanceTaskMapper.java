@@ -53,10 +53,15 @@ public interface PerformanceTaskMapper {
   List<String> supplierRecipients(@Param("supplierId") String supplierId);
 
   @Insert("""
-      insert into supplier_performance_tasks(id,tenant_id,supplier_id,relation_id,period,assignee_id,assignee_name,due_date,status)
-      values(#{id},#{tenantId},#{supplierId},#{relationId},#{period},#{assigneeId},#{assigneeName},#{dueDate},'assigned')
+      insert into supplier_performance_tasks(id,tenant_id,supplier_id,relation_id,period,assignee_id,assignee_name,due_date,status,template_version_id)
+      values(#{task.id},#{task.tenantId},#{task.supplierId},#{task.relationId},#{task.period},#{task.assigneeId},#{task.assigneeName},#{task.dueDate},'assigned',#{templateVersionId})
       """)
-  void insert(PerformanceTask task);
+  void insertWithTemplate(@Param("task") PerformanceTask task, @Param("templateVersionId") String templateVersionId);
+
+  default void insert(PerformanceTask task) { insertWithTemplate(task, null); }
+
+  @Select("select template_version_id from supplier_performance_tasks where tenant_id=#{tenantId} and id=#{id}")
+  String templateVersionId(@Param("tenantId") String tenantId, @Param("id") String id);
 
   @Update("""
       update supplier_performance_tasks set status=#{status},evaluation_id=#{evaluationId},total_score=#{totalScore},

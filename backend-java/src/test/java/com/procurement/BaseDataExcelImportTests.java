@@ -55,7 +55,8 @@ class BaseDataExcelImportTests {
   private final SupplierInvitationMapper invitationMapper = mock(SupplierInvitationMapper.class);
   private final BuyerSupplierRelationMapper relationMapper = mock(BuyerSupplierRelationMapper.class);
   private final SupplierInvitationApplicationService invitationService =
-      new SupplierInvitationApplicationService(invitationMapper, relationMapper, new ObjectMapper(), permissionService, auditLogApplicationService);
+      new SupplierInvitationApplicationService(invitationMapper, relationMapper, new ObjectMapper(), permissionService, auditLogApplicationService,
+          mock(com.procurement.supplier.application.InvitationNotificationService.class));
 
   @BeforeEach
   void setTenant() {

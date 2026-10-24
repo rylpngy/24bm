@@ -1,6 +1,6 @@
 import { useState, type ElementType } from 'react';
 import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
-import { BadgeCheck, Boxes, Gauge, Mail, Search, ShieldCheck } from 'lucide-react';
+import { BadgeCheck, Boxes, Gauge, Mail, Search, ShieldCheck, ClipboardList } from 'lucide-react';
 import { useBuyerSupplierList } from '@24bid/api-client';
 import { cn } from '@24bid/ui';
 import { SupplierListView } from './supplier-list-view';
@@ -11,8 +11,10 @@ import { SupplierAdmissionQueue } from './supplier-admission-queue';
 import { SupplierPerformanceBoard } from './supplier-performance-board';
 import { SupplierQualificationsBoard } from './supplier-qualifications-board';
 import { SupplierDetailPage } from './supplier-detail-page';
+import { SupplierEvaluationTemplatesView } from './supplier-evaluation-templates-view';
+import { SupplierExportControl } from './supplier-export-control';
 
-type SubId = 'list' | 'sourcing' | 'invitation' | 'admission' | 'performance' | 'qualifications';
+type SubId = 'list' | 'sourcing' | 'invitation' | 'admission' | 'performance' | 'qualifications' | 'templates';
 
 const ADMISSION_STATUSES = ['待准入', '准入审批中', '已驳回'];
 
@@ -58,15 +60,21 @@ export function SuppliersPage() {
     { id: 'invitation', label: '邀请管理', desc: '入驻邀请与进度', icon: Mail },
     { id: 'admission', label: '准入审批', desc: '资质核验与准入', icon: ShieldCheck, badge: admissionCount || undefined },
     { id: 'performance', label: '绩效看板', desc: '交付与报价表现', icon: Gauge },
+    { id: 'templates', label: '考核模板', desc: '评分权重与版本', icon: ClipboardList },
     { id: 'qualifications', label: '资质管理', desc: '证照有效期跟踪', icon: BadgeCheck },
   ];
   const active = items.find((i) => i.id === sub);
 
   return (
-    <div className="mx-auto max-w-7xl lg:grid lg:grid-cols-[auto_1fr] lg:gap-4">
+    <div className="mx-auto min-w-0 max-w-7xl">
+      <header className="mb-4 flex min-w-0 flex-wrap items-center justify-between gap-3">
+        <h1 className="text-lg font-black text-slate-900">供应商管理</h1>
+        <div className="min-w-0 max-w-full"><SupplierExportControl /></div>
+      </header>
+      <div className="min-w-0 lg:grid lg:grid-cols-[auto_minmax(0,1fr)] lg:gap-4">
       {/* 图标式二级菜单:窄栏仅占左侧一列图标宽度,悬停展开名称与说明,内容区保持原样式 */}
       <aside className="relative z-30 mb-4 lg:mb-0 lg:self-start lg:sticky lg:top-4">
-        <nav className="flex gap-1 rounded-lg border border-slate-200 bg-white p-1.5 shadow-sm shadow-slate-200/50 lg:flex-col">
+        <nav aria-label="供应商管理子菜单" className="flex flex-wrap gap-1 rounded-lg border border-slate-200 bg-white p-1.5 shadow-sm shadow-slate-200/50 lg:flex-col lg:flex-nowrap">
           {items.filter((item) => !['invitation', 'sourcing'].includes(item.id) || can('buyer:supplier:manage')).map((item) => {
             const isActive = sub === item.id;
             return (
@@ -75,6 +83,8 @@ export function SuppliersPage() {
                 type="button"
                 onClick={() => setSub(item.id)}
                 aria-label={item.label}
+                aria-current={isActive ? 'page' : undefined}
+                title={item.label}
                 className={cn(
                   'group relative flex h-11 w-11 shrink-0 items-center justify-center rounded-lg transition',
                   isActive
@@ -89,7 +99,7 @@ export function SuppliersPage() {
                   </span>
                 )}
                 {/* 悬停提示:名称 + 职责说明 */}
-                <span className="pointer-events-none absolute left-full top-1/2 z-20 ml-2.5 hidden -translate-y-1/2 whitespace-nowrap rounded-lg bg-slate-900 px-3 py-2 text-left shadow-lg group-hover:block">
+                <span className="pointer-events-none absolute left-full top-1/2 z-20 ml-2.5 hidden -translate-y-1/2 whitespace-nowrap rounded-lg bg-slate-900 px-3 py-2 text-left shadow-lg lg:group-hover:block">
                   <span className="block text-xs font-black text-white">{item.label}</span>
                   <span className="block text-[11px] font-bold text-slate-400">{item.desc}</span>
                 </span>
@@ -104,9 +114,11 @@ export function SuppliersPage() {
         {sub === 'list' && <SupplierListView onOpen={setSelectedId} onRegister={() => setRegistering(true)} />}
         {sub === 'admission' && <SupplierAdmissionQueue onOpen={setSelectedId} />}
         {sub === 'performance' && <SupplierPerformanceBoard onOpen={setSelectedId} />}
+        {sub === 'templates' && <SupplierEvaluationTemplatesView />}
         {sub === 'qualifications' && <SupplierQualificationsBoard onOpen={setSelectedId} />}
         {sub === 'sourcing' && can('buyer:supplier:manage') && <SupplierSourcingView />}
         {sub === 'invitation' && can('buyer:supplier:manage') && <SupplierInvitationsView />}
+      </div>
       </div>
     </div>
   );

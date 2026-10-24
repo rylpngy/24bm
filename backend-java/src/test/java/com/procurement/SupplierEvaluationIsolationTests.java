@@ -10,7 +10,8 @@ import com.procurement.supplier.application.SupplierEvaluationApplicationService
 import com.procurement.supplier.domain.BuyerSupplierRelation;
 import com.procurement.supplier.infrastructure.BuyerSupplierRelationMapper;
 import com.procurement.supplier.infrastructure.SupplierEvaluationMapper;
-import com.procurement.supplier.infrastructure.SupplierFulfillmentMetricsMapper;
+import com.procurement.supplier.application.SupplierFulfillmentMetricsService;
+import com.procurement.supplier.application.SupplierEvaluationTemplateService;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,10 +20,11 @@ import org.junit.jupiter.api.Test;
 class SupplierEvaluationIsolationTests {
   private final BuyerSupplierRelationMapper relations = mock(BuyerSupplierRelationMapper.class);
   private final SupplierEvaluationMapper evaluations = mock(SupplierEvaluationMapper.class);
-  private final SupplierFulfillmentMetricsMapper metrics = mock(SupplierFulfillmentMetricsMapper.class);
+  private final SupplierFulfillmentMetricsService metrics = mock(SupplierFulfillmentMetricsService.class);
+  private final SupplierEvaluationTemplateService templates = mock(SupplierEvaluationTemplateService.class);
   private final AuditLogApplicationService audit = mock(AuditLogApplicationService.class);
   private final SupplierEvaluationApplicationService service =
-      new SupplierEvaluationApplicationService(evaluations, relations, metrics, audit);
+      new SupplierEvaluationApplicationService(evaluations, relations, metrics, audit, templates);
 
   @BeforeEach void context() { TenantContext.set("tenant-a", null, "reviewer-a"); }
   @AfterEach void clear() { TenantContext.clear(); }

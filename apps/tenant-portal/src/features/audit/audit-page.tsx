@@ -17,6 +17,8 @@ const TARGET_LABELS: Record<string, string> = {
   buyer_supplier_relation: '供应商',
   buyer_supplier_exit: '供应商退出',
   supplier_evaluation: '供应商绩效考核',
+  supplier_evaluation_template: '供应商考核模板',
+  supplier_invitation: '供应商合作邀请',
   supplier_cooperation_tier: '供应商合作调级',
   supplier_enterprise: '供应商企业',
   buyer_user: '成员',
@@ -26,6 +28,13 @@ const TARGET_LABELS: Record<string, string> = {
 
 const ACTION_VERB: Record<string, string> = {
   created: '创建',
+  create: '创建',
+  version_created: '创建版本',
+  enabled: '启用',
+  disabled: '停用',
+  accept: '接受',
+  decline: '拒绝',
+  withdraw: '撤回',
   updated: '更新',
   profile_updated: '更新私域资料',
   submitted: '提交',

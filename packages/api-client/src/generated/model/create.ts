@@ -10,4 +10,5 @@ export interface Create {
   period: string;
   assigneeId: string;
   dueDate: string;
+  templateVersionId?: string;
 }

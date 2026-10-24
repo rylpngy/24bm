@@ -1,0 +1,28 @@
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import '@testing-library/jest-dom/vitest';
+import { afterEach, expect, it, vi } from 'vitest';
+import { SuppliersPage } from './suppliers-page';
+vi.mock('../../lib/use-buyer-permissions', () => ({ useBuyerPermissions: () => ({ can: () => true }) }));
+vi.mock('@24bid/api-client', () => ({ useBuyerSupplierList: () => ({ data: { data: [] } }) }));
+vi.mock('./supplier-list-view', () => ({ SupplierListView: () => <div>默认供应商列表</div> }));
+vi.mock('./supplier-register-page', () => ({ SupplierRegisterPage: () => null }));
+vi.mock('./supplier-sourcing-view', () => ({ SupplierSourcingView: () => null }));
+vi.mock('./supplier-invitations-view', () => ({ SupplierInvitationsView: () => null }));
+vi.mock('./supplier-admission-queue', () => ({ SupplierAdmissionQueue: () => null }));
+vi.mock('./supplier-performance-board', () => ({ SupplierPerformanceBoard: () => null }));
+vi.mock('./supplier-qualifications-board', () => ({ SupplierQualificationsBoard: () => null }));
+vi.mock('./supplier-detail-page', () => ({ SupplierDetailPage: () => null }));
+vi.mock('./supplier-evaluation-templates-view', () => ({ SupplierEvaluationTemplatesView: () => <div>模板版本列表</div> }));
+vi.mock('./supplier-export-control', () => ({ SupplierExportControl: () => <div>统一导出控件</div> }));
+afterEach(cleanup);
+it('keeps the supplier list default and exposes templates alongside the shared export control', () => {
+  render(<SuppliersPage />);
+  expect(screen.getByText('默认供应商列表')).toBeInTheDocument();
+  expect(screen.getByText('统一导出控件')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '考核模板' }));
+  expect(screen.getByText('模板版本列表')).toBeInTheDocument();
+  expect(screen.queryByText('默认供应商列表')).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '考核模板' })).toHaveAttribute('aria-current', 'page');
+  fireEvent.click(screen.getByRole('button', { name: '供应商列表' }));
+  expect(screen.getByText('默认供应商列表')).toBeInTheDocument();
+});

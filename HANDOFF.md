@@ -2,6 +2,12 @@
 
 ## 当前状态（2026-10-24，以本节为准）
 
+第一阶段SRM整体收口：开发分支 `codex/srm-stage-one-closeout`，包含同期绩效、不可变版本四维权重模板、任务锁定版本及历史评分快照、合作邀请双端事务通知、统一入口与六类XLSX台账。阶段范围及验收见 `docs/superpowers/plans/2026-10-24-srm-stage-one-closeout.md`，使用说明见 `docs/srm-stage-one-guide.md`。已通过前端371测试、七包类型检查、Java相关回归及45项PostgreSQL集成；原库备份副本V217迁移通过，147表原字段内容及117条旧迁移记录一致。原系统尚未切换，PR、CI和最终部署以本节后续交付记录为准，不要将隔离验收当作已发布。
+
+最新开发：`codex/srm-period-performance` 已实现年/季/月同周期绩效比较、按收货登记时间统计履约、周期安全的人工评分回填。47项Java相关测试、7项PostgreSQL集成、31项前端行为测试、类型检查和构建、真实HTTP14周期及桌面/手机浏览器通过；原147表指纹不变，无迁移。当前只在8095/5197隔离预览，原5173仍为以下PR118固定发布。详见 `docs/superpowers/plans/2026-10-24-srm-period-performance.md`。下一步交付本轮PR/CI及保留数据发布；不要重复实现本轮功能。统计基于登记时间，不代表实际签收；人工考核为租户SRM数据，履约样本按订单DataScope过滤。权重模板与自动调级不属于本轮。
+
+最新发布：PR118三项CI全部通过，已merge为 `27962d3b1fb9533488c4d2e368d07c7fe1f6f446` 并更新原系统。固定目录 `/Users/epl/.codex/deployments/24bid-base/27962d3b1fb9`，采购方5173、平台5174、供应商5175、商城5176、API8080。寻源真实档案展示、查询错误处理、待准入反馈及商城同源认证配置均已上线；此前“寻源未发布”段落为历史。四端Keycloak登录、真实API和桌面/手机页面验收通过，147表发布前后指纹一致，无新增迁移。最新备份 `/Users/epl/.codex/deployments/24bid-base/srm-backup-1792803918521` 包含数据库和5附件；详见固定目录RESTORATION.md。下一阶段优先补按考核周期统计履约及同周期对比，保留人工评价，不重复进行已发布的邀请和寻源整改。
+
 最终发布验收：60a4506b四端真实登录均通过，HTTP200、零页面/API错误、无横向溢出。商城预览通过同源认证/API构建参数修复，重复构建的正式代码配置修复为eaec959c（待下一批PR）。本轮原库147表指纹不变。寻源5e305165、交接5fd1707a及商城配置eaec959c均为本地开发增量，原5173仍不包含寻源整改；勿混淆。最终证据以固定发布目录RESTORATION.md和browser-verification.json为准。
 
 发布更新：PR117三项CI通过，已merge为 `60a4506bbac5821c655b4b8cb3244c5288920fc5`，原系统5173/5174/5175/5176及8080已切换到 `/Users/epl/.codex/deployments/24bid-base/60a4506bbac5`。147表发布前后指纹一致，无新增迁移；最新备份 `/Users/epl/.codex/deployments/24bid-base/srm-backup-1792803095574` 包含数据库和5附件。两端邀请页面Keycloak登录及桌面/手机检查通过。详细发布证据见该目录RESTORATION.md。以下PR117“运行中”等描述已成为历史；寻源整改5e305165仍仅隔离预览、待PR交付。

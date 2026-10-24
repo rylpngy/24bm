@@ -88,7 +88,7 @@ public class SecurityConfig {
     CorsConfiguration configuration = new CorsConfiguration();
     // 来源白名单由配置注入(CORS_ALLOWED_ORIGINS,逗号分隔);默认值仅覆盖本地三端 dev/preview。
     configuration.setAllowedOrigins(corsAllowedOrigins);
-    configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+    configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
     configuration.setAllowedHeaders(List.of("authorization", "content-type"));
     configuration.setExposedHeaders(List.of("authorization"));
     configuration.setAllowCredentials(true);

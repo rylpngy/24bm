@@ -2,9 +2,11 @@ package com.procurement.supplier.api;
 
 import com.procurement.common.api.ApiResponse;
 import com.procurement.supplier.application.SupplierFulfillmentMetricsService;
+import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -19,7 +21,13 @@ public class SupplierFulfillmentController {
 
   @GetMapping("/{supplierId}/fulfillment-metrics")
   public ApiResponse<SupplierFulfillmentMetricsResponse> fulfillmentMetrics(
-      @PathVariable String supplierId) {
-    return ApiResponse.ok(supplierFulfillmentMetricsService.metricsForSupplier(supplierId));
+      @PathVariable String supplierId, @RequestParam(required = false) String period) {
+    return ApiResponse.ok(supplierFulfillmentMetricsService.metricsForSupplier(supplierId, period));
+  }
+
+  @GetMapping("/performance-comparison")
+  public ApiResponse<List<SupplierPerformanceComparisonResponse>> performanceComparison(
+      @RequestParam String period) {
+    return ApiResponse.ok(supplierFulfillmentMetricsService.performanceComparison(period));
   }
 }

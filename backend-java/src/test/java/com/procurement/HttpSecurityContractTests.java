@@ -239,6 +239,8 @@ import org.springframework.test.web.servlet.MvcResult;
     BuyerSupplierController.class,
     com.procurement.supplier.api.SupplierExitController.class,
     com.procurement.supplier.api.SupplierCooperationInvitationController.class,
+    com.procurement.supplier.api.SupplierEvaluationTemplateController.class,
+    com.procurement.supplier.api.SupplierExportController.class,
     com.procurement.supplier.api.SupplierExitItemsController.class,
     BuyerSupplierDiscoveryController.class,
     BuyerSupplierInvitationController.class,
@@ -448,6 +450,12 @@ class HttpSecurityContractTests {
 
   @MockBean
   private com.procurement.supplier.application.SupplierFulfillmentMetricsService supplierFulfillmentMetricsService;
+
+  @MockBean
+  private com.procurement.supplier.application.SupplierEvaluationTemplateService supplierEvaluationTemplateService;
+
+  @MockBean
+  private com.procurement.supplier.application.SupplierExportService supplierExportService;
 
   @MockBean
   private SupplierProfileApplicationService supplierProfileApplicationService;
@@ -746,6 +754,16 @@ class HttpSecurityContractTests {
         .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"))
         .andExpect(header().string("Access-Control-Allow-Methods", org.hamcrest.Matchers.containsString("PUT")))
         .andExpect(header().string("Access-Control-Allow-Headers", org.hamcrest.Matchers.containsString("authorization")));
+  }
+
+  @Test
+  void vitePreflightCanPatchEvaluationTemplateStatus() throws Exception {
+    mockMvc.perform(options("/api/v1/buyer/supplier-evaluation-templates/template-1/enabled")
+            .header("Origin", "http://localhost:5173")
+            .header("Access-Control-Request-Method", "PATCH")
+            .header("Access-Control-Request-Headers", "authorization,content-type"))
+        .andExpect(status().isOk())
+        .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"));
   }
 
   @Test
@@ -3570,6 +3588,46 @@ class HttpSecurityContractTests {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.id").value("notice-invoice-paid"))
         .andExpect(jsonPath("$.data.read").value(true));
+  }
+
+  @Test
+  void supplierPeriodMetricsRoutesBindPeriodAndRequireBuyerRole() throws Exception {
+    String buyerToken = loginAndExtractToken("""
+        {"account":"buyer","password":"demo123456","scope":"BUYER","tenantId":"tenant-acme"}
+        """);
+    String supplierToken = loginAndExtractToken("""
+        {"account":"supplier","password":"demo123456","scope":"SUPPLIER","supplierId":"ent-supplier-sunrise"}
+        """);
+    when(supplierFulfillmentMetricsService.performanceComparison("2001-Q4")).thenReturn(List.of());
+    when(supplierFulfillmentMetricsService.metricsForSupplier("supplier", "2001-Q4"))
+        .thenReturn(new com.procurement.supplier.api.SupplierFulfillmentMetricsResponse(
+            "supplier", 2, 1, 50, 10, 0, 0, 0, 50, "2001-Q4",
+            java.time.LocalDate.of(2001, 10, 1), java.time.LocalDate.of(2002, 1, 1), 2));
+    mockMvc.perform(get("/api/v1/buyer/suppliers/supplier/fulfillment-metrics")
+            .param("period", "2001-Q4").header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.period").value("2001-Q4"))
+        .andExpect(jsonPath("$.data.startDate").value("2001-10-01"))
+        .andExpect(jsonPath("$.data.endDateExclusive").value("2002-01-01"))
+        .andExpect(jsonPath("$.data.scheduledReceiptCount").value(2))
+        .andExpect(jsonPath("$.data.qualifiedRate").value(0));
+    mockMvc.perform(get("/api/v1/buyer/suppliers/supplier/fulfillment-metrics")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk());
+    org.mockito.Mockito.verify(supplierFulfillmentMetricsService).metricsForSupplier("supplier", null);
+    mockMvc.perform(get("/api/v1/buyer/suppliers/performance-comparison")
+            .param("period", "2001-Q4").header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data").isArray());
+    mockMvc.perform(get("/api/v1/buyer/suppliers/performance-comparison")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isBadRequest());
+    for (String path : List.of("/api/v1/buyer/suppliers/performance-comparison",
+        "/api/v1/buyer/suppliers/supplier/fulfillment-metrics")) {
+      mockMvc.perform(get(path).param("period", "2001-Q4")
+              .header("Authorization", "Bearer " + supplierToken))
+          .andExpect(status().isForbidden());
+    }
   }
 
   @Test
