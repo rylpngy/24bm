@@ -16,7 +16,7 @@ public final class ApprovalTemplateCode {
       case ApprovalBusinessType.PURCHASE_DEMAND, "budget_change", "budget_exception" -> PURCHASE_DEMAND;
       case ApprovalBusinessType.LUDONG_PROJECT_APPLICATION ->
           throw new IllegalArgumentException("Ludong POC must use its published Flowable definition");
-      case ApprovalBusinessType.BUYER_SUPPLIER_ADMISSION -> SUPPLIER_ADMISSION;
+      case ApprovalBusinessType.BUYER_SUPPLIER_ADMISSION, "supplier_qualification_change" -> SUPPLIER_ADMISSION;
       case "buyer_supplier_exit" -> throw new IllegalStateException("No published workflow for supplier exit; 请先发布供应商退出流程");
       case ApprovalBusinessType.RFQ_AWARD -> RFQ_AWARD;
       case ApprovalBusinessType.PAYMENT_REQUEST -> PAYMENT_REQUEST;

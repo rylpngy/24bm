@@ -29,7 +29,7 @@ interface SubItem {
 // SRM 模块工作台:左侧竖向二级菜单(粘性)+ 右侧子页;360 详情钻取替换内容区。
 export function SuppliersPage() {
   const { can } = useBuyerPermissions();
-  const [sub, setSub] = useState<SubId>('list');
+  const [sub, setSub] = useState<SubId>(() => new URLSearchParams(window.location.search).get('tab') === 'qualifications' ? 'qualifications' : 'list');
   const [selectedId, setSelectedId] = useState<string | null>(() => new URLSearchParams(window.location.search).get('recordId'));
   const [registering, setRegistering] = useState(false);
   const [editing, setEditing] = useState(false);

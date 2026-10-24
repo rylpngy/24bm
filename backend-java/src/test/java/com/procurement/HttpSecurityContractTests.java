@@ -581,6 +581,10 @@ class HttpSecurityContractTests {
 
   @MockBean
   private SupplierQualificationApplicationService supplierQualificationApplicationService;
+  @MockBean
+  private com.procurement.supplier.application.QualificationWorkflowService qualificationWorkflows;
+  @MockBean
+  private com.procurement.supplier.application.SupplierImportService supplierImports;
 
   @MockBean
   private SupplierUserApplicationService supplierUserApplicationService;

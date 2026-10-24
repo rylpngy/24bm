@@ -196,6 +196,8 @@ function fieldLabel(key: string) {
     occupiedAtSubmission: '提交时已有占用', remainingAtSubmission: '提交时可用余额', controlMode: '提交时控制模式', exceptionValidityDays: '例外有效天数',
     title: '标题', budget: '预算', priority: '优先级', purpose: '用途', expectedDeliveryDate: '期望交付日期',
     supplierId: '供应商编号', supplierName: '供应商名称', rfqId: '询价编号', quoteId: '报价编号',
+    relationId: '合作关系', qualificationId: '新版证照编号', previousId: '旧版证照编号', qualificationReviewId: '变更复核编号',
+    qualificationType: '资质类型', certificateNo: '证书编号', expiresAt: '有效期至', fileName: '原件名称', contentSha256: '原件SHA256',
     exitReason: '退出原因', unreceivedOrderCount: '未收货订单数', unpaidInvoiceCount: '未付清发票数',
     contractNo: '合同编号', contractName: '合同名称', invoiceId: '发票编号', orderId: '订单编号', paymentBatchNo: '付款批次',
     exceptionType: '例外类型', exceptionReason: '例外原因', amount: '金额', requestCount: '申请数量', totalAmount: '总金额',
@@ -208,6 +210,7 @@ export function workflowBusinessHref(history: Pick<WorkflowInstanceHistory, 'bus
   const target: Record<string, { module: string; id: unknown }> = {
     budget_change: { module: 'budgets', id: history.businessId },
     budget_exception: { module: 'budgets', id: history.businessId },
+    supplier_qualification_change: { module: 'suppliers', id: snapshot.relationId },
     purchase_demand: { module: 'demands', id: history.businessId },
     buyer_supplier_admission: { module: 'suppliers', id: history.businessId },
     buyer_supplier_exit: { module: 'suppliers', id: history.businessId },
@@ -221,5 +224,6 @@ export function workflowBusinessHref(history: Pick<WorkflowInstanceHistory, 'bus
   if (!item) return null;
   const params = new URLSearchParams({ module: item.module });
   if (item.id != null && String(item.id)) params.set('recordId', String(item.id));
+  if (history.businessType === 'supplier_qualification_change') params.set('tab', 'qualifications');
   return `/?${params.toString()}`;
 }

@@ -114,6 +114,7 @@ public class SupplierQualificationApplicationService {
   @Transactional
   public SupplierQualificationResponse replaceQualification(String id, CreateSupplierQualificationRequest request) {
     String supplierId = TenantAccessGuard.requireSupplierId("supplier qualification APIs");
+    supplierQualificationMapper.lockSupplier(supplierId);
     if (supplierQualificationMapper.lockQualification(supplierId, id) == null
         || supplierQualificationMapper.replacement(supplierId, id) != null) {
       throw new IllegalArgumentException("资质不存在或已被新版替代，请刷新列表");
@@ -125,6 +126,7 @@ public class SupplierQualificationApplicationService {
     supplierQualificationMapper.recordEvent(supplierId, id, replacement.id(), "replaced",
         TenantAccessGuard.requireUserId("supplier qualification APIs"));
     supplierQualificationMapper.supersedeReviews(id);
+    supplierQualificationMapper.returnSupersededSupplements(id);
     supplierQualificationMapper.enqueueReviews(supplierId, replacement.id(), id);
     notifications.reviewCreated(supplierId, replacement.id());
     return replacement;
@@ -140,6 +142,12 @@ public class SupplierQualificationApplicationService {
 
   @Transactional
   public void review(long id, com.procurement.supplier.api.QualificationReviewRequest request) {
+    throw new IllegalStateException("资质变更已迁入统一审批，请先发起变更审批并由当前节点办理人处理");
+  }
+
+  // Only the registered Flowable completion handler calls this after verifying its bound attempt.
+  @Transactional
+  public void applyWorkflowReview(long id, com.procurement.supplier.api.QualificationReviewRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("qualification review");
     String supplierId = supplierQualificationMapper.reviewSupplier(tenantId, id);
     String qualificationId = supplierQualificationMapper.reviewQualification(tenantId, id);
@@ -198,6 +206,7 @@ public class SupplierQualificationApplicationService {
   @Transactional
   public SupplierQualificationResponse createCurrentSupplierQualification(CreateSupplierQualificationRequest request) {
     String supplierId = TenantAccessGuard.requireSupplierId("supplier qualification APIs");
+    supplierQualificationMapper.lockSupplier(supplierId);
     QualificationExpiryPolicy.requireUploadedFile(request.fileName(), request.storageKey());
     requireOwnKey(request.storageKey(), supplierId);
     ObjectStorageService.StoredObject original = objectStorageService.get(request.storageKey());
@@ -229,6 +238,7 @@ public class SupplierQualificationApplicationService {
       String qualificationId,
       ChangeSupplierQualificationStatusRequest request) {
     String supplierId = TenantAccessGuard.requireSupplierId("supplier qualification APIs");
+    supplierQualificationMapper.lockSupplier(supplierId);
     supplierQualificationStatusTransition.requireSupportedTarget(request.status());
     requireQualification(supplierId, qualificationId);
     supplierQualificationMapper.lockQualification(supplierId, qualificationId);

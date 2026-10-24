@@ -24,31 +24,35 @@ class QualificationReviewTests {
     when(mapper.lockQualification("supplier","q")).thenReturn(new SupplierQualification("q","supplier","证书","001",expiry,"a.pdf","key","active",OffsetDateTime.now()));
     when(storage.get("key")).thenReturn(new ObjectStorageService.StoredObject(new byte[]{1},"application/pdf"));
   }
+  @Test void oldDirectReviewCannotBypassFlowable() {
+    assertThatThrownBy(() -> service.review(1,new QualificationReviewRequest(true,"直接办理"))).hasMessageContaining("统一审批");
+    verifyNoInteractions(mapper,storage,notifications);
+  }
   @Test void rejectsOtherTenantRecord() {
-    assertThatThrownBy(() -> service.review(1,new QualificationReviewRequest(true,"核验通过"))).isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> service.applyWorkflowReview(1,new QualificationReviewRequest(true,"核验通过"))).isInstanceOf(IllegalArgumentException.class);
     verifyNoInteractions(storage);
   }
   @Test void refusesExpiredApproval() {
     fixture(LocalDate.now().minusDays(1));
-    assertThatThrownBy(() -> service.review(1,new QualificationReviewRequest(true,"核验通过"))).hasMessageContaining("已过期");
+    assertThatThrownBy(() -> service.applyWorkflowReview(1,new QualificationReviewRequest(true,"核验通过"))).hasMessageContaining("已过期");
     verifyNoInteractions(storage);
   }
   @Test void preservesActorAndOpinionOnRejection() {
     fixture(LocalDate.now().plusDays(1));
     when(mapper.decideReview("tenant-a",1,"rejected","请补件","reviewer")).thenReturn(1);
-    service.review(1,new QualificationReviewRequest(false," 请补件 "));
+    service.applyWorkflowReview(1,new QualificationReviewRequest(false," 请补件 "));
     verify(mapper).decideReview("tenant-a",1,"rejected","请补件","reviewer");
     verify(notifications).reviewCompleted("tenant-a", 1);
     verifyNoInteractions(storage);
   }
   @Test void rejectsRepeatedDecision() {
     fixture(LocalDate.now().plusDays(1));
-    assertThatThrownBy(() -> service.review(1,new QualificationReviewRequest(true,"核验通过"))).hasMessageContaining("已办理");
+    assertThatThrownBy(() -> service.applyWorkflowReview(1,new QualificationReviewRequest(true,"核验通过"))).hasMessageContaining("已办理");
     verifyNoInteractions(notifications);
   }
   @Test void refusesReplacedVersion() {
     fixture(LocalDate.now().plusDays(1));
     when(mapper.replacement("supplier","q")).thenReturn("q2");
-    assertThatThrownBy(() -> service.review(1,new QualificationReviewRequest(true,"核验通过"))).hasMessageContaining("已变更");
+    assertThatThrownBy(() -> service.applyWorkflowReview(1,new QualificationReviewRequest(true,"核验通过"))).hasMessageContaining("已变更");
   }
 }

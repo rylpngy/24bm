@@ -224,6 +224,23 @@ public class UnifiedWorkflowApplicationService {
     auditLogApplicationService.recordTenantAction(tenant,"workflow.cancelled",instance.businessType(),instance.businessId(),reason.strip());
   }
 
+  @Transactional
+  public void cancelQualificationReview(String id,String reason) {
+    String tenant=TenantAccessGuard.requireTenantId("qualification cancellation"),actor=TenantAccessGuard.requireUserId("qualification cancellation");
+    permissionService.require("buyer:supplier:manage");
+    if(reason==null||reason.isBlank()||reason.length()>1000)throw new IllegalArgumentException("取消原因必填且不超过1000字");
+    var instance=workflowBusinessInstanceMapper.findByTenantAndIdForUpdate(tenant,id);
+    if(instance==null||!"supplier_qualification_change".equals(instance.businessType()))throw new IllegalArgumentException("资质审批不存在");
+    if(!actor.equals(instance.initiatorId()))permissionService.require("buyer:workflow:manage");
+    if(!isVisible(instance,dataScopeService.currentUserDataScope()))throw new PermissionDeniedException("当前数据范围无权取消此流程");
+    if(!WorkflowInstanceStatus.PROCESSING.equals(instance.status()))throw new IllegalStateException("审批已结束");
+    runtimeService.deleteProcessInstance(instance.flowableProcessInstanceId(),reason.strip());
+    if(workflowBusinessInstanceMapper.complete(tenant,id,WorkflowInstanceStatus.CANCELLED,actor)!=1)throw new IllegalStateException("审批状态已变化");
+    workflowTaskEventMapper.insert("workflow-task-event-"+UUID.randomUUID(),tenant,id,null,null,null,"cancelled",actor,reason.strip());
+    requireCompletionHandler(instance.businessType()).onCancelled(instance,actor,reason.strip());
+    auditLogApplicationService.recordTenantAction(tenant,"workflow.cancelled",instance.businessType(),instance.businessId(),reason.strip());
+  }
+
   public List<UnifiedWorkflowTaskResponse> listCurrentUserTasks() {
     String tenantId = TenantAccessGuard.requireTenantId("unified workflow APIs");
     String userId = TenantAccessGuard.requireUserId("unified workflow APIs");
@@ -328,6 +345,7 @@ public class UnifiedWorkflowApplicationService {
     if (!canHandle(task, userId, roleGroups)) {
       throw new PermissionDeniedException("当前用户不是该审批任务的办理人或候选人");
     }
+    businessHandler.validateTask(instance, approved);
     if (task.getAssignee() == null || task.getAssignee().isBlank()) {
       taskService.claim(taskId, userId);
       recordTaskEvent(tenantId, instance.id(), task, "claimed", userId, null);
@@ -1014,7 +1032,7 @@ public class UnifiedWorkflowApplicationService {
     owners.put(instance.businessType(), instance.businessId());
     switch (instance.businessType()) {
       case "purchase_demand" -> owners.put("purchase_demand", instance.businessId());
-      case "buyer_supplier_admission", "buyer_supplier_exit" -> putOwner(owners, "supplier", snapshot.get("supplierId"));
+      case "buyer_supplier_admission", "buyer_supplier_exit", "supplier_qualification_change" -> putOwner(owners, "supplier", snapshot.get("supplierId"));
       case "rfq_award" -> putOwner(owners, "rfq", snapshot.get("rfqId"));
       case "contract_approval" -> owners.put("contract", instance.businessId());
       case "payment_request" -> putOwner(owners, "invoice", snapshot.get("invoiceId"));
@@ -1051,6 +1069,7 @@ public class UnifiedWorkflowApplicationService {
       case "budget_exception" -> "超预算例外";
       case "buyer_supplier_admission" -> "供应商准入";
       case "buyer_supplier_exit" -> "供应商退出";
+      case "supplier_qualification_change" -> "供应商资质变更";
       case "rfq_award" -> "询价定标";
       case "contract_approval" -> "合同审批";
       case "payment_request" -> "付款申请";

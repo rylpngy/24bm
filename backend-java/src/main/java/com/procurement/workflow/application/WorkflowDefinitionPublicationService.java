@@ -300,6 +300,7 @@ public class WorkflowDefinitionPublicationService {
       case "budget_exception" -> "超预算例外";
       case "buyer_supplier_admission" -> "供应商准入";
       case "buyer_supplier_exit" -> "供应商退出";
+      case "supplier_qualification_change" -> "供应商资质变更";
       case "rfq_award" -> "询价定标";
       case "contract_approval" -> "合同";
       case "payment_request" -> "付款申请";

@@ -19,6 +19,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/buyer/suppliers")
 public class BuyerSupplierController {
   private final BuyerSupplierApplicationService buyerSupplierApplicationService;
+  private com.procurement.supplier.application.SupplierImportService imports;
+  @org.springframework.beans.factory.annotation.Autowired
+  void setImports(com.procurement.supplier.application.SupplierImportService imports){this.imports=imports;}
+
+  @GetMapping("/import-template")
+  public org.springframework.http.ResponseEntity<org.springframework.core.io.ByteArrayResource> template(){return com.procurement.common.excel.ExcelDownloads.xlsx("供应商关系导入模板.xlsx",imports.template());}
+  @PostMapping("/import")
+  public ApiResponse<com.procurement.common.api.ImportResultResponse> importFile(@RequestBody byte[] bytes){return ApiResponse.ok(imports.importFile(bytes));}
 
   public BuyerSupplierController(BuyerSupplierApplicationService buyerSupplierApplicationService) {
     this.buyerSupplierApplicationService = buyerSupplierApplicationService;

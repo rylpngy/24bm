@@ -9,6 +9,7 @@ import { FeedbackNotice, FilterTabs, Pagination, Panel, SearchInput, ShellState 
 import { QualificationExpiryLedger } from './qualification-expiry-ledger';
 import { qualificationAlert } from './qualification-status';
 import { QualificationReviewPanel } from './qualification-review-panel';
+import { QualificationSupplementPanel } from './qualification-supplement-panel';
 import { SupplierSummaryChip, SupplierSummaryChips } from './supplier-metric-card';
 
 const PAGE_SIZE = 8;
@@ -91,6 +92,7 @@ export function SupplierQualificationsBoard({ onOpen }: { onOpen: (id: string) =
   return (
     <Panel title="资质管理" icon={BadgeCheck} subtitle="跨供应商证照台账 · 到期预警">
       <QualificationReviewPanel />
+      <QualificationSupplementPanel />
       <div className="mb-4"><FilterTabs value={view} onChange={setView} items={[{ id: 'suppliers', label: '供应商证照' }, { id: 'expiry', label: '到期台账' }]} /></div>
       {view === 'expiry' ? <QualificationExpiryLedger onOpen={onOpen} /> : <>
       <div className="mb-4 flex flex-wrap items-center gap-2">

@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { QualificationsPage } from './qualifications-page';
+vi.mock('./supplement-requests', () => ({ SupplementRequests: () => null }));
 
 const mocks = vi.hoisted(() => ({ status: vi.fn(), download: vi.fn().mockResolvedValue(undefined), list: vi.fn() }));
 vi.mock('@24bid/api-client', () => ({

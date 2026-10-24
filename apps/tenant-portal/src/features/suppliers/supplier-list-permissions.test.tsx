@@ -1,6 +1,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { SupplierListView } from './supplier-list-view';
+vi.mock('../shared/excel-import-control', () => ({ ExcelImportControl: () => null }));
 
 const access = vi.hoisted(() => ({ write: false }));
 vi.mock('../../lib/use-buyer-permissions', () => ({ useBuyerPermissions: () => ({ can: () => access.write }) }));
