@@ -28,9 +28,11 @@ import type {
   ApiResponseListUnifiedWorkflowTaskResponse,
   ApiResponseListWorkflowInstanceLedgerResponse,
   ApiResponseVoid,
+  ApiResponseWorkflowBusinessInstancePage,
   ApiResponseWorkflowInstanceHistoryResponse,
   ApiResponseWorkflowPublishedFormResponse,
   CompleteWorkflowTaskRequest,
+  UnifiedWorkflowBusinessInstancesParams,
   UnifiedWorkflowInstancesParams,
   WithdrawPurchaseDemandWorkflowRequest
 } from '.././model';
@@ -407,6 +409,107 @@ export function useUnifiedWorkflowHistory<TData = Awaited<ReturnType<typeof unif
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getUnifiedWorkflowHistoryQueryOptions(workflowInstanceId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const unifiedWorkflowBusinessInstances = (
+    businessType: string,
+    businessId: string,
+    params?: UnifiedWorkflowBusinessInstancesParams,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseWorkflowBusinessInstancePage>(
+      {url: `/api/v1/buyer/workflow/instances/business/${businessType}/${businessId}/instances`, method: 'GET',
+        params, signal
+    },
+      );
+    }
+
+
+
+
+export const getUnifiedWorkflowBusinessInstancesQueryKey = (businessType?: string,
+    businessId?: string,
+    params?: UnifiedWorkflowBusinessInstancesParams,) => {
+    return [
+    `/api/v1/buyer/workflow/instances/business/${businessType}/${businessId}/instances`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+
+export const getUnifiedWorkflowBusinessInstancesQueryOptions = <TData = Awaited<ReturnType<typeof unifiedWorkflowBusinessInstances>>, TError = ErrorType<ApiResponseVoid>>(businessType: string,
+    businessId: string,
+    params?: UnifiedWorkflowBusinessInstancesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof unifiedWorkflowBusinessInstances>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getUnifiedWorkflowBusinessInstancesQueryKey(businessType,businessId,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof unifiedWorkflowBusinessInstances>>> = ({ signal }) => unifiedWorkflowBusinessInstances(businessType,businessId,params, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(businessType && businessId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof unifiedWorkflowBusinessInstances>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type UnifiedWorkflowBusinessInstancesQueryResult = NonNullable<Awaited<ReturnType<typeof unifiedWorkflowBusinessInstances>>>
+export type UnifiedWorkflowBusinessInstancesQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useUnifiedWorkflowBusinessInstances<TData = Awaited<ReturnType<typeof unifiedWorkflowBusinessInstances>>, TError = ErrorType<ApiResponseVoid>>(
+ businessType: string,
+    businessId: string,
+    params: undefined |  UnifiedWorkflowBusinessInstancesParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof unifiedWorkflowBusinessInstances>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof unifiedWorkflowBusinessInstances>>,
+          TError,
+          Awaited<ReturnType<typeof unifiedWorkflowBusinessInstances>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUnifiedWorkflowBusinessInstances<TData = Awaited<ReturnType<typeof unifiedWorkflowBusinessInstances>>, TError = ErrorType<ApiResponseVoid>>(
+ businessType: string,
+    businessId: string,
+    params?: UnifiedWorkflowBusinessInstancesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof unifiedWorkflowBusinessInstances>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof unifiedWorkflowBusinessInstances>>,
+          TError,
+          Awaited<ReturnType<typeof unifiedWorkflowBusinessInstances>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUnifiedWorkflowBusinessInstances<TData = Awaited<ReturnType<typeof unifiedWorkflowBusinessInstances>>, TError = ErrorType<ApiResponseVoid>>(
+ businessType: string,
+    businessId: string,
+    params?: UnifiedWorkflowBusinessInstancesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof unifiedWorkflowBusinessInstances>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useUnifiedWorkflowBusinessInstances<TData = Awaited<ReturnType<typeof unifiedWorkflowBusinessInstances>>, TError = ErrorType<ApiResponseVoid>>(
+ businessType: string,
+    businessId: string,
+    params?: UnifiedWorkflowBusinessInstancesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof unifiedWorkflowBusinessInstances>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getUnifiedWorkflowBusinessInstancesQueryOptions(businessType,businessId,params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

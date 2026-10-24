@@ -252,6 +252,17 @@ class UnifiedWorkflowRuntimeIT {
     TenantContext.set(TENANT_ID, null, REVIEWER_ID);
     var approved = unifiedWorkflowApplicationService.completeCurrentUserBusinessTask("purchase_demand", demandId, true, "确认");
     assertThat(approved.status()).isEqualTo("approved");
+    var firstPage = unifiedWorkflowApplicationService.listCurrentTenantBusinessInstances("purchase_demand", demandId, 1, 1);
+    var secondPage = unifiedWorkflowApplicationService.listCurrentTenantBusinessInstances("purchase_demand", demandId, 2, 1);
+    assertThat(firstPage.total()).isEqualTo(2);
+    assertThat(firstPage.items()).extracting(item -> item.workflowInstanceId()).containsExactly(restarted.workflowInstanceId());
+    assertThat(secondPage.items()).extracting(item -> item.workflowInstanceId()).containsExactly(original.workflowInstanceId());
+    assertThat(unifiedWorkflowApplicationService.getCurrentTenantHistory(original.workflowInstanceId()).formData())
+        .containsEntry("reason", "申请");
+    assertThat(unifiedWorkflowApplicationService.getCurrentTenantHistory(restarted.workflowInstanceId()).formData())
+        .containsEntry("reason", "修正后重提");
+    TenantContext.set(TENANT_ID, null, OUTSIDER_ID);
+    assertThat(unifiedWorkflowApplicationService.listCurrentTenantBusinessInstances("purchase_demand", demandId, 1, 10).total()).isZero();
     TenantContext.set(TENANT_ID, null, REQUESTER_ID);
     assertThatThrownBy(() -> unifiedWorkflowApplicationService.withdrawPurchaseDemand(restarted.workflowInstanceId(), "已完成不能撤回"))
         .isInstanceOf(IllegalStateException.class);

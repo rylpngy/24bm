@@ -53,6 +53,13 @@ public class UnifiedWorkflowController {
         unifiedWorkflowApplicationService.getCurrentTenantBusinessHistory(businessType, businessId));
   }
 
+  @GetMapping("/instances/business/{businessType}/{businessId}/instances")
+  public ApiResponse<WorkflowBusinessInstancePage> businessInstances(@PathVariable String businessType,
+      @PathVariable String businessId, @RequestParam(defaultValue = "1") int page,
+      @RequestParam(defaultValue = "10") int pageSize) {
+    return ApiResponse.ok(unifiedWorkflowApplicationService.listCurrentTenantBusinessInstances(businessType, businessId, page, pageSize));
+  }
+
   @GetMapping("/instances")
   public ApiResponse<List<WorkflowInstanceLedgerResponse>> instances(
       @RequestParam(defaultValue = "pending") String view,

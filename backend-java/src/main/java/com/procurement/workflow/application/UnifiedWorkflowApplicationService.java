@@ -393,6 +393,50 @@ public class UnifiedWorkflowApplicationService {
     return toHistoryResponse(tenantId, instance);
   }
 
+  public com.procurement.workflow.api.WorkflowBusinessInstancePage listCurrentTenantBusinessInstances(
+      String businessType, String businessId, int page, int pageSize) {
+    String tenantId = TenantAccessGuard.requireTenantId("business workflow history");
+    TenantAccessGuard.requireUserId("business workflow history");
+    permissionService.require("buyer:workflow:read");
+    WorkflowBusinessTypeCatalog.requireSupported(businessType);
+    if (businessId == null || businessId.isBlank() || page < 1 || pageSize < 1 || pageSize > 100) {
+      throw new IllegalArgumentException("审批历史分页参数无效");
+    }
+    var source = workflowBusinessInstanceMapper.listByBusiness(tenantId, businessType, businessId, 5001);
+    if (source.size() > 5000) throw new IllegalArgumentException("单个业务审批历史超过5000条，未返回截断结果");
+    var scope = dataScopeService.currentUserDataScope();
+    var visible = source.stream().filter(instance -> isVisible(instance, scope)).toList();
+    var items = visible.stream().skip((long) (page - 1) * pageSize).limit(pageSize)
+        .map(instance -> toLedgerResponse(tenantId, instance)).toList();
+    return new com.procurement.workflow.api.WorkflowBusinessInstancePage(items, visible.size(), page, pageSize);
+  }
+
+  @Transactional(readOnly = true, isolation = org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
+  public List<WorkflowAuditEntry> businessAuditEntries(String businessType, String businessId) {
+    var result = new ArrayList<WorkflowAuditEntry>();
+    var first = listCurrentTenantBusinessInstances(businessType, businessId, 1, 100);
+    for (int page = 1; page <= Math.max(1, (first.total() + 99) / 100); page++) {
+      var batch = page == 1 ? first : listCurrentTenantBusinessInstances(businessType, businessId, page, 100);
+      if (batch.total() != first.total()) throw new IllegalStateException("审批历史已变化，请重试");
+      for (var item : batch.items()) {
+        var history = getCurrentTenantHistory(item.workflowInstanceId());
+        var events = history.events();
+        if (events.isEmpty()) result.add(new WorkflowAuditEntry(history.workflowInstanceId(), history.definitionVersionId(), history.status(),
+            history.initiatorName() == null ? history.initiatorId() : history.initiatorName(), history.createdAt(),
+            history.completedByName() == null ? history.completedBy() : history.completedByName(), history.completedAt(), null, null, null, null, null));
+        for (var event : events) {
+          if (result.size() >= 5000) throw new IllegalArgumentException("审批历史导出超过5000行，未生成截断文件");
+          result.add(new WorkflowAuditEntry(history.workflowInstanceId(), history.definitionVersionId(), history.status(),
+            history.initiatorName() == null ? history.initiatorId() : history.initiatorName(), history.createdAt(),
+            history.completedByName() == null ? history.completedBy() : history.completedByName(), history.completedAt(), event.nodeName(), event.action(),
+            event.actorName() == null ? event.actorId() : event.actorName(), event.createdAt(), event.comment()));
+        }
+        if (result.size() > 5000) throw new IllegalArgumentException("审批历史导出超过5000行，未生成截断文件");
+      }
+    }
+    return List.copyOf(result);
+  }
+
   public WorkflowInstanceHistoryResponse getCurrentTenantBusinessHistory(
       String businessType, String businessId) {
     String tenantId = TenantAccessGuard.requireTenantId("unified workflow APIs");

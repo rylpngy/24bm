@@ -8,12 +8,13 @@ import { currentPerformanceQuarter, isPerformancePeriod } from './performance-pe
 const ledgers = [
   ['profiles', '供应商档案'], ['admissions', '准入台账'], ['qualifications', '资质台账'],
   ['evaluations', '同期绩效'], ['remediations', '整改台账'], ['exits', '退出台账'],
+  ['admission-history', '准入审批历史'], ['exit-history', '退出审批历史'],
 ] as const;
 
 export function SupplierExportControl() {
   const { can } = useBuyerPermissions();
   const canRead = can('buyer:supplier:read');
-  const available = ledgers.filter(([id]) => !['admissions', 'exits'].includes(id) || can('buyer:workflow:read'));
+  const available = ledgers.filter(([id]) => !['admissions', 'exits', 'admission-history', 'exit-history'].includes(id) || can('buyer:workflow:read'));
   const [kind, setKind] = useState('profiles');
   const [period, setPeriod] = useState(currentPerformanceQuarter);
   const [busy, setBusy] = useState(false);

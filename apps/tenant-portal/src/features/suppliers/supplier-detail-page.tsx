@@ -36,7 +36,7 @@ import {
 import { ConfirmDialog, FeedbackNotice, StatusPill, cn } from '@24bid/ui';
 import { SupplierQualificationsTab } from './supplier-qualifications-tab';
 import { SupplierAdmissionSubmitDialog } from './supplier-admission-submit-dialog';
-import { WorkflowStatusPanel } from '../workflow/workflow-instance-panel';
+import { SupplierApprovalHistory } from './supplier-approval-history';
 import { SupplierAdmissionReviewDialog } from './supplier-admission-review-dialog';
 import { SupplierExitActions } from './supplier-exit-actions';
 import { SupplierEvaluationPanel } from './supplier-evaluation-panel';
@@ -167,8 +167,7 @@ export function SupplierDetailPage({
 
       {id && showApproval && can('buyer:workflow:read') && (
         <div id="supplier-approval-panel">
-          <WorkflowStatusPanel businessType="buyer_supplier_admission" businessId={id} />
-          <WorkflowStatusPanel businessType="buyer_supplier_exit" businessId={id} />
+          <SupplierApprovalHistory businessId={id} />
         </div>
       )}
 
