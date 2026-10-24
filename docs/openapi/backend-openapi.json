@@ -4804,6 +4804,66 @@
         }
       }
     },
+    "/api/v1/supplier/cooperation-invitations/{id}/respond": {
+      "post": {
+        "tags": [
+          "supplier-cooperation-invitation-controller"
+        ],
+        "operationId": "SupplierCooperationInvitation_respond",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RespondSupplierInvitationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseSupplierInvitationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/public/supplier-registrations": {
       "post": {
         "tags": [
@@ -14615,6 +14675,46 @@
         }
       }
     },
+    "/api/v1/supplier/cooperation-invitations": {
+      "get": {
+        "tags": [
+          "supplier-cooperation-invitation-controller"
+        ],
+        "operationId": "SupplierCooperationInvitation_list",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListSupplierInvitationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/supplier/auction-stream": {
       "get": {
         "tags": [
@@ -23735,6 +23835,71 @@
           }
         }
       },
+      "RespondSupplierInvitationRequest": {
+        "required": [
+          "action"
+        ],
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseSupplierInvitationResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/SupplierInvitationResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "SupplierInvitationResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "supplierId": {
+            "type": "string"
+          },
+          "supplierName": {
+            "type": "string"
+          },
+          "contact": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "linkedToKnownSupplier": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "respondedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "buyerName": {
+            "type": "string"
+          }
+        }
+      },
       "RegisterSupplierRequest": {
         "required": [
           "companyName",
@@ -25396,68 +25561,6 @@
             "type": "string"
           },
           "note": {
-            "type": "string"
-          }
-        }
-      },
-      "ApiResponseSupplierInvitationResponse": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean"
-          },
-          "data": {
-            "$ref": "#/components/schemas/SupplierInvitationResponse"
-          },
-          "message": {
-            "type": "string"
-          }
-        }
-      },
-      "SupplierInvitationResponse": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "supplierId": {
-            "type": "string"
-          },
-          "supplierName": {
-            "type": "string"
-          },
-          "contact": {
-            "type": "string"
-          },
-          "category": {
-            "type": "string"
-          },
-          "note": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string"
-          },
-          "linkedToKnownSupplier": {
-            "type": "boolean"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "respondedAt": {
-            "type": "string",
-            "format": "date-time"
-          }
-        }
-      },
-      "RespondSupplierInvitationRequest": {
-        "required": [
-          "action"
-        ],
-        "type": "object",
-        "properties": {
-          "action": {
             "type": "string"
           }
         }
@@ -28786,6 +28889,23 @@
           }
         }
       },
+      "ApiResponseListSupplierInvitationResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SupplierInvitationResponse"
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
       "SseEmitter": {
         "type": "object",
         "properties": {
@@ -30572,23 +30692,6 @@
             "type": "string"
           },
           "profileStatus": {
-            "type": "string"
-          }
-        }
-      },
-      "ApiResponseListSupplierInvitationResponse": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean"
-          },
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SupplierInvitationResponse"
-            }
-          },
-          "message": {
             "type": "string"
           }
         }

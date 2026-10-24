@@ -13,18 +13,34 @@ public interface SupplierInvitationMapper {
 
   String COLUMNS =
       """
-      id, tenant_id, supplier_id, supplier_name, contact, category, note,
-      status, created_at, updated_at, responded_at
+      i.id, i.tenant_id, i.supplier_id, i.supplier_name, i.contact, i.category, i.note,
+      i.status, i.created_at, i.updated_at, i.responded_at, t.name as buyer_name
       """;
 
-  @Select("select " + COLUMNS + " from supplier_invitations"
-      + " where tenant_id = #{tenantId} order by created_at desc")
+  String FROM = " from supplier_invitations i join tenants t on t.id = i.tenant_id ";
+
+  @Select("select " + COLUMNS + FROM
+      + " where i.tenant_id = #{tenantId} order by i.created_at desc, i.id")
   List<SupplierInvitation> listByTenant(@Param("tenantId") String tenantId);
 
-  @Select("select " + COLUMNS + " from supplier_invitations"
-      + " where tenant_id = #{tenantId} and id = #{id}")
+  @Select("select " + COLUMNS + FROM
+      + " where i.tenant_id = #{tenantId} and i.id = #{id}")
   SupplierInvitation findByTenantAndId(
       @Param("tenantId") String tenantId, @Param("id") String id);
+
+  @Select("select " + COLUMNS + FROM + " where i.supplier_id = #{supplierId} order by i.created_at desc, i.id")
+  List<SupplierInvitation> listBySupplier(@Param("supplierId") String supplierId);
+
+  @Select("select " + COLUMNS + FROM + " where i.tenant_id = #{tenantId} and i.id = #{id} for update of i")
+  @org.apache.ibatis.annotations.Options(flushCache = org.apache.ibatis.annotations.Options.FlushCachePolicy.TRUE)
+  SupplierInvitation lockByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
+
+  @Select("select " + COLUMNS + FROM + " where i.supplier_id = #{supplierId} and i.id = #{id} for update of i")
+  @org.apache.ibatis.annotations.Options(flushCache = org.apache.ibatis.annotations.Options.FlushCachePolicy.TRUE)
+  SupplierInvitation lockBySupplierAndId(@Param("supplierId") String supplierId, @Param("id") String id);
+
+  @Select("select name from enterprises where id = #{supplierId} and type = 'supplier'")
+  String findSupplierName(@Param("supplierId") String supplierId);
 
   @Insert("""
       insert into supplier_invitations

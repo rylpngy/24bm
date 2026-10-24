@@ -55,7 +55,7 @@ class BaseDataExcelImportTests {
   private final SupplierInvitationMapper invitationMapper = mock(SupplierInvitationMapper.class);
   private final BuyerSupplierRelationMapper relationMapper = mock(BuyerSupplierRelationMapper.class);
   private final SupplierInvitationApplicationService invitationService =
-      new SupplierInvitationApplicationService(invitationMapper, relationMapper, new ObjectMapper());
+      new SupplierInvitationApplicationService(invitationMapper, relationMapper, new ObjectMapper(), permissionService, auditLogApplicationService);
 
   @BeforeEach
   void setTenant() {
@@ -128,7 +128,7 @@ class BaseDataExcelImportTests {
   void invitationImportSkipsPendingDuplicatesByName() {
     when(invitationMapper.listByTenant("tenant-1")).thenReturn(List.of(
         new SupplierInvitation("inv-0", "tenant-1", null, "既有待回复公司", null, null, null,
-            "待回复", null, null, null)));
+            "待回复", null, null, null, "采购企业")));
 
     ImportResultResponse result = invitationService.importInvitations(sheet(List.of(
         List.of("供应商名称*", "联系方式", "主营品类", "备注"),

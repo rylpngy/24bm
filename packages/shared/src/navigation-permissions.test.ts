@@ -2,6 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { buyerAdminModules, hasPermission, platformNavigation, supplierNavigation, visiblePortalModules } from './navigation';
 
 describe('navigation permission matching', () => {
+  it('gates cooperation invitations with supplier profile read', () => {
+    expect(visiblePortalModules(supplierNavigation, ['supplier:profile:read']).map(m => m.id)).toContain('cooperation-invitations');
+    expect(visiblePortalModules(supplierNavigation, ['supplier:profile:manage']).map(m => m.id)).not.toContain('cooperation-invitations');
+    expect(visiblePortalModules(supplierNavigation, ['supplier:order:read']).map(m => m.id)).not.toContain('cooperation-invitations');
+  });
   it('requires separate read permissions for analytics, budgets and enterprise audit', () => {
     const guarded = buyerAdminModules.filter(m => ['analytics', 'budgets', 'audit'].includes(m.id));
     expect(guarded.map(m => m.requiredPermission)).toEqual(['buyer:analytics:read', 'buyer:budget:read', 'buyer:audit:read']);

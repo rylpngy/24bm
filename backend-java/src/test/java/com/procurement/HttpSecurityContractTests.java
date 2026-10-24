@@ -238,6 +238,7 @@ import org.springframework.test.web.servlet.MvcResult;
     SupplierAnnouncementController.class,
     BuyerSupplierController.class,
     com.procurement.supplier.api.SupplierExitController.class,
+    com.procurement.supplier.api.SupplierCooperationInvitationController.class,
     com.procurement.supplier.api.SupplierExitItemsController.class,
     BuyerSupplierDiscoveryController.class,
     BuyerSupplierInvitationController.class,
@@ -576,6 +577,36 @@ class HttpSecurityContractTests {
 
   @MockBean
   private com.procurement.audit.application.AuditReadAccess auditReadAccess;
+
+  @Test
+  void cooperationInvitationsRequireSupplierPortalAndProfilePermissions() throws Exception {
+    String supplierToken = loginAndExtractToken("""
+        {"account":"supplier","password":"demo123456","scope":"SUPPLIER","supplierId":"ent-supplier-sunrise"}
+        """);
+    String buyerToken = loginAndExtractToken("""
+        {"account":"buyer","password":"demo123456","scope":"BUYER","tenantId":"tenant-acme"}
+        """);
+    String path = "/api/v1/supplier/cooperation-invitations";
+    mockMvc.perform(get(path)).andExpect(status().isForbidden());
+    mockMvc.perform(get(path).header("Authorization","Bearer " + buyerToken)).andExpect(status().isForbidden());
+    when(portalPermissions.currentUserHas("supplier:profile:read")).thenReturn(false);
+    mockMvc.perform(get(path).header("Authorization","Bearer " + supplierToken)).andExpect(status().isForbidden());
+    when(portalPermissions.currentUserHas("supplier:profile:manage")).thenReturn(false);
+    mockMvc.perform(post(path + "/i/respond").header("Authorization","Bearer " + supplierToken)
+        .contentType(MediaType.APPLICATION_JSON).content("{\"action\":\"accept\"}"))
+        .andExpect(status().isForbidden());
+    org.mockito.Mockito.verifyNoInteractions(supplierInvitationApplicationService);
+    when(portalPermissions.currentUserHas("supplier:profile:read")).thenReturn(true);
+    when(supplierInvitationApplicationService.listSupplierInvitations()).thenReturn(List.of(new SupplierInvitationResponse(
+        "i","ent-supplier-sunrise","供应商",null,null,"邀请说明","待回复",true,null,null,"采购企业")));
+    mockMvc.perform(get(path).header("Authorization","Bearer " + supplierToken))
+        .andExpect(status().isOk()).andExpect(jsonPath("$.data[0].buyerName").value("采购企业"))
+        .andExpect(jsonPath("$.data[0].tenantId").doesNotExist());
+    when(portalPermissions.currentUserHas("supplier:profile:manage")).thenReturn(true);
+    mockMvc.perform(post(path + "/i/respond").header("Authorization","Bearer " + supplierToken)
+        .contentType(MediaType.APPLICATION_JSON).content("{\"action\":\" \"}"))
+        .andExpect(status().isBadRequest());
+  }
 
   @Test
   void exitItemsRequireBuyerPortalAndSupplierRead() throws Exception {

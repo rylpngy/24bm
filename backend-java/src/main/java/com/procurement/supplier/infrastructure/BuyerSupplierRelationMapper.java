@@ -106,6 +106,15 @@ public interface BuyerSupplierRelationMapper {
       @Param("level") String level,
       @Param("categoriesJson") String categoriesJson);
 
+  @Insert("""
+      insert into buyer_supplier_relations (id, tenant_id, supplier_id, status, level, categories)
+      values (#{id}, #{tenantId}, #{supplierId}, #{status}, #{level}, #{categoriesJson}::jsonb)
+      on conflict (tenant_id, supplier_id) do nothing
+      """)
+  int insertIfAbsent(@Param("id") String id, @Param("tenantId") String tenantId,
+      @Param("supplierId") String supplierId, @Param("status") String status,
+      @Param("level") String level, @Param("categoriesJson") String categoriesJson);
+
   @Select("""
       select count(1)
       from buyer_supplier_relations
