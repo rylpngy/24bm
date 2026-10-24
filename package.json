@@ -28,6 +28,7 @@
     "test:e2e": "bash scripts/e2e-procurement-loop.sh",
     "e2e": "playwright test",
     "loadtest": "node scripts/loadtest.mjs",
+    "test:operations": "node --test scripts/loadtest.test.mjs",
     "loadtest:write": "node scripts/loadtest-write-paths.mjs"
   },
   "dependencies": {},
