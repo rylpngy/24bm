@@ -28,6 +28,9 @@ import org.junit.jupiter.api.Test;
 
 class DeliveryNotificationTests {
 
+  @org.junit.jupiter.api.BeforeEach
+  void fulfillmentFixtures() { TestOrderFulfillment.configure(purchaseOrderMapper, deliveryMapper); }
+
   private final PurchaseOrderMapper purchaseOrderMapper = org.mockito.Mockito.mock(PurchaseOrderMapper.class);
   private final DeliveryMapper deliveryMapper = org.mockito.Mockito.mock(DeliveryMapper.class);
   private final AuditLogApplicationService auditLogApplicationService =
@@ -67,7 +70,7 @@ class DeliveryNotificationTests {
         new BuyerUser("buyer-1", "tenant-1", "采购员", "13800000001", "buyer@example.com", "active", "dept-it", "role-buyer-requester"),
         new BuyerUser("disabled-1", "tenant-1", "停用用户", "13800000002", "disabled@example.com", "inactive", "dept-it", "role-buyer-requester")));
 
-    deliveryApplicationService.create("po-1", new CreateDeliveryRequest("顺丰", "SF123", null, null, null, null));
+    deliveryApplicationService.create("po-1", TestOrderFulfillment.shipment());
 
     verify(notificationMapper).insert(
         org.mockito.ArgumentMatchers.<String>argThat(id -> id != null && id.startsWith("notice-")),

@@ -195,8 +195,8 @@ export function InvoicesPage() {
   // ── 对账详情页 ─────────────────────────────────────────────
   if (selected) {
     const inv = selected;
-    const variance = inv.varianceAmount ?? 0;
-    const matched = variance === 0;
+    const variance = inv.varianceAmount;
+    const matched = inv.reconciliationStatus === '三单一致';
     const busy = paymentRequest.isPending;
     const payable = inv.paymentStatus === '待付款' || inv.paymentStatus === '部分付款';
     const supplierName = inv.supplierId ? (supplierNames[inv.supplierId] ?? inv.supplierId) : '—';
@@ -298,7 +298,7 @@ export function InvoicesPage() {
                 <MiniFact label="收货状态" value={inv.receiptStatus ?? '—'} />
                 <div className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
                   <span className="text-[11px] font-black text-slate-400">匹配</span>
-                  <StatusPill label={matched ? '已匹配' : `差异 ${currency(variance)}`} />
+                  <StatusPill label={matched ? '已匹配' : inv.reconciliationStatus ?? '待核验'} />
                 </div>
               </div>
               <p className="mt-3 text-xs font-black text-slate-500">数量维度</p>
@@ -324,7 +324,7 @@ export function InvoicesPage() {
               <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50/60 px-4 py-3">
                 <p className="flex items-center gap-2 text-xs font-black text-amber-800">
                   <AlertTriangle size={14} className="shrink-0" />
-                  本发票与订单存在 {currency(variance)} 对账差异,建议先在「对账差异处理」完成核对与处置,再登记付款。
+                  {inv.reconciliationStatus ?? '履约证据待核验'}，金额差额 {currency(variance)}
                 </p>
                 <button
                   type="button"
@@ -385,7 +385,7 @@ export function InvoicesPage() {
                     ? '本发票已完成付款登记。'
                     : matched
                       ? '付款申请及批次审批通过后，按实际金额登记。'
-                      : '存在对账差异,登记付款前建议先完成差异处置。'}
+                      : '存在履约或金额差异，付款登记已阻断。'}
                 </span>
               </span>
             </div>
@@ -400,7 +400,7 @@ export function InvoicesPage() {
                       remark: '',
                     })
                   }
-                  disabled={busy}
+                  disabled={busy || !matched}
                   className="inline-flex h-10 items-center rounded-lg border border-blue-200 bg-white px-4 text-sm font-black text-blue-700 transition hover:bg-blue-50 disabled:opacity-50"
                 >
                   提交付款申请
@@ -581,8 +581,8 @@ export function InvoicesPage() {
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {pageItems.map((inv, i) => {
-                      const variance = inv.varianceAmount ?? 0;
-                      const matched = variance === 0;
+                      const variance = inv.varianceAmount;
+                      const matched = inv.reconciliationStatus === '三单一致';
                       const payable = inv.paymentStatus === '待付款' || inv.paymentStatus === '部分付款';
                       return (
                         <tr key={inv.id} className="hover:bg-blue-50/30">

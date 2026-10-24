@@ -52,6 +52,12 @@ public class ContractApplicationService {
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
   private UnifiedWorkflowApplicationService unifiedWorkflowApplicationService;
+  private ContractAccessService contractAccess;
+
+  @Autowired
+  void setContractAccessService(ContractAccessService contractAccess) {
+    this.contractAccess = contractAccess;
+  }
 
   public ContractApplicationService(
       ContractMapper contractMapper,
@@ -135,6 +141,7 @@ public class ContractApplicationService {
 
   // 电子签章入口:按当前租户取合同(供 esign 模块计算内容指纹),不存在即抛错。
   public ContractLedger findCurrentTenantContractForEsign(String contractId) {
+    contractAccess.requireContract(contractId, false);
     String tenantId = TenantAccessGuard.requireTenantId("buyer contract APIs");
     ContractLedger contract = contractMapper.findByTenantAndId(tenantId, contractId);
     if (contract == null) {
@@ -147,6 +154,7 @@ public class ContractApplicationService {
       String status,
       String archiveStatus,
       String supplierId) {
+    contractAccess.requireRead();
     String tenantId = TenantAccessGuard.requireTenantId("buyer contract APIs");
     DataScope dataScope = dataScopeService == null
         ? DataScope.unrestricted()
@@ -172,6 +180,10 @@ public class ContractApplicationService {
 
   @Transactional
   public ContractResponse createCurrentTenantContract(CreateContractRequest request) {
+    if (!"草案".equals(request.status())) {
+      throw new IllegalStateException("普通创建只能保存草案，合同生效须完成审批");
+    }
+    contractAccess.requireOrder(request.relatedOrderId());
     String tenantId = TenantAccessGuard.requireTenantId("buyer contract APIs");
     PurchaseOrder order = purchaseOrderMapper.findByTenantAndId(tenantId, request.relatedOrderId());
     if (order == null) {
@@ -202,10 +214,15 @@ public class ContractApplicationService {
   public ContractResponse updateCurrentTenantContract(
       String contractId,
       UpdateContractRequest request) {
+    contractAccess.requireContract(contractId, true);
     String tenantId = TenantAccessGuard.requireTenantId("buyer contract APIs");
     ContractLedger contract = requireContract(tenantId, contractId);
     if ("已归档".equals(contract.archiveStatus())) {
       throw new IllegalStateException("Archived contract can only be audited: " + contractId);
+    }
+
+    if (!"草案".equals(contract.status()) || !"草案".equals(request.status())) {
+      throw new IllegalStateException("普通修改仅允许草案；审批中已锁定，生效合同须登记受控变更");
     }
 
     int updated = contractMapper.updateDetails(
@@ -231,15 +248,13 @@ public class ContractApplicationService {
   public ContractResponse updateCurrentTenantContractStatus(
       String contractId,
       UpdateContractStatusRequest request) {
+    contractAccess.requireContract(contractId, true);
     String tenantId = TenantAccessGuard.requireTenantId("buyer contract APIs");
     ContractLedger contract = requireContract(tenantId, contractId);
     if ("已归档".equals(contract.archiveStatus())) {
       throw new IllegalStateException("Archived contract can only be audited: " + contractId);
     }
-    if (unifiedWorkflowApplicationService != null
-        && ("审批中".equals(request.status())
-            || "已生效".equals(request.status())
-            || "审批中".equals(contract.status()))) {
+    if ("审批中".equals(contract.status()) || !contract.status().equals(request.status())) {
       throw new IllegalStateException(
           "Contract approval status can only be submitted and completed through the Flowable workflow");
     }
@@ -260,13 +275,21 @@ public class ContractApplicationService {
   public ContractResponse updateCurrentTenantContractArchiveStatus(
       String contractId,
       UpdateContractArchiveStatusRequest request) {
+    contractAccess.requireContract(contractId, true);
     String tenantId = TenantAccessGuard.requireTenantId("buyer contract APIs");
     ContractLedger contract = requireContract(tenantId, contractId);
+    if (!"已归档".equals(request.archiveStatus()) && !"未归档".equals(request.archiveStatus())) {
+      throw new IllegalArgumentException("不支持的合同归档状态");
+    }
+    if ("已归档".equals(contract.archiveStatus()) && !"已归档".equals(request.archiveStatus())) {
+      throw new IllegalStateException("已归档合同不可直接解冻");
+    }
     if ("已归档".equals(request.archiveStatus())) {
       int blockers = contractMapper.countArchiveBlockers(tenantId, contractId);
       if (blockers > 0) {
         throw new IllegalStateException(
-            "Contract archive conditions are not satisfied: receipt and payment must be completed: " + contractId);
+            "Contract archive conditions are not satisfied: receipt and payment must be completed: "
+                + contractMapper.archiveBlockingReason(tenantId, contractId));
       }
     }
     int updated = contractMapper.updateArchiveStatus(
@@ -284,12 +307,18 @@ public class ContractApplicationService {
   // 可由定时任务(每日)或人工触发;返回扫描数与提醒数。
   @Transactional
   public com.procurement.contract.api.ScanExpiryResponse scanExpiringContracts(int withinDays) {
+    contractAccess.requireRead();
     String tenantId = TenantAccessGuard.requireTenantId("buyer contract APIs");
     int days = withinDays <= 0 ? 60 : withinDays;
     java.time.LocalDate threshold = java.time.LocalDate.now().plusDays(days);
     List<ContractLedger> expiring = contractMapper.listExpiringWithin(tenantId, threshold);
     int notified = 0;
     for (ContractLedger c : expiring) {
+      try {
+        contractAccess.requireContract(c.id(), false);
+      } catch (com.procurement.common.tenant.PermissionDeniedException denied) {
+        continue;
+      }
       String when = c.expiryDate() == null ? "" : c.expiryDate().toString();
       notificationApplicationService.notifyActiveTenantUsers(
           tenantId,
@@ -302,12 +331,13 @@ public class ContractApplicationService {
           tenantId, "contract.expiry_scanned", "contract", "batch",
           "扫描到 " + notified + " 份临近到期合同并生成提醒");
     }
-    return new com.procurement.contract.api.ScanExpiryResponse(days, expiring.size(), notified);
+    return new com.procurement.contract.api.ScanExpiryResponse(days, notified, notified);
   }
 
   // 发起续签:置「已发起续签」(到期提醒驱动),幂等;审计留痕。
   @Transactional
   public ContractResponse initiateRenewal(String contractId) {
+    contractAccess.requireContract(contractId, true);
     String tenantId = TenantAccessGuard.requireTenantId("buyer contract APIs");
     ContractLedger contract = requireContract(tenantId, contractId);
     if (!"已发起续签".equals(contract.renewalStatus())) {
@@ -326,6 +356,7 @@ public class ContractApplicationService {
   @Transactional
   public ContractResponse submitCurrentTenantContractApproval(
       String contractId, Map<String, Object> formData) {
+    contractAccess.requireContract(contractId, true);
     String tenantId = TenantAccessGuard.requireTenantId("buyer contract APIs");
     ContractLedger contract = requireContract(tenantId, contractId);
     requireEditable(contract, contractId);
@@ -410,6 +441,7 @@ public class ContractApplicationService {
   public ContractResponse reviewCurrentTenantContractApproval(
       String contractId,
       ReviewContractApprovalRequest request) {
+    contractAccess.requireContract(contractId, true);
     String tenantId = TenantAccessGuard.requireTenantId("buyer contract APIs");
     String userId = TenantAccessGuard.requireUserId("buyer contract APIs");
     ContractLedger contract = requireContract(tenantId, contractId);
@@ -474,6 +506,7 @@ public class ContractApplicationService {
 
   public List<ContractFulfillmentEventResponse> listCurrentTenantContractFulfillmentEvents(
       String contractId) {
+    contractAccess.requireContract(contractId, false);
     String tenantId = TenantAccessGuard.requireTenantId("buyer contract APIs");
     requireContract(tenantId, contractId);
     return fulfillmentEventMapper.listByTenantAndContract(tenantId, contractId)
@@ -483,6 +516,7 @@ public class ContractApplicationService {
   }
 
   public List<ContractAmendmentResponse> listCurrentTenantContractAmendments(String contractId) {
+    contractAccess.requireContract(contractId, false);
     String tenantId = TenantAccessGuard.requireTenantId("buyer contract APIs");
     requireContract(tenantId, contractId);
     return contractMapper.listAmendments(tenantId, contractId).stream()
@@ -494,16 +528,20 @@ public class ContractApplicationService {
   @Transactional
   public ContractAmendmentResponse addCurrentTenantContractAmendment(
       String contractId, CreateContractAmendmentRequest request) {
+    contractAccess.requireContract(contractId, true);
     String tenantId = TenantAccessGuard.requireTenantId("buyer contract APIs");
     String userId = TenantAccessGuard.requireUserId("buyer contract APIs");
     ContractLedger contract = requireContract(tenantId, contractId);
     requireEditable(contract, contractId);
+    if (!"已生效".equals(contract.status())) {
+      throw new IllegalStateException("仅未归档的生效合同可登记变更；草案请修改，审批中已锁定");
+    }
     if (!ContractAmendment.isValidType(request.changeType())) {
       throw new IllegalArgumentException("非法变更类型: " + request.changeType());
     }
     boolean amountChange = ContractAmendment.AMOUNT.equals(request.changeType());
     boolean scheduleChange = ContractAmendment.SCHEDULE.equals(request.changeType());
-    if (amountChange && request.newAmount() == null) {
+    if (amountChange && (request.newAmount() == null || request.newAmount().signum() <= 0)) {
       throw new IllegalArgumentException("金额变更需填写新金额");
     }
     if (scheduleChange && request.newExpiryDate() == null) {
@@ -568,6 +606,7 @@ public class ContractApplicationService {
   public ContractFulfillmentEventResponse createCurrentTenantContractFulfillmentEvent(
       String contractId,
       CreateContractFulfillmentEventRequest request) {
+    contractAccess.requireContract(contractId, true);
     String tenantId = TenantAccessGuard.requireTenantId("buyer contract APIs");
     String userId = TenantAccessGuard.requireUserId("buyer contract APIs");
     ContractLedger contract = requireContract(tenantId, contractId);

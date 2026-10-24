@@ -137,7 +137,8 @@ test('采购计划详情:进度节点与合规检查由真实数据驱动', asyn
   await expect(page.getByText('执行进度跟踪')).toBeVisible();
   await expect(page.getByText('方案合规检查')).toBeVisible();
   await expect(page.getByText('审批流转')).toBeVisible();
-  await expect(page.getByText('报价征集')).toBeVisible();
+  const progress = page.getByRole('heading', { name: '执行进度跟踪', exact: true }).locator('../..');
+  await expect(progress.getByText('报价征集', { exact: true })).toBeVisible();
   // 假数据元素已移除:不再出现虚构审批人。
   await expect(page.getByText('王总监')).toHaveCount(0);
   await expect(page.getByText('AI 风险雷达')).toHaveCount(0);

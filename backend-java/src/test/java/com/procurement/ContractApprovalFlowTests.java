@@ -25,6 +25,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 class ContractApprovalFlowTests {
+  @org.junit.jupiter.api.BeforeEach
+  void configureAccess() { TestContractAccess.allow(contractApplicationService); }
   private final ContractMapper contractMapper = org.mockito.Mockito.mock(ContractMapper.class);
   private final PurchaseOrderMapper purchaseOrderMapper = org.mockito.Mockito.mock(PurchaseOrderMapper.class);
   private final ApprovalTaskMapper approvalTaskMapper = org.mockito.Mockito.mock(ApprovalTaskMapper.class);

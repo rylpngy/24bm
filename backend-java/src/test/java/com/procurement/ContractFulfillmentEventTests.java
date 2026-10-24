@@ -23,6 +23,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 class ContractFulfillmentEventTests {
+  @org.junit.jupiter.api.BeforeEach
+  void configureAccess() {
+    TestContractAccess.allow(contractApplicationService);
+    TestContractAccess.allow(auditableContractApplicationService);
+  }
   private final ContractMapper contractMapper = org.mockito.Mockito.mock(ContractMapper.class);
   private final ContractFulfillmentEventMapper fulfillmentEventMapper =
       org.mockito.Mockito.mock(ContractFulfillmentEventMapper.class);

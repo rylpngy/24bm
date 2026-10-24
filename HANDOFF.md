@@ -2,6 +2,8 @@
 
 ## 当前状态（2026-10-24，以本节为准）
 
+第二阶段采购主流程收口：分支 `codex/procurement-stage-two-closeout`，基于已合并并发布的 PR119/main `4912535db2aacabee55a2bf42568609e4c57e722`。已补需求退回重提及撤回、草稿取消释放、跨部门实付分摊、多批发收货、质量处置复核、合同与付款防绕过、项目执行台账和真实附件归档。范围及操作见 `docs/superpowers/plans/2026-10-24-procurement-stage-two-closeout.md`、`docs/procurement-stage-two-guide.md`。本地886项Java单测、135项数据库集成、407项前端测试、七包类型、两端构建、真实HTTP及桌面/手机通过。提交本节时正进入PR/CI交付，合并状态应查询GitHub；实际发布版本须查 `/Users/epl/.codex/deployments/24bid-base/*/release.json` 及同目录 `RESTORATION.md`，不能仅凭下方历史记录判定。开发起点原系统固定目录为 `4912535db2aa`，数据库必须保留 `procurement_saas_base`、附件桶 `24bid-attachments`。备份 `srm-backup-1792809223229` 包含149张表和5个原附件，副本迁移V218—V222及旧记录指纹核验通过。不要重复开发、导入验收数据或将隔离8095/5197/5198当成原5173。下方“第一阶段尚未切换”等均为历史过程。
+
 第一阶段SRM整体收口：开发分支 `codex/srm-stage-one-closeout`，包含同期绩效、不可变版本四维权重模板、任务锁定版本及历史评分快照、合作邀请双端事务通知、统一入口与六类XLSX台账。阶段范围及验收见 `docs/superpowers/plans/2026-10-24-srm-stage-one-closeout.md`，使用说明见 `docs/srm-stage-one-guide.md`。已通过前端371测试、七包类型检查、Java相关回归及45项PostgreSQL集成；原库备份副本V217迁移通过，147表原字段内容及117条旧迁移记录一致。原系统尚未切换，PR、CI和最终部署以本节后续交付记录为准，不要将隔离验收当作已发布。
 
 最新开发：`codex/srm-period-performance` 已实现年/季/月同周期绩效比较、按收货登记时间统计履约、周期安全的人工评分回填。47项Java相关测试、7项PostgreSQL集成、31项前端行为测试、类型检查和构建、真实HTTP14周期及桌面/手机浏览器通过；原147表指纹不变，无迁移。当前只在8095/5197隔离预览，原5173仍为以下PR118固定发布。详见 `docs/superpowers/plans/2026-10-24-srm-period-performance.md`。下一步交付本轮PR/CI及保留数据发布；不要重复实现本轮功能。统计基于登记时间，不代表实际签收；人工考核为租户SRM数据，履约样本按订单DataScope过滤。权重模板与自动调级不属于本轮。

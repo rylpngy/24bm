@@ -67,6 +67,9 @@ class UnifiedWorkflowRuntimeIT {
   @Autowired
   private RepositoryService repositoryService;
 
+  @Autowired private org.flowable.engine.RuntimeService runtimeService;
+  @Autowired private org.flowable.engine.HistoryService historyService;
+
   @Autowired
   private ProcessDefinitionApplicationService processDefinitionApplicationService;
 
@@ -127,8 +130,7 @@ class UnifiedWorkflowRuntimeIT {
   @Test
   void purchaseDemandUsesPublishedFlowableVersionWithRoleDataScopeAndBusinessCallback() {
     TenantContext.set(TENANT_ID, null, REVIEWER_ID);
-    ProcessDefinitionResponse created = processDefinitionApplicationService.createProcess(
-        new CreateProcessDefinitionRequest("采购需求审批", "集成测试流程", "file-text", ApprovalBusinessType.PURCHASE_DEMAND));
+    ProcessDefinitionResponse created = demandProcess();
     processDefinitionApplicationService.updateProcess(
         created.id(),
         new UpdateProcessDefinitionRequest(
@@ -206,6 +208,60 @@ class UnifiedWorkflowRuntimeIT {
         where tenant_id = ? and biz_type = ? and biz_id = ?
         """, Integer.class, TENANT_ID, ApprovalBusinessType.PURCHASE_DEMAND, DEMAND_ID)).isZero();
     assertThat(jdbcTemplate.queryForObject("select count(*) from process_instances", Integer.class)).isZero();
+  }
+
+  @Test
+  void initiatorCanWithdrawRealRuntimePreservingHistoryAndResubmitANewInstance() {
+    String demandId = DEMAND_ID + "-withdraw";
+    TenantContext.set(TENANT_ID, null, REVIEWER_ID);
+    var process = demandProcess();
+    processDefinitionApplicationService.updateProcess(process.id(), new UpdateProcessDefinitionRequest(
+        "采购需求撤回测试", "真实撤回", "draft", formSchema(), flowSchema(), ApprovalBusinessType.PURCHASE_DEMAND));
+    processDefinitionApplicationService.publishProcess(process.id());
+    jdbcTemplate.update("""
+        insert into purchase_demands(id,tenant_id,title,department_id,requester_id,budget,status)
+        values(?,?,'撤回需求',?,?,120000,'草稿')
+        """, demandId, TENANT_ID, DEPARTMENT_ID, REQUESTER_ID);
+    TenantContext.set(TENANT_ID, null, REQUESTER_ID);
+    purchaseDemandApplicationService.submit(demandId, Map.of("reason", "申请", "urgency", "高"));
+    var original = unifiedWorkflowApplicationService.getCurrentTenantBusinessHistory("purchase_demand", demandId);
+    TenantContext.set(TENANT_ID, null, REVIEWER_ID);
+    assertThatThrownBy(() -> unifiedWorkflowApplicationService.withdrawPurchaseDemand(original.workflowInstanceId(), "代撤回"))
+        .isInstanceOf(PermissionDeniedException.class);
+    TenantContext.set(TENANT_ID, null, REQUESTER_ID);
+    unifiedWorkflowApplicationService.withdrawPurchaseDemand(original.workflowInstanceId(), "修改采购数量");
+    assertThat(runtimeService.createProcessInstanceQuery().processInstanceId(original.flowableProcessInstanceId()).count()).isZero();
+    assertThat(historyService.createHistoricProcessInstanceQuery().processInstanceId(original.flowableProcessInstanceId())
+        .singleResult().getDeleteReason()).isEqualTo("修改采购数量");
+    var cancelled = unifiedWorkflowApplicationService.getCurrentTenantHistory(original.workflowInstanceId());
+    assertThat(cancelled.status()).isEqualTo("cancelled");
+    assertThat(cancelled.events()).anySatisfy(event -> {
+      assertThat(event.action()).isEqualTo("cancelled");
+      assertThat(event.comment()).isEqualTo("修改采购数量");
+      assertThat(event.actorId()).isEqualTo(REQUESTER_ID);
+    });
+    assertThat(jdbcTemplate.queryForObject("select status from purchase_demands where id=?", String.class, demandId))
+        .isEqualTo("草稿");
+    assertThatThrownBy(() -> unifiedWorkflowApplicationService.withdrawPurchaseDemand(original.workflowInstanceId(), "重复撤回"))
+        .isInstanceOf(IllegalStateException.class);
+    purchaseDemandApplicationService.submit(demandId, Map.of("reason", "修正后重提", "urgency", "高"));
+    var restarted = unifiedWorkflowApplicationService.getCurrentTenantBusinessHistory("purchase_demand", demandId);
+    assertThat(restarted.workflowInstanceId()).isNotEqualTo(original.workflowInstanceId());
+    assertThat(restarted.flowableProcessInstanceId()).isNotEqualTo(original.flowableProcessInstanceId());
+    assertThat(restarted.status()).isEqualTo("processing");
+    TenantContext.set(TENANT_ID, null, REVIEWER_ID);
+    var approved = unifiedWorkflowApplicationService.completeCurrentUserBusinessTask("purchase_demand", demandId, true, "确认");
+    assertThat(approved.status()).isEqualTo("approved");
+    TenantContext.set(TENANT_ID, null, REQUESTER_ID);
+    assertThatThrownBy(() -> unifiedWorkflowApplicationService.withdrawPurchaseDemand(restarted.workflowInstanceId(), "已完成不能撤回"))
+        .isInstanceOf(IllegalStateException.class);
+  }
+
+  private ProcessDefinitionResponse demandProcess() {
+    return processDefinitionApplicationService.listCurrentTenantProcesses().stream()
+        .filter(process -> ApprovalBusinessType.PURCHASE_DEMAND.equals(process.businessType()))
+        .findFirst().orElseGet(() -> processDefinitionApplicationService.createProcess(
+            new CreateProcessDefinitionRequest("采购需求审批", "集成测试流程", "file-text", ApprovalBusinessType.PURCHASE_DEMAND)));
   }
 
   private void insertUser(String id, String name, String departmentId) {

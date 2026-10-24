@@ -17,7 +17,10 @@ public final class ReceiptInspection {
 
   // 按收货数量与合格数量判定结论。
   public static String conclude(int received, int qualified) {
-    if (received <= 0 || qualified >= received) {
+    if (received <= 0 || qualified < 0 || qualified > received) {
+      throw new IllegalArgumentException("Received quantity must be positive and qualified quantity between zero and received");
+    }
+    if (qualified == received) {
       return ALL_QUALIFIED;
     }
     return qualified <= 0 ? ALL_REJECTED : PARTIAL;

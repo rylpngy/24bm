@@ -14,6 +14,14 @@ class PurchaseDemandApprovalStatusTransitionTests {
       new PurchaseDemandApprovalStatusTransition();
 
   @Test
+  void allowsRejectedDemandToStartANewApprovalButNeverApprovedDemand() {
+    assertThatCode(() -> transition.requireSubmission(PurchaseDemandStatus.REJECTED, "demand-1"))
+        .doesNotThrowAnyException();
+    assertThatThrownBy(() -> transition.requireSubmission(PurchaseDemandStatus.APPROVED, "demand-1"))
+        .isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
   void allowsSubmissionOnlyFromDraftDemand() {
     assertThatCode(() -> transition.requireSubmission(PurchaseDemandStatus.DRAFT, "demand-1"))
         .doesNotThrowAnyException();

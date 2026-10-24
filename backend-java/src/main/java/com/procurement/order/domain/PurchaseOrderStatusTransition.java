@@ -12,7 +12,8 @@ public class PurchaseOrderStatusTransition {
   }
 
   public void requireShipment(String currentStatus, String orderId) {
-    if (!PurchaseOrderStatus.PENDING_SHIPMENT.equals(currentStatus)) {
+    if (!PurchaseOrderStatus.PENDING_SHIPMENT.equals(currentStatus)
+        && !PurchaseOrderStatus.SHIPPED.equals(currentStatus)) {
       throw new IllegalStateException("Only ready-to-ship orders can be shipped: " + orderId);
     }
   }

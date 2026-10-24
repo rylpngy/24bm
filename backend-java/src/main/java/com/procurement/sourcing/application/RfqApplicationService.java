@@ -114,6 +114,7 @@ public class RfqApplicationService {
     if (rfq == null) {
       throw new IllegalArgumentException("RFQ not found in tenant scope: " + rfqId);
     }
+    requireWriteAccess(rfq);
     rfqSourcingStatusTransition.requireOpenedForEvaluation(rfq.status(), rfqId);
     List<Quote> quotes =
         quoteMapper.listByTenantAndRfqAndRound(tenantId, rfqId, rfq.currentRound());
@@ -151,6 +152,7 @@ public class RfqApplicationService {
     if (rfq == null) {
       throw new IllegalArgumentException("RFQ not found in tenant scope: " + rfqId);
     }
+    requireWriteAccess(rfq);
     rfqSourcingStatusTransition.requireQuotingForOpen(rfq.status(), rfqId);
     rfqSourcingStatusTransition.requireDeadlinePassedOrForce(rfq.deadlineAt(), force, rfqId);
 
@@ -171,6 +173,7 @@ public class RfqApplicationService {
     if (rfq == null) {
       throw new IllegalArgumentException("RFQ not found in tenant scope: " + rfqId);
     }
+    requireWriteAccess(rfq);
     if (!RfqStatus.OPENED.equals(rfq.status())) {
       throw new IllegalStateException("Only opened RFQs can start a new round: " + rfqId);
     }
@@ -202,6 +205,18 @@ public class RfqApplicationService {
     Rfq rfq = rfqMapper.findByTenantAndId(tenantId, rfqId);
     if (rfq == null) {
       throw new IllegalArgumentException("RFQ not found in tenant scope: " + rfqId);
+    }
+    requireWriteAccess(rfq);
+    if (RfqStatus.DRAFT.equals(rfq.status())) {
+      if (!"废标".equals(kind) || reason == null || reason.isBlank()) {
+        throw new IllegalArgumentException("取消草稿须填写取消原因");
+      }
+      String detail = "草稿取消:" + reason.strip();
+      if (rfqMapper.cancelDraft(tenantId, rfqId, detail) == 0) {
+        throw new IllegalStateException("草稿状态已变化,请刷新后重试");
+      }
+      auditLogApplicationService.recordTenantAction(tenantId, "rfq.draft_cancelled", "rfq", rfqId, detail);
+      return toResponse(rfqMapper.findByTenantAndId(tenantId, rfqId));
     }
     String target = switch (kind) {
       case "流标" -> RfqStatus.NO_BID;
@@ -258,6 +273,7 @@ public class RfqApplicationService {
       if (request.directItems() == null || request.directItems().isEmpty()) {
         throw new IllegalArgumentException("请选择要合并的采购需求,或在直录模式下录入采购内容明细");
       }
+      requireDemandScope(request.directDepartmentId(), userId);
       String directDemandId = directDemandRegistrar.registerApproved(
           "直录·" + request.title(),
           request.directDepartmentId(),
@@ -335,13 +351,22 @@ public class RfqApplicationService {
     if (rfq == null) {
       throw new IllegalArgumentException("RFQ not found: " + rfqId);
     }
-    if (!RfqStatus.QUOTING.equals(rfq.status())) {
+    requireWriteAccess(rfq);
+    boolean draft = RfqStatus.DRAFT.equals(rfq.status());
+    if (!draft && !RfqStatus.QUOTING.equals(rfq.status())) {
       throw new IllegalStateException("Only quoting RFQ can be updated: " + rfqId);
     }
     rfqSourcingStatusTransition.requireFutureDeadline(request.deadlineAt(), rfqId);
-    validateSuppliers(tenantId, request.invitedSupplierIds());
+    List<String> supplierIds = request.invitedSupplierIds() == null
+        ? rfqInviteMapper.listSupplierIds(tenantId, rfqId) : request.invitedSupplierIds();
+    if (request.invitedSupplierIds() != null) validateSuppliers(tenantId, supplierIds);
 
-    int updated = rfqMapper.updateQuotingDetails(
+    if (!draft && supplierIds.isEmpty()) {
+      throw new IllegalArgumentException("报价中的项目须保留受邀供应商");
+    }
+    int updated = draft ? rfqMapper.updateDraftDetails(tenantId, rfqId, request.title(), request.deadlineAt(),
+        orEmpty(request.quoteRequirement()), orEmpty(request.deliveryRequirement()),
+        orDefaultEvaluation(request.evaluationMethod())) : rfqMapper.updateQuotingDetails(
         tenantId,
         rfqId,
         request.title(),
@@ -353,16 +378,18 @@ public class RfqApplicationService {
       throw new IllegalStateException("RFQ status changed before update could be saved: " + rfqId);
     }
 
-    rfqInviteMapper.deleteByRfq(tenantId, rfqId);
-    for (String supplierId : request.invitedSupplierIds()) {
-      rfqInviteMapper.insert(newId("rfq-invite"), tenantId, rfqId, supplierId, RfqInviteStatus.INVITED);
+    if (request.invitedSupplierIds() != null) {
+      rfqInviteMapper.deleteByRfq(tenantId, rfqId);
+      for (String supplierId : supplierIds) {
+        rfqInviteMapper.insert(newId("rfq-invite"), tenantId, rfqId, supplierId, RfqInviteStatus.INVITED);
+      }
     }
 
     auditLogApplicationService.recordTenantAction(
         RfqAuditAction.UPDATED,
         AuditTargetType.RFQ,
         rfqId);
-    for (String supplierId : request.invitedSupplierIds()) {
+    for (String supplierId : draft ? List.<String>of() : supplierIds) {
       notificationApplicationService.notifyActiveSupplierUsers(
           tenantId,
           supplierId,
@@ -379,6 +406,7 @@ public class RfqApplicationService {
       if (demand == null) {
         throw new IllegalArgumentException("Purchase demand not found in tenant scope: " + demandId);
       }
+      requireDemandScope(demand.departmentId(), demand.requesterId());
       rfqSourcingStatusTransition.requireApprovedDemandForRfq(demand.status(), demandId);
       RfqDemandLinkPolicy.requireUnlinkedDemand(
           rfqDemandMapper.countByTenantAndDemand(tenantId, demandId),
@@ -512,7 +540,40 @@ public class RfqApplicationService {
     if (rfq == null) {
       throw new IllegalArgumentException("RFQ not found in tenant scope: " + rfqId);
     }
+    requireWriteAccess(rfq);
     return rfq;
+  }
+
+  public void requireWriteAccess(String rfqId) {
+    requireRfq(TenantAccessGuard.requireTenantId("buyer RFQ APIs"), rfqId);
+  }
+
+  private void requireWriteAccess(Rfq rfq) {
+    DataScope scope = dataScopeService.currentUserDataScope();
+    if (scope == null || scope.blocksAll()) {
+      throw new com.procurement.common.tenant.PermissionDeniedException("当前数据范围无权操作该询比项目");
+    }
+    if (!scope.restricted()) return;
+    var demands = rfqDemandMapper.listDemandAccess(rfq.tenantId(), rfq.id());
+    if (demands.isEmpty()) {
+      if (scope.requesterId() != null && scope.requesterId().equals(rfq.ownerId())) return;
+      throw new com.procurement.common.tenant.PermissionDeniedException("询比项目缺少可核验的需求归属");
+    }
+    for (var demand : demands) {
+      if (demand.demandId() == null) {
+        throw new com.procurement.common.tenant.PermissionDeniedException("关联采购需求不存在或不在本租户");
+      }
+      requireDemandScope(demand.departmentId(), demand.requesterId());
+    }
+  }
+
+  private void requireDemandScope(String departmentId, String requesterId) {
+    DataScope scope = dataScopeService.currentUserDataScope();
+    if (scope == null || scope.blocksAll() || (scope.restricted() &&
+        (scope.requesterId() != null ? !scope.requesterId().equals(requesterId)
+            : !scope.departmentIds().contains(departmentId)))) {
+      throw new com.procurement.common.tenant.PermissionDeniedException("当前数据范围无权操作关联采购需求");
+    }
   }
 
   // 一键催标:向本轮尚未提交报价的受邀供应商发送催报提醒,返回催促家数。
@@ -523,6 +584,7 @@ public class RfqApplicationService {
     if (rfq == null) {
       throw new IllegalArgumentException("RFQ not found in tenant scope: " + rfqId);
     }
+    requireWriteAccess(rfq);
     rfqSourcingStatusTransition.requireQuotingForQuoteSubmission(rfq.status(), rfqId);
     int reminded = 0;
     for (String supplierId : rfqInviteMapper.listSupplierIds(tenantId, rfqId)) {

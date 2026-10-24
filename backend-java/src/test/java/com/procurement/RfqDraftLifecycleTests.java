@@ -75,6 +75,93 @@ class RfqDraftLifecycleTests {
     TenantContext.clear();
   }
 
+  @org.junit.jupiter.api.BeforeEach
+  void unrestrictedScope() {
+    when(dataScopeService.currentUserDataScope())
+        .thenReturn(com.procurement.identity.domain.DataScope.unrestricted());
+  }
+
+  @Test
+  void draftCanBeCorrectedWithoutPublishingOrNotifyingSuppliers() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1")).thenReturn(rfq("草稿"));
+    // Mapper success is deliberately stubbed generically: production must choose a draft-safe SQL update.
+    org.mockito.Mockito.doAnswer(inv -> 1).when(rfqMapper).updateDraftDetails(
+        anyString(), anyString(), anyString(), any(), any(), any(), any());
+    rfqApplicationService.update("rfq-1", new com.procurement.sourcing.api.UpdateRfqRequest(
+        "修正草稿", List.of(), OffsetDateTime.now().plusDays(8), "修正", "", "最低价"));
+    verify(notificationApplicationService, never())
+        .notifyActiveSupplierUsers(anyString(), anyString(), anyString(), anyString());
+  }
+
+  @Test
+  void cancellingDraftKeepsHistoryAndUsesReleasedTerminalStatus() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1")).thenReturn(rfq("草稿"));
+    when(rfqMapper.cancelDraft("tenant-1", "rfq-1", "草稿取消:重复建项")).thenReturn(1);
+    rfqApplicationService.abortRfq("rfq-1", "废标", "重复建项");
+    verify(rfqMapper).cancelDraft("tenant-1", "rfq-1", "草稿取消:重复建项");
+  }
+
+  @Test
+  void mixedDepartmentLinkedRfqCannotBePublishedByPartiallyScopedUser() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(dataScopeService.currentUserDataScope())
+        .thenReturn(com.procurement.identity.domain.DataScope.departments(List.of("dept-it")));
+    when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1")).thenReturn(rfq("草稿"));
+    when(rfqDemandMapper.listDemandIds("tenant-1", "rfq-1")).thenReturn(List.of("outside"));
+    when(rfqDemandMapper.listDemandAccess("tenant-1", "rfq-1"))
+        .thenReturn(List.of(new RfqDemandMapper.DemandAccess("outside", "dept-other", "other-user")));
+    when(purchaseDemandMapper.findByTenantAndId("tenant-1", "outside"))
+        .thenReturn(new com.procurement.demand.domain.PurchaseDemand(
+            "outside", "tenant-1", "外部门", "dept-other", "other-user",
+            java.math.BigDecimal.ONE, "已通过", null, null, null, null, null, null));
+    assertThatThrownBy(() -> rfqApplicationService.publish("rfq-1"))
+        .isInstanceOf(com.procurement.common.tenant.PermissionDeniedException.class);
+    verify(rfqMapper, never()).updateStatus(any(), any(), any(), any());
+  }
+
+  @Test
+  void fourFieldDraftUpdatePreservesExistingInvitations() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1")).thenReturn(rfq("草稿"));
+    when(rfqInviteMapper.listSupplierIds("tenant-1", "rfq-1")).thenReturn(List.of("supplier-1"));
+    when(rfqMapper.updateDraftDetails(anyString(), anyString(), anyString(), any(), any(), any(), any())).thenReturn(1);
+    rfqApplicationService.update("rfq-1", new com.procurement.sourcing.api.UpdateRfqRequest(
+        "修正草稿", null, OffsetDateTime.now().plusDays(8), "修正", "修正交付", null));
+    verify(rfqInviteMapper, never()).deleteByRfq(any(), any());
+    verify(notificationApplicationService, never()).notifyActiveSupplierUsers(any(), any(), any(), any());
+  }
+
+  @Test
+  void everyAffectedRfqWriteRejectsADemandOutsideScopeBeforeMutation() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(dataScopeService.currentUserDataScope())
+        .thenReturn(com.procurement.identity.domain.DataScope.self("buyer-user"));
+    when(rfqMapper.findByTenantAndId("tenant-1", "rfq-1")).thenReturn(rfq("草稿"));
+    when(rfqDemandMapper.listDemandIds("tenant-1", "rfq-1")).thenReturn(List.of("outside"));
+    when(rfqDemandMapper.listDemandAccess("tenant-1", "rfq-1"))
+        .thenReturn(List.of(new RfqDemandMapper.DemandAccess("outside", "dept-it", "other-user")));
+    when(purchaseDemandMapper.findByTenantAndId("tenant-1", "outside"))
+        .thenReturn(new com.procurement.demand.domain.PurchaseDemand(
+            "outside", "tenant-1", "外需求", "dept-it", "other-user",
+            java.math.BigDecimal.ONE, "已通过", null, null, null, null, null, null));
+    List<org.assertj.core.api.ThrowableAssert.ThrowingCallable> actions = List.of(
+        () -> rfqApplicationService.update("rfq-1", new com.procurement.sourcing.api.UpdateRfqRequest(
+            "越权修改", null, OffsetDateTime.now().plusDays(1), "", "", null)),
+        () -> rfqApplicationService.abortRfq("rfq-1", "废标", "越权取消"),
+        () -> rfqApplicationService.updateDraftInvitations("rfq-1", List.of()),
+        () -> rfqApplicationService.openBids("rfq-1", true),
+        () -> rfqApplicationService.startNewRound("rfq-1", OffsetDateTime.now().plusDays(1), false, ""),
+        () -> rfqApplicationService.announceResult("rfq-1"),
+        () -> rfqApplicationService.remindPendingSuppliers("rfq-1"));
+    actions.forEach(action -> assertThatThrownBy(action)
+        .isInstanceOf(com.procurement.common.tenant.PermissionDeniedException.class));
+    verify(rfqMapper, never()).updateStatus(any(), any(), any(), any());
+    verify(rfqMapper, never()).cancelDraft(any(), any(), any());
+    verify(rfqInviteMapper, never()).deleteByRfq(any(), any());
+  }
+
   private Rfq rfq(String status) {
     return new Rfq(
         "rfq-1", "tenant-1", "行政车辆维保询价", status,

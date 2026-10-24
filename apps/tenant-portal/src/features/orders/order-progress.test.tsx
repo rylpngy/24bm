@@ -8,7 +8,7 @@ vi.mock('@24bid/api-client', () => ({
   usePurchaseOrderList: () => ({ data: { data: [{ id: 'received-order', status: '已收货', amount: 1200 }] } }),
   useBuyerSupplierList: () => ({ data: { data: [] } }),
   useBuyerReceiptList: () => ({ data: { data: [] } }),
-  useBuyerDeliveryList: () => ({ data: { data: fixture.delivered ? [{ orderId: 'received-order', createdAt: '2026-10-23T10:00:00Z' }] : [] } }),
+  useBuyerDeliveryList: () => ({ data: { data: fixture.delivered ? [{ id: 'batch', orderId: 'received-order', createdAt: '2026-10-23T10:00:00Z' }] : [] } }),
 }));
 afterEach(cleanup);
 const open = () => {

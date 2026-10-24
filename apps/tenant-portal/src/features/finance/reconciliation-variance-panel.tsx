@@ -9,6 +9,7 @@ import {
 } from '@24bid/api-client';
 import { FeedbackNotice, MiniFact, StatusPill } from '@24bid/ui';
 import { financeErrorMessage } from './finance-feedback';
+import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
 
 const currency = (v?: number) =>
   v == null ? '—' : `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
@@ -16,6 +17,9 @@ const currency = (v?: number) =>
 // 对账差异处理:三单匹配金额差异 → 登记差异处理 → 标记已处理(解除付款阻断)。
 // 作为发票对账详情的二级视图渲染(标题/返回由宿主页提供);focusInvoiceId 限定只看当前发票。
 export function ReconciliationVariancePanel({ focusInvoiceId }: { focusInvoiceId?: string }) {
+  const { can } = useBuyerPermissions();
+  const canResolve = can('buyer:payment:register');
+  const canApprove = can('buyer:variance:approve');
   const queryClient = useQueryClient();
   const matches = useBuyerFinanceActionThreeWayMatches();
   const handlings = useBuyerFinanceActionVarianceHandlings();
@@ -24,10 +28,11 @@ export function ReconciliationVariancePanel({ focusInvoiceId }: { focusInvoiceId
   const approve = useBuyerFinanceActionApproveVarianceHandling();
   const [feedback, setFeedback] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [results, setResults] = useState<Record<string, string>>({});
   const onError = (error: unknown) => setActionError(financeErrorMessage(error));
 
   const varianceMatches = (matches.data?.data ?? []).filter(
-    (m) => m.matchStatus === '金额差异' && (!focusInvoiceId || m.invoiceId === focusInvoiceId),
+    (m) => m.matchStatus != null && m.matchStatus !== '三单匹配通过' && (!focusInvoiceId || m.invoiceId === focusInvoiceId),
   );
   const handlingList = handlings.data?.data ?? [];
   const handlingByInvoice = new Map(handlingList.map((h) => [h.invoiceId, h]));
@@ -43,26 +48,31 @@ export function ReconciliationVariancePanel({ focusInvoiceId }: { focusInvoiceId
         /three-way-matches|variance-handlings|\/buyer\/invoices/.test(q.queryKey[0] as string),
     });
 
-  const onCreate = (matchId: string) =>
+  const onCreate = (matchId: string) => {
+    if (!canResolve) return;
     createHandling.mutate(
       { matchId },
       { onError, onSuccess: () => { setActionError(null); setFeedback('差异处理已登记,完成核实后标记已处理。'); refresh(); } },
     );
+  };
 
-  const onResolve = (id: string) =>
+  const onResolve = (id: string) => {
+    if (!canResolve || !results[id]?.trim()) return;
     resolve.mutate(
-      { varianceHandlingId: id, data: { status: '已处理', result: '已与供应商核实,按差异金额调整入账' } },
+      { varianceHandlingId: id, data: { status: '已处理', result: results[id].trim() } },
       {
         onError,
         onSuccess: () => {
           setActionError(null);
-          setFeedback('差异核实已提交。超 ¥10,000 的差异将转财务经理签核,否则直接结案解除阻断。');
+          setFeedback('处置结果已提交，付款仍须通过数量、金额及凭据校验。');
           refresh();
         },
       },
     );
+  };
 
-  const onApprove = (id: string, approved: boolean) =>
+  const onApprove = (id: string, approved: boolean) => {
+    if (!canApprove) return;
     approve.mutate(
       {
         varianceHandlingId: id,
@@ -72,20 +82,19 @@ export function ReconciliationVariancePanel({ focusInvoiceId }: { focusInvoiceId
         onError,
         onSuccess: () => {
           setActionError(null);
-          setFeedback(approved ? '财务经理签核通过,付款阻断解除。' : '财务经理已驳回,退回待处理。');
+          setFeedback(approved ? '财务经理签核通过，付款仍须通过履约校验。' : '财务经理已驳回,退回待处理。');
           refresh();
         },
       },
     );
+  };
 
   // 行操作(放在标题行状态徽标之后):按状态显示 标记已处理 / 财务经理签核(通过·驳回) / 已完成提示。
   // 头部已展示状态徽标,此处不再重复 StatusPill。
   const renderActions = (h?: { id?: string; status?: string }) => {
     if (!h?.id) return null;
-    if (h.status === '已处理') {
-      return <span className="text-xs font-bold text-emerald-700">差异已处理,付款可继续。</span>;
-    }
     if (h.status === '待财务经理签核') {
+      if (!canApprove) return null;
       const busy = approve.isPending && approve.variables?.varianceHandlingId === h.id;
       return (
         <>
@@ -100,12 +109,19 @@ export function ReconciliationVariancePanel({ focusInvoiceId }: { focusInvoiceId
         </>
       );
     }
+    if (!canResolve) return null;
     const busyR = resolve.isPending && resolve.variables?.varianceHandlingId === h.id;
     return (
-      <button type="button" onClick={() => onResolve(h.id!)} disabled={busyR}
+      <>
+      <input aria-label={`处置结果 ${h.id}`} value={results[h.id] ?? ''}
+        onChange={(e) => setResults((previous) => ({ ...previous, [h.id!]: e.target.value }))}
+        placeholder="处置结果及凭据编号" maxLength={1000}
+        className="h-8 w-56 max-w-full rounded-md border border-slate-200 px-2 text-xs" />
+      <button type="button" onClick={() => onResolve(h.id!)} disabled={busyR || !results[h.id]?.trim()}
         className="inline-flex h-8 items-center rounded-md bg-emerald-600 px-3 text-xs font-black text-white hover:bg-emerald-700 disabled:bg-slate-400">
         {busyR ? '处理中' : '标记已处理(超 ¥1万转签核)'}
       </button>
+      </>
     );
   };
 
@@ -117,9 +133,9 @@ export function ReconciliationVariancePanel({ focusInvoiceId }: { focusInvoiceId
 
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
-      <h3 className="text-base font-black text-slate-950">三单金额差异 · 登记 · 核实闭环</h3>
+      <h3 className="text-base font-black text-slate-950">三单履约与金额差异</h3>
       <p className="mt-1 text-xs font-bold text-slate-400">
-        差异核实后标记已处理即可解除付款阻断;超 ¥10,000 的差异需财务经理签核。
+        未决差异 {varianceMatches.length} 笔
       </p>
       <div className="mt-3" />
       {(actionError || feedback) && (
@@ -133,8 +149,8 @@ export function ReconciliationVariancePanel({ focusInvoiceId }: { focusInvoiceId
           tone="info"
           message={
             focusInvoiceId
-              ? '本发票暂无待处理的金额差异,可返回对账详情继续付款登记。'
-              : '当前无未处理的金额差异。'
+              ? '本发票暂无待处理差异。'
+              : '当前无未处理差异。'
           }
         />
       ) : (
@@ -152,7 +168,7 @@ export function ReconciliationVariancePanel({ focusInvoiceId }: { focusInvoiceId
                   </div>
                   <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
                     <StatusPill label={handled ? '已处理' : h?.status ?? '待处理'} />
-                    {!h && m.id ? (
+                    {!h && m.id && canResolve ? (
                       <button type="button" onClick={() => onCreate(m.id!)} disabled={busyC}
                         className="inline-flex h-8 items-center rounded-md bg-emerald-600 px-3 text-xs font-black text-white hover:bg-emerald-700 disabled:bg-slate-400">
                         {busyC ? '登记中' : '登记差异处理'}

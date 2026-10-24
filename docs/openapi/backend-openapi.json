@@ -5922,6 +5922,66 @@
         }
       }
     },
+    "/api/v1/buyer/workflow/instances/{workflowInstanceId}/withdraw-purchase-demand": {
+      "post": {
+        "tags": [
+          "unified-workflow-controller"
+        ],
+        "operationId": "UnifiedWorkflow_withdrawPurchaseDemand",
+        "parameters": [
+          {
+            "name": "workflowInstanceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WithdrawPurchaseDemandWorkflowRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/variance-handlings": {
       "get": {
         "tags": [
@@ -9325,6 +9385,66 @@
         }
       }
     },
+    "/api/v1/buyer/rfqs/{rfqId}/execution/archives": {
+      "post": {
+        "tags": [
+          "procurement-execution-controller"
+        ],
+        "operationId": "ProcurementExecution_archive",
+        "parameters": [
+          {
+            "name": "rfqId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArchiveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseArchiveSummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/rfqs/{rfqId}/enrollments/{enrollmentId}/dismiss": {
       "post": {
         "tags": [
@@ -9722,6 +9842,114 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseRfqResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/receipts/{receiptId}/disposition-review": {
+      "get": {
+        "tags": [
+          "buyer-receipt-disposition-review-controller"
+        ],
+        "operationId": "BuyerReceiptDispositionReview_get",
+        "parameters": [
+          {
+            "name": "receiptId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseReceiptDispositionReview"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "buyer-receipt-disposition-review-controller"
+        ],
+        "operationId": "BuyerReceiptDispositionReview_create",
+        "parameters": [
+          {
+            "name": "receiptId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReceiptDispositionReviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseReceiptDispositionReview"
                 }
               }
             }
@@ -17724,6 +17952,115 @@
         }
       }
     },
+    "/api/v1/buyer/rfqs/{rfqId}/execution": {
+      "get": {
+        "tags": [
+          "procurement-execution-controller"
+        ],
+        "operationId": "ProcurementExecution_get",
+        "parameters": [
+          {
+            "name": "rfqId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseProcurementExecutionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/rfqs/{rfqId}/execution/archives/{id}/download": {
+      "get": {
+        "tags": [
+          "procurement-execution-controller"
+        ],
+        "operationId": "ProcurementExecution_download",
+        "parameters": [
+          {
+            "name": "rfqId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/buyer/rfqs/{rfqId}/evaluation": {
       "get": {
         "tags": [
@@ -21138,6 +21475,21 @@
           }
         }
       },
+      "DeliveryLineItemRequest": {
+        "required": [
+          "orderLineId",
+          "shippedQuantity"
+        ],
+        "type": "object",
+        "properties": {
+          "orderLineId": {
+            "type": "string"
+          },
+          "shippedQuantity": {
+            "type": "number"
+          }
+        }
+      },
       "DeliveryResponse": {
         "type": "object",
         "properties": {
@@ -21180,6 +21532,12 @@
           },
           "logisticsNote": {
             "type": "string"
+          },
+          "lineItems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeliveryLineItemRequest"
+            }
           }
         }
       },
@@ -21939,7 +22297,6 @@
       },
       "UpdateRfqRequest": {
         "required": [
-          "invitedSupplierIds",
           "title"
         ],
         "type": "object",
@@ -24053,6 +24410,12 @@
           },
           "logisticsNote": {
             "type": "string"
+          },
+          "lineItems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeliveryLineItemRequest"
+            }
           }
         }
       },
@@ -24988,6 +25351,19 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "WithdrawPurchaseDemandWorkflowRequest": {
+        "required": [
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "maxLength": 1000,
+            "minLength": 0,
+            "type": "string"
           }
         }
       },
@@ -26314,6 +26690,54 @@
           }
         }
       },
+      "ArchiveRequest": {
+        "required": [
+          "remark"
+        ],
+        "type": "object",
+        "properties": {
+          "remark": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseArchiveSummary": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ArchiveSummary"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ArchiveSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "stale": {
+            "type": "boolean"
+          }
+        }
+      },
       "ApiResponseRfqEnrollmentResponse": {
         "type": "object",
         "properties": {
@@ -26483,6 +26907,75 @@
           },
           "reason": {
             "type": "string"
+          }
+        }
+      },
+      "CreateReceiptDispositionReviewRequest": {
+        "required": [
+          "decision",
+          "evidenceNo",
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "decision": {
+            "maxLength": 30,
+            "minLength": 0,
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 2000,
+            "minLength": 0,
+            "type": "string"
+          },
+          "evidenceNo": {
+            "maxLength": 500,
+            "minLength": 0,
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseReceiptDispositionReview": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ReceiptDispositionReview"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ReceiptDispositionReview": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "receiptId": {
+            "type": "string"
+          },
+          "decision": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "evidenceNo": {
+            "type": "string"
+          },
+          "reviewedBy": {
+            "type": "string"
+          },
+          "reviewedAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -26878,7 +27371,8 @@
       },
       "CreatePurchaseOrderRequest": {
         "required": [
-          "awardId"
+          "awardId",
+          "expectedReceiptDate"
         ],
         "type": "object",
         "properties": {
@@ -28302,6 +28796,13 @@
           },
           "disbursed": {
             "type": "number"
+          },
+          "pendingAllocationAmount": {
+            "type": "number"
+          },
+          "unverifiedPaymentCount": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },
@@ -31441,6 +31942,93 @@
           },
           "signature": {
             "type": "string"
+          }
+        }
+      },
+      "ApiResponseProcurementExecutionResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ProcurementExecutionResponse"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "Document": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "module": {
+            "type": "string"
+          },
+          "recordId": {
+            "type": "string"
+          }
+        }
+      },
+      "ProcurementExecutionResponse": {
+        "type": "object",
+        "properties": {
+          "rfqId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "documents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Document"
+            }
+          },
+          "budgetAmount": {
+            "type": "number"
+          },
+          "orderAmount": {
+            "type": "number"
+          },
+          "invoicedAmount": {
+            "type": "number"
+          },
+          "paidAmount": {
+            "type": "number"
+          },
+          "remainingAmount": {
+            "type": "number"
+          },
+          "blockers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "canArchive": {
+            "type": "boolean"
+          },
+          "archives": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ArchiveSummary"
+            }
           }
         }
       },

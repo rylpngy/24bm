@@ -1,5 +1,6 @@
 import { Fragment, useMemo, useState } from 'react';
 import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
+import { ReceiptDispositionReview } from './receipt-disposition-review';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, ClipboardCheck, Info, PackageCheck } from 'lucide-react';
 import {
@@ -42,6 +43,7 @@ interface ReceiveLine {
   description: string;
   unit?: string;
   ordered?: number;
+  remaining: number;
   received: string;
   qualified: string;
 }
@@ -58,6 +60,7 @@ export function ReceiptsPage() {
   const [page, setPage] = useState(1);
   const [receivingId, setReceivingId] = useState<string | null>(null);
   const [expandedReceiptId, setExpandedReceiptId] = useState<string | null>(null);
+  const [reviewingId, setReviewingId] = useState<string | null>(null);
 
   const ordersQuery = usePurchaseOrderList(undefined, { query: { enabled: can('buyer:order:read') } });
   const receiptsQuery = useBuyerReceiptList();
@@ -67,6 +70,18 @@ export function ReceiptsPage() {
 
   const orders = can('buyer:order:read') && !ordersQuery.isError ? ordersQuery.data?.data ?? [] : [];
   const receipts = receiptsQuery.isError ? [] : receiptsQuery.data?.data ?? [];
+  type DeliveryBatch = { id?: string; orderId?: string; trackingNo?: string; shippedQuantity?: number;
+    lineItems?: { orderLineId?: string; shippedQuantity?: number }[] };
+  const batches = (deliveriesQuery.data?.data ?? []) as DeliveryBatch[];
+  const receiptHistory = (id?: string) => receipts.filter(r => r.orderId === id);
+  const deliveryHistory = (id?: string) => batches.filter(d => d.orderId === id);
+  const remainingLine = (id?: string, lineId?: string) => Math.max(0,
+    deliveryHistory(id).flatMap(d => d.lineItems ?? []).filter(l => l.orderLineId === lineId).reduce((s, l) => s + (l.shippedQuantity ?? 0), 0)
+    - receiptHistory(id).flatMap(r => r.lineItems ?? []).filter(l => l.orderLineId === lineId).reduce((s, l) => s + (l.receivedQuantity ?? 0), 0));
+  const attributable = (o: PurchaseOrderResponse) => !!o.lineItems?.length && !!deliveriesQuery.data && !!receiptsQuery.data
+    && !deliveriesQuery.isError && !receiptsQuery.isError && deliveryHistory(o.id).length > 0
+    && deliveryHistory(o.id).every(d => !!d.lineItems?.length && d.shippedQuantity === d.lineItems.reduce((s, l) => s + (l.shippedQuantity ?? 0), 0))
+    && receiptHistory(o.id).every(r => !!r.lineItems?.length && r.receivedQuantity === r.lineItems.reduce((s, l) => s + (l.receivedQuantity ?? 0), 0));
 
   const supplierNames = useMemo(() => {
     const map: Record<string, string> = {};
@@ -134,8 +149,9 @@ export function ReceiptsPage() {
         description: l.description ?? '',
         unit: l.unit,
         ordered: l.quantity,
-        received: String(l.quantity ?? ''),
-        qualified: String(l.quantity ?? ''),
+        remaining: remainingLine(o.id, l.id),
+        received: remainingLine(o.id, l.id) > 0 ? String(remainingLine(o.id, l.id)) : '',
+        qualified: remainingLine(o.id, l.id) > 0 ? String(remainingLine(o.id, l.id)) : '',
       })),
     );
     setHeadReceived('');
@@ -152,15 +168,27 @@ export function ReceiptsPage() {
   const submitReceipt = () => {
     if (!canReceive) return;
     if (!receivingOrder?.id) return;
+    if (!attributable(receivingOrder)) {
+      setError('订单或历史批次缺少可核对行明细，暂停数量续办。'); return;
+    }
     let data: Record<string, unknown>;
     if (lines.length > 0) {
-      const lineItems = lines.map((r) => ({
+      const selected = lines.filter(r => r.received.trim() !== '' || r.qualified.trim() !== '');
+      if (!selected.length || selected.some(r => r.received.trim() === '' || r.qualified.trim() === ''
+        || !Number.isFinite(Number(r.received)) || Number(r.received) <= 0 || Number(r.received) > r.remaining
+        || !Number.isFinite(Number(r.qualified)) || Number(r.qualified) < 0 || Number(r.qualified) > Number(r.received))) {
+        setError('本批实收须大于零且不超过剩余可收，合格数量须介于零与实收之间。'); return;
+      }
+      const lineItems = selected.map((r) => ({
         orderLineId: r.orderLineId,
         receivedQuantity: Number(r.received) || 0,
         qualifiedQuantity: Number(r.qualified) || 0,
       }));
       const totalR = lineItems.reduce((s, li) => s + li.receivedQuantity, 0);
       const totalQ = lineItems.reduce((s, li) => s + li.qualifiedQuantity, 0);
+      if (!Number.isInteger(totalR) || !Number.isInteger(totalQ)) {
+        setError('当前单据抬头收货及合格总量须为整数。'); return;
+      }
       data = {
         result: hasUnqualified ? '部分合格' : '验收合格',
         receivedQuantity: totalR,
@@ -184,7 +212,7 @@ export function ReceiptsPage() {
       { orderId: receivingOrder.id, data: data as never },
       {
         onSuccess: () => {
-          setFeedback(`订单 ${receivingOrder.id} 收货验收完成`);
+          setFeedback(`订单 ${receivingOrder.id} 本批收货验收已登记`);
           setReceivingId(null);
           setTab('done');
           refresh();
@@ -228,6 +256,10 @@ export function ReceiptsPage() {
         </div>
 
         {error && <FeedbackNotice tone="error" message={error} />}
+        {!attributable(o) && <FeedbackNotice tone="info" message="订单或历史批次缺少可核对行明细，暂停数量续办。" />}
+        <p className="text-xs font-bold">已发累计 {deliveryHistory(o.id).reduce((s, d) => s + (d.shippedQuantity ?? 0), 0)} · 已收累计 {receiptHistory(o.id).reduce((s, r) => s + (r.receivedQuantity ?? 0), 0)} · 剩余可收 {lines.reduce((s, l) => s + l.remaining, 0)}</p>
+        {deliveryHistory(o.id).map(d => <p key={d.id} className="break-words text-xs">发货批次 {d.id} · {d.trackingNo} · 数量 {d.shippedQuantity ?? '待核对'}</p>)}
+        {receiptHistory(o.id).map(r => <p key={r.id} className="break-words text-xs">收货批次 {r.id} · 实收 {r.receivedQuantity} · 合格 {r.qualifiedQuantity}</p>)}
 
         <div className="grid gap-4 xl:grid-cols-[1fr_20rem]">
           <div className="min-w-0 space-y-4">
@@ -256,13 +288,14 @@ export function ReceiptsPage() {
                           <td className="px-3 py-2 text-right">
                             {r.ordered}
                             {r.unit ? ` ${r.unit}` : ''}
+                            <span className="block">剩余可收 {r.remaining}</span>
                           </td>
                           <td className="px-2 py-2">
-                            <input type="number" min={0} className={inputCls} value={r.received}
+                            <input type="number" min={0.01} step="0.01" aria-label={`${r.description}本批实收数量`} className={inputCls} value={r.received}
                               onChange={(e) => setLines((ls) => ls.map((x, i) => (i === idx ? { ...x, received: e.target.value } : x)))} />
                           </td>
                           <td className="px-2 py-2">
-                            <input type="number" min={0} className={inputCls} value={r.qualified}
+                            <input type="number" min={0} step="0.01" aria-label={`${r.description}本批合格数量`} className={inputCls} value={r.qualified}
                               onChange={(e) => setLines((ls) => ls.map((x, i) => (i === idx ? { ...x, qualified: e.target.value } : x)))} />
                           </td>
                           <td className={cn('px-3 py-2 text-right font-black', (Number(r.qualified) || 0) < (Number(r.received) || 0) ? 'text-amber-700' : 'text-emerald-700')}>
@@ -384,7 +417,7 @@ export function ReceiptsPage() {
               >
                 取消
               </button>
-              <PrimaryActionButton onClick={submitReceipt} disabled={!canReceive} busy={receipt.isPending} pendingLabel="提交中" size="md" flushTop>
+              <PrimaryActionButton onClick={submitReceipt} disabled={!canReceive || !attributable(o)} busy={receipt.isPending} pendingLabel="提交中" size="md" flushTop>
                 提交验收
               </PrimaryActionButton>
             </div>
@@ -397,6 +430,7 @@ export function ReceiptsPage() {
   // ── 工作台列表 ─────────────────────────────────────────────
   return (
     <Panel title="收货验收" icon={PackageCheck} subtitle="待验收队列 · 验收登记 · 质检记录">
+      {reviewingId && <ReceiptDispositionReview key={reviewingId} receiptId={reviewingId} onClose={() => setReviewingId(null)} />}
       {(ordersQuery.isError || receiptsQuery.isError) && <FeedbackNotice tone="error" message="收货数据加载失败，请刷新或确认当前账号权限。" />}
       <div className="mb-4 grid gap-2 sm:grid-cols-4">
         <MiniFact label="待验收订单" value={`${pendingAll.length} 单`} />
@@ -551,6 +585,9 @@ export function ReceiptsPage() {
                   收货 {r.receivedQuantity ?? '—'} · 合格 {r.qualifiedQuantity ?? '—'} · 合格率{' '}
                   {ratePct(r.qualifiedQuantity, r.receivedQuantity)}
                 </p>
+                {r.id && r.disposition === '退货换货' && (r.qualifiedQuantity ?? 0) < (r.receivedQuantity ?? 0) && (
+                  <button type="button" onClick={() => setReviewingId(r.id!)} className="mt-3 text-sm font-bold text-blue-700">处置复核</button>
+                )}
               </div>
             ))}
           >
@@ -595,6 +632,9 @@ export function ReceiptsPage() {
                         {r.receivedAt?.slice(0, 16).replace('T', ' ') ?? '—'}
                       </td>
                       <td className="px-5 py-5 text-right">
+                        {r.id && r.disposition === '退货换货' && (r.qualifiedQuantity ?? 0) < (r.receivedQuantity ?? 0) && (
+                          <button type="button" onClick={() => setReviewingId(r.id!)} className="mr-2 inline-flex h-8 items-center text-xs font-bold text-blue-700">处置复核</button>
+                        )}
                         <button
                           type="button"
                           onClick={() => setExpandedReceiptId(expandedReceiptId === r.id ? null : r.id ?? null)}

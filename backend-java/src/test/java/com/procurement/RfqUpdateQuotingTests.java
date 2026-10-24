@@ -39,7 +39,7 @@ class RfqUpdateQuotingTests {
   private final RfqDemandMapper rfqDemandMapper = org.mockito.Mockito.mock(RfqDemandMapper.class);
   private final RfqInviteMapper rfqInviteMapper = org.mockito.Mockito.mock(RfqInviteMapper.class);
   private final PurchaseDemandMapper purchaseDemandMapper = org.mockito.Mockito.mock(PurchaseDemandMapper.class);
-  private final DataScopeService dataScopeService = org.mockito.Mockito.mock(DataScopeService.class);
+  private final DataScopeService dataScopeService = TestDataScopes.unrestricted();
   private final BuyerSupplierRelationMapper buyerSupplierRelationMapper = org.mockito.Mockito.mock(BuyerSupplierRelationMapper.class);
   private final SupplierQualificationMapper supplierQualificationMapper = org.mockito.Mockito.mock(SupplierQualificationMapper.class);
   private final TenantFeatureApplicationService tenantFeatureApplicationService =

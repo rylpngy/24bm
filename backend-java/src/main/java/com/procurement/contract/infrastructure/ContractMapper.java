@@ -33,25 +33,42 @@ public interface ContractMapper {
   @Select("select id from contracts where tenant_id = #{tenantId} and id = #{id} for update")
   String lockById(@Param("tenantId") String tenantId, @Param("id") String id);
 
-  @Select("""
-      <script>
-      select exists(select 1 from contracts c where c.tenant_id = #{tenantId} and c.id = #{id}
-        <if test="departmentIds != null or requesterId != null">
-        and exists(select 1 from purchase_orders po
-          join rfqs r on r.tenant_id = po.tenant_id and r.id = po.rfq_id
-          where po.tenant_id = c.tenant_id and po.id = c.related_order_id
-          <if test="requesterId != null">and r.owner_id = #{requesterId}</if>
-          <if test="departmentIds != null">
-          and exists(select 1 from rfq_demands rd
-            join purchase_demands d on d.tenant_id = rd.tenant_id and d.id = rd.demand_id
-            where rd.tenant_id = r.tenant_id and rd.rfq_id = r.id and d.department_id in
-            <foreach collection="departmentIds" item="department" open="(" separator="," close=")">#{department}</foreach>)
-          </if>)
-        </if>)
-      </script>
-      """)
-  boolean canAccessAttachment(@Param("tenantId") String tenantId, @Param("id") String id,
-      @Param("departmentIds") List<String> departmentIds, @Param("requesterId") String requesterId);
+  String VISIBLE_ORDERS = """
+      select po.id from purchase_orders po
+      where po.tenant_id=#{tenantId} and po.rfq_id in (
+      """ + com.procurement.common.data.ProcurementScopeSql.RFQS + ")";
+
+  // Preserve existing callers while routing every contract surface through one whole-order predicate.
+  static com.procurement.identity.domain.DataScope recordScope(List<String> departments, String requester) {
+    if (departments != null && requester != null) {
+      return com.procurement.identity.domain.DataScope.departments(List.of());
+    }
+    if (requester != null) return com.procurement.identity.domain.DataScope.self(requester);
+    return departments == null ? com.procurement.identity.domain.DataScope.unrestricted()
+        : com.procurement.identity.domain.DataScope.departments(departments);
+  }
+
+  default boolean canAccessAttachment(String tenantId, String id, List<String> departmentIds, String requesterId) {
+    return canAccessContractInScope(tenantId, id, recordScope(departmentIds, requesterId));
+  }
+
+  @Select("<script>select exists(select 1 from contracts c where c.tenant_id=#{tenantId} and c.id=#{id}"
+      + " and c.related_order_id in (" + VISIBLE_ORDERS + "))</script>")
+  boolean canAccessContractInScope(@Param("tenantId") String tenantId, @Param("id") String id,
+      @Param("scope") com.procurement.identity.domain.DataScope scope);
+
+  default boolean canAccessOrder(String tenantId, String id, List<String> departmentIds, String requesterId) {
+    return canAccessOrderInScope(tenantId, id, recordScope(departmentIds, requesterId));
+  }
+
+  @Select("<script>select exists(select 1 from (" + VISIBLE_ORDERS + ") visible where visible.id=#{id})</script>")
+  boolean canAccessOrderInScope(@Param("tenantId") String tenantId, @Param("id") String id,
+      @Param("scope") com.procurement.identity.domain.DataScope scope);
+
+  default List<ContractLedger> listByTenantFiltered(String tenantId, String status, String archiveStatus,
+      String supplierId, List<String> scopeDepartmentIds, String requesterId) {
+    return listVisible(tenantId, status, archiveStatus, supplierId, recordScope(scopeDepartmentIds, requesterId));
+  }
 
   @Select("""
       <script>
@@ -60,50 +77,21 @@ public interface ContractMapper {
              sign_date, expiry_date, payment_terms, warranty_terms, renewal_status
       from contracts
       where tenant_id = #{tenantId}
-        <if test="status != null and status != ''">
-        and status = #{status}
-        </if>
-        <if test="archiveStatus != null and archiveStatus != ''">
-        and archive_status = #{archiveStatus}
-        </if>
-        <if test="supplierId != null and supplierId != ''">
-        and supplier_id = #{supplierId}
-        </if>
-        <if test="scopeDepartmentIds != null">
-        and exists (
-          select 1
-          from purchase_orders po
-          join rfqs rfq on rfq.tenant_id = po.tenant_id and rfq.id = po.rfq_id
-          join rfq_demands rd on rd.tenant_id = rfq.tenant_id and rd.rfq_id = rfq.id
-          join purchase_demands pd on pd.tenant_id = rd.tenant_id and pd.id = rd.demand_id
-          where po.tenant_id = contracts.tenant_id
-            and po.id = contracts.related_order_id
-            and pd.department_id in
-            <foreach collection="scopeDepartmentIds" item="departmentId" open="(" separator="," close=")">
-              #{departmentId}
-            </foreach>
+        <if test="status != null and status != ''">and status = #{status}</if>
+        <if test="archiveStatus != null and archiveStatus != ''">and archive_status = #{archiveStatus}</if>
+        <if test="supplierId != null and supplierId != ''">and supplier_id = #{supplierId}</if>
+        and related_order_id in (
+      """ + VISIBLE_ORDERS + """
         )
-        </if>
-        <if test="requesterId != null and requesterId != ''">
-        and exists (
-          select 1
-          from purchase_orders po
-          join rfqs rfq on rfq.tenant_id = po.tenant_id and rfq.id = po.rfq_id
-          where po.tenant_id = contracts.tenant_id
-            and po.id = contracts.related_order_id
-            and rfq.owner_id = #{requesterId}
-        )
-        </if>
       order by updated_at desc, created_at desc
       </script>
       """)
-  List<ContractLedger> listByTenantFiltered(
+  List<ContractLedger> listVisible(
       @Param("tenantId") String tenantId,
       @Param("status") String status,
       @Param("archiveStatus") String archiveStatus,
       @Param("supplierId") String supplierId,
-      @Param("scopeDepartmentIds") List<String> scopeDepartmentIds,
-      @Param("requesterId") String requesterId);
+      @Param("scope") com.procurement.identity.domain.DataScope scope);
 
   @Select("""
       select id, tenant_id, contract_no, contract_name, related_order_id, supplier_id,
@@ -136,23 +124,16 @@ public interface ContractMapper {
 
   @Select("""
       select count(*)
-      from contracts contract
-      join purchase_orders purchase_order
-        on purchase_order.id = contract.related_order_id
-       and purchase_order.tenant_id = contract.tenant_id
-      left join invoices invoice
-        on invoice.order_id = purchase_order.id
-       and invoice.tenant_id = contract.tenant_id
-      where contract.tenant_id = #{tenantId}
-        and contract.id = #{contractId}
-        and (
-          purchase_order.status not in ('已收货', '已完成')
-          or coalesce(invoice.payment_status, '待开票') <> '已付款'
-        )
+      from contract_closeout_checks
+      where tenant_id = #{tenantId} and contract_id = #{contractId}
+        and blocking_reason is not null
       """)
   int countArchiveBlockers(
       @Param("tenantId") String tenantId,
       @Param("contractId") String contractId);
+
+  @Select("select blocking_reason from contract_closeout_checks where tenant_id=#{tenantId} and contract_id=#{contractId}")
+  String archiveBlockingReason(@Param("tenantId") String tenantId, @Param("contractId") String contractId);
 
   @Insert("""
       insert into contracts (

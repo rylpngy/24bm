@@ -73,6 +73,10 @@ public class PaymentAuthorizationService {
       throw new IllegalStateException("付款批次尚未审批通过或已归档，不能登记付款");
     }
     if (!checkMatch) return request;
+    String blockingReason = matches.paymentBlockingReason(tenant, invoice.id());
+    if (blockingReason != null) {
+      throw new IllegalStateException("履约付款校验未通过：" + blockingReason);
+    }
     matches.upsertFromInvoice("match-" + UUID.randomUUID(), tenant, invoice.id());
     var current = matches.listByTenantFiltered(tenant, null, null, null, invoice.id());
     if (current.size() != 1 || !"三单匹配通过".equals(current.getFirst().matchStatus())) {

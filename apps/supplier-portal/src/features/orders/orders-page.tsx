@@ -4,6 +4,7 @@ import { ShoppingCart } from 'lucide-react';
 import {
   type PurchaseOrderResponse,
   useSupplierDeliveryCreate,
+  useSupplierDeliveryList,
   useSupplierInvoiceCreate,
   useSupplierOrderConfirm,
   useSupplierOrderList,
@@ -26,6 +27,9 @@ const currency = (v?: number) =>
 
 const PAGE_SIZE = 8;
 
+type Batch = { id?: string; orderId?: string; trackingNo?: string; shippedQuantity?: number;
+  lineItems?: { orderLineId?: string; shippedQuantity?: number }[] };
+
 const inputCls =
   'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100';
 
@@ -37,11 +41,12 @@ export function OrdersPage({ canConfirm = false, canShip = false, canInvoice = f
   const orders = useSupplierOrderList();
   const confirm = useSupplierOrderConfirm();
   const ship = useSupplierDeliveryCreate();
+  const deliveries = useSupplierDeliveryList();
   const issue = useSupplierInvoiceCreate();
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [shipForm, setShipForm] = useState<{ orderId: string; carrier: string; trackingNo: string; qty: string } | null>(null);
+  const [shipForm, setShipForm] = useState<{ orderId: string; carrier: string; trackingNo: string; quantities: Record<string, string> } | null>(null);
   const [invForm, setInvForm] = useState<{
     orderId: string;
     invoiceNo: string;
@@ -53,6 +58,14 @@ export function OrdersPage({ canConfirm = false, canShip = false, canInvoice = f
   const [page, setPage] = useState(1);
 
   const all = orders.isError ? [] : orders.data?.data ?? [];
+  const batches = (deliveries.data?.data ?? []) as Batch[];
+  const history = (id?: string) => batches.filter(d => d.orderId === id);
+  const shippedLine = (id: string | undefined, lineId?: string) => history(id)
+    .flatMap(d => d.lineItems ?? []).filter(l => l.orderLineId === lineId).reduce((sum, l) => sum + (l.shippedQuantity ?? 0), 0);
+  const attributable = (o: PurchaseOrderResponse) => !deliveries.isError && !!deliveries.data
+    && !!o.lineItems?.length && history(o.id).every(d => !!d.lineItems?.length
+      && d.shippedQuantity === d.lineItems.reduce((s, l) => s + (l.shippedQuantity ?? 0), 0));
+  const remaining = (o: PurchaseOrderResponse) => (o.lineItems ?? []).reduce((s, l) => s + Math.max(0, (l.quantity ?? 0) - shippedLine(o.id, l.id)), 0);
   const statuses = ['全部', ...Array.from(new Set(all.map((o) => o.status).filter(Boolean) as string[]))];
   const kw = keyword.toLowerCase();
   const list = all.filter((o) => {
@@ -120,10 +133,17 @@ export function OrdersPage({ canConfirm = false, canShip = false, canInvoice = f
     setFeedback(null);
     setError(null);
     if (!f || !canShip) return;
-    const quantity = f.qty.trim() === '' ? undefined : Number(f.qty);
-    if (quantity !== undefined && (!Number.isInteger(quantity) || quantity <= 0)) {
+    const order = all.find(o => o.id === orderId);
+    const entered = Object.entries(f.quantities).filter(([, value]) => value.trim() !== '');
+    const lineItems = entered.map(([orderLineId, value]) => ({ orderLineId, shippedQuantity: Number(value) }));
+    const quantity = lineItems.reduce((s, l) => s + l.shippedQuantity, 0);
+    if (!order || !attributable(order) || !Number.isInteger(quantity) || quantity <= 0
+      || lineItems.some(l => !Number.isFinite(l.shippedQuantity) || l.shippedQuantity <= 0)) {
       setError('发货数量应为正整数，不能填写零、负数或小数。');
       return;
+    }
+    if (lineItems.some(l => l.shippedQuantity > (order.lineItems?.find(ol => ol.id === l.orderLineId)?.quantity ?? 0) - shippedLine(orderId, l.orderLineId))) {
+      setError('本批发货数量超过剩余可发数量。'); return;
     }
     ship.mutate(
       {
@@ -132,6 +152,7 @@ export function OrdersPage({ canConfirm = false, canShip = false, canInvoice = f
           carrier: f.carrier.trim(),
           trackingNo: f.trackingNo.trim(),
           shippedQuantity: quantity,
+          ...{ lineItems },
         },
       },
       { onSuccess: () => { setFeedback(`订单 ${orderId} 已登记发货`); setShipForm(null); refresh(); }, onError: reportError },
@@ -146,6 +167,9 @@ export function OrdersPage({ canConfirm = false, canShip = false, canInvoice = f
     const invEditing = invForm?.orderId === o.id;
     return (
       <div className="space-y-3">
+        <p className="text-xs font-bold">剩余可发 {attributable(o) ? remaining(o) : '待核对'} · 已发累计 {history(o.id).reduce((s, d) => s + (d.shippedQuantity ?? 0), 0)}</p>
+        {!attributable(o) && <FeedbackNotice tone="info" message="订单或历史批次缺少可核对行明细，暂停数量续办。" />}
+        {history(o.id).map(d => <p key={d.id} className="break-words text-xs">{d.id} · {d.trackingNo} · 本批 {d.shippedQuantity ?? '待核对'}</p>)}
         <div className="grid gap-2 sm:grid-cols-3">
           <MiniFact label="预计到货" value={o.expectedReceiptDate ?? '—'} />
           <MiniFact label="收货地址" value={o.deliveryAddress || '—'} />
@@ -191,9 +215,13 @@ export function OrdersPage({ canConfirm = false, canShip = false, canInvoice = f
                 onChange={(e) => setShipForm({ ...shipForm!, carrier: e.target.value })} />
               <input className={inputCls} placeholder="运单号" value={shipForm!.trackingNo}
                 onChange={(e) => setShipForm({ ...shipForm!, trackingNo: e.target.value })} />
-              <input className={inputCls} type="number" min="1" step="1" placeholder="发货数量" value={shipForm!.qty}
-                onChange={(e) => setShipForm({ ...shipForm!, qty: e.target.value })} />
             </div>
+            {(o.lineItems ?? []).map(l => <label key={l.id} className="mt-2 block text-xs">
+              {l.description} · 剩余可发 {Math.max(0, (l.quantity ?? 0) - shippedLine(o.id, l.id))}
+              <input className={inputCls} type="number" min="0.0001" step="0.0001" placeholder="发货数量" aria-label={`${l.description}本批发货数量`}
+                value={shipForm!.quantities[l.id!] ?? ''}
+                onChange={e => setShipForm({ ...shipForm!, quantities: { ...shipForm!.quantities, [l.id!]: e.target.value } })} />
+            </label>)}
             <div className="mt-2 flex gap-2">
               <PrimaryActionButton
                 onClick={() => onShip(o.id!)}
@@ -258,17 +286,17 @@ export function OrdersPage({ canConfirm = false, canShip = false, canInvoice = f
             {busyC ? '确认中' : '确认订单'}
           </button>
         )}
-        {canShip && o.status === '待发货' && o.id && (
+        {canShip && (o.status === '待发货' || o.status === '已发货') && o.id && attributable(o) && remaining(o) > 0 && (
           <button
             type="button"
             onClick={() => {
-              setShipForm({ orderId: o.id!, carrier: '', trackingNo: '', qty: '' });
+              setShipForm({ orderId: o.id!, carrier: '', trackingNo: '', quantities: {} });
               setInvForm(null);
               setExpandedId(o.id!);
             }}
             className="inline-flex h-8 items-center rounded-md bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700"
           >
-            登记发货
+            {o.status === '已发货' ? '继续发货' : '登记发货'}
           </button>
         )}
         {canInvoice && o.status === '已收货' && o.id && (

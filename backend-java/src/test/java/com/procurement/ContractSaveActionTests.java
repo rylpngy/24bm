@@ -32,6 +32,30 @@ class ContractSaveActionTests {
     TenantContext.clear();
   }
 
+  @org.junit.jupiter.api.BeforeEach
+  void configureAccess() { TestContractAccess.allow(contractApplicationService); }
+
+  @Test
+  void ordinaryCreationCannotClaimEffectiveApproval() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(purchaseOrderMapper.findByTenantAndId("tenant-1", "po-1")).thenReturn(order());
+    when(contractMapper.findByTenantAndId(org.mockito.ArgumentMatchers.eq("tenant-1"), org.mockito.ArgumentMatchers.anyString()))
+        .thenReturn(contract("contract-created", "未归档"));
+    assertThatThrownBy(() -> contractApplicationService.createCurrentTenantContract(new CreateContractRequest(
+        "CTR-1", "合同", "po-1", BigDecimal.valueOf(60000), "已生效", "履约中",
+        null, null, null, null, null))).isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  void ordinaryUpdateCannotChangeEffectiveContractOrForgeDraft() {
+    TenantContext.set("tenant-1", null, "buyer-user");
+    when(contractMapper.findByTenantAndId("tenant-1", "contract-1"))
+        .thenReturn(contract("contract-1", "未归档"));
+    assertThatThrownBy(() -> contractApplicationService.updateCurrentTenantContract("contract-1",
+        new UpdateContractRequest("CTR-1", "合同", BigDecimal.TEN, "草案", "草案",
+            null, null, null, null, null))).isInstanceOf(IllegalStateException.class);
+  }
+
   @Test
   void creatingContractUsesTenantOrderAndReturnsSavedLedger() {
     TenantContext.set("tenant-1", null, "buyer-user");
@@ -45,7 +69,7 @@ class ContractSaveActionTests {
         "新建采购合同",
         "po-1",
         BigDecimal.valueOf(60000),
-        "已生效",
+        "草案",
         "履约中",
         LocalDate.parse("2026-06-21"), null, null, null, null));
 
@@ -59,7 +83,7 @@ class ContractSaveActionTests {
         org.mockito.ArgumentMatchers.eq("po-1"),
         org.mockito.ArgumentMatchers.eq("supplier-1"),
         org.mockito.ArgumentMatchers.eq(BigDecimal.valueOf(60000)),
-        org.mockito.ArgumentMatchers.eq("已生效"),
+        org.mockito.ArgumentMatchers.eq("草案"),
         org.mockito.ArgumentMatchers.eq("未归档"),
         org.mockito.ArgumentMatchers.eq("履约中"),
         org.mockito.ArgumentMatchers.eq(LocalDate.parse("2026-06-21")),
@@ -80,7 +104,7 @@ class ContractSaveActionTests {
         "跨租户采购合同",
         "po-other",
         BigDecimal.valueOf(60000),
-        "已生效",
+        "草案",
         "履约中",
         LocalDate.parse("2026-06-21"), null, null, null, null)))
         .isInstanceOf(IllegalArgumentException.class)

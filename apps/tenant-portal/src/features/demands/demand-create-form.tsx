@@ -5,9 +5,11 @@ import { z } from 'zod';
 import { ArrowLeft, Calculator, ClipboardList, Search, Trash2 } from 'lucide-react';
 import {
   type MaterialResponse,
+  type PurchaseDemandResponse,
   useDepartmentList,
   useMaterialList,
   usePurchaseDemandCreate,
+  usePurchaseDemandUpdate,
 } from '@24bid/api-client';
 import { FeedbackNotice, cn } from '@24bid/ui';
 
@@ -43,7 +45,9 @@ function materialSummary(material?: MaterialResponse) {
   return [material.code, material.specification, material.category].filter(Boolean).join(' · ') || '暂无规格信息';
 }
 
-export function DemandCreateForm({ onCreated, onBack }: { onCreated: () => void; onBack: () => void }) {
+export function DemandCreateForm({ onCreated, onBack, initialDemand }: {
+  onCreated: () => void; onBack: () => void; initialDemand?: PurchaseDemandResponse;
+}) {
   const departments = useDepartmentList();
   const [materialSearchTerm, setMaterialSearchTerm] = useState('');
   const [materialQueryKeyword, setMaterialQueryKeyword] = useState('');
@@ -52,6 +56,8 @@ export function DemandCreateForm({ onCreated, onBack }: { onCreated: () => void;
     { query: { placeholderData: (previous) => previous } },
   );
   const create = usePurchaseDemandCreate();
+  const update = usePurchaseDemandUpdate();
+  const saving = initialDemand ? update : create;
   const [selectedMaterialCache, setSelectedMaterialCache] = useState<Record<string, MaterialResponse>>({});
 
   const {
@@ -63,13 +69,13 @@ export function DemandCreateForm({ onCreated, onBack }: { onCreated: () => void;
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      title: '',
-      departmentId: '',
-      budget: 0,
-      expectedDeliveryDate: '',
-      priority: '常规',
-      purpose: '',
-      lineItems: [],
+      title: initialDemand?.title ?? '',
+      departmentId: initialDemand?.departmentId ?? '',
+      budget: initialDemand?.budget ?? 0,
+      expectedDeliveryDate: initialDemand?.expectedDeliveryDate ?? '',
+      priority: initialDemand?.priority ?? '常规',
+      purpose: initialDemand?.purpose ?? '',
+      lineItems: initialDemand?.lineItems?.map((line) => ({ materialId: line.materialId ?? '', quantity: line.quantity ?? 1 })) ?? [],
     },
   });
   const { fields, append, remove } = useFieldArray({ control, name: 'lineItems' });
@@ -112,25 +118,23 @@ export function DemandCreateForm({ onCreated, onBack }: { onCreated: () => void;
   };
 
   const onSubmit = (values: FormValues) => {
-    create.mutate(
-      {
-        data: {
-          title: values.title,
-          departmentId: values.departmentId,
-          budget: values.budget,
-          lineItems: values.lineItems,
-          expectedDeliveryDate: values.expectedDeliveryDate || undefined,
-          priority: values.priority,
-          purpose: values.purpose,
-        },
+    const data = {
+      title: values.title,
+      departmentId: values.departmentId,
+      budget: values.budget,
+      lineItems: values.lineItems,
+      expectedDeliveryDate: values.expectedDeliveryDate || undefined,
+      priority: values.priority,
+      purpose: values.purpose,
+    };
+    const options = {
+      onSuccess: () => {
+        reset();
+        onCreated();
       },
-      {
-        onSuccess: () => {
-          reset();
-          onCreated();
-        },
-      },
-    );
+    };
+    if (initialDemand?.id) update.mutate({ demandId: initialDemand.id, data }, options);
+    else create.mutate({ data }, options);
   };
 
   return (
@@ -146,9 +150,9 @@ export function DemandCreateForm({ onCreated, onBack }: { onCreated: () => void;
             <ArrowLeft size={20} />
           </button>
           <div>
-            <h1 className="text-2xl font-black text-slate-950">新建采购需求</h1>
+            <h1 className="text-2xl font-black text-slate-950">{initialDemand ? '修改采购需求' : '新建采购需求'}</h1>
             <p className="mt-1 text-sm font-bold text-slate-500">
-              填写需求基本信息 · 从物料库检索并添加采购明细 · 创建后进入草稿状态
+              {initialDemand ? `${initialDemand.id} · ${initialDemand.status}` : '填写需求基本信息 · 从物料库检索并添加采购明细 · 创建后进入草稿状态'}
             </p>
           </div>
         </div>
@@ -368,14 +372,14 @@ export function DemandCreateForm({ onCreated, onBack }: { onCreated: () => void;
           </div>
         </DemandCreateSection>
 
-        {create.isError && (
-          <FeedbackNotice tone="error" message="创建失败：请检查输入或后端状态。" />
+        {saving.isError && (
+          <FeedbackNotice tone="error" message="保存失败：请检查输入、数据权限或单据状态。" />
         )}
 
         <div className="sticky bottom-4 z-10 rounded-lg border border-slate-200 bg-white/95 p-4 shadow-lg shadow-slate-200/70 backdrop-blur">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <p className="text-sm font-black text-slate-950">确认创建采购需求</p>
+              <p className="text-sm font-black text-slate-950">{initialDemand ? '确认采购需求修改' : '确认创建采购需求'}</p>
               <p className="mt-1 text-xs font-bold text-slate-500">
                 已选择 {fields.length} 项物料 · 参考预算合计 {currency(estimatedTotal)}
               </p>
@@ -383,12 +387,12 @@ export function DemandCreateForm({ onCreated, onBack }: { onCreated: () => void;
             <div className="flex justify-end">
               <button
                 type="submit"
-                disabled={create.isPending}
+                disabled={saving.isPending}
                 className="inline-flex h-10 min-w-40 items-center justify-center gap-2 rounded-lg bg-slate-900 px-5 text-sm font-black text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
-                aria-busy={create.isPending || undefined}
+                aria-busy={saving.isPending || undefined}
               >
                 <ClipboardList size={16} />
-                {create.isPending ? '创建中' : '创建需求草稿'}
+                {saving.isPending ? '保存中' : initialDemand ? '保存需求修改' : '创建需求草稿'}
               </button>
             </div>
           </div>

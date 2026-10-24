@@ -208,6 +208,23 @@ public interface RfqMapper {
       @Param("evaluationMethod") String evaluationMethod);
 
   @Update("""
+      update rfqs set title = #{title}, deadline_at = #{deadlineAt},
+        quote_requirement = #{quoteRequirement}, delivery_requirement = #{deliveryRequirement},
+        evaluation_method = #{evaluationMethod}, updated_at = now()
+      where tenant_id = #{tenantId} and id = #{id} and status = '草稿'
+      """)
+  int updateDraftDetails(@Param("tenantId") String tenantId, @Param("id") String id,
+      @Param("title") String title, @Param("deadlineAt") OffsetDateTime deadlineAt,
+      @Param("quoteRequirement") String quoteRequirement, @Param("deliveryRequirement") String deliveryRequirement,
+      @Param("evaluationMethod") String evaluationMethod);
+
+  @Update("""
+      update rfqs set status = '已废标', close_reason = #{reason}, updated_at = now()
+      where tenant_id = #{tenantId} and id = #{id} and status = '草稿'
+      """)
+  int cancelDraft(@Param("tenantId") String tenantId, @Param("id") String id, @Param("reason") String reason);
+
+  @Update("""
       update rfqs
       set status = #{status},
           opened_at = now(),

@@ -223,6 +223,7 @@ import org.springframework.test.web.servlet.MvcResult;
     PurchaseDemandController.class,
     SupplierQuoteController.class,
     RfqController.class,
+    com.procurement.sourcing.api.ProcurementExecutionController.class,
     PlatformOverviewController.class,
     PlatformAnnouncementController.class,
     BuyerAnnouncementController.class,
@@ -261,6 +262,7 @@ import org.springframework.test.web.servlet.MvcResult;
     ContractScheduleController.class,
     SupplierOrderController.class,
     BuyerReceiptController.class,
+    com.procurement.order.api.BuyerReceiptDispositionReviewController.class,
     SupplierDeliveryController.class,
     BuyerDeliveryController.class,
     UnifiedWorkflowController.class,
@@ -585,6 +587,37 @@ class HttpSecurityContractTests {
 
   @MockBean
   private com.procurement.audit.application.AuditReadAccess auditReadAccess;
+
+  @MockBean
+  private com.procurement.sourcing.application.ProcurementExecutionApplicationService procurementExecution;
+
+  @MockBean
+  private com.procurement.order.application.ReceiptDispositionReviewApplicationService receiptDispositionReview;
+
+  @Test
+  void executionAndReceiptReviewRequireTheBuyerPortalAndDoNotExposeAnonymousData() throws Exception {
+    String supplierToken = loginAndExtractToken("""
+        {"account":"supplier","password":"demo123456","scope":"SUPPLIER","supplierId":"ent-supplier-sunrise"}
+        """);
+    for (String path : List.of("/api/v1/buyer/rfqs/rfq/execution", "/api/v1/buyer/receipts/receipt/disposition-review")) {
+      mockMvc.perform(get(path)).andExpect(status().isForbidden());
+      mockMvc.perform(get(path).header("Authorization", "Bearer " + supplierToken)).andExpect(status().isForbidden());
+    }
+    org.mockito.Mockito.verifyNoInteractions(procurementExecution, receiptDispositionReview);
+  }
+
+  @Test
+  void receiptDispositionReviewCannotBypassReceiptMaintenancePermission() throws Exception {
+    String buyerToken = loginAndExtractToken("""
+        {"account":"buyer","password":"demo123456","scope":"BUYER","tenantId":"tenant-acme"}
+        """);
+    when(portalPermissions.currentUserHas("buyer:receipt:manage")).thenReturn(false);
+    mockMvc.perform(post("/api/v1/buyer/receipts/receipt/disposition-review")
+        .header("Authorization", "Bearer " + buyerToken).contentType(MediaType.APPLICATION_JSON)
+        .content("{\"decision\":\"让步接收\",\"reason\":\"复核理由\",\"evidenceNo\":\"REF-1\"}"))
+        .andExpect(status().isForbidden());
+    org.mockito.Mockito.verifyNoInteractions(receiptDispositionReview);
+  }
 
   @Test
   void cooperationInvitationsRequireSupplierPortalAndProfilePermissions() throws Exception {

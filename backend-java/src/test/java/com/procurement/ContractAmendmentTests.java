@@ -32,6 +32,8 @@ import org.junit.jupiter.api.Test;
 
 // 合同变更:金额变更应用到主合同 + 审计带「从→到」明细;非法类型/缺新值/已归档拦截。
 class ContractAmendmentTests {
+  @org.junit.jupiter.api.BeforeEach
+  void configureAccess() { TestContractAccess.allow(service); }
 
   private final ContractMapper contractMapper = mock(ContractMapper.class);
   private final ApprovalTaskMapper approvalTaskMapper = mock(ApprovalTaskMapper.class);
@@ -57,7 +59,7 @@ class ContractAmendmentTests {
   private ContractLedger contract(String archiveStatus) {
     return new ContractLedger(
         "contract-1", "tenant-1", "CTR-1", "测试合同", "po-1", "supplier-1",
-        BigDecimal.valueOf(120000), "履约中", archiveStatus, "正常",
+        BigDecimal.valueOf(120000), "已生效", archiveStatus, "正常",
         LocalDate.parse("2026-06-21"),
         OffsetDateTime.parse("2026-06-21T08:00:00+08:00"),
         OffsetDateTime.parse("2026-06-21T08:00:00+08:00"),

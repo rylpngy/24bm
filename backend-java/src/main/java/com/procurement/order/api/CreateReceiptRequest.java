@@ -4,7 +4,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 
-// lineItems 可选:逐行验收明细;为空时退化为抬头级收货数量/合格数量(兼容旧收货)。
+// Missing lines are mapped only for a full, unambiguous receipt of known order balances.
 public record CreateReceiptRequest(
     @NotBlank String result,
     Integer receivedQuantity,

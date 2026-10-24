@@ -61,7 +61,7 @@ public class BudgetApplicationService {
     BigDecimal total = b.totalAmount() == null ? BigDecimal.ZERO : b.totalAmount();
     BigDecimal committed = b.committed() == null ? BigDecimal.ZERO : b.committed();
     BigDecimal pending = b.pending() == null ? BigDecimal.ZERO : b.pending();
-    BigDecimal disbursed = b.disbursed() == null ? BigDecimal.ZERO : b.disbursed();
+    BigDecimal disbursed = b.disbursed();
     BigDecimal occupied = committed.add(pending);
     BigDecimal remaining = total.subtract(occupied);
     Integer occupancyPercent =
@@ -80,6 +80,8 @@ public class BudgetApplicationService {
         remaining,
         occupancyPercent,
         overBudget,
-        disbursed);
+        disbursed,
+        b.pendingAllocationAmount(),
+        b.unverifiedPaymentCount());
   }
 }

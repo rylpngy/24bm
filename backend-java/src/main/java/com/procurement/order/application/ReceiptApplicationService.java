@@ -10,7 +10,6 @@ import com.procurement.order.api.ReceiptResponse;
 import com.procurement.order.domain.OrderLineItem;
 import com.procurement.order.domain.PurchaseOrder;
 import com.procurement.order.domain.PurchaseOrderAuditAction;
-import com.procurement.order.domain.PurchaseOrderDocumentUniquenessPolicy;
 import com.procurement.order.domain.PurchaseOrderStatus;
 import com.procurement.order.domain.PurchaseOrderStatusTransition;
 import com.procurement.order.domain.Receipt;
@@ -29,6 +28,8 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.HashSet;
+import com.procurement.order.domain.OrderFulfillmentPolicy;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
@@ -88,7 +89,7 @@ public class ReceiptApplicationService {
     access.requireOrder(orderId, "buyer:receipt:manage");
     String tenantId = TenantAccessGuard.requireTenantId("buyer receipt APIs");
     String userId = TenantAccessGuard.requireUserId("buyer receipt APIs");
-    PurchaseOrder order = purchaseOrderMapper.findByTenantAndId(tenantId, orderId);
+    PurchaseOrder order = purchaseOrderMapper.lockByTenantAndId(tenantId, orderId);
     if (order == null) {
       throw new IllegalArgumentException("Purchase order not found in tenant scope: " + orderId);
     }
@@ -97,14 +98,52 @@ public class ReceiptApplicationService {
     purchaseOrderStatusTransition.requireShippedDelivery(
         deliveryMapper.countByTenantOrderAndStatus(tenantId, orderId, PurchaseOrderStatus.SHIPPED),
         orderId);
-    PurchaseOrderDocumentUniquenessPolicy.requireNoReceipt(
-        receiptMapper.countByTenantAndOrder(tenantId, orderId),
-        orderId);
-
     int received = request.receivedQuantity() == null ? 0 : request.receivedQuantity();
     int qualified = request.qualifiedQuantity() == null ? 0 : request.qualifiedQuantity();
     String conclusion = ReceiptInspection.conclude(received, qualified);
     ReceiptInspection.requireDisposition(conclusion, request.disposition());
+    var available = deliveryMapper.fulfillmentLines(tenantId, orderId);
+    if (available.isEmpty() || deliveryMapper.countUnattributedHistory(tenantId, orderId) > 0) {
+      throw new IllegalStateException("Legacy order or documents without attributable lines require manual reconciliation");
+    }
+    List<ReceiptLineItemRequest> effectiveLines = request.lineItems();
+    if (effectiveLines == null || effectiveLines.isEmpty()) {
+      if (qualified != 0 && qualified != received) {
+        throw new IllegalArgumentException("Mixed qualification requires explicit receipt order lines");
+      }
+      effectiveLines = available.stream().map(l -> {
+        BigDecimal remaining = l.orderedQuantity().subtract(l.receivedQuantity());
+        return new ReceiptLineItemRequest(l.orderLineId(), remaining, qualified == 0 ? BigDecimal.ZERO : remaining);
+      }).filter(l -> l.receivedQuantity().signum() > 0).toList();
+      OrderFulfillmentPolicy.requireTotal(request.receivedQuantity(), effectiveLines.stream()
+          .map(ReceiptLineItemRequest::receivedQuantity).reduce(BigDecimal.ZERO, BigDecimal::add));
+    }
+    final var lineItems = effectiveLines;
+    if (lineItems.isEmpty()) {
+      throw new IllegalArgumentException("Receipt order lines are required");
+    }
+    var seen = new HashSet<String>();
+    BigDecimal totalReceived = BigDecimal.ZERO;
+    BigDecimal totalQualified = BigDecimal.ZERO;
+    for (var line : lineItems) {
+      if (line == null || !seen.add(line.orderLineId())) {
+        throw new IllegalArgumentException("Duplicate receipt order line");
+      }
+      var capacity = available.stream().filter(l -> l.orderLineId().equals(line.orderLineId())).findFirst()
+          .orElseThrow(() -> new IllegalArgumentException("Receipt order line not found"));
+      OrderFulfillmentPolicy.receive(capacity, line.receivedQuantity(), line.qualifiedQuantity());
+      totalReceived = totalReceived.add(line.receivedQuantity());
+      totalQualified = totalQualified.add(line.qualifiedQuantity());
+    }
+    OrderFulfillmentPolicy.requireTotal(request.receivedQuantity(), totalReceived);
+    OrderFulfillmentPolicy.requireTotal(request.qualifiedQuantity(), totalQualified);
+    boolean complete = available.stream().allMatch(capacity -> {
+      BigDecimal batch = lineItems.stream()
+          .filter(l -> capacity.orderLineId().equals(l.orderLineId()))
+          .map(ReceiptLineItemRequest::receivedQuantity).reduce(BigDecimal.ZERO, BigDecimal::add);
+      return capacity.orderedQuantity().signum() > 0
+          && capacity.receivedQuantity().add(batch).compareTo(capacity.orderedQuantity()) == 0;
+    });
 
     String receiptId = newId("receipt");
     receiptMapper.insert(
@@ -119,12 +158,12 @@ public class ReceiptApplicationService {
         conclusion,
         ReceiptInspection.ALL_QUALIFIED.equals(conclusion) ? null : request.disposition(),
         request.dispositionNote() == null ? "" : request.dispositionNote());
-    persistLineItems(tenantId, orderId, receiptId, request.lineItems());
+    persistLineItems(tenantId, orderId, receiptId, lineItems);
     int updated = purchaseOrderMapper.updateStatus(
         tenantId,
         orderId,
         PurchaseOrderStatus.SHIPPED,
-        PurchaseOrderStatus.RECEIVED);
+        complete ? PurchaseOrderStatus.RECEIVED : PurchaseOrderStatus.SHIPPED);
     if (updated == 0) {
       throw new IllegalStateException("Purchase order status changed before receipt could be recorded: " + orderId);
     }
@@ -135,12 +174,12 @@ public class ReceiptApplicationService {
     notificationApplicationService.notifyActiveTenantUsers(
         tenantId,
         NotificationTitle.PURCHASE_ORDER_RECEIVED,
-        "采购订单 " + order.id() + " 已完成收货验收，结果：" + request.result() + "。");
+        "采购订单 " + order.id() + " 已登记本批收货验收，结果：" + request.result() + "。");
     notificationApplicationService.notifyActiveSupplierUsers(
         tenantId,
         order.supplierId(),
         NotificationTitle.PURCHASE_ORDER_RECEIVED,
-        "采购订单 " + order.id() + " 已完成收货验收，供应商可提交发票。");
+        "采购订单 " + order.id() + (complete ? " 已足额收货，供应商可提交发票。" : " 已登记部分收货，尚未足额履约。"));
 
     return toResponse(receiptMapper.findByTenantAndId(tenantId, receiptId));
   }
