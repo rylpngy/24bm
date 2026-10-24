@@ -1,6 +1,7 @@
 import { expect, test, type APIRequestContext } from '@playwright/test';
+import { randomUUID } from 'node:crypto';
 
-const API = 'http://localhost:8080/api/v1';
+const API = process.env.E2E_API_BASE ?? 'http://localhost:8080/api/v1';
 
 async function tokens(request: APIRequestContext) {
   const buyer = (await (await request.post(`${API}/auth/login`, {
@@ -56,9 +57,8 @@ test('上架审核:供应商不能自行上架,驳回后可补正复审', async 
   expect((await approved.json()).data.status).toBe('在架');
 });
 
-// M-4a:旧货架入口同样落审核,且审核态在货架列表上如实呈现。
-// 回归的是「点上架 200 但状态纹丝不动」——供应商只会以为系统坏了。
-test('货架入口:上架进待审核,审核态可见且不可自行切上架', async ({ request }) => {
+// Enabling a SKU is not product publication: every reactivation withdraws product approval.
+test('货架入口:启用与改价须重新送审,供应商不能自行取得可售资格', async ({ request }) => {
   const { buy, sup } = await tokens(request);
   const material = ((await (await request.get(`${API}/supplier/mall/materials`, { headers: sup })).json())
     .data as Array<{ tenantId: string; materialId: string; unit: string }>)
@@ -67,6 +67,7 @@ test('货架入口:上架进待审核,审核态可见且不可自行切上架', 
     headers: sup, data: { tenantId: 'tenant-acme', materialId: material.materialId, price: 88.5, unit: material.unit },
   })).json()).data as { id: string; status: string; productId: string; productStatus: string };
   expect(published.status).toBe('待审核');
+  expect(published.productStatus).toBe('待审核');
 
   const listings = (await (await request.get(`${API}/supplier/mall/listings`, { headers: sup })).json())
     .data as Array<{ id: string; status: string; productId: string }>;
@@ -74,24 +75,75 @@ test('货架入口:上架进待审核,审核态可见且不可自行切上架', 
   expect(row.status).toBe('待审核');
   expect(row.productId).toBeTruthy();
 
+  const requireDraftAndBlocked = async (price: number) => {
+    const source = await request.get(`${API}/supplier/mall/products`, { headers: sup });
+    expect(source.ok()).toBeTruthy();
+    const stored = ((await source.json()).data as Array<{ id: string; status: string; skus: Array<{ id: string; status: string; price: number }> }>).find(p => p.id === row.productId)!;
+    expect(stored.status).toBe('草稿');
+    expect(stored.skus.find(s => s.id === row.id)).toMatchObject({ status: '在架', price });
+    const visible = await request.get(`${API}/buyer/mall/products`, { headers: buy });
+    expect(visible.ok()).toBeTruthy();
+    expect(((await visible.json()).data as Array<{ id: string }>).some(p => p.id === row.productId)).toBe(false);
+    // Probe real purchase endpoints with valid request fields, not just a presentation status.
+    const direct = await request.post(`${API}/buyer/mall/orders`, {
+      headers: buy, data: { listingId: row.id, quantity: 1, idempotencyKey: randomUUID() },
+    });
+    expect(direct.status()).toBe(400);
+    expect((await direct.json()).message).toMatch(/已草稿.*不可下单/);
+    const batch = await request.post(`${API}/buyer/mall/orders/batch`, {
+      headers: buy, data: { items: [{ listingId: row.id, quantity: 1 }], idempotencyKey: randomUUID() },
+    });
+    expect(batch.status()).toBe(400);
+    expect((await batch.json()).message).toMatch(/已草稿.*不可下单/);
+  };
+  const resubmitAndApprove = async () => {
+    const submitted = await request.put(`${API}/supplier/mall/products/${row.productId}/status`, {
+      headers: sup, data: { status: '待审核' },
+    });
+    expect(submitted.ok()).toBeTruthy();
+    expect((await submitted.json()).data.status).toBe('待审核');
+    const approved = await request.post(`${API}/buyer/mall/products/${row.productId}/review`, {
+      headers: buy, data: { approved: true, comment: '协议价及规格已复核' },
+    });
+    expect(approved.ok()).toBeTruthy();
+    expect((await approved.json()).data.status).toBe('在架');
+    const visible = await request.get(`${API}/buyer/mall/products`, { headers: buy });
+    expect(visible.ok()).toBeTruthy();
+    expect(((await visible.json()).data as Array<{ id: string }>).some(p => p.id === row.productId)).toBe(true);
+  };
+
   const selfShelve = await request.put(`${API}/supplier/mall/listings/${row.id}/status`, {
     headers: sup, data: { status: '在架' },
   });
-  expect(selfShelve.ok()).toBeFalsy();
-  expect(await selfShelve.text()).toContain('审核');
-
-  // 审核通过后,上下架开关恢复为供应商自管。
-  await request.post(`${API}/buyer/mall/products/${row.productId}/review`, {
-    headers: buy, data: { approved: true, comment: '协议价无异议' },
+  expect(selfShelve.ok()).toBeTruthy();
+  expect((await selfShelve.json()).data).toMatchObject({ status: '草稿', productStatus: '草稿' });
+  await requireDraftAndBlocked(88.5);
+  const prematureReview = await request.post(`${API}/buyer/mall/products/${row.productId}/review`, {
+    headers: buy, data: { approved: true, comment: '未重新送审不能审核' },
   });
+  expect(prematureReview.status()).toBe(400);
+  expect((await prematureReview.json()).message).toContain('仅「待审核」商品可审核');
+
+  await resubmitAndApprove();
   const offShelf = await request.put(`${API}/supplier/mall/listings/${row.id}/status`, {
     headers: sup, data: { status: '下架' },
   });
   expect(offShelf.ok()).toBeTruthy();
+  expect((await offShelf.json()).data).toMatchObject({ status: '下架', productStatus: '在架' });
   const reShelf = await request.put(`${API}/supplier/mall/listings/${row.id}/status`, {
     headers: sup, data: { status: '在架' },
   });
   expect(reShelf.ok()).toBeTruthy();
+  expect((await reShelf.json()).data).toMatchObject({ status: '草稿', productStatus: '草稿' });
+  await requireDraftAndBlocked(88.5);
+  await resubmitAndApprove();
+  const repriced = await request.put(`${API}/supplier/mall/listings/${row.id}/price`, {
+    headers: sup, data: { price: 89.5 },
+  });
+  expect(repriced.ok()).toBeTruthy();
+  expect((await repriced.json()).data).toMatchObject({ price: 89.5, productStatus: '草稿' });
+  await requireDraftAndBlocked(89.5);
+  await resubmitAndApprove();
 });
 
 // M-4 行为级:已收货订单行 → 申请售后 → 供应商处理 → 评价一次。
