@@ -353,6 +353,19 @@ class ProcurementProjectIT {
   }
 
   @Test
+  void liquidationCannotTreatCompletedAfterSalesAsVerifiedPhysicalReturn(){
+    var sku=mallSku("100");var p=approve(projects.create(draft(0))).project();var l=ready(lot(p.id(),"2"));
+    var selected=projectMall.checkout(p.id(),l.info().id(),mallRequest(l,sku,"2"));
+    var line=jdbc.queryForObject("select id from order_line_items where tenant_id=? and order_id=?",String.class,tenant,selected.orderId());
+    var supplier=jdbc.queryForObject("select supplier_id from purchase_orders where id=?",String.class,selected.orderId());
+    String after="after-"+UUID.randomUUID();
+    jdbc.update("insert into mall_after_sales(id,tenant_id,order_id,order_line_id,supplier_id,type,quantity,reason,status) values (?,?,?,?,?,'退货',1,'Return evidence missing','已完成')",after,tenant,selected.orderId(),line,supplier);
+    assertThat(lifecycle.preview(p.id()).liquidationBlockers()).anyMatch(x->x.contains("售后单完成不等于"));
+    jdbc.update("update mall_after_sales set status='已撤回' where id=?",after);
+    assertThat(lifecycle.preview(p.id()).liquidationBlockers()).noneMatch(x->x.contains("售后单完成不等于"));
+  }
+
+  @Test
   void draftAmountsSnapshotsValidationAndRevisionAreReal() {
     var d = projects.create(draft(0));
     assertThat(d.project().plannedAmount()).isEqualByComparingTo("246.91");

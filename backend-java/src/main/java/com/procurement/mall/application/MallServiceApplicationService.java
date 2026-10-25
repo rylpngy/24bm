@@ -63,6 +63,7 @@ public class MallServiceApplicationService {
     access.requireOrder(request.orderId(), "buyer:mall:purchase");
     String tenantId = TenantAccessGuard.requireTenantId("buyer mall APIs");
     requireLockedOrder(tenantId, request.orderId());
+    if(mallServiceMapper.projectLiquidated(tenantId,request.orderId()))throw new IllegalStateException("项目已完成终止清算，须先办理清算更正，不能直接新增退换货或售后责任");
     PurchaseOrderQueryService.OrderLineView line =
         purchaseOrderQueryService.findLineForTenant(tenantId, request.orderId(), request.orderLineId());
     if (line == null) {

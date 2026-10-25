@@ -15,6 +15,14 @@ import org.apache.ibatis.annotations.Update;
 /** 售后与评价(M-4)。买方按租户维度读写,供应商按 supplier 维度读写,SQL 层各自限定。 */
 @Mapper
 public interface MallServiceMapper {
+  @Select("""
+      select exists(select 1 from purchase_orders o join rfq_demands rd on rd.tenant_id=o.tenant_id and rd.rfq_id=o.rfq_id
+      join procurement_project_demands d on d.tenant_id=rd.tenant_id and d.demand_id=rd.demand_id
+      join procurement_project_lifecycle_requests r on r.tenant_id=d.tenant_id and r.project_id=d.project_id
+      where o.tenant_id=#{tenantId} and o.id=#{orderId} and r.kind='liquidation' and r.status='approved')
+      """)
+  boolean projectLiquidated(@Param("tenantId") String tenantId,@Param("orderId") String orderId);
+
 
   @Select("select id from purchase_orders where tenant_id=#{tenantId} and id=#{orderId} for update")
   @Options(flushCache = Options.FlushCachePolicy.TRUE, useCache = false)

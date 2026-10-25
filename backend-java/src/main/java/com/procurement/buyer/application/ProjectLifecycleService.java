@@ -71,6 +71,8 @@ public class ProjectLifecycleService {
     var sources = mapper.sources(p.tenantId(), p.id());
     var carry = new ArrayList<String>();
     var clear = new ArrayList<String>();
+    if (mapper.unresolvedAfterSales(p.tenantId(), p.id()) > 0)
+      clear.add("存在未结售后或退换货责任：售后单完成不等于实物退回/退款已核验，请先处理，不能直接终止清算");
     if (!"approved".equals(p.status())) {
       carry.add("项目必须处于已批准状态");
       clear.add("项目必须处于已批准状态");

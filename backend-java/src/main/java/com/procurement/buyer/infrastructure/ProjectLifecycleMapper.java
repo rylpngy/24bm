@@ -9,6 +9,15 @@ import org.apache.ibatis.annotations.*;
 @Mapper
 public interface ProjectLifecycleMapper {
   @Select(
+      """
+select count(*) from mall_after_sales a join purchase_orders o on o.tenant_id=a.tenant_id and o.id=a.order_id
+where a.tenant_id=#{t} and a.status not in ('已拒绝','已撤回') and (a.status<>'已完成' or a.type in ('退货','换货'))
+and exists(select 1 from rfq_demands rd join procurement_project_demands d on d.tenant_id=rd.tenant_id and d.demand_id=rd.demand_id
+  where rd.tenant_id=o.tenant_id and rd.rfq_id=o.rfq_id and d.project_id=#{p})
+""")
+  int unresolvedAfterSales(@Param("t") String t, @Param("p") String p);
+
+  @Select(
       "select po.id from purchase_orders po where po.tenant_id=#{t} and exists(select 1 from"
           + " rfq_demands rd join procurement_project_demands d on d.tenant_id=rd.tenant_id and"
           + " d.demand_id=rd.demand_id where rd.tenant_id=po.tenant_id and rd.rfq_id=po.rfq_id and"
