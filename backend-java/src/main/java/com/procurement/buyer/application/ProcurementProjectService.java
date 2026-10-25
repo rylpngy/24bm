@@ -251,7 +251,7 @@ public class ProcurementProjectService {
     if (d == null) throw new IllegalArgumentException("需求不存在");
     scopes.requireRecordAccess(d.departmentId(), d.requesterId());
     if (!p.departmentId().equals(d.departmentId())
-        || !p.period().equals(d.period())
+        || (!p.period().equals(d.period())&&!guard.effectivePeriod(p).equals(d.period()))
         || !List.of("草稿", "审批中", "已通过", "已驳回").contains(d.status()))
       throw new IllegalArgumentException("需求须属于项目部门及年度且未转采购");
     if (mapper.demandProject(tenant(), d.id()) != null || mapper.activeRfq(tenant(), d.id()) > 0)
@@ -271,8 +271,8 @@ public class ProcurementProjectService {
     if (!mapper.demands(tenant(), id).isEmpty() || p.executionId() != null)
       throw new IllegalStateException("已有需求，请维护关联需求，不重复生成");
     expansions.requireLegacyMode(p);
-    if (!p.period().equals(String.valueOf(LocalDate.now(ZoneId.of("Asia/Shanghai")).getYear())))
-      throw new IllegalStateException("仅当前年度项目可生成需求，不能改变现有预算年度口径");
+    if (!guard.effectivePeriod(p).equals(String.valueOf(LocalDate.now(ZoneId.of("Asia/Shanghai")).getYear())))
+      throw new IllegalStateException("仅当前责任年度项目可生成需求，请先办理跨年度承接或等待承接年度开始");
     String demand =
         demands.createProjectDemand(
             p.title(),
@@ -336,7 +336,7 @@ public class ProcurementProjectService {
     if (scopes.currentUserDataScope().requesterId() != null)
       throw new com.procurement.common.tenant.PermissionDeniedException("部门年度汇总需部门或企业数据范围");
     scopes.requireRecordAccess(p.departmentId(), p.createdBy());
-    return budget.position(tenant(), p.departmentId(), p.period());
+    return budget.position(tenant(), p.departmentId(), guard.effectivePeriod(p));
   }
 
   @Transactional

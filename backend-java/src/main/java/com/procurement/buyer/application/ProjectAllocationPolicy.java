@@ -245,7 +245,7 @@ public record ProjectAllocationPolicy(
     var result = plans.validateState(p.tenantId(), d);
     if (!projects.demands(p.tenantId(), p.id()).isEmpty()
         || !expansion.packages(p.tenantId(), p.id()).isEmpty()
-        || p.executionId() != null) {
+        || p.executionId() != null || expansion.carryoverPeriod(p.tenantId(),p.id())!=null) {
       if (!p.departmentId().equals(d.departmentId()) || !p.period().equals(d.period()))
         throw new IllegalStateException("已有分包或需求后不能变更部门、年度，请新建项目承接");
     }

@@ -215,6 +215,8 @@ export function workflowBusinessHref(history: Pick<WorkflowInstanceHistory, 'bus
     budget_change: { module: 'budgets', id: history.businessId },
     project_initiation: { module: 'projects', id: history.businessId },
     project_change: { module: 'projects', id: snapshot.projectId },
+    project_carryover: { module: 'projects', id: snapshot.projectId },
+    project_liquidation: { module: 'projects', id: snapshot.projectId },
     budget_exception: { module: 'budgets', id: history.businessId },
     supplier_qualification_change: { module: 'suppliers', id: snapshot.relationId },
     purchase_demand: { module: 'demands', id: history.businessId },

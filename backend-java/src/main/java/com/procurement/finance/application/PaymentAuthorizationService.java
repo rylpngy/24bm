@@ -110,6 +110,7 @@ public class PaymentAuthorizationService {
     if (order == null || !order.equals(invoice.orderId())) {
       throw new IllegalStateException("付款关联订单已变化，请刷新重试");
     }
+    if(invoices.projectLiquidated(invoice.tenantId(),invoice.id()))throw new IllegalStateException("项目已完成终止清算，不能改写已确认的财务依据");
   }
 
   public static String status(java.math.BigDecimal paid, java.math.BigDecimal due) {

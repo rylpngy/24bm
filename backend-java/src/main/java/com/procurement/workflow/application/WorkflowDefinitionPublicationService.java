@@ -299,6 +299,8 @@ public class WorkflowDefinitionPublicationService {
       case "budget_change" -> "预算编制与调整";
       case "project_initiation" -> "项目立项";
       case "project_change" -> "立项变更";
+      case "project_carryover" -> "跨年度承接";
+      case "project_liquidation" -> "项目终止清算";
       case "budget_exception" -> "超预算例外";
       case "buyer_supplier_admission" -> "供应商准入";
       case "buyer_supplier_exit" -> "供应商退出";

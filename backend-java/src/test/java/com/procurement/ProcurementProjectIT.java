@@ -55,6 +55,7 @@ class ProcurementProjectIT {
   @Autowired ProjectCloseoutService closeout;
   @Autowired ProjectMallService projectMall;
   @Autowired ProjectChangeAttachmentAccess changeAttachments;
+  @Autowired ProjectLifecycleService lifecycle;
   String tenant, dept, author, reviewer, role, material;
 
   String mallSku(String price) {
@@ -201,7 +202,7 @@ class ProcurementProjectIT {
         material,
         tenant);
     context(author);
-    for (String type : List.of("project_initiation", "purchase_demand", "project_change")) {
+    for (String type : List.of("project_initiation", "purchase_demand", "project_change", "project_carryover", "project_liquidation")) {
       var definition =
           definitions.createProcess(
               new CreateProcessDefinitionRequest("Project " + type, "", "file-text", type));
@@ -263,6 +264,92 @@ class ProcurementProjectIT {
     workflow.completeCurrentUserTask(
         task.taskId(), new CompleteWorkflowTaskRequest(action, "Independent assessment"));
     context(author);
+  }
+
+  com.procurement.buyer.api.ProjectLifecycleContracts.Request lifecycleRequest(String project,String kind,String target){
+    return new com.procurement.buyer.api.ProjectLifecycleContracts.Request(projects.detail(project).project().revision(),kind,target,"Audited responsibility transfer",Map.of());
+  }
+
+  @Test
+  void carryoverMovesUnpaidExposureOnlyAfterIndependentApprovalWithoutChangingSourceYear(){
+    var p=approve(projects.create(draft(0))).project();var l=ready(lot(p.id(),"2"));
+    String target=String.valueOf(Integer.parseInt(year)+1);
+    var original=jdbc.queryForMap("select created_at,budget from purchase_demands where id=?",l.demands().getFirst().id());
+    var c=lifecycle.submit(p.id(),lifecycleRequest(p.id(),"carryover",target));
+    assertThat(budget.position(tenant,dept,year).committed()).isEqualByComparingTo("246.91");
+    assertThat(budget.position(tenant,dept,target).committed()).isEqualByComparingTo("0");
+    assertThat(workflow.listCurrentUserTasks()).noneMatch(t->t.businessId().equals(c.id()));
+    assertThatThrownBy(()->lot(p.id(),"1")).hasMessageContaining("审批中");
+    decide(c.id(),"approve");
+    assertThat(lifecycle.preview(p.id()).effectivePeriod()).isEqualTo(target);
+    assertThat(projects.detail(p.id()).project().period()).isEqualTo(year);
+    assertThat(jdbc.queryForMap("select created_at,budget from purchase_demands where id=?",l.demands().getFirst().id())).isEqualTo(original);
+    assertThat(budget.position(tenant,dept,year).committed()).isEqualByComparingTo("0");
+    assertThat(budget.position(tenant,dept,target).committed()).isEqualByComparingTo("246.91");
+    assertThat(projects.budget(p.id()).period()).isEqualTo(target);
+    assertThatThrownBy(()->lifecycle.submit(p.id(),lifecycleRequest(p.id(),"carryover",target))).hasMessageContaining("晚于");
+  }
+
+  @Test
+  void carryoverRejectWithdrawAndDuplicateNeverMoveBudget(){
+    var p=approve(projects.create(draft(0))).project();ready(lot(p.id(),"2"));
+    String target=String.valueOf(Integer.parseInt(year)+1);
+    var c=lifecycle.submit(p.id(),lifecycleRequest(p.id(),"carryover",target));
+    assertThatThrownBy(()->lifecycle.submit(p.id(),lifecycleRequest(p.id(),"carryover",target))).hasMessageContaining("重复提交");
+    context(reviewer);
+    assertThatThrownBy(()->lifecycle.withdraw(p.id(),c.id(),c.revision(),"Not initiator")).hasMessageContaining("发起人");
+    context(author);lifecycle.withdraw(p.id(),c.id(),c.revision(),"Withdraw request");
+    assertThat(lifecycle.history(p.id(),1,10).items().getFirst().status()).isEqualTo("withdrawn");
+    var rejected=lifecycle.submit(p.id(),lifecycleRequest(p.id(),"carryover",target));decide(rejected.id(),"reject");
+    assertThat(budget.position(tenant,dept,year).committed()).isEqualByComparingTo("246.91");
+    assertThat(budget.position(tenant,dept,target).committed()).isEqualByComparingTo("0");
+    assertThat(lifecycle.history(p.id(),1,1).total()).isEqualTo(2);
+    assertThat(lifecycle.history(p.id(),2,1).items()).hasSize(1);
+    assertThatThrownBy(()->lifecycle.history(p.id(),1,101)).hasMessageContaining("分页");
+  }
+
+  @Test
+  void carryoverHardBudgetFailureRollsBackTaskAndTransferThenAllowsBudgetAdjustment(){
+    var p=approve(projects.create(draft(0))).project();ready(lot(p.id(),"2"));
+    String target=String.valueOf(Integer.parseInt(year)+1);
+    var c=lifecycle.submit(p.id(),lifecycleRequest(p.id(),"carryover",target));
+    jdbc.update("insert into budget_policies(tenant_id,mode,reason,updated_by) values (?,'hard','IT',?)",tenant,author);
+    assertThatThrownBy(()->decide(c.id(),"approve")).hasMessageContaining("承接年度预算不足");
+    context(author);
+    assertThat(lifecycle.history(p.id(),1,10).items().getFirst().status()).isEqualTo("submitted");
+    assertThat(budget.position(tenant,dept,year).committed()).isEqualByComparingTo("246.91");
+    jdbc.update("update budget_policies set mode='warning' where tenant_id=?",tenant);
+    decide(c.id(),"approve");
+    assertThat(budget.position(tenant,dept,target).committed()).isEqualByComparingTo("246.91");
+  }
+
+  @Test
+  void carryoverDetectsChangedExposureAndCannotSkipPendingDemandOrOrderClearance(){
+    var p=approve(projects.create(draft(0))).project();var l=ready(lot(p.id(),"2"));
+    String target=String.valueOf(Integer.parseInt(year)+1);
+    var c=lifecycle.submit(p.id(),lifecycleRequest(p.id(),"carryover",target));
+    jdbc.update("update purchase_demands set budget=240 where id=?",l.demands().getFirst().id());
+    assertThatThrownBy(()->decide(c.id(),"approve")).hasMessageContaining("数据已变化");
+    context(author);lifecycle.withdraw(p.id(),c.id(),c.revision(),"Recheck");
+    assertThatThrownBy(()->lifecycle.submit(p.id(),lifecycleRequest(p.id(),"liquidation",null))).hasMessageContaining("没有已有订单");
+    var p2=approve(projects.create(draft(0))).project();var pending=lot(p2.id(),"2");
+    var withDemand=expansion.createDemand(p2.id(),pending.info().id(),new com.procurement.buyer.api.ProjectExpansionContracts.PackageAction(pending.info().revision(),"Create"));
+    demands.submit(withDemand.demands().getFirst().id(),Map.of());
+    assertThatThrownBy(()->lifecycle.submit(p2.id(),lifecycleRequest(p2.id(),"carryover",target))).hasMessageContaining("需求仍在审批");
+  }
+
+  @Test
+  void carryoverAndLiquidationCannotEraseUnfulfilledMallOrder(){
+    var sku=mallSku("100");var p=approve(projects.create(draft(0))).project();var l=ready(lot(p.id(),"2"));
+    var selection=projectMall.checkout(p.id(),l.info().id(),mallRequest(l,sku,"2"));
+    var v=lifecycle.preview(p.id());
+    assertThat(v.liquidationBlockers()).isNotEmpty();
+    assertThatThrownBy(()->lifecycle.submit(p.id(),lifecycleRequest(p.id(),"liquidation",null))).isInstanceOf(IllegalStateException.class);
+    var c=lifecycle.submit(p.id(),lifecycleRequest(p.id(),"carryover",String.valueOf(Integer.parseInt(year)+1)));
+    decide(c.id(),"approve");
+    assertThat(jdbc.queryForObject("select amount from purchase_orders where id=?",BigDecimal.class,selection.orderId())).isEqualByComparingTo("200");
+    assertThat(budget.position(tenant,dept,year).committed()).isEqualByComparingTo("0");
+    assertThat(budget.position(tenant,dept,String.valueOf(Integer.parseInt(year)+1)).committed()).isEqualByComparingTo("246.91");
   }
 
   @Test

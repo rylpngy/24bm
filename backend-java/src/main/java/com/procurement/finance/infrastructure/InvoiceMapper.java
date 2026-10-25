@@ -22,6 +22,15 @@ public interface InvoiceMapper {
   String lockOrderForInvoice(@Param("tenantId") String tenantId, @Param("id") String id);
 
   @Select("""
+      select exists(select 1 from invoices i join purchase_orders o on o.tenant_id=i.tenant_id and o.id=i.order_id
+      join rfq_demands rd on rd.tenant_id=o.tenant_id and rd.rfq_id=o.rfq_id
+      join procurement_project_demands d on d.tenant_id=rd.tenant_id and d.demand_id=rd.demand_id
+      join procurement_project_lifecycle_requests r on r.tenant_id=d.tenant_id and r.project_id=d.project_id
+      where i.tenant_id=#{tenantId} and i.id=#{id} and r.kind='liquidation' and r.status='approved')
+      """)
+  boolean projectLiquidated(@Param("tenantId") String tenantId,@Param("id") String id);
+
+  @Select("""
       select min(id) as id, tenant_id, order_id, null::text as receiver_id,
              null::text as result, max(received_at) as received_at,
              case when count(received_quantity)=count(*) then sum(received_quantity)::integer end as received_quantity,

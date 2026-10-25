@@ -15,6 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class BudgetControlService {
   private final BudgetLifecycleMapper mapper;
   private final AuditLogApplicationService audit;
+  @org.springframework.beans.factory.annotation.Autowired
+  private com.procurement.buyer.infrastructure.ProjectLifecycleMapper projectLifecycle;
   public BudgetControlService(BudgetLifecycleMapper mapper, AuditLogApplicationService audit) {
     this.mapper=mapper; this.audit=audit;
   }
@@ -31,6 +33,7 @@ public class BudgetControlService {
   @Transactional
   public void checkDemand(String tenant,String demandId,String department,OffsetDateTime createdAt) {
     String period=createdAt.atZoneSameInstant(ZoneId.of("Asia/Shanghai")).getYear()+"";
+    if(projectLifecycle!=null){var effective=projectLifecycle.demandPeriod(tenant,demandId);if(effective!=null)period=effective;}
     check(tenant,department,period,"purchase_demand",demandId);
   }
 
@@ -80,6 +83,14 @@ public class BudgetControlService {
       throw new IllegalStateException("本次业务超过可用预算，请先完成对应部门、年度和业务单据的超额例外审批");
     }
     throw new IllegalStateException("本次业务超过可用预算，当前为硬拦截模式，请先审批调整预算额度");
+  }
+
+  @Transactional
+  public void checkProjectCarryover(String tenant,String department,String period,String request) {
+    mapper.lockTenant(tenant);
+    if(!"warning".equals(mapper.mode(tenant))&&position(tenant,department,period).occupied().compareTo(position(tenant,department,period).totalAmount())>0)
+      throw new IllegalStateException("承接年度预算不足，请先审批调整该年度预算额度；不会挪用原年度额度或自动批准例外");
+    check(tenant,department,period,"procurement_project",request);
   }
 
   @Transactional

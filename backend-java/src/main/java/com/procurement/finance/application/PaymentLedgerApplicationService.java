@@ -130,6 +130,7 @@ public class PaymentLedgerApplicationService {
     String tenant = TenantAccessGuard.requireTenantId("payment ledger");
     String order = invoices.lockOrderForInvoice(tenant, invoiceId);
     if (order == null) throw new IllegalArgumentException("发票关联订单不存在");
+    if(invoices.projectLiquidated(tenant,invoiceId))throw new IllegalStateException("项目已完成终止清算，不能新增付款或冲销清算依据；须先办理经审批的清算更正");
     var invoice = invoices.lockByTenantAndId(tenant, invoiceId);
     if (invoice == null) throw new IllegalArgumentException("发票不存在");
     if (!order.equals(invoice.orderId())) throw new IllegalStateException("发票关联订单已变化，请刷新重试");

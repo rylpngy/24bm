@@ -35,6 +35,8 @@ public class ProjectCloseoutService {
   private final ProcurementExecutionApplicationService executions;
   private final AuditLogApplicationService audit;
   private final com.procurement.attachment.application.AttachmentApplicationService attachments;
+  @org.springframework.beans.factory.annotation.Autowired
+  private ProjectLifecycleMapper lifecycle;
 
   public ProjectCloseoutService(
       ProcurementProjectGuard guard,
@@ -155,7 +157,7 @@ public class ProjectCloseoutService {
             .filter(d -> d.info().id().equals(id))
             .findFirst()
             .orElseThrow();
-    var before = budget.position(t(), p.departmentId(), p.period()).occupied();
+    var before = budget.position(t(), p.departmentId(), guard.effectivePeriod(p)).occupied();
     for (String d : lots.lotDemands(t(), id))
       demands.resetProjectDemand(project, d, !rework, a.reason());
     if (!rework)
@@ -169,7 +171,7 @@ public class ProjectCloseoutService {
             rework ? (lots.lotDemands(t(), id).isEmpty() ? "draft" : "ready") : "cancelled")
         != 1) throw new IllegalStateException("分包已变化");
     bump(p);
-    var released = before.subtract(budget.position(t(), p.departmentId(), p.period()).occupied());
+    var released = before.subtract(budget.position(t(), p.departmentId(), guard.effectivePeriod(p)).occupied());
     event(
         p,
         id,
@@ -183,6 +185,7 @@ public class ProjectCloseoutService {
   public void terminate(String project, Action a) {
     guard.lock();
     var p = guard.require(project, true);
+    policy.noPending(p);
     version(p.revision(), a.revision());
     if (!List.of("draft", "approved", "rejected", "withdrawn").contains(p.status())
         || p.executionId() != null
@@ -195,7 +198,7 @@ public class ProjectCloseoutService {
     before.put("packages", expansions.packages(project));
     before.put("demands", projects.demands(t(), project));
     before.put("demandItems", demandItems(project));
-    var occupied = budget.position(t(), p.departmentId(), p.period()).occupied();
+    var occupied = budget.position(t(), p.departmentId(), guard.effectivePeriod(p)).occupied();
     for (var d : projects.demands(t(), project))
       if (!"已取消".equals(d.status())) demands.resetProjectDemand(project, d.id(), true, a.reason());
     for (var l : packages)
@@ -212,7 +215,7 @@ public class ProjectCloseoutService {
         "terminate",
         a.reason(),
         before,
-        occupied.subtract(budget.position(t(), p.departmentId(), p.period()).occupied()));
+        occupied.subtract(budget.position(t(), p.departmentId(), guard.effectivePeriod(p)).occupied()));
   }
 
   private void authorizeHistory(String id) {
@@ -364,6 +367,10 @@ public class ProjectCloseoutService {
         "调整历史.json", policy.write(mapper.history(t(), project)).getBytes(StandardCharsets.UTF_8));
     var ids = new LinkedHashSet<String>();
     ids.add(project);
+    if(lifecycle.count(t(),project)>1000)throw new IllegalStateException("承接清算历史超过1000条，请先分页导出");
+    var lifecycleHistory=lifecycle.page(t(),project,1000,0);
+    if(!lifecycleHistory.isEmpty())files.put("跨年度承接与终止清算.json",policy.write(lifecycleHistory).getBytes(StandardCharsets.UTF_8));
+    for(var r:lifecycleHistory)ids.add(r.id());
     for (var run : expansions.activeRuns(p)) ids.add(run.executionId());
     for (var d : projects.demands(t(), project)) ids.add(d.id());
     for (var c : lots.changes(t(), project, Integer.MAX_VALUE, 0)) ids.add(c.id());

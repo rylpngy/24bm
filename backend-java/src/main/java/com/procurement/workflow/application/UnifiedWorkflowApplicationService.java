@@ -250,7 +250,7 @@ public class UnifiedWorkflowApplicationService {
     permissionService.require("buyer:project:manage");
     if(reason==null||reason.isBlank()||reason.length()>1000)throw new IllegalArgumentException("撤回原因必填且不超过1000字");
     var instance=workflowBusinessInstanceMapper.findByTenantAndIdForUpdate(tenant,id);
-    if(instance==null||!List.of("project_initiation","project_change").contains(instance.businessType()))throw new IllegalArgumentException("项目审批不存在");
+    if(instance==null||!List.of("project_initiation","project_change","project_carryover","project_liquidation").contains(instance.businessType()))throw new IllegalArgumentException("项目审批不存在");
     if(!actor.equals(instance.initiatorId())||!isVisible(instance,dataScopeService.currentUserDataScope()))throw new PermissionDeniedException("只有当前数据范围内的发起人可撤回");
     if(!WorkflowInstanceStatus.PROCESSING.equals(instance.status()))throw new IllegalStateException("审批已经结束");
     runtimeService.deleteProcessInstance(instance.flowableProcessInstanceId(),reason.strip());
@@ -1052,6 +1052,7 @@ public class UnifiedWorkflowApplicationService {
     switch (instance.businessType()) {
       case "project_initiation" -> owners.put("procurement_project",instance.businessId());
       case "project_change" -> {owners.put("procurement_project_change",instance.businessId());putOwner(owners,"procurement_project",snapshot.get("projectId"));}
+      case "project_carryover", "project_liquidation" -> putOwner(owners,"procurement_project",snapshot.get("projectId"));
       case "purchase_demand" -> owners.put("purchase_demand", instance.businessId());
       case "buyer_supplier_admission", "buyer_supplier_exit", "supplier_qualification_change" -> putOwner(owners, "supplier", snapshot.get("supplierId"));
       case "rfq_award" -> putOwner(owners, "rfq", snapshot.get("rfqId"));
@@ -1087,6 +1088,8 @@ public class UnifiedWorkflowApplicationService {
     return switch (businessType) {
       case "project_initiation" -> "项目立项";
       case "project_change" -> "立项变更";
+      case "project_carryover" -> "跨年度承接";
+      case "project_liquidation" -> "项目终止清算";
       case "purchase_demand" -> "采购需求";
       case "budget_change" -> "预算编制与调整";
       case "budget_exception" -> "超预算例外";
