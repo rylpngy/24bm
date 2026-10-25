@@ -310,7 +310,8 @@ import org.springframework.test.web.servlet.MvcResult;
     com.procurement.buyer.api.ProcurementProjectController.class,
     com.procurement.buyer.api.ProjectExpansionController.class,
     com.procurement.buyer.api.ProjectCloseoutController.class,
-    com.procurement.buyer.api.ProjectMallController.class
+    com.procurement.buyer.api.ProjectMallController.class,
+    com.procurement.buyer.api.ProjectLifecycleController.class
 })
 @Import({
     SecurityConfig.class,
@@ -329,6 +330,7 @@ class HttpSecurityContractTests {
   @MockBean private com.procurement.buyer.application.ProjectExpansionService projectExpansion;
   @MockBean private com.procurement.buyer.application.ProjectCloseoutService projectCloseout;
   @MockBean private com.procurement.buyer.application.ProjectMallService projectMall;
+  @MockBean private com.procurement.buyer.application.ProjectLifecycleService projectLifecycle;
   @MockBean private com.procurement.identity.application.ExternalIdentityService externalIdentities;
   @Test
   void projectLibraryRequiresBuyerPortalAndSpecificPermission() throws Exception {
@@ -345,7 +347,7 @@ class HttpSecurityContractTests {
     mockMvc.perform(get("/api/v1/buyer/projects").header("Authorization", "Bearer " + buyer))
         .andExpect(status().isForbidden());
     org.mockito.Mockito.verifyNoInteractions(procurementProjects);
-    for (String path : List.of("packages", "package-balances", "changes", "packages/pkg/execution", "monitor", "adjustments", "archive/download", "packages/pkg/mall-selection")) {
+    for (String path : List.of("packages", "package-balances", "changes", "packages/pkg/execution", "monitor", "adjustments", "archive/download", "packages/pkg/mall-selection", "lifecycle", "lifecycle/preview")) {
       String url = "/api/v1/buyer/projects/p1/" + path;
       mockMvc.perform(get(url)).andExpect(status().isForbidden());
       mockMvc.perform(get(url).header("Authorization", "Bearer " + supplier)).andExpect(status().isForbidden());
@@ -363,6 +365,13 @@ class HttpSecurityContractTests {
         .content("{\"revision\":1,\"requestKey\":\"x\",\"reason\":\"选型\",\"items\":[{\"skuId\":\"sku\",\"quantity\":1}]}"))
         .andExpect(status().isForbidden());
     org.mockito.Mockito.verifyNoInteractions(projectMall);
+    for(String path:List.of("lifecycle","lifecycle/req/withdraw")){
+      mockMvc.perform(post("/api/v1/buyer/projects/p1/"+path)
+          .header("Authorization","Bearer "+buyer).contentType(MediaType.APPLICATION_JSON)
+          .content("{\"revision\":1,\"kind\":\"carryover\",\"targetPeriod\":\"2027\",\"reason\":\"承接\"}"))
+          .andExpect(status().isForbidden());
+    }
+    org.mockito.Mockito.verifyNoInteractions(projectLifecycle);
   }
   @Test
   void budgetLifecycleRequiresAuthenticatedBuyerPortal() throws Exception {

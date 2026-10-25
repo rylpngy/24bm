@@ -7,6 +7,9 @@ import org.apache.ibatis.annotations.*;
 
 @Mapper
 public interface ProjectExpansionMapper {
+  @Select("select target_period from procurement_project_lifecycle_requests where tenant_id=#{t} and project_id=#{p} and kind='carryover' and status='approved' order by target_period desc limit 1")
+  String carryoverPeriod(@Param("t") String t,@Param("p") String p);
+
   String LOT =
       "select"
           + " id,tenant_id,project_id,title,status,revision,project_revision,amount,lines::text,snapshot::text,created_by,created_at"
@@ -178,8 +181,8 @@ public interface ProjectExpansionMapper {
   long changeCount(@Param("t") String t, @Param("p") String p);
 
   @Select(
-      "select count(*) from procurement_project_changes where tenant_id=#{t} and project_id=#{p}"
-          + " and status='submitted'")
+      "select (select count(*) from procurement_project_changes where tenant_id=#{t} and project_id=#{p} and status='submitted')"
+          + " + (select count(*) from procurement_project_lifecycle_requests where tenant_id=#{t} and project_id=#{p} and status='submitted')")
   int pending(@Param("t") String t, @Param("p") String p);
 
   @Select(

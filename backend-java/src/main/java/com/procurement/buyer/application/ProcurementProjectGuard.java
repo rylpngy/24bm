@@ -19,6 +19,13 @@ public class ProcurementProjectGuard {
   private final ProjectAllocationPolicy allocations;
   @org.springframework.beans.factory.annotation.Autowired
   private com.procurement.buyer.infrastructure.ProjectMallMapper mallSelections;
+  @org.springframework.beans.factory.annotation.Autowired
+  private com.procurement.buyer.infrastructure.ProjectLifecycleMapper lifecycle;
+
+  public String effectivePeriod(Project p) {
+    String period=lifecycle==null?null:lifecycle.period(p.tenantId(),p.id());
+    return period==null?p.period():period;
+  }
 
   public ProcurementProjectGuard(
       ProcurementProjectMapper mapper,
@@ -166,7 +173,7 @@ public class ProcurementProjectGuard {
     approved(p);
     allocations.noPending(p);
     var source = mapper.demand(t, demand);
-    if (!p.departmentId().equals(source.departmentId()) || !p.period().equals(source.period()))
+    if (!p.departmentId().equals(source.departmentId()) || (!p.period().equals(source.period())&&!effectivePeriod(p).equals(source.period())))
       throw new IllegalStateException("项目需求部门或年度与已批准项目不一致");
     String lotId = expansion.demandLot(t, demand);
     if (lotId == null) return;

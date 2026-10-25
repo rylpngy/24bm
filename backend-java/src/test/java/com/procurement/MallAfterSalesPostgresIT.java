@@ -92,6 +92,10 @@ class MallAfterSalesPostgresIT extends ContractFinanceCloseoutPostgresIT {
   @Override @BeforeEach void seed() throws Exception {
     super.seed();
     execute("""
+        alter table purchase_orders add column rfq_id text;
+        create table rfq_demands(tenant_id text,rfq_id text,demand_id text);
+        create table procurement_project_demands(tenant_id text,project_id text,demand_id text);
+        create table procurement_project_lifecycle_requests(tenant_id text,project_id text,kind text,status text);
         create table enterprises(id text primary key,name text);
         insert into enterprises values ('s','Supplier');
         create table mall_after_sales (
@@ -292,6 +296,23 @@ class MallAfterSalesPostgresIT extends ContractFinanceCloseoutPostgresIT {
         assertThat(buyerMapper.lockForBuyer("t", "a").status()).isEqualTo("已撤回");
         assertThat(buyerMapper.handleBySupplier("a", "s", "处理中", "stale", "待处理")).isZero();
       } finally { buyer.rollback(true); }
+    }
+  }
+
+  @Test void liquidatedProjectCannotOpenNewAfterSalesResponsibility() throws Exception {
+    execute("""
+        update purchase_orders set rfq_id='rfq';
+        insert into rfq_demands values ('t','rfq','d');
+        insert into procurement_project_demands values ('t','project','d');
+        insert into procurement_project_lifecycle_requests values ('t','project','liquidation','approved');
+        """);
+    try(var session=sessions().openSession(false)){
+      TenantContext.set("t",null,"buyer");
+      try{
+        org.assertj.core.api.Assertions.assertThatThrownBy(()->service(session).applyAfterSales(new CreateAfterSalesRequest("o","l","维修",BigDecimal.ONE,"New liability")))
+            .isInstanceOf(IllegalStateException.class).hasMessageContaining("终止清算");
+        assertThat(session.getMapper(MallServiceMapper.class).listByTenant("t")).isEmpty();
+      }finally{TenantContext.clear();session.rollback(true);}
     }
   }
 

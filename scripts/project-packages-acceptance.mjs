@@ -15,6 +15,7 @@ const required = (k) => {
 };
 const closeoutChecks = process.env.PROJECT_CLOSEOUT_ACCEPTANCE === '1';
 const marketplaceChecks = process.env.PROJECT_MARKETPLACE_ACCEPTANCE === '1';
+const lifecycleChecks = process.env.PROJECT_LIFECYCLE_ACCEPTANCE === '1';
 const packageKeys = marketplaceChecks
   ? ['rfq', 'tender', 'retry', 'auction', 'mall']
   : ['rfq', 'tender', 'retry'];
@@ -138,6 +139,8 @@ try {
   for (const type of [
     'project_initiation',
     'project_change',
+    'project_carryover',
+    'project_liquidation',
     'purchase_demand',
     'budget_change',
     'buyer_supplier_admission',
@@ -991,15 +994,67 @@ try {
     packageKeys.length,
   );
   const fresh = await api('buyer/projects/' + shared.project.id, b);
-  assert.equal(
-    (
-      await api('buyer/projects/' + shared.project.id + '/close', b, {
-        revision: fresh.project.revision,
-        reason: '全部采购包完整结项',
-      })
-    ).project.status,
-    'closed',
-  );
+  if (lifecycleChecks) {
+    const path = 'buyer/projects/' + shared.project.id + '/lifecycle';
+    const preview = await api(path + '/preview', b);
+    assert.deepEqual(preview.liquidationBlockers, []);
+    assert.ok(preview.carryoverBlockers.some((x) => x.includes('已有付款')));
+    const request = await api(path, b, {
+      revision: fresh.project.revision,
+      kind: 'liquidation',
+      reason: '原订单全部履约结清，终止尚未实施计划范围',
+      formData: {},
+    });
+    assert.equal(
+      (await api('buyer/projects/' + shared.project.id, b)).project.status,
+      'approved',
+    );
+    await decide(r, 'project_liquidation', request.id);
+    assert.equal(
+      (await api('buyer/projects/' + shared.project.id, b)).project.status,
+      'terminated',
+    );
+    assert.equal((await api(path, b)).items[0].status, 'approved');
+    const invoices = await api('buyer/invoices', b);
+    const invoice = invoices.find(
+      (i) => i.orderId === report.records.rfq.orderId,
+    );
+    assert.ok(invoice);
+    const ledger = await api(
+      'buyer/invoices/' + invoice.id + '/payment-ledger',
+      b,
+    );
+    const paidEntry = ledger.entries.find((e) => e.amount > 0);
+    assert.ok(paidEntry);
+    await api(
+      'buyer/invoices/' +
+        invoice.id +
+        '/payment-ledger/' +
+        paidEntry.id +
+        '/reverse',
+      b,
+      {
+        idempotencyKey: 'after-liquidation-' + runId,
+        reason: 'Cannot rewrite liquidation',
+      },
+      'POST',
+      [400, 409],
+      /终止清算/,
+    );
+    check(
+      'Existing orders independently liquidated after actual receipts, invoices, payment approvals, net payment and package archives; source orders retained',
+    );
+  } else {
+    assert.equal(
+      (
+        await api('buyer/projects/' + shared.project.id + '/close', b, {
+          revision: fresh.project.revision,
+          reason: '全部采购包完整结项',
+        })
+      ).project.status,
+      'closed',
+    );
+  }
   for (const key of packageKeys) {
     const run = report.records[key],
       view = await api('buyer/rfqs/' + run.rfqId + '/execution', b);
@@ -1111,6 +1166,88 @@ try {
   }
   const page = await api('buyer/projects?page=1&pageSize=1', b);
   assert.equal(page.total, closeoutChecks ? 2 : 1);
+  if (lifecycleChecks) {
+    let carry = await api('buyer/projects', b, {
+      title: '跨年度承接真实核验',
+      departmentId: dept.id,
+      ownerId: reviewer.userId,
+      period: year,
+      fundingSource: '年度预算',
+      purpose: '未支付采购责任的跨年度承接',
+      revision: 0,
+      lines: [
+        {
+          materialId: material.id,
+          quantity: 1,
+          unitPrice: 400,
+          purpose: '办公',
+        },
+      ],
+    });
+    const id = carry.project.id,
+      endpoint = 'buyer/projects/' + id;
+    await api(endpoint + '/submit', b, {
+      revision: carry.project.revision,
+      reason: '独立立项',
+      formData: {},
+    });
+    await decide(r, 'project_initiation', id);
+    carry = await api(endpoint, b);
+    await api(endpoint + '/create-demand', b, {
+      revision: carry.project.revision,
+      reason: '生成原始需求',
+    });
+    const ds = await api(endpoint + '/demands', b),
+      demand = ds[0];
+    await api('buyer/demands/' + demand.id + '/submit', b, { formData: {} });
+    await decide(r, 'purchase_demand', demand.id);
+    const original = await api('buyer/demands/' + demand.id, b);
+    carry = await api(endpoint, b);
+    const payload = {
+      revision: carry.project.revision,
+      kind: 'carryover',
+      targetPeriod: String(Number(year) + 1),
+      reason: '将未支付采购责任承接至下一年度',
+      formData: {},
+    };
+    const before = await api(endpoint + '/budget', b);
+    let request = await api(endpoint + '/lifecycle', b, payload);
+    assert.equal((await api(endpoint + '/budget', b)).period, year);
+    await api(
+      endpoint + '/lifecycle',
+      b,
+      payload,
+      'POST',
+      [409, 400],
+      /重复提交/,
+    );
+    await api(endpoint + '/lifecycle/' + request.id + '/withdraw', b, {
+      revision: request.revision,
+      reason: '核对后重提',
+    });
+    request = await api(endpoint + '/lifecycle', b, payload);
+    await decide(r, 'project_carryover', request.id, 'reject');
+    assert.equal(
+      (await api(endpoint + '/budget', b)).committed,
+      before.committed,
+    );
+    request = await api(endpoint + '/lifecycle', b, payload);
+    await decide(r, 'project_carryover', request.id);
+    const after = await api(endpoint + '/budget', b);
+    assert.equal(after.period, String(Number(year) + 1));
+    assert.equal(after.committed, 400);
+    assert.equal((await api(endpoint, b)).project.period, year);
+    const unchanged = await api('buyer/demands/' + demand.id, b);
+    assert.equal(unchanged.createdAt, original.createdAt);
+    assert.equal(unchanged.budget, original.budget);
+    const history = await api(endpoint + '/lifecycle?page=1&pageSize=1', b);
+    assert.equal(history.total, 3);
+    assert.equal(history.items.length, 1);
+    report.records.carryoverProjectId = id;
+    check(
+      'Unpaid carryover uses real Flowable approval/rejection/withdrawal, duplicate protection, target-year occupancy and paginated history without rewriting source project/demand',
+    );
+  }
   const changePage = await api(
     'buyer/projects/' + shared.project.id + '/changes?page=1&pageSize=1',
     b,

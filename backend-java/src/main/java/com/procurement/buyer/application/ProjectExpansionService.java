@@ -498,8 +498,8 @@ public class ProjectExpansionService {
     revision(lot.revision(), a.revision());
     if (!"draft".equals(lot.status()) || !mapper.lotDemands(t(), id).isEmpty())
       throw new IllegalStateException("分包已有需求或已取消，不能重复生成");
-    if (!p.period().equals(Year.now(ZoneId.of("Asia/Shanghai")).toString()))
-      throw new IllegalStateException("仅当前年度分包可生成需求");
+    if (!guard.effectivePeriod(p).equals(Year.now(ZoneId.of("Asia/Shanghai")).toString()))
+      throw new IllegalStateException("仅当前责任年度分包可生成需求，请先办理跨年度承接或等待承接年度开始");
     String demand =
         demands.createProjectDemand(
             p.title() + " · " + lot.title(),
@@ -533,7 +533,7 @@ public class ProjectExpansionService {
     if (d == null) throw new IllegalArgumentException("需求不存在");
     scopes.requireRecordAccess(d.departmentId(), d.requesterId());
     if (!p.departmentId().equals(d.departmentId())
-        || !p.period().equals(d.period())
+        || (!p.period().equals(d.period())&&!guard.effectivePeriod(p).equals(d.period()))
         || !List.of("草稿", "已通过", "审批中", "已驳回").contains(d.status())
         || projects.activeRfq(t(), d.id()) > 0)
       throw new IllegalStateException("需求须为同部门年度、尚未转采购的有效需求");

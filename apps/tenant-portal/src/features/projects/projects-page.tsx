@@ -35,6 +35,7 @@ import { WorkflowSubmitDialog } from '../workflow/workflow-submit-dialog';
 import { projectAmount } from './project-amount';
 import { ProjectExpansionPanel } from './project-expansion-panel';
 import { ProjectCloseoutPanel } from './project-closeout-panel';
+import { ProjectLifecyclePanel } from './project-lifecycle-panel';
 
 const states: Record<string, string> = {
   draft: '草稿',
@@ -919,6 +920,9 @@ function ProjectWorkspace() {
                   onChanged={refresh}
                   onPackagesReady={setPackageCount}
                 />
+              )}
+              {['approved', 'closed', 'terminated'].includes(p.status) && (
+                <ProjectLifecyclePanel key={'lifecycle-'+p.id} project={p} onChanged={refresh}/>
               )}
               {['approved', 'closed', 'terminated'].includes(p.status) && (
                 <ProjectCloseoutPanel
