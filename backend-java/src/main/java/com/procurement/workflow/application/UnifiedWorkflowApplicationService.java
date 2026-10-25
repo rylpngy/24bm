@@ -208,6 +208,9 @@ public class UnifiedWorkflowApplicationService {
   }
 
   @Transactional
+  public void withdrawCurrentPurchaseDemand(String demand,String reason){String tenant=TenantAccessGuard.requireTenantId("demand workflow withdrawal");var active=workflowBusinessInstanceMapper.findActiveByBusiness(tenant,"purchase_demand",demand);if(active==null)throw new IllegalStateException("在审需求缺少真实流程，不能绕过审批");withdrawPurchaseDemand(active.id(),reason);}
+
+  @Transactional
   public void withdrawBudgetRequest(String workflowInstanceId,String reason) {
     String tenant=TenantAccessGuard.requireTenantId("budget withdrawal");
     String actor=TenantAccessGuard.requireUserId("budget withdrawal");

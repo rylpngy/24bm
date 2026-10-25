@@ -111,7 +111,7 @@ public record ProjectAllocationPolicy(
         add(qty, lines(lot.lines()));
     var legacy = legacyDemands(p);
     for (var d : projects.demands(p.tenantId(), p.id()))
-      if (expansion.demandLot(p.tenantId(), d.id()) == null && !legacy.contains(d.id()))
+      if (!"已取消".equals(d.status()) && expansion.demandLot(p.tenantId(), d.id()) == null && !legacy.contains(d.id()))
         for (var l : tree(expansion.demandLines(p.tenantId(), d.id())))
           qty.merge(
               l.path("materialId").asText(), l.path("quantity").decimalValue(), BigDecimal::add);
@@ -131,7 +131,7 @@ public record ProjectAllocationPolicy(
       if (!lot.id().equals(excludeLot) && !"cancelled".equals(lot.status()))
         amount = amount.add(lot.amount());
     for (var d : projects.demands(p.tenantId(), p.id()))
-      if (expansion.demandLot(p.tenantId(), d.id()) == null && !legacy.contains(d.id()))
+      if (!"已取消".equals(d.status()) && expansion.demandLot(p.tenantId(), d.id()) == null && !legacy.contains(d.id()))
         amount = amount.add(d.budget());
     return amount;
   }
@@ -217,7 +217,7 @@ public record ProjectAllocationPolicy(
         projects.demands(p.tenantId(), p.id()).stream()
             .allMatch(
                 d ->
-                    adopted.contains(d.id())
+                    "已取消".equals(d.status()) || adopted.contains(d.id())
                         || legacy.contains(d.id())
                         || expansion.demandLot(p.tenantId(), d.id()) != null);
     BigDecimal legacyBudget =

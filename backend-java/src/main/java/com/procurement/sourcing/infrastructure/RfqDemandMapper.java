@@ -9,6 +9,8 @@ import org.apache.ibatis.annotations.Select;
 
 @Mapper
 public interface RfqDemandMapper {
+  @org.apache.ibatis.annotations.Select("select count(*) from rfq_demands d join rfqs r on r.tenant_id=d.tenant_id and r.id=d.rfq_id where d.tenant_id=#{t} and d.demand_id=#{d} and (r.status not in ('已流标','已废标','已取消') or exists(select 1 from purchase_orders o where o.tenant_id=r.tenant_id and o.rfq_id=r.id))")
+  int activeOrOrderedLinks(@org.apache.ibatis.annotations.Param("t")String tenant,@org.apache.ibatis.annotations.Param("d")String demand);
 
   record DemandAccess(String demandId, String departmentId, String requesterId) {}
 

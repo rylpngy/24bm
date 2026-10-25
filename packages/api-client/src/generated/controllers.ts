@@ -57,6 +57,7 @@ export * from './platform-workspace-controller/platform-workspace-controller';
 export * from './process-definition-controller/process-definition-controller';
 export * from './procurement-execution-controller/procurement-execution-controller';
 export * from './procurement-project-controller/procurement-project-controller';
+export * from './project-closeout-controller/project-closeout-controller';
 export * from './project-expansion-controller/project-expansion-controller';
 export * from './public-mall-controller/public-mall-controller';
 export * from './public-opportunity-controller/public-opportunity-controller';

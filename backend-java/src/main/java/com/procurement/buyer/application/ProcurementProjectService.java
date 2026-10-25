@@ -30,6 +30,7 @@ public class ProcurementProjectService {
   private final ProcurementExecutionApplicationService execution;
   private final BudgetControlService budget;
   private final ProjectExpansionService expansions;
+  private final ProjectCloseoutService closeout;
 
   public ProcurementProjectService(
       ProcurementProjectMapper mapper,
@@ -42,7 +43,7 @@ public class ProcurementProjectService {
       RfqApplicationService rfqs,
       TenderApplicationService tenders,
       ProcurementExecutionApplicationService execution,
-      BudgetControlService budget, ProjectExpansionService expansions) {
+      BudgetControlService budget, ProjectExpansionService expansions, ProjectCloseoutService closeout) {
     this.mapper = mapper;
     this.guard = guard;
     this.permissions = permissions;
@@ -55,6 +56,7 @@ public class ProcurementProjectService {
     this.execution = execution;
     this.budget = budget;
     this.expansions=expansions;
+    this.closeout=closeout;
   }
 
   private String tenant() {
@@ -342,16 +344,7 @@ public class ProcurementProjectService {
 
   @Transactional
   public Detail terminate(String id, Action a) {
-    guard.lock();
-    var p = guard.require(id, true);
-    revision(p, a.revision());
-    if(expansions.hasOpenWork(id))throw new IllegalStateException("请先处理分包及立项变更");
-    if (List.of("submitted", "closed", "terminated").contains(p.status())
-        || p.executionId() != null
-        || !mapper.demands(tenant(), id).isEmpty())
-      throw new IllegalStateException("请先处理在审流程或关联业务；已执行项目不能直接终止");
-    mapper.state(tenant(), id, p.revision(), "terminated", null, a.reason());
-    event(id, "terminated", a.reason());
+    closeout.terminate(id,a);
     return detail(id);
   }
 }

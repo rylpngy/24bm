@@ -164,7 +164,7 @@ public class ProjectExpansionService {
       }
     var covered = new HashSet<>(policy.legacyDemands(p));
     for (var lot : mapper.packages(t(), project)) covered.addAll(mapper.lotDemands(t(), lot.id()));
-    if (ds.stream().anyMatch(d -> !covered.contains(d.id()))) {
+    if (ds.stream().anyMatch(d -> !"已取消".equals(d.status()) && !covered.contains(d.id()))) {
       warnings.add("仍有需求未分配到采购执行，请先纳入分包");
       canClose = false;
     }
@@ -204,7 +204,10 @@ public class ProjectExpansionService {
     return new Execution(
         ds,
         new ArrayList<>(docs.values()),
-        ds.stream().map(Demand::budget).reduce(BigDecimal.ZERO, BigDecimal::add),
+        ds.stream()
+            .filter(d -> !"已取消".equals(d.status()))
+            .map(Demand::budget)
+            .reduce(BigDecimal.ZERO, BigDecimal::add),
         order,
         invoiced,
         paid,
@@ -388,9 +391,11 @@ public class ProjectExpansionService {
     PackageRow old = id == null ? null : requireLot(project, id, true);
     if (old != null) {
       revision(old.revision(), d.revision());
-      if (!"draft".equals(old.status())
-          || !mapper.lotDemands(t(), id).isEmpty()
-          || !mapper.runs(t(), id).isEmpty()) throw new IllegalStateException("仅未生成需求、未采购的草稿包可编辑");
+      if (!List.of("draft", "ready").contains(old.status())
+          || !mapper.runs(t(), id).isEmpty()
+          || mapper.lotDemands(t(), id).stream()
+              .anyMatch(key -> !List.of("草稿", "已驳回").contains(projects.demand(t(), key).status())))
+        throw new IllegalStateException("仅未采购且需求已退回重新编制的草稿包可编辑");
     }
     var adopted = d.demandIds() == null ? List.<String>of() : d.demandIds();
     if (new HashSet<>(adopted).size() != adopted.size())
@@ -412,7 +417,9 @@ public class ProjectExpansionService {
     String lot = id == null ? "project-package-" + UUID.randomUUID() : id;
     var adoptedQty = new HashMap<String, BigDecimal>();
     BigDecimal adoptedBudget = BigDecimal.ZERO;
-    for (var demand : adopted) {
+    var scopeDemands = new ArrayList<>(adopted);
+    if (old != null) scopeDemands.addAll(mapper.lotDemands(t(), id));
+    for (var demand : scopeDemands) {
       adoptedBudget = adoptedBudget.add(projects.demand(t(), demand).budget());
       for (var l : policy.tree(mapper.demandLines(t(), demand)))
         adoptedQty.merge(

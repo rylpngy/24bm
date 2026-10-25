@@ -52,6 +52,8 @@ class ProcurementProjectIT {
   @Autowired ProjectExpansionService expansion;
   @Autowired ProcurementProjectGuard projectGuard;
   @Autowired ProjectAllocationPolicy allocation;
+  @Autowired ProjectCloseoutService closeout;
+  @Autowired ProjectChangeAttachmentAccess changeAttachments;
   String tenant, dept, author, reviewer, role, material;
   final String year = Year.now(ZoneId.of("Asia/Shanghai")).toString();
 
@@ -527,6 +529,232 @@ class ProcurementProjectIT {
                 projectGuard.archiveDefinitionForRfq(rfq)))
         .isEqualTo(before);
     assertThat(lot(project, "1").info().amount()).isEqualByComparingTo("123.46");
+  }
+
+  @Test
+  void reworkReleasesExposureRetainsApprovalAndRequiresFreshApproval() {
+    var p = approve(projects.create(draft(0))).project();
+    var l = ready(lot(p.id(), "1"));
+    assertThat(budget.position(tenant, dept, year).committed()).isEqualByComparingTo("123.46");
+    closeout.adjust(
+        p.id(),
+        l.info().id(),
+        new com.procurement.buyer.api.ProjectExpansionContracts.PackageAction(
+            l.info().revision(), "Revise procurement plan"),
+        true);
+    assertThat(projects.demands(p.id()).getFirst().status()).isEqualTo("草稿");
+    assertThat(budget.position(tenant, dept, year).occupied()).isEqualByComparingTo("0");
+    var h = closeout.history(p.id(), 1, 10);
+    assertThat(h.items().getFirst().snapshot()).contains("已通过");
+    assertThat(h.items().getFirst().releasedAmount()).isEqualByComparingTo("123.46");
+    assertThat(
+            jdbc.queryForObject(
+                "select status from workflow_business_instances where tenant_id=? and"
+                    + " business_type='purchase_demand'",
+                String.class,
+                tenant))
+        .isEqualTo("approved");
+    String demand = l.demands().getFirst().id();
+    demands.submit(demand, Map.of());
+    decide(demand, "approve");
+    var fresh = expansion.packages(p.id()).getFirst();
+    expansion.execute(
+        p.id(),
+        fresh.info().id(),
+        new com.procurement.buyer.api.ProjectExpansionContracts.PackageExecution(
+            fresh.info().revision(), "rfq", "Fresh approval obtained"),
+        false);
+    assertThat(budget.position(tenant, dept, year).committed()).isEqualByComparingTo("123.46");
+    assertThatThrownBy(
+            () ->
+                closeout.adjust(
+                    p.id(),
+                    fresh.info().id(),
+                    new com.procurement.buyer.api.ProjectExpansionContracts.PackageAction(
+                        fresh.info().revision(), "Stale click"),
+                    false))
+        .hasMessageContaining("变化");
+  }
+
+  @Test
+  void pendingDemandReworkUsesRealInitiatorWithdrawalAndRollsBackForOthers() {
+    var p = approve(projects.create(draft(0))).project();
+    var l = lot(p.id(), "1");
+    l =
+        expansion.createDemand(
+            p.id(),
+            l.info().id(),
+            new com.procurement.buyer.api.ProjectExpansionContracts.PackageAction(
+                l.info().revision(), "Generate"));
+    String lotId = l.info().id();
+    int revision = l.info().revision();
+    String demand = l.demands().getFirst().id();
+    demands.submit(demand, Map.of());
+    context(reviewer);
+    assertThatThrownBy(
+            () ->
+                closeout.adjust(
+                    p.id(),
+                    lotId,
+                    new com.procurement.buyer.api.ProjectExpansionContracts.PackageAction(
+                        revision, "Wrong initiator"),
+                    true))
+        .isInstanceOf(com.procurement.common.tenant.PermissionDeniedException.class);
+    assertThat(closeout.history(p.id(), 1, 10).total()).isZero();
+    assertThat(projects.demands(p.id()).getFirst().status()).isEqualTo("审批中");
+    context(author);
+    closeout.adjust(
+        p.id(),
+        lotId,
+        new com.procurement.buyer.api.ProjectExpansionContracts.PackageAction(
+            revision, "Withdraw and recompile"),
+        true);
+    assertThat(
+            jdbc.queryForObject(
+                "select status from workflow_business_instances where tenant_id=? and"
+                    + " business_type='purchase_demand'",
+                String.class,
+                tenant))
+        .isEqualTo("cancelled");
+    assertThat(projects.demands(p.id()).getFirst().status()).isEqualTo("草稿");
+    assertThat(budget.position(tenant, dept, year).occupied()).isEqualByComparingTo("0");
+  }
+
+  @Test
+  void approvedUnpurchasedPackageCanStopAndReleaseAllocationWithoutDeletingHistory() {
+    var p = approve(projects.create(draft(0))).project();
+    var l = ready(lot(p.id(), "1"));
+    closeout.adjust(
+        p.id(),
+        l.info().id(),
+        new com.procurement.buyer.api.ProjectExpansionContracts.PackageAction(
+            l.info().revision(), "Procurement no longer needed"),
+        false);
+    assertThat(expansion.packages(p.id()).getFirst().info().status()).isEqualTo("cancelled");
+    assertThat(projects.demands(p.id()).getFirst().status()).isEqualTo("已取消");
+    assertThat(closeout.monitor(p.id()).packages().getFirst().milestones())
+        .allMatch(m -> !m.complete() && !m.overdue());
+    assertThat(expansion.summary(p.id()).demandAmount()).isEqualByComparingTo("0");
+    assertThat(lot(p.id(), "2").info().amount()).isEqualByComparingTo("246.91");
+    assertThatThrownBy(() -> demands.submit(l.demands().getFirst().id(), Map.of()))
+        .isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  void concurrentApprovalAndReworkPreserveStateWithoutDeadlock() throws Exception {
+    var p=approve(projects.create(draft(0))).project();var l=lot(p.id(),"1");
+    var linked=expansion.createDemand(p.id(),l.info().id(),new com.procurement.buyer.api.ProjectExpansionContracts.PackageAction(l.info().revision(),"Generate concurrent demand"));
+    String demand=linked.demands().getFirst().id();demands.submit(demand,Map.of());context(reviewer);
+    String task=workflow.listCurrentUserTasks().stream().filter(t->t.businessId().equals(demand)).findFirst().orElseThrow().taskId();context(author);
+    var barrier=new java.util.concurrent.CountDownLatch(1);
+    try(var pool=java.util.concurrent.Executors.newFixedThreadPool(2)){
+      var edit=pool.submit(()->{context(author);try{barrier.await();closeout.adjust(p.id(),linked.info().id(),new com.procurement.buyer.api.ProjectExpansionContracts.PackageAction(linked.info().revision(),"Concurrent rework"),true);return true;}catch(RuntimeException e){assertThat(e).isNotInstanceOf(org.springframework.dao.DataAccessException.class);assertThat(e.getMessage()).doesNotContainIgnoringCase("deadlock");return false;}finally{TenantContext.clear();}});
+      var approval=pool.submit(()->{context(reviewer);try{barrier.await();workflow.completeCurrentUserTask(task,new CompleteWorkflowTaskRequest("approve","Concurrent review"));return true;}catch(RuntimeException e){assertThat(e).isNotInstanceOf(org.springframework.dao.DataAccessException.class);assertThat(e.getMessage()).doesNotContainIgnoringCase("deadlock");return false;}finally{TenantContext.clear();}});
+      barrier.countDown();boolean edited=edit.get(15,java.util.concurrent.TimeUnit.SECONDS),approved=approval.get(15,java.util.concurrent.TimeUnit.SECONDS);assertThat(edited||approved).isTrue();
+      String state=projects.demands(p.id()).getFirst().status();assertThat(state).isIn("草稿","已通过");if(edited)assertThat(state).isEqualTo("草稿");assertThat(budget.position(tenant,dept,year).occupied()).isEqualByComparingTo("草稿".equals(state)?BigDecimal.ZERO:linked.info().amount());
+    }
+  }
+
+  @Test
+  void planHasActualEvidenceOverdueDetectionPaginationAndOptimisticVersions() {
+    var p = approve(projects.create(draft(0))).project();
+    var l = lot(p.id(), "1");
+    for (int n = 0; n < 12; n++) {
+      var row = expansion.packages(p.id()).getFirst();
+      closeout.plan(
+          p.id(),
+          row.info().id(),
+          new com.procurement.buyer.api.ProjectCloseoutContracts.Plan(
+              row.info().revision(),
+              "demand",
+              LocalDate.now(ZoneId.of("Asia/Shanghai")).minusDays(1),
+              "Plan revision " + n));
+    }
+    assertThat(closeout.history(p.id(), 2, 10).items()).hasSize(2);
+    assertThat(closeout.history(p.id(), 1, 10).total()).isEqualTo(12);
+    assertThat(closeout.monitor(p.id()).overdueCount()).isEqualTo(1);
+    assertThatThrownBy(
+            () ->
+                closeout.plan(
+                    p.id(),
+                    l.info().id(),
+                    new com.procurement.buyer.api.ProjectCloseoutContracts.Plan(
+                        l.info().revision(), "close", LocalDate.now(), "Stale")))
+        .hasMessageContaining("变化");
+    var current = expansion.packages(p.id()).getFirst();
+    assertThatThrownBy(
+            () ->
+                closeout.plan(
+                    p.id(),
+                    current.info().id(),
+                    new com.procurement.buyer.api.ProjectCloseoutContracts.Plan(
+                        current.info().revision(),
+                        "order",
+                        LocalDate.now(ZoneId.of("Asia/Shanghai")).minusDays(2),
+                        "Invalid sequence")))
+        .hasMessageContaining("先后顺序");
+    ready(expansion.packages(p.id()).getFirst());
+    assertThat(closeout.monitor(p.id()).overdueCount()).isZero();
+    assertThat(closeout.monitor(p.id()).packages().getFirst().milestones().getFirst().complete())
+        .isTrue();
+  }
+
+  @Test
+  void projectTerminationCancelsOnlyUnpurchasedScopeAndHasDownloadableAuditArchive()
+      throws Exception {
+    var p = approve(projects.create(draft(0))).project();
+    ready(lot(p.id(), "1"));
+    lot(p.id(), "1");
+    assertThatThrownBy(() -> closeout.download(p.id())).hasMessageContaining("仅已结项");
+    var fresh = projects.detail(p.id());
+    var change =
+        expansion.saveChange(
+            p.id(),
+            null,
+            new com.procurement.buyer.api.ProjectExpansionContracts.ChangeDraft(
+                fresh.project().revision(),
+                0,
+                "Unsubmitted change",
+                draft(fresh.project().revision())));
+    assertThatThrownBy(() -> projects.terminate(p.id(), action(fresh))).hasMessageContaining("先处理");
+    expansion.withdrawChange(
+        p.id(), change.id(), new Action(change.revision(), "Withdraw draft", Map.of()));
+    projects.terminate(p.id(), action(fresh));
+    assertThat(projects.detail(p.id()).project().status()).isEqualTo("terminated");
+    assertThatThrownBy(() -> changeAttachments.requireAccess(change.id(), true))
+        .hasMessageContaining("项目已结束");
+    assertThat(budget.position(tenant, dept, year).occupied()).isEqualByComparingTo("0");
+    assertThat(expansion.packages(p.id())).allMatch(l -> "cancelled".equals(l.info().status()));
+    var names = new ArrayList<String>();
+    try (var zip =
+        new java.util.zip.ZipInputStream(
+            new java.io.ByteArrayInputStream(closeout.download(p.id())),
+            java.nio.charset.StandardCharsets.UTF_8)) {
+      java.util.zip.ZipEntry entry;
+      while ((entry = zip.getNextEntry()) != null) names.add(entry.getName());
+    }
+    assertThat(names).contains("项目.json", "调整历史.json", "审批历史.json", "SHA256SUMS.txt");
+    assertThatThrownBy(() -> projects.terminate(p.id(), action(projects.detail(p.id()))))
+        .isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  void projectDemandSubmissionCannotExceedPackageOrChangeDepartmentAfterRework() {
+    var p = approve(projects.create(draft(0))).project();
+    var l = ready(lot(p.id(), "1"));
+    closeout.adjust(
+        p.id(),
+        l.info().id(),
+        new com.procurement.buyer.api.ProjectExpansionContracts.PackageAction(
+            l.info().revision(), "Rework"),
+        true);
+    String id = l.demands().getFirst().id();
+    jdbc.update("update purchase_demands set budget=500 where tenant_id=? and id=?", tenant, id);
+    assertThatThrownBy(() -> demands.submit(id, Map.of())).hasMessageContaining("超过分包");
+    assertThat(projects.demands(p.id()).getFirst().status()).isEqualTo("草稿");
+    jdbc.update("update roles set permissions='[\"buyer:project:read\"]'::jsonb where id=?", role);
+    assertThatThrownBy(() -> closeout.monitor(p.id()))
+        .isInstanceOf(com.procurement.common.tenant.PermissionDeniedException.class);
   }
 
   @Test
