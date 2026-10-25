@@ -306,7 +306,8 @@ import org.springframework.test.web.servlet.MvcResult;
     com.procurement.tenant.api.BuyerCapabilityController.class,
     com.procurement.ludongpoc.api.LudongPocController.class,
     com.procurement.identity.api.SessionPermissionController.class,
-    com.procurement.identity.api.ExternalIdentityController.class
+    com.procurement.identity.api.ExternalIdentityController.class,
+    com.procurement.buyer.api.ProcurementProjectController.class
 })
 @Import({
     SecurityConfig.class,
@@ -321,7 +322,24 @@ import org.springframework.test.web.servlet.MvcResult;
     "procurement.security.jwt-expires-in-seconds=7200"
 })
 class HttpSecurityContractTests {
+  @MockBean private com.procurement.buyer.application.ProcurementProjectService procurementProjects;
   @MockBean private com.procurement.identity.application.ExternalIdentityService externalIdentities;
+  @Test
+  void projectLibraryRequiresBuyerPortalAndSpecificPermission() throws Exception {
+    mockMvc.perform(get("/api/v1/buyer/projects")).andExpect(status().isForbidden());
+    String supplier = loginAndExtractToken("""
+        {"account":"supplier","password":"demo123456","scope":"SUPPLIER","supplierId":"ent-supplier-sunrise"}
+        """);
+    mockMvc.perform(get("/api/v1/buyer/projects").header("Authorization", "Bearer " + supplier))
+        .andExpect(status().isForbidden());
+    String buyer = loginAndExtractToken("""
+        {"account":"buyer","password":"demo123456","scope":"BUYER","tenantId":"tenant-acme"}
+        """);
+    when(portalPermissions.currentUserHas("buyer:project:read")).thenReturn(false);
+    mockMvc.perform(get("/api/v1/buyer/projects").header("Authorization", "Bearer " + buyer))
+        .andExpect(status().isForbidden());
+    org.mockito.Mockito.verifyNoInteractions(procurementProjects);
+  }
   @Test
   void budgetLifecycleRequiresAuthenticatedBuyerPortal() throws Exception {
     String supplierToken = loginAndExtractToken("""

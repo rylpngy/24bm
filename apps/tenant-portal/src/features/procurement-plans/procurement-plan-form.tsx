@@ -4,6 +4,7 @@ import { useMaterialList, type BuyerSupplierResponse, type PurchaseDemandRespons
 import { FeedbackNotice, PrimaryActionButton, cn } from '@24bid/ui';
 import { MaterialLinePicker } from '../shared/material-line-picker';
 import { currency } from '../demands/demand-format';
+import { planDemandLines } from './procurement-plan-lines';
 
 const PROCUREMENT_METHODS = ['询比', '竞价', '商城', '单一来源'];
 const SUPPLIER_COLLECTION_METHODS = ['公开', '邀请'];
@@ -82,9 +83,9 @@ export function ProcurementPlanMergePage({
 }) {
   const materialsForRef = useMaterialList();
   const materialIndex = useMemo(() => {
-    const map: Record<string, { referencePrice: number; category: string; name: string }> = {};
+    const map: Record<string, { referencePrice: number; category: string; name: string; unit:string; specification:string }> = {};
     (materialsForRef.data?.data ?? []).forEach((m) => {
-      if (m.id) map[m.id] = { referencePrice: m.referencePrice ?? 0, category: m.category ?? '其他', name: m.name ?? m.id };
+      if (m.id) map[m.id] = { referencePrice: m.referencePrice ?? 0, category: m.category ?? '其他', name: m.name ?? m.id,unit:m.unit||'—',specification:m.specification||'—' };
     });
     return map;
   }, [materialsForRef.data]);
@@ -124,27 +125,15 @@ export function ProcurementPlanMergePage({
           demandId: row.materialId,
           demandTitle: '直录采购内容',
           materialName: material?.name ?? row.materialId,
-          spec: material?.category ?? '—',
+          spec: material?.specification ?? '—',
           quantity: row.quantity,
-          unit: '个',
+          unit: material?.unit||'—',
           budgetUnit: material?.referencePrice ?? 0,
           referencePrice: material?.referencePrice ?? 0,
           subtotal: (material?.referencePrice ?? 0) * row.quantity,
         };
       })
-    : selectedDemands.flatMap((d) =>
-        (d.lineItems?.length ? d.lineItems : [{ materialId: d.title, quantity: 1 }]).map((line) => ({
-          demandId: d.id,
-          demandTitle: d.title,
-          materialName: materialIndex[line.materialId ?? '']?.name ?? line.materialId ?? d.title ?? '未命名物资',
-          spec: materialIndex[line.materialId ?? '']?.category ?? d.departmentId ?? '常规规格',
-          quantity: line.quantity ?? 1,
-          unit: '个',
-          budgetUnit: Math.round((d.budget ?? 0) / Math.max(line.quantity ?? 1, 1)),
-          referencePrice: materialIndex[line.materialId ?? '']?.referencePrice ?? 0,
-          subtotal: d.budget ?? 0,
-        })),
-      );
+    : planDemandLines(selectedDemands,materialsForRef.data?.data||[]);
   const isSingleSource = planMethod === '单一来源';
   const isOpenSolicitation = planMethod !== '商城' && planMethod !== '单一来源' && collectionMethod === '公开';
   const supplierSelectionRequired = planMethod === '单一来源' || (planMethod !== '商城' && collectionMethod === '邀请');
@@ -414,11 +403,11 @@ export function ProcurementPlanMergePage({
                   <td className="px-4 py-4">{row.spec}</td>
                   <td className="px-4 py-4 text-right font-mono">{row.quantity}</td>
                   <td className="px-4 py-4">{row.unit}</td>
-                  <td className="px-4 py-4 text-right font-mono">{currency(row.budgetUnit)}</td>
+                  <td className="px-4 py-4 text-right font-mono">{row.budgetUnit==null?'待核对':currency(row.budgetUnit)}</td>
                   <td className="px-4 py-4 text-right font-mono text-slate-400">
-                    {row.referencePrice > 0 ? currency(row.referencePrice) : '—'}
+                    {row.referencePrice!=null ? currency(row.referencePrice) : '—'}
                   </td>
-                  <td className="px-4 py-4 text-right font-mono font-black text-slate-950">{currency(row.subtotal)}</td>
+                  <td className="px-4 py-4 text-right font-mono font-black text-slate-950">{row.subtotal==null?'待核对':currency(row.subtotal)}</td>
                 </tr>
               ))}
             </tbody>

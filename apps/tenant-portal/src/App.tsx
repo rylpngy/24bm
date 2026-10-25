@@ -22,6 +22,7 @@ const ContractsPage = lazy(() => import('./features/contracts/contracts-page').t
 const DashboardPage = lazy(() => import('./features/dashboard/dashboard-page').then((module) => ({ default: module.DashboardPage })));
 const AnalyticsPage = lazy(() => import('./features/analytics/analytics-page').then((module) => ({ default: module.AnalyticsPage })));
 const BudgetsPage = lazy(() => import('./features/budgets/budgets-page').then((module) => ({ default: module.BudgetsPage })));
+const ProjectsPage = lazy(() => import('./features/projects/projects-page').then((module) => ({ default: module.ProjectsPage })));
 const AuditPage = lazy(() => import('./features/audit/audit-page').then((module) => ({ default: module.AuditPage })));
 const TeamPage = lazy(() => import('./features/team/team-page').then((module) => ({ default: module.TeamPage })));
 const NumberingRulesPage = lazy(() => import('./features/settings/numbering-rules-page').then((module) => ({ default: module.NumberingRulesPage })));
@@ -139,6 +140,8 @@ function TenantPortalApp() {
         <AnalyticsPage />
       ) : activeModuleId === 'budgets' ? (
         <BudgetsPage />
+      ) : activeModuleId === 'projects' ? (
+        <ProjectsPage />
       ) : activeModuleId === 'demands' ? (
         <DemandsPage onNavigate={selectModule} />
       ) : activeModuleId === 'procurement-plans' ? (

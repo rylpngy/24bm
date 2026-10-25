@@ -56,6 +56,7 @@ public final class PortalPermissionPolicy {
         return "buyer:mall:" + (area.equals("cart") || area.equals("orders") ? "purchase" : "manage");
       }
       String module = switch (segments[0]) {
+        case "projects" -> "project";
         case "tenders" -> "tender";
         case "orders", "deliveries" -> "order";
         case "receipts" -> "receipt";

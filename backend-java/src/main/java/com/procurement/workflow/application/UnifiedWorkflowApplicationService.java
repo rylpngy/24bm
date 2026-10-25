@@ -241,6 +241,22 @@ public class UnifiedWorkflowApplicationService {
     auditLogApplicationService.recordTenantAction(tenant,"workflow.cancelled",instance.businessType(),instance.businessId(),reason.strip());
   }
 
+  @Transactional
+  public void withdrawProcurementProject(String id,String reason) {
+    String tenant=TenantAccessGuard.requireTenantId("project withdrawal"),actor=TenantAccessGuard.requireUserId("project withdrawal");
+    permissionService.require("buyer:project:manage");
+    if(reason==null||reason.isBlank()||reason.length()>1000)throw new IllegalArgumentException("撤回原因必填且不超过1000字");
+    var instance=workflowBusinessInstanceMapper.findByTenantAndIdForUpdate(tenant,id);
+    if(instance==null||!"project_initiation".equals(instance.businessType()))throw new IllegalArgumentException("项目立项审批不存在");
+    if(!actor.equals(instance.initiatorId())||!isVisible(instance,dataScopeService.currentUserDataScope()))throw new PermissionDeniedException("只有当前数据范围内的发起人可撤回");
+    if(!WorkflowInstanceStatus.PROCESSING.equals(instance.status()))throw new IllegalStateException("审批已经结束");
+    runtimeService.deleteProcessInstance(instance.flowableProcessInstanceId(),reason.strip());
+    if(workflowBusinessInstanceMapper.complete(tenant,id,WorkflowInstanceStatus.CANCELLED,actor)!=1)throw new IllegalStateException("流程已变化");
+    workflowTaskEventMapper.insert("workflow-task-event-"+UUID.randomUUID(),tenant,id,null,null,null,"cancelled",actor,reason.strip());
+    requireCompletionHandler(instance.businessType()).onCancelled(instance,actor,reason.strip());
+    auditLogApplicationService.recordTenantAction(tenant,"workflow.cancelled","procurement_project",instance.businessId(),reason.strip());
+  }
+
   public List<UnifiedWorkflowTaskResponse> listCurrentUserTasks() {
     String tenantId = TenantAccessGuard.requireTenantId("unified workflow APIs");
     String userId = TenantAccessGuard.requireUserId("unified workflow APIs");
@@ -1031,6 +1047,7 @@ public class UnifiedWorkflowApplicationService {
     LinkedHashMap<String, String> owners = new LinkedHashMap<>();
     owners.put(instance.businessType(), instance.businessId());
     switch (instance.businessType()) {
+      case "project_initiation" -> owners.put("procurement_project",instance.businessId());
       case "purchase_demand" -> owners.put("purchase_demand", instance.businessId());
       case "buyer_supplier_admission", "buyer_supplier_exit", "supplier_qualification_change" -> putOwner(owners, "supplier", snapshot.get("supplierId"));
       case "rfq_award" -> putOwner(owners, "rfq", snapshot.get("rfqId"));
@@ -1064,6 +1081,7 @@ public class UnifiedWorkflowApplicationService {
 
   private static String workflowBusinessName(String businessType) {
     return switch (businessType) {
+      case "project_initiation" -> "项目立项";
       case "purchase_demand" -> "采购需求";
       case "budget_change" -> "预算编制与调整";
       case "budget_exception" -> "超预算例外";

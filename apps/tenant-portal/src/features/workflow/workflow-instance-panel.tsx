@@ -26,28 +26,32 @@ export function WorkflowStatusPanel({
   businessType,
   businessId,
   compact = false,
+  hideBusinessSnapshot = false,
 }: {
   businessType: string;
   businessId: string;
   compact?: boolean;
+  hideBusinessSnapshot?: boolean;
 }) {
   const query = useWorkflowBusinessHistory(businessType, businessId);
   if (query.isLoading) return <FeedbackNotice tone="info" message="正在读取流程状态…" />;
   if (query.isError) return <FeedbackNotice tone="error" message="流程状态加载失败，请刷新后重试。" />;
   const history = query.data?.data;
   if (!history) return <FeedbackNotice tone="info" message="该业务尚未发起审批流程。" />;
-  return <WorkflowInstancePanel history={history} compact={compact} />;
+  return <WorkflowInstancePanel history={history} compact={compact} hideBusinessSnapshot={hideBusinessSnapshot} />;
 }
 
 export function WorkflowInstancePanel({
   history,
   compact = false,
+  hideBusinessSnapshot = false,
 }: {
   history: WorkflowInstanceHistory;
   compact?: boolean;
+  hideBusinessSnapshot?: boolean;
 }) {
   const [downloadError, setDownloadError] = useState<string | null>(null);
-  const snapshotEntries = visibleEntries(history.businessSnapshot);
+  const snapshotEntries = hideBusinessSnapshot ? [] : visibleEntries(history.businessSnapshot);
   const formEntries = visibleEntries(history.formData);
   const formLabels = workflowFormLabels(history.formSchema);
   const detailHref = workflowBusinessHref(history);
@@ -209,6 +213,7 @@ export function workflowBusinessHref(history: Pick<WorkflowInstanceHistory, 'bus
   const snapshot = history.businessSnapshot ?? {};
   const target: Record<string, { module: string; id: unknown }> = {
     budget_change: { module: 'budgets', id: history.businessId },
+    project_initiation: { module: 'projects', id: history.businessId },
     budget_exception: { module: 'budgets', id: history.businessId },
     supplier_qualification_change: { module: 'suppliers', id: snapshot.relationId },
     purchase_demand: { module: 'demands', id: history.businessId },

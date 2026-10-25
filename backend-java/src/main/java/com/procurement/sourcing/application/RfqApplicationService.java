@@ -48,6 +48,18 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class RfqApplicationService {
+  private com.procurement.buyer.application.ProcurementProjectGuard projects;
+  @org.springframework.beans.factory.annotation.Autowired
+  void setProcurementProjects(com.procurement.buyer.application.ProcurementProjectGuard projects){this.projects=projects;}
+  @Transactional
+  public String createProjectDraft(String title,List<String> demands){
+    return create(new CreateRfqRequest(title,demands,List.of(),java.time.OffsetDateTime.now().plusDays(7),"","","综合评分","询比",null,null,null,true,null,null,null,null,null,null,null,null,null,null)).id();
+  }
+  @Transactional
+  public void attachTenderProjectDemands(String rfq,String tender){
+    if(projects==null)return;var ids=projects.tenderDemands(tender);if(ids.isEmpty())return;
+    String tenant=TenantAccessGuard.requireTenantId("tender project");validateDemands(tenant,ids);insertRfqDemandLinks(tenant,rfq,ids);
+  }
   private final RfqMapper rfqMapper;
   private final QuoteMapper quoteMapper;
   private final QuoteLineItemMapper quoteLineItemMapper;
@@ -275,6 +287,8 @@ public class RfqApplicationService {
     tenantCapabilityApplicationService.requireMethodEnabled(
         tenantId, RfqMethod.orDefault(request.method()));
     rfqSourcingStatusTransition.requireFutureDeadline(request.deadlineAt(), "new RFQ");
+    // Acquire the same budget/project lock before demand-link writes on both entry paths.
+    if (projects != null) projects.lock();
     // 立项来源二选一:基于既有需求合并,或采购部门直录(反向登记「直录登记」需求保闭环)。
     List<String> demandIds = request.demandIds() == null ? List.of() : request.demandIds();
     boolean directCreate = demandIds.isEmpty();
@@ -334,6 +348,7 @@ public class RfqApplicationService {
         request.auctionShowCompetitorNames());
 
     insertRfqDemandLinks(tenantId, rfqId, demandIds);
+    if(projects!=null)projects.bindRfq(demandIds,rfqId);
 
     for (String supplierId : invitedSupplierIds) {
       rfqInviteMapper.insert(newId("rfq-invite"), tenantId, rfqId, supplierId, RfqInviteStatus.INVITED);
@@ -488,6 +503,7 @@ public class RfqApplicationService {
   // 正式发布:草稿 → 报价中;此刻校验方式家数并通知受邀供应商(询价函下发)。
   @Transactional
   public RfqResponse publish(String rfqId) {
+    if(projects!=null){projects.lock();projects.requireExecution("rfq",rfqId);}
     String tenantId = TenantAccessGuard.requireTenantId("buyer RFQ APIs");
     Rfq rfq = requireRfq(tenantId, rfqId);
     if (!RfqStatus.DRAFT.equals(rfq.status())) {
