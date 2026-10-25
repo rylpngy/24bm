@@ -48,6 +48,7 @@ class ProcurementProjectIT {
   @Autowired UnifiedWorkflowApplicationService workflow;
   @Autowired ProcessDefinitionApplicationService definitions;
   @Autowired Validator validator;
+  @Autowired com.procurement.sourcing.application.RfqApplicationService rfqs;
   String tenant, dept, author, reviewer, role, material;
   final String year = Year.now(ZoneId.of("Asia/Shanghai")).toString();
 
@@ -232,6 +233,53 @@ class ProcurementProjectIT {
         .isNotEqualTo(second.project().workflowInstanceId());
     assertThat(workflow.getCurrentTenantHistory(second.project().workflowInstanceId()).status())
         .isEqualTo("rejected");
+  }
+
+  @Test
+  void legacyAndProjectEntryCompeteWithoutDeadlockOrDuplicateExecution() throws Exception {
+    var d = approve(projects.create(draft(0)));
+    var linked = projects.createDemand(d.project().id(), action(d));
+    var demand = projects.demands(d.project().id()).getFirst();
+    demands.submit(demand.id(), Map.of());
+    decide(demand.id(), "approve");
+    var start = new java.util.concurrent.CountDownLatch(1);
+    try (var pool = java.util.concurrent.Executors.newFixedThreadPool(2)) {
+      var tasks = new ArrayList<java.util.concurrent.Future<Boolean>>();
+      for (boolean fromProject : List.of(true, false)) {
+        tasks.add(
+            pool.submit(
+                () -> {
+                  context(author);
+                  try {
+                    start.await();
+                    if (fromProject)
+                      projects.createExecution(
+                          d.project().id(),
+                          new ExecutionRequest(linked.project().revision(), "rfq"));
+                    else rfqs.createProjectDraft("Competing legacy entry", List.of(demand.id()));
+                    return true;
+                  } catch (RuntimeException e) {
+                    assertThat(
+                            org.springframework.core.NestedExceptionUtils.getMostSpecificCause(e)
+                                .getMessage()
+                                .toLowerCase(Locale.ROOT))
+                        .doesNotContain("deadlock");
+                    return false;
+                  } finally {
+                    TenantContext.clear();
+                  }
+                }));
+      }
+      start.countDown();
+      int winners = 0;
+      for (var task : tasks) if (task.get(15, java.util.concurrent.TimeUnit.SECONDS)) winners++;
+      assertThat(winners).isEqualTo(1);
+    }
+    assertThat(
+            jdbc.queryForObject(
+                "select count(*) from rfqs where tenant_id=?", Integer.class, tenant))
+        .isEqualTo(1);
+    assertThat(projects.detail(d.project().id()).project().executionId()).isNotBlank();
   }
 
   @Test

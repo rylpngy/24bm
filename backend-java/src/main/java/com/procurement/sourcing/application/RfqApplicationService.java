@@ -287,6 +287,8 @@ public class RfqApplicationService {
     tenantCapabilityApplicationService.requireMethodEnabled(
         tenantId, RfqMethod.orDefault(request.method()));
     rfqSourcingStatusTransition.requireFutureDeadline(request.deadlineAt(), "new RFQ");
+    // Acquire the same budget/project lock before demand-link writes on both entry paths.
+    if (projects != null) projects.lock();
     // 立项来源二选一:基于既有需求合并,或采购部门直录(反向登记「直录登记」需求保闭环)。
     List<String> demandIds = request.demandIds() == null ? List.of() : request.demandIds();
     boolean directCreate = demandIds.isEmpty();
