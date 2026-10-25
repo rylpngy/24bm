@@ -12,6 +12,15 @@ import org.apache.ibatis.annotations.Update;
 
 @Mapper
 public interface InvoiceMapper {
+  @Select("""
+      select exists(select 1 from invoices i join purchase_orders o on o.tenant_id=i.tenant_id and o.id=i.order_id
+      join rfq_demands rd on rd.tenant_id=o.tenant_id and rd.rfq_id=o.rfq_id
+      join procurement_project_demands d on d.tenant_id=rd.tenant_id and d.demand_id=rd.demand_id
+      join procurement_project_lifecycle_requests r on r.tenant_id=d.tenant_id and r.project_id=d.project_id
+      where i.tenant_id=#{tenantId} and i.id=#{id} and r.kind='carryover' and r.status='approved'
+      and jsonb_exists(r.snapshot->'paidEntryIds',#{entry}))
+      """)
+  boolean carriedPayment(@Param("tenantId") String tenantId,@Param("id") String id,@Param("entry") String entry);
 
   // Lock the shared parent before any invoice/request/contract lock in payment mutations.
   @Select("""

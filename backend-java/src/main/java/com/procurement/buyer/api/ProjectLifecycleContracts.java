@@ -54,9 +54,21 @@ public final class ProjectLifecycleContracts {
       String businessPeriod,
       String effectivePeriod,
       BigDecimal amount,
+      BigDecimal paidAmount,
+      BigDecimal transferAmount,
+      List<PaymentBasis> payments,
       List<Source> sources,
       List<String> carryoverBlockers,
       List<String> liquidationBlockers) {}
+
+  @Schema(name = "ProjectCarryoverPaymentBasis")
+  public record PaymentBasis(
+      String id,
+      String invoiceId,
+      String orderId,
+      String rfqId,
+      BigDecimal amount,
+      String evidenceNo) {}
 
   @Schema(name = "ProjectLifecyclePage")
   public record Page(List<Record> items, long total, int page, int pageSize) {}

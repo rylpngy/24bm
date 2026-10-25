@@ -9,6 +9,34 @@ import org.apache.ibatis.annotations.*;
 @Mapper
 public interface ProjectLifecycleMapper {
   @Select(
+      "select distinct source_period from procurement_project_lifecycle_requests where"
+          + " tenant_id=#{t} and project_id=#{p} and kind='carryover' and status='approved'")
+  List<String> frozenYears(@Param("t") String t, @Param("p") String p);
+
+  @Select(
+      """
+select e.id,e.invoice_id,i.order_id,o.rfq_id,e.amount,e.evidence_no
+from invoice_payment_entries e join invoices i on i.tenant_id=e.tenant_id and i.id=e.invoice_id
+join purchase_orders o on o.tenant_id=i.tenant_id and o.id=i.order_id
+where e.tenant_id=#{t} and e.amount>0
+and exists(select 1 from rfq_demands rd join procurement_project_demands d on d.tenant_id=rd.tenant_id and d.demand_id=rd.demand_id
+  where rd.tenant_id=o.tenant_id and rd.rfq_id=o.rfq_id and d.project_id=#{p})
+and not exists(select 1 from invoice_payment_entries rev where rev.tenant_id=e.tenant_id and rev.invoice_id=e.invoice_id and rev.reversal_of=e.id)
+order by e.id
+""")
+  List<PaymentBasis> paidEntries(@Param("t") String t, @Param("p") String p);
+
+  @Select(
+      """
+select count(*) from invoices i join purchase_orders o on o.tenant_id=i.tenant_id and o.id=i.order_id
+cross join lateral(select coalesce(sum(e.amount),0) amount from invoice_payment_entries e where e.tenant_id=i.tenant_id and e.invoice_id=i.id) paid
+where i.tenant_id=#{t} and exists(select 1 from rfq_demands rd join procurement_project_demands d on d.tenant_id=rd.tenant_id and d.demand_id=rd.demand_id
+  where rd.tenant_id=o.tenant_id and rd.rfq_id=o.rfq_id and d.project_id=#{p})
+and (paid.amount<0 or paid.amount>i.amount or i.payment_status<>case when paid.amount=0 then '待付款' when paid.amount=i.amount then '已付款' else '部分付款' end)
+""")
+  int invalidPayments(@Param("t") String t, @Param("p") String p);
+
+  @Select(
       """
 select count(*) from mall_after_sales a join purchase_orders o on o.tenant_id=a.tenant_id and o.id=a.order_id
 where a.tenant_id=#{t} and a.status not in ('已拒绝','已撤回') and (a.status<>'已完成' or a.type in ('退货','换货'))
@@ -65,7 +93,10 @@ select b.department_id,b.period,b.source_type,b.source_id,b.pending,b.committed,
 from budget_commitment_lines b where b.tenant_id=#{t} and (
   (b.source_type='demand' and exists(select 1 from procurement_project_demands d where d.tenant_id=b.tenant_id and d.project_id=#{p} and d.demand_id=b.source_id))
   or (b.source_type='rfq' and exists(select 1 from rfq_demands rd join procurement_project_demands d on d.tenant_id=rd.tenant_id and d.demand_id=rd.demand_id
-    where rd.tenant_id=b.tenant_id and rd.rfq_id=b.source_id and d.project_id=#{p})))
+    where rd.tenant_id=b.tenant_id and rd.rfq_id=b.source_id and d.project_id=#{p}))
+  or exists(select 1 from procurement_project_lifecycle_requests r cross join lateral jsonb_array_elements(coalesce(r.snapshot->'preview'->'sources','[]'::jsonb)) s
+    where r.tenant_id=b.tenant_id and r.project_id=#{p} and r.kind='carryover' and r.status='approved'
+      and s->>'sourceId'=b.source_id and s->>'sourceType'=b.source_type and s->>'departmentId'=b.department_id))
 order by b.source_type,b.source_id,b.department_id,b.period
 """)
   List<Source> sources(@Param("t") String t, @Param("p") String p);

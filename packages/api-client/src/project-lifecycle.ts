@@ -16,6 +16,16 @@ export interface ProjectLifecyclePreview {
   businessPeriod: string;
   effectivePeriod: string;
   amount: number;
+  paidAmount: number | null;
+  transferAmount: number | null;
+  payments: {
+    id: string;
+    invoiceId: string;
+    orderId: string;
+    rfqId: string;
+    amount: number;
+    evidenceNo: string;
+  }[];
   sources: ProjectLifecycleSource[];
   carryoverBlockers: string[];
   liquidationBlockers: string[];

@@ -16,6 +16,8 @@ const required = (k) => {
 const closeoutChecks = process.env.PROJECT_CLOSEOUT_ACCEPTANCE === '1';
 const marketplaceChecks = process.env.PROJECT_MARKETPLACE_ACCEPTANCE === '1';
 const lifecycleChecks = process.env.PROJECT_LIFECYCLE_ACCEPTANCE === '1';
+const paidCarryoverChecks =
+  process.env.PROJECT_PAID_CARRYOVER_ACCEPTANCE === '1';
 const packageKeys = marketplaceChecks
   ? ['rfq', 'tender', 'retry', 'auction', 'mall']
   : ['rfq', 'tender', 'retry'];
@@ -479,7 +481,7 @@ try {
     );
     return { ...p, lot };
   }
-  async function fulfill(type, d, order, rfqId) {
+  async function fulfill(type, d, order, rfqId, carryover = false) {
     if (closeoutChecks) {
       const endpoint = 'buyer/projects/' + d.project.id;
       const lot = (await api(endpoint + '/packages', b)).find(
@@ -573,9 +575,94 @@ try {
     await decide(r, 'payment_batch', batch);
     await api(`buyer/invoices/${invoice.id}/payment-ledger`, b, {
       idempotencyKey: `${type}-${runId}`,
-      amount,
+      amount: carryover ? 300 : amount,
       evidenceNo: `凭据-${type}`,
     });
+    if (carryover) {
+      const endpoint = 'buyer/projects/' + d.project.id;
+      const existing = await api('buyer/budgets/positions', b);
+      const baseAt = (n) =>
+        existing.find(
+          (x) =>
+            x.departmentId === dept.id && x.period === String(Number(year) + n),
+        ) || { committed: 0, paidAmount: 0, releasedAmount: 0 };
+      record.budgetBeforeCarry = { next: baseAt(1), latest: baseAt(2) };
+      const carry = async (target) => {
+        const fresh = await api(endpoint, b);
+        const c = await api(endpoint + '/lifecycle', b, {
+          revision: fresh.project.revision,
+          kind: 'carryover',
+          targetPeriod: String(target),
+          reason: '已支付留原年度，仅承接未支付责任',
+          formData: {},
+        });
+        await decide(r, 'project_carryover', c.id);
+        return c;
+      };
+      await carry(Number(year) + 1);
+      let position = await api(endpoint + '/budget', b);
+      assert.equal(position.committed - baseAt(1).committed, 900);
+      assert.equal(position.paidAmount - baseAt(1).paidAmount, 0);
+      const ledgerPath = `buyer/invoices/${invoice.id}/payment-ledger`;
+      const originalEntry = (await api(ledgerPath, b)).entries.find(
+        (e) => e.amount === 300,
+      );
+      await api(
+        ledgerPath + '/' + originalEntry.id + '/reverse',
+        b,
+        {
+          idempotencyKey: 'frozen-' + runId,
+          reason: 'Cannot reverse frozen expense',
+        },
+        'POST',
+        [400, 409],
+        /跨年度承接/,
+      );
+      await api(ledgerPath, b, {
+        idempotencyKey: 'new-period-' + runId,
+        amount: 200,
+        evidenceNo: 'NEW-YEAR-200',
+      });
+      let active = (await api(ledgerPath, b)).entries.find(
+        (e) => e.amount === 200,
+      );
+      await api(ledgerPath + '/' + active.id + '/reverse', b, {
+        idempotencyKey: 'current-reverse-' + runId,
+        reason: '更正本年度未冻结登记',
+      });
+      assert.equal((await api(endpoint + '/budget', b)).paidAmount, 0);
+      await api(ledgerPath, b, {
+        idempotencyKey: 'new-period-corrected-' + runId,
+        amount: 200,
+        evidenceNo: 'NEW-YEAR-CORRECTED',
+      });
+      await carry(Number(year) + 2);
+      position = await api(endpoint + '/budget', b);
+      assert.equal(position.committed - baseAt(2).committed, 700);
+      assert.equal(position.paidAmount - baseAt(2).paidAmount, 0);
+      await api(ledgerPath, b, {
+        idempotencyKey: 'final-period-' + runId,
+        amount: 400,
+        evidenceNo: 'FINAL-YEAR-400',
+      });
+      const preview = await api(endpoint + '/lifecycle/preview', b);
+      assert.equal(preview.paidAmount, 900);
+      assert.equal(preview.transferAmount, 300);
+      const byYear = Object.fromEntries(
+        preview.sources.map((s) => [s.period, s]),
+      );
+      assert.equal(byYear[year].paidAmount, 300);
+      assert.equal(byYear[String(Number(year) + 1)].paidAmount, 200);
+      assert.equal(byYear[String(Number(year) + 2)].paidAmount, 400);
+      report.records.paidcarry = {
+        ...record,
+        invoiceId: invoice.id,
+        annualPaid: [300, 200, 400],
+      };
+      check(
+        'Paid carryover twice retains 300/200 historical expense, records 400 in current year, allows current unfrozen reversal and blocks frozen original reversal',
+      );
+    }
     await api(
       `buyer/contracts/${contract.id}/archive-status`,
       b,
@@ -998,7 +1085,9 @@ try {
     const path = 'buyer/projects/' + shared.project.id + '/lifecycle';
     const preview = await api(path + '/preview', b);
     assert.deepEqual(preview.liquidationBlockers, []);
-    assert.ok(preview.carryoverBlockers.some((x) => x.includes('已有付款')));
+    assert.deepEqual(preview.carryoverBlockers, []);
+    assert.equal(preview.paidAmount, packageKeys.length * 900);
+    assert.equal(preview.transferAmount, 0);
     const request = await api(path, b, {
       revision: fresh.project.revision,
       kind: 'liquidation',
@@ -1254,6 +1343,99 @@ try {
   );
   assert.equal(changePage.total, 1);
   assert.equal(changePage.pending, false);
+  if (paidCarryoverChecks) {
+    let paid = await api('buyer/projects', b, {
+      title: '已付款跨年度真实核验',
+      departmentId: dept.id,
+      ownerId: reviewer.userId,
+      period: year,
+      fundingSource: '年度预算',
+      purpose: '按支付事实分年度核算',
+      revision: 0,
+      lines: [
+        {
+          materialId: material.id,
+          quantity: 3,
+          unitPrice: 400,
+          purpose: '办公',
+        },
+      ],
+    });
+    const endpoint = 'buyer/projects/' + paid.project.id;
+    await api(endpoint + '/submit', b, {
+      revision: paid.project.revision,
+      reason: '立项',
+      formData: {},
+    });
+    await decide(r, 'project_initiation', paid.project.id);
+    paid = await api(endpoint, b);
+    let lot = await api(endpoint + '/packages', b, {
+      projectRevision: paid.project.revision,
+      revision: 0,
+      title: '分年度付款包',
+      lines: [{ materialId: material.id, quantity: 3 }],
+    });
+    lot = await api(
+      endpoint + '/packages/' + lot.info.id + '/create-demand',
+      b,
+      { revision: lot.info.revision, reason: '生成需求' },
+    );
+    await api('buyer/demands/' + lot.demands[0].id + '/submit', b, {
+      formData: {},
+    });
+    await decide(r, 'purchase_demand', lot.demands[0].id);
+    const checkout = await api(
+      endpoint + '/packages/' + lot.info.id + '/mall-checkout',
+      b,
+      {
+        revision: lot.info.revision,
+        requestKey: 'paid-' + runId,
+        reason: '按批准物料选型',
+        items: [{ skuId: report.skuId, quantity: 3 }],
+      },
+    );
+    const order = (await api('buyer/orders', b)).find(
+      (o) => o.id === checkout.orderId,
+    );
+    report.records.paidcarry = {
+      projectId: paid.project.id,
+      packageId: lot.info.id,
+    };
+    await fulfill('paidcarry', { ...paid, lot }, order, checkout.rfqId, true);
+    const position = await api(endpoint + '/budget', b);
+    assert.equal(
+      position.committed -
+        report.records.paidcarry.budgetBeforeCarry.latest.committed,
+      400,
+    );
+    assert.equal(
+      position.paidAmount -
+        report.records.paidcarry.budgetBeforeCarry.latest.paidAmount,
+      400,
+    );
+    assert.equal(
+      position.releasedAmount -
+        report.records.paidcarry.budgetBeforeCarry.latest.releasedAmount,
+      300,
+    );
+    paid = await api(endpoint, b);
+    await api(endpoint + '/close', b, {
+      revision: paid.project.revision,
+      reason: '分年度责任全部核验完成',
+    });
+    const root = await fetch(
+      base + '/api/v1/' + endpoint + '/archive/download',
+      { headers: { Authorization: 'Bearer ' + b } },
+    );
+    assert.equal(root.status, 200);
+    writeFileSync(
+      report.downloadDirectory + '/paidcarry-root.zip',
+      Buffer.from(await root.arrayBuffer()),
+    );
+    check(
+      'Cross-year settlement conserves 900 paid/300 released and archives original order, source payments, approved carryovers and annual allocation',
+    );
+  }
   report.passed = true;
 } catch (error) {
   report.error = error.stack;

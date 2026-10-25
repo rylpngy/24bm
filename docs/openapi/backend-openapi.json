@@ -43192,6 +43192,18 @@
           "amount": {
             "type": "number"
           },
+          "paidAmount": {
+            "type": "number"
+          },
+          "transferAmount": {
+            "type": "number"
+          },
+          "payments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectCarryoverPaymentBasis"
+            }
+          },
           "sources": {
             "type": "array",
             "items": {
@@ -43238,6 +43250,29 @@
           },
           "paidAmount": {
             "type": "number"
+          }
+        }
+      },
+      "ProjectCarryoverPaymentBasis": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "invoiceId": {
+            "type": "string"
+          },
+          "orderId": {
+            "type": "string"
+          },
+          "rfqId": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "evidenceNo": {
+            "type": "string"
           }
         }
       }

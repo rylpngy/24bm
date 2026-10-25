@@ -369,6 +369,8 @@ public class ProjectCloseoutService {
     ids.add(project);
     if(lifecycle.count(t(),project)>1000)throw new IllegalStateException("承接清算历史超过1000条，请先分页导出");
     var lifecycleHistory=lifecycle.page(t(),project,1000,0);
+    if(lifecycleHistory.stream().anyMatch(r->"carryover".equals(r.kind())&&"approved".equals(r.status())))
+      files.put("预算年度分摊.json",policy.write(lifecycle.sources(t(),project)).getBytes(StandardCharsets.UTF_8));
     if(!lifecycleHistory.isEmpty())files.put("跨年度承接与终止清算.json",policy.write(lifecycleHistory).getBytes(StandardCharsets.UTF_8));
     for(var r:lifecycleHistory)ids.add(r.id());
     for (var run : expansions.activeRuns(p)) ids.add(run.executionId());
