@@ -202,7 +202,7 @@ public class ProjectLifecycleService {
                 "project_" + r.kind(),
                 id,
                 p.departmentId(),
-                v.amount(),
+                v.amount().max(p.plannedAmount()),
                 r.formData() == null ? Map.of() : r.formData(),
                 snapshot));
     if (mapper.bind(tenant(), id, start.workflowInstanceId()) != 1)
