@@ -34,6 +34,7 @@ import { WorkflowStatusPanel } from '../workflow/workflow-instance-panel';
 import { WorkflowSubmitDialog } from '../workflow/workflow-submit-dialog';
 import { projectAmount } from './project-amount';
 import { ProjectExpansionPanel } from './project-expansion-panel';
+import { ProjectCloseoutPanel } from './project-closeout-panel';
 
 const states: Record<string, string> = {
   draft: '草稿',
@@ -142,7 +143,11 @@ function ProjectWorkspace() {
     await client.invalidateQueries({
       predicate: (q) =>
         String(q.queryKey[0]).includes('project-') ||
-        String(q.queryKey[0]).includes('/buyer/workflow/'),
+        String(q.queryKey[0]).includes('/buyer/workflow/') ||
+        String(q.queryKey[0]).startsWith('workflow-') ||
+        String(q.queryKey[0]).includes('/buyer/demands') ||
+        String(q.queryKey[0]).includes('/buyer/budgets') ||
+        String(q.queryKey[0]).startsWith('budget-'),
     });
   };
   function open(record: string) {
@@ -310,12 +315,12 @@ function ProjectWorkspace() {
             p &&
             can('buyer:project:manage') &&
             !p.executionId &&
-            !links.data?.length &&
             !['submitted', 'closed', 'terminated'].includes(p.status) && (
               <button
                 type="button"
                 className={btn}
                 onClick={() => setAction('terminate')}
+                disabled={p.status === 'approved' && packageCount === null}
               >
                 终止项目
               </button>
@@ -903,7 +908,7 @@ function ProjectWorkspace() {
               ) : (
                 <FeedbackNotice tone="info" message="无流程历史查看权限。" />
               )}
-              {['approved', 'closed'].includes(p.status) && (
+              {['approved', 'closed', 'terminated'].includes(p.status) && (
                 <ProjectExpansionPanel
                   key={p.id}
                   project={p}
@@ -911,6 +916,13 @@ function ProjectWorkspace() {
                   demands={links.isError ? [] : links.data || []}
                   onChanged={refresh}
                   onPackagesReady={setPackageCount}
+                />
+              )}
+              {['approved', 'closed', 'terminated'].includes(p.status) && (
+                <ProjectCloseoutPanel
+                  key={'monitor-' + p.id}
+                  project={p}
+                  onChanged={refresh}
                 />
               )}
               <section className="space-y-4 rounded-lg border border-slate-200 bg-white p-5">
@@ -1223,7 +1235,9 @@ function ProjectWorkspace() {
             ? '将核验实际履约、付款及未决事项，生成不可变归档；未满足条件不能结项。'
             : action === 'create-demand'
               ? '按已批准的立项明细创建需求草稿，需求仍须独立审批，不重复扣减预算。'
-              : '保留原项目及完整审批历史。'
+              : action === 'terminate'
+                ? '仅未采购或无订单且已流标/废标的范围可终止；本人发起的在审需求先撤回，相关需求取消并释放占用，原审批与业务历史保留。存在订单、有效采购或未处理变更时禁止直接终止。'
+                : '保留原项目及完整审批历史。'
         }
         input={{ label: '操作原因', placeholder: '请填写依据', minLength: 1 }}
         confirmLabel="确认办理"

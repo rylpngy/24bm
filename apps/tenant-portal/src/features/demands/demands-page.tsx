@@ -26,7 +26,7 @@ import { DemandCreateForm } from './demand-create-form';
 import { DemandDetail } from './demand-detail';
 import { WorkflowSubmitDialog } from '../workflow/workflow-submit-dialog';
 
-const STATUS_FILTERS = ['全部', '草稿', '审批中', '已通过', '已驳回'] as const;
+const STATUS_FILTERS = ['全部', '草稿', '审批中', '已通过', '已驳回', '已取消'] as const;
 export function DemandsPage({ onNavigate }: { onNavigate?: (moduleId: string) => void }) {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<(typeof STATUS_FILTERS)[number]>('全部');

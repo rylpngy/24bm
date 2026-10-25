@@ -31,6 +31,8 @@ public class RfqDemandLinkQueryService {
     return rfq == null ? null : rfq.method();
   }
 
+  public boolean hasActiveOrOrderedLink(String tenant,String demand){return rfqDemandMapper.activeOrOrderedLinks(tenant,demand)>0;}
+
   public RfqDemandLink findLatestLinkForDemand(String tenantId, String demandId) {
     String rfqId = rfqDemandMapper.findLatestRfqIdByDemand(tenantId, demandId);
     if (rfqId == null) {

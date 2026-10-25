@@ -13,6 +13,7 @@ const required = (k) => {
   assert.ok(process.env[k], `Missing ${k}`);
   return process.env[k];
 };
+const closeoutChecks = process.env.PROJECT_CLOSEOUT_ACCEPTANCE === '1';
 const password = required('ACCEPTANCE_PASSWORD'),
   supplierId = required('ACCEPTANCE_SUPPLIER_ID');
 const runId = `packages-${Date.now()}`,
@@ -264,6 +265,88 @@ try {
         0,
       );
     }
+    if (closeoutChecks && !report.records.cancelled) {
+      const endpoint = 'buyer/projects/' + shared.project.id;
+      const current = await api(endpoint, b);
+      let cancel = await api(endpoint + '/packages', b, {
+        projectRevision: current.project.revision,
+        revision: 0,
+        title: '受控重编及终止采购包',
+        lines: [{ materialId: material.id, quantity: 1 }],
+      });
+      cancel = await api(
+        endpoint + '/packages/' + cancel.info.id + '/create-demand',
+        b,
+        { revision: cancel.info.revision, reason: '真实生成取消前需求' },
+      );
+      const demand = cancel.demands[0].id;
+      await api('buyer/demands/' + demand + '/submit', b, { formData: {} });
+      await api(
+        endpoint + '/packages/' + cancel.info.id + '/rework',
+        r,
+        { revision: cancel.info.revision, reason: '非发起人不允许绕过审批' },
+        'POST',
+        [403],
+      );
+      assert.equal((await api(endpoint + '/adjustments', b)).total, 0);
+      await api(endpoint + '/packages/' + cancel.info.id + '/rework', b, {
+        revision: cancel.info.revision,
+        reason: '原发起人撤回并重编',
+      });
+      assert.equal((await api('buyer/demands/' + demand, b)).status, '草稿');
+      assert.equal(
+        (await api('buyer/workflow/tasks', r)).some(
+          (t) => t.businessId === demand,
+        ),
+        false,
+      );
+      assert.equal((await api(endpoint + '/budget', b)).committed, 0);
+      await api('buyer/demands/' + demand + '/submit', b, { formData: {} });
+      await decide(r, 'purchase_demand', demand);
+      const yesterday = new Date(Date.now() - 86400000)
+        .toISOString()
+        .slice(0, 10);
+      for (let n = 0; n < 12; n++) {
+        cancel = (await api(endpoint + '/packages', b)).find(
+          (l) => l.info.id === cancel.info.id,
+        );
+        await api(endpoint + '/packages/' + cancel.info.id + '/milestones', b, {
+          revision: cancel.info.revision,
+          milestone: 'order',
+          dueDate: yesterday,
+          reason: '实施计划调整 ' + n,
+        });
+      }
+      assert.equal((await api(endpoint + '/monitor', b)).overdueCount, 1);
+      assert.ok(
+        (await api(endpoint + '/adjustments?page=2&pageSize=10', b)).items
+          .length > 0,
+      );
+      cancel = (await api(endpoint + '/packages', b)).find(
+        (l) => l.info.id === cancel.info.id,
+      );
+      await api(endpoint + '/packages/' + cancel.info.id + '/stop', b, {
+        revision: cancel.info.revision,
+        reason: '项目采购范围调整，终止尚未执行的包',
+      });
+      assert.equal((await api(endpoint + '/budget', b)).committed, 0);
+      assert.equal((await api('buyer/demands/' + demand, b)).status, '已取消');
+      assert.equal((await api(endpoint + '/monitor', b)).overdueCount, 0);
+      await api(
+        'buyer/demands/' + demand + '/submit',
+        b,
+        { formData: {} },
+        'POST',
+        [400, 409],
+      );
+      report.records.cancelled = {
+        packageId: cancel.info.id,
+        demandId: demand,
+      };
+      check(
+        'real pending withdrawal enforces initiator and rollback; fresh approval, dated milestones, server history pagination, cancellation releases exposure and retains original records',
+      );
+    }
     const p = await api('buyer/projects/' + shared.project.id, b);
     let lot = await api('buyer/projects/' + p.project.id + '/packages', b, {
       projectRevision: p.project.revision,
@@ -370,6 +453,33 @@ try {
     return { ...p, lot };
   }
   async function fulfill(type, d, order, rfqId) {
+    if (closeoutChecks) {
+      const endpoint = 'buyer/projects/' + d.project.id;
+      const lot = (await api(endpoint + '/packages', b)).find(
+        (l) => l.info.id === d.lot.info.id,
+      );
+      await api(
+        endpoint + '/packages/' + lot.info.id + '/stop',
+        b,
+        { revision: lot.info.revision, reason: '有订单禁止直接终止' },
+        'POST',
+        [400, 409],
+      );
+      const parent = await api(endpoint, b);
+      await api(
+        endpoint + '/terminate',
+        b,
+        { revision: parent.project.revision, reason: '有订单禁止整项目终止' },
+        'POST',
+        [400, 409],
+      );
+      assert.equal((await api(endpoint, b)).project.status, 'approved');
+      const row = (await api(endpoint + '/monitor', b)).packages.find(
+        (l) => l.packageId === lot.info.id,
+      );
+      assert.equal(row.canStop, false);
+      assert.equal(row.canRework, false);
+    }
     const amount = Number(order.amount),
       record = report.records[type];
     Object.assign(record, { orderId: order.id, rfqId });
@@ -730,7 +840,9 @@ try {
   assert.equal(summary.orderAmount, 2700);
   assert.equal(summary.paidAmount, 2700);
   assert.equal(
-    summary.documents.filter((d) => d.module === 'demands').length,
+    summary.documents.filter(
+      (d) => d.module === 'demands' && d.status !== '已取消',
+    ).length,
     3,
   );
   const fresh = await api('buyer/projects/' + shared.project.id, b);
@@ -758,8 +870,102 @@ try {
   check(
     'three independent packages aggregate once; 3600 demand budget, 2700 paid, 900 released; whole-project close reuses immutable archives',
   );
+  if (closeoutChecks) {
+    const endpoint = 'buyer/projects/' + shared.project.id;
+    const response = await fetch(
+      base + '/api/v1/' + endpoint + '/archive/download',
+      { headers: { Authorization: 'Bearer ' + b } },
+    );
+    assert.equal(response.status, 200);
+    writeFileSync(
+      report.downloadDirectory + '/overall-project.zip',
+      Buffer.from(await response.arrayBuffer()),
+    );
+    const pendingRoot = await api('buyer/projects', b, {
+      title: '未采购项目受控终止',
+      departmentId: dept.id,
+      ownerId: reviewer.userId,
+      period: year,
+      fundingSource: '年度预算',
+      purpose: '真实终止核验',
+      revision: 0,
+      lines: [
+        {
+          materialId: material.id,
+          quantity: 1,
+          unitPrice: 400,
+          purpose: '办公',
+        },
+      ],
+    });
+    await api('buyer/projects/' + pendingRoot.project.id + '/submit', b, {
+      revision: pendingRoot.project.revision,
+      reason: '独立立项',
+      formData: {},
+    });
+    await decide(r, 'project_initiation', pendingRoot.project.id);
+    let current = await api('buyer/projects/' + pendingRoot.project.id, b);
+    let cancel = await api(
+      'buyer/projects/' + current.project.id + '/packages',
+      b,
+      {
+        projectRevision: current.project.revision,
+        revision: 0,
+        title: '终止前待审采购包',
+        lines: [{ materialId: material.id, quantity: 1 }],
+      },
+    );
+    cancel = await api(
+      'buyer/projects/' +
+        current.project.id +
+        '/packages/' +
+        cancel.info.id +
+        '/create-demand',
+      b,
+      { revision: cancel.info.revision, reason: '生成终止前需求' },
+    );
+    await api('buyer/demands/' + cancel.demands[0].id + '/submit', b, {
+      formData: {},
+    });
+    current = await api('buyer/projects/' + current.project.id, b);
+    const stopped = await api(
+      'buyer/projects/' + current.project.id + '/terminate',
+      b,
+      {
+        revision: current.project.revision,
+        reason: '撤回在审需求并终止未采购项目',
+      },
+    );
+    assert.equal(stopped.project.status, 'terminated');
+    assert.equal(
+      (await api('buyer/demands/' + cancel.demands[0].id, b)).status,
+      '已取消',
+    );
+    assert.equal(
+      (await api('buyer/workflow/tasks', r)).some(
+        (t) => t.businessId === cancel.demands[0].id,
+      ),
+      false,
+    );
+    const archive = await fetch(
+      base +
+        '/api/v1/buyer/projects/' +
+        current.project.id +
+        '/archive/download',
+      { headers: { Authorization: 'Bearer ' + b } },
+    );
+    assert.equal(archive.status, 200);
+    writeFileSync(
+      report.downloadDirectory + '/terminated-project.zip',
+      Buffer.from(await archive.arrayBuffer()),
+    );
+    report.records.terminatedProjectId = current.project.id;
+    check(
+      'orders block package/project termination; closed project exports original package ZIPs, pending-demand project terminates through real workflow withdrawal and exports audit archive',
+    );
+  }
   const page = await api('buyer/projects?page=1&pageSize=1', b);
-  assert.equal(page.total, 1);
+  assert.equal(page.total, closeoutChecks ? 2 : 1);
   const changePage = await api(
     'buyer/projects/' + shared.project.id + '/changes?page=1&pageSize=1',
     b,

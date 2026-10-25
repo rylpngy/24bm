@@ -401,8 +401,11 @@ export function ProjectExpansionPanel({
                               详情
                             </button>
                             {canNew &&
-                              l.info.status === 'draft' &&
-                              !l.demands.length && (
+                              ['draft', 'ready'].includes(l.info.status) &&
+                              !l.runs.length &&
+                              l.demands.every((d) =>
+                                ['草稿', '已驳回'].includes(d.status),
+                              ) && (
                                 <button
                                   className={btn}
                                   type="button"
@@ -1022,7 +1025,11 @@ export function ProjectExpansionPanel({
             </table>
           </div>
           <h3 className="font-bold">履约与财务进度</h3>
-          {trace.isLoading && <p role="status" className="text-sm text-slate-500">正在加载执行进度…</p>}
+          {trace.isLoading && (
+            <p role="status" className="text-sm text-slate-500">
+              正在加载执行进度…
+            </p>
+          )}
           {trace.isError ? (
             <FeedbackNotice
               tone="error"
@@ -1061,7 +1068,11 @@ export function ProjectExpansionPanel({
           onClose={() => setChangeId(null)}
           busy={busy}
         >
-          {change.isLoading && <p role="status" className="text-sm text-slate-500">正在加载变更详情…</p>}
+          {change.isLoading && (
+            <p role="status" className="text-sm text-slate-500">
+              正在加载变更详情…
+            </p>
+          )}
           {change.isError ? (
             <FeedbackNotice tone="error" message="变更详情读取失败或无权限。" />
           ) : (

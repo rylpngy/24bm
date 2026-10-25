@@ -150,6 +150,7 @@ function StageFact({ label, value, hint }: { label: string; value: string; hint?
 }
 
 function ProgressTracker({ demand }: { demand: PurchaseDemandResponse }) {
+  if(demand.status==='已取消')return <FeedbackNotice tone="info" message="该需求已取消，采购办理已停止，原审批与采购关联记录保留供追溯。"/>;
   const status = demand.status;
   const linkedRfqId = demand.linkedRfqId;
   const linkedRfqStatus = demand.linkedRfqStatus;
@@ -355,9 +356,9 @@ export function DemandDetail({
                 <Send size={15} /> 提交审批
               </PrimaryActionButton>
             ) : (
-              <button className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-blue-600 px-3 text-xs font-black text-white hover:bg-blue-700" type="button">
-                <CheckCircle2 size={15} /> {demand.status === '已通过' ? '审批通过' : '处理中'}
-              </button>
+              <span role="status" className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-slate-100 px-3 text-xs font-bold text-slate-600">
+                <CheckCircle2 size={15} /> {demand.status === '已通过' ? '审批通过' : demand.status === '已取消' ? '已取消' : demand.status === '已转询价' ? '已转采购' : '处理中'}
+              </span>
             )}
           </div>
         </div>
@@ -373,6 +374,8 @@ export function DemandDetail({
           </div>
 
           <ProgressTracker demand={demand} />
+
+          {instance && ['草稿','已取消'].includes(demand.status||'') && <FeedbackNotice tone="info" message={demand.status==='草稿'?'需求当前为草稿，下方为历史审批记录；本次修改必须重新提交审批，原通过意见不代表本次已批准。':'需求已经取消，下方审批记录仅作为历史留痕，不代表需求仍在执行。'}/>}
 
           {demand.id && <WorkflowStatusPanel businessType="purchase_demand" businessId={demand.id} />}
 

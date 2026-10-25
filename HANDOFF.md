@@ -1,5 +1,11 @@
 # 24Bid 当前交付接手说明
 
+## 项目执行收口批次（2026-10-25，优先阅读）
+
+当前分支codex/project-execution-closeout，基于已合并并发布PR131/main 19ac64ce6175c97908ca0f99556698f41940f06e。实现未下发需求重编、真实发起人撤回、无订单失败/未采购终止、六节点计划和实际进度、逾期监控、调整记录分页、处理前快照及整项目ZIP。需求和归档跨模块操作使用应用门面，不绕过源业务权限或放宽架构规则。V236仅新增2张空表。指南、剩余功能边界见docs/project-execution-closeout-guide.md和docs/project-execution-remaining-plan.md；不把商城/竞价分包、跨年度或有订单终止清算冒称已完成。
+
+原数据新备份srm-backup-1792913160269含179表/133条迁移/5个附件。写入验收在closeout_integration_1792913766266/8097/5201及独立桶；原procurement_saas_base、24bid-attachments和预算warning保留。实际合并与部署以GitHub及固定发布目录RESTORATION.md为准，本段仅为开发交付快照，不替代发布证据。下方PR131及更早记录均为历史。
+
 ## 项目分包与变更批次（2026-10-25，优先阅读）
 
 当前分支codex/project-packages-change-control，基于已合并发布PR130/main 29b131fac676545fe827921693b0919ed5515c53，实现采购分包、多询比/招标执行、原需求纳包、无订单流标/废标重采、独立Flowable立项变更、包级及项目级结项和版本归档。V235仅新增5张空表。指南和证据见docs/project-packages-change-guide.md、docs/project-packages-change-result.md。下方“单项目只支持单执行、变更待后续”均为旧批次边界，不代表本批能力。

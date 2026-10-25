@@ -38,7 +38,7 @@ public interface ProjectExpansionMapper {
       "update procurement_project_packages set"
           + " title=#{title},project_revision=#{version},amount=#{amount},lines=cast(#{lines} as"
           + " jsonb),snapshot=cast(#{snapshot} as jsonb),revision=revision+1,updated_at=now() where"
-          + " tenant_id=#{t} and id=#{id} and revision=#{revision} and status='draft'")
+          + " tenant_id=#{t} and id=#{id} and revision=#{revision} and status in ('draft','ready')")
   int editLot(
       @Param("t") String t,
       @Param("id") String id,

@@ -49,6 +49,19 @@ import org.springframework.transaction.annotation.Transactional;
 public class PurchaseDemandApplicationService {
   public record ProjectLine(String materialId,java.math.BigDecimal quantity) {}
   @Transactional
+  public void resetProjectDemand(String project,String demandId,boolean cancel,String reason){
+    String tenant=TenantAccessGuard.requireTenantId("project demand adjustment");permissionService.require("buyer:demand:read");permissionService.require("buyer:demand:create");
+    if(reason==null||reason.isBlank()||reason.length()>1000)throw new IllegalArgumentException("调整原因必填且不超过1000字");
+    if(budgetControl!=null)budgetControl.lock(tenant);if(projectGuard==null)throw new IllegalStateException("项目调整门面未配置");projectGuard.requireDemandAdjustment(project,demandId);
+    var before=purchaseDemandMapper.findByTenantAndId(tenant,demandId);if(before==null)throw new IllegalArgumentException("需求不存在");requireDataScope(before.departmentId(),before.requesterId());
+    if(!List.of("草稿","已驳回","审批中","已通过","已转询价").contains(before.status()))throw new IllegalStateException("需求状态不支持调整");
+    if(rfqDemandLinkQueryService.hasActiveOrOrderedLink(tenant,demandId))throw new IllegalStateException("需求存在有效采购或历史订单，不能调整");
+    if("审批中".equals(before.status()))unifiedWorkflowApplicationService.withdrawCurrentPurchaseDemand(demandId,reason);
+    // Workflow completion locks the workflow before its demand callback; never hold the demand lock while waiting for that workflow.
+    var current=purchaseDemandMapper.findByTenantAndIdForUpdate(tenant,demandId);String expected="审批中".equals(before.status())?"草稿":before.status();if(!expected.equals(current.status()))throw new IllegalStateException("审批或需求状态已变化，请刷新重试");if(purchaseDemandMapper.updateStatusIfCurrent(tenant,demandId,current.status(),cancel?"已取消":"草稿")!=1)throw new IllegalStateException("需求状态已变化");
+    auditLogApplicationService.recordTenantAction(tenant,"purchase_demand.project_"+(cancel?"cancelled":"rework"),"purchase_demand",demandId,reason);
+  }
+  @Transactional
   public String createProjectDemand(String title,String department,java.math.BigDecimal amount,List<ProjectLine> lines,String purpose) {
     return create(new CreatePurchaseDemandRequest(title,department,amount,lines.stream().map(l->new com.procurement.demand.api.PurchaseDemandLineItemRequest(l.materialId(),l.quantity())).toList(),null,"普通",purpose)).id();
   }
@@ -67,6 +80,8 @@ public class PurchaseDemandApplicationService {
   private UnifiedWorkflowApplicationService unifiedWorkflowApplicationService;
   private NumberingApplicationService numbering;
   private com.procurement.buyer.application.BudgetControlService budgetControl;
+  @org.springframework.beans.factory.annotation.Autowired(required = false)
+  private com.procurement.buyer.application.ProcurementProjectGuard projectGuard;
   @Autowired
   void setBudgetControlService(com.procurement.buyer.application.BudgetControlService control) { this.budgetControl=control; }
 
@@ -216,6 +231,7 @@ public class PurchaseDemandApplicationService {
   public PurchaseDemandResponse update(String demandId, UpdatePurchaseDemandRequest request) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer demand APIs");
     permissionService.require("buyer:demand:create");
+    if(budgetControl!=null)budgetControl.lock(tenantId);
     PurchaseDemand demand = purchaseDemandMapper.findByTenantAndIdForUpdate(tenantId, demandId);
     if (demand == null) {
       throw new IllegalArgumentException("Purchase demand not found: " + demandId);
@@ -275,6 +291,7 @@ public class PurchaseDemandApplicationService {
     }
     requireDataScope(demand.departmentId(), demand.requesterId());
     purchaseDemandApprovalStatusTransition.requireSubmission(demand.status(), demandId);
+    if(projectGuard!=null) projectGuard.requireDemandSubmission(demandId);
 
     // 旧离线构造的兼容路径；Spring 生产装配始终注入 Flowable 统一门面。
     if (unifiedWorkflowApplicationService == null) {

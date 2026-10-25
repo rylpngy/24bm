@@ -50,7 +50,14 @@ public interface ProcurementProjectMapper {
   @Select("select " + COLS + FROM + "where p.tenant_id=#{tenant} and p.id=#{id}")
   Project find(@Param("tenant") String tenant, @Param("id") String id);
 
-  @Select("select id from tenants where id=#{tenant} for update")
+  // A tenant-row lock blocks FK checks in workflow/audit writes; use an independent transaction
+  // mutex.
+  @Select(
+      "select #{tenant} from (select pg_advisory_xact_lock(hashtextextended('project-control:' ||"
+          + " #{tenant},0))) locked")
+  @org.apache.ibatis.annotations.Options(
+      useCache = false,
+      flushCache = org.apache.ibatis.annotations.Options.FlushCachePolicy.TRUE)
   String lock(@Param("tenant") String tenant);
 
   @Select(

@@ -34,7 +34,7 @@ export function Pagination({ page, pageSize, total, onPageChange }: PaginationPr
         >
           <ChevronLeft size={14} /> {t('上一页')}
         </button>
-        <span className="px-1 text-xs font-black text-slate-700">
+        <span aria-label="当前页码" className="px-1 text-xs font-black text-slate-700">
           {current} <span className="text-slate-400">/ {pageCount}</span>
         </span>
         <button

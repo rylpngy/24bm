@@ -156,6 +156,54 @@ public class ProcurementProjectGuard {
     return run == null ? mapper.projectForRfq(t, rfq) : run.projectId();
   }
 
+  public void requireDemandSubmission(String demand) {
+    String t = TenantAccessGuard.requireTenantId("project demand submission");
+    String project = mapper.demandProject(t, demand);
+    if (project == null) return;
+    var p = mapper.find(t, project);
+    approved(p);
+    allocations.noPending(p);
+    var source = mapper.demand(t, demand);
+    if (!p.departmentId().equals(source.departmentId()) || !p.period().equals(source.period()))
+      throw new IllegalStateException("项目需求部门或年度与已批准项目不一致");
+    String lotId = expansion.demandLot(t, demand);
+    if (lotId == null) return;
+    var lot = expansion.lot(t, lotId);
+    if (!List.of("draft", "ready").contains(lot.status()))
+      throw new IllegalStateException("分包已结项或终止，不能重新提交需求");
+    var qty = new HashMap<String, java.math.BigDecimal>();
+    var amount = java.math.BigDecimal.ZERO;
+    for (String id : expansion.lotDemands(t, lotId)) {
+      var d = mapper.demand(t, id);
+      amount = amount.add(d.budget());
+      for (var item : allocations.tree(expansion.demandLines(t, id)))
+        qty.merge(
+            item.path("materialId").asText(),
+            item.path("quantity").decimalValue(),
+            java.math.BigDecimal::add);
+    }
+    var expected = new HashMap<String, java.math.BigDecimal>();
+    for (var l : allocations.lines(lot.lines())) expected.put(l.materialId(), l.quantity());
+    if (amount.compareTo(lot.amount()) > 0
+        || qty.entrySet().stream()
+            .anyMatch(
+                e ->
+                    e.getValue()
+                            .compareTo(expected.getOrDefault(e.getKey(), java.math.BigDecimal.ZERO))
+                        > 0))
+      throw new IllegalStateException("需求累计物料、数量或预算超过分包范围，请先核对分包与需求，必要时办理立项变更");
+  }
+
+  public void requireDemandAdjustment(String project, String demand) {
+    String t = TenantAccessGuard.requireTenantId("project demand adjustment");
+    if (!project.equals(mapper.demandProject(t, demand)))
+      throw new IllegalArgumentException("需求不属于当前项目");
+    var p = require(project, true);
+    if (!List.of("draft", "approved", "rejected", "withdrawn").contains(p.status())
+        || p.executionId() != null) throw new IllegalStateException("项目当前状态不能调整需求");
+    allocations.noPending(p);
+  }
+
   public com.fasterxml.jackson.databind.JsonNode archiveDefinitionForRfq(String rfq) {
     String t = TenantAccessGuard.requireTenantId("project archive");
     var run = expansion.runForRfq(t, rfq);

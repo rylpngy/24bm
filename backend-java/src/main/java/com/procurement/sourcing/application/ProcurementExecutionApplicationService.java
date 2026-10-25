@@ -179,6 +179,9 @@ public class ProcurementExecutionApplicationService {
     return archive.zipData();
   }
 
+  @Transactional(readOnly=true,isolation=Isolation.REPEATABLE_READ)
+  public byte[] downloadCurrentProjectArchive(String rfq){var record=get(rfq).archives().stream().filter(a->!a.stale()).findFirst().orElseThrow(()->new IllegalStateException("归档缺失或已过期，请先在源采购中核验归档"));return download(rfq,record.id());}
+
   private String authorize(String rfq,boolean write) {
     String tenant=TenantAccessGuard.requireTenantId("procurement execution");
     for (String permission : READS) permissions.require(permission);
