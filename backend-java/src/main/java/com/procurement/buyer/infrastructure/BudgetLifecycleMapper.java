@@ -168,16 +168,16 @@ public interface BudgetLifecycleMapper {
   @Select("select u.department_id from users u join departments d on d.tenant_id=u.tenant_id and d.id=u.department_id and d.status='active' where u.tenant_id=#{tenant} and u.id=#{user}")
   String actorDepartment(@Param("tenant") String tenant,@Param("user") String user);
 
-  @Select("select exists(select 1 from purchase_demands where tenant_id=#{tenant} and id=#{id} and department_id=#{department} and to_char(created_at at time zone 'Asia/Shanghai','YYYY')=#{period} and status in ('草稿','已驳回','审批中','已通过'))")
+  @Select("select exists(select 1 from purchase_demands pd where pd.tenant_id=#{tenant} and pd.id=#{id} and pd.department_id=#{department} and coalesce((select max(r.target_period) from procurement_project_lifecycle_requests r join procurement_project_demands d on d.tenant_id=r.tenant_id and d.project_id=r.project_id where d.tenant_id=pd.tenant_id and d.demand_id=pd.id and r.kind='carryover' and r.status='approved'),to_char(pd.created_at at time zone 'Asia/Shanghai','YYYY'))=#{period} and pd.status in ('草稿','已驳回','审批中','已通过'))")
   boolean demandTarget(@Param("tenant") String tenant,@Param("id") String id,@Param("department") String department,@Param("period") String period);
 
-  @Select("select exists(select 1 from rfq_demands rd join purchase_demands pd on pd.id=rd.demand_id and pd.tenant_id=rd.tenant_id where rd.tenant_id=#{tenant} and rd.rfq_id=#{id} and pd.department_id=#{department} and to_char(pd.created_at at time zone 'Asia/Shanghai','YYYY')=#{period})")
+  @Select("select exists(select 1 from budget_commitment_lines where tenant_id=#{tenant} and source_type='rfq' and source_id=#{id} and department_id=#{department} and period=#{period})")
   boolean rfqTarget(@Param("tenant") String tenant,@Param("id") String id,@Param("department") String department,@Param("period") String period);
 
   @Select("select exists(select 1 from rfq_demands where tenant_id=#{tenant} and rfq_id=#{rfq})")
   boolean hasDemandLinks(@Param("tenant") String tenant,@Param("rfq") String rfq);
 
-  @Select("select distinct department_id,period from budget_commitment_lines where tenant_id=#{tenant} and source_type='rfq' and source_id=#{rfq}")
+  @Select("select distinct b.department_id,b.period from budget_commitment_lines b where b.tenant_id=#{tenant} and b.source_type='rfq' and b.source_id=#{rfq} and not exists(select 1 from procurement_project_lifecycle_requests r join procurement_project_demands d on d.tenant_id=r.tenant_id and d.project_id=r.project_id join rfq_demands rd on rd.tenant_id=d.tenant_id and rd.demand_id=d.demand_id where rd.tenant_id=b.tenant_id and rd.rfq_id=b.source_id and r.kind='carryover' and r.status='approved' and r.target_period>b.period)")
   List<java.util.Map<String,Object>> rfqPools(@Param("tenant") String tenant,@Param("rfq") String rfq);
 
   @Select("select po.id,po.rfq_id,po.amount,po.status,po.created_at "+UNASSIGNED+" order by po.created_at,po.id limit #{size} offset #{offset}")

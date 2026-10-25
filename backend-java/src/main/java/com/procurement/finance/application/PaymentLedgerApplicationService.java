@@ -109,6 +109,7 @@ public class PaymentLedgerApplicationService {
     if (original.amount().signum() <= 0 || entries.list(invoice.tenantId(), invoiceId).stream().anyMatch(e -> entryId.equals(e.reversalOf()))) {
       throw new IllegalStateException("只能冲销未冲销的原付款记录，不能重复冲销或冲销负数记录");
     }
+    if(invoices.carriedPayment(invoice.tenantId(),invoiceId,entryId))throw new IllegalStateException("该付款已纳入跨年度承接审批依据，不能直接冲销历史支出；跨年度更正需另行审批处理，当前不提供直接更正入口");
     BigDecimal paid = entries.balance(invoice.tenantId(), invoiceId);
     PaymentAuthorizationService.requireKnownBalance(invoice, paid);
     var approved = authorization.requireApproved(invoice, false);

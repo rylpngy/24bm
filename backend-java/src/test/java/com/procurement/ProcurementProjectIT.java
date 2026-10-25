@@ -56,6 +56,9 @@ class ProcurementProjectIT {
   @Autowired ProjectMallService projectMall;
   @Autowired ProjectChangeAttachmentAccess changeAttachments;
   @Autowired ProjectLifecycleService lifecycle;
+  @Autowired com.procurement.finance.application.PaymentLedgerApplicationService paymentLedger;
+  @Autowired com.procurement.finance.infrastructure.InvoiceMapper invoiceMapper;
+  @Autowired com.procurement.buyer.infrastructure.BudgetLifecycleMapper budgetMapper;
   String tenant, dept, author, reviewer, role, material;
 
   String mallSku(String price) {
@@ -363,6 +366,112 @@ class ProcurementProjectIT {
     assertThat(lifecycle.preview(p.id()).liquidationBlockers()).anyMatch(x->x.contains("售后单完成不等于"));
     jdbc.update("update mall_after_sales set status='已撤回' where id=?",after);
     assertThat(lifecycle.preview(p.id()).liquidationBlockers()).noneMatch(x->x.contains("售后单完成不等于"));
+  }
+
+  String[] paidProject(){
+    var sku=mallSku("100");var p=approve(projects.create(draft(0))).project();var l=ready(lot(p.id(),"2"));
+    var checkout=projectMall.checkout(p.id(),l.info().id(),mallRequest(l,sku,"2"));
+    String invoice="invoice-"+UUID.randomUUID();
+    jdbc.update("insert into invoices(id,tenant_id,supplier_id,order_id,amount,payment_status,invoice_no) select ?,tenant_id,supplier_id,id,amount,'部分付款',? from purchase_orders where id=?",invoice,invoice,checkout.orderId());
+    String entry=paidEntry(invoice,"50");
+    return new String[]{p.id(),checkout.orderId(),invoice,entry};
+  }
+
+  String paidEntry(String invoice,String amount){
+    String id="entry-"+UUID.randomUUID();
+    jdbc.update("insert into invoice_payment_entries(id,tenant_id,invoice_id,idempotency_key,amount,evidence_no,created_by) values (?,?,?,?,?,'BANK-REFERENCE',?)",id,tenant,invoice,id,new BigDecimal(amount),author);
+    return id;
+  }
+
+  String nextYear(int n){return String.valueOf(Integer.parseInt(year)+n);}
+  String carry(String project,int n){var c=lifecycle.submit(project,lifecycleRequest(project,"carryover",nextYear(n)));decide(c.id(),"approve");return c.id();}
+
+  @Test
+  void paidCarryoverConservesExpenseAcrossTwoYearsAndFreezesOriginalPayment(){
+    var f=paidProject();var original=jdbc.queryForMap("select amount,created_at from purchase_orders where id=?",f[1]);
+    var c=lifecycle.submit(f[0],lifecycleRequest(f[0],"carryover",nextYear(1)));
+    assertThat(budget.position(tenant,dept,year).committed()).isEqualByComparingTo("246.91");
+    decide(c.id(),"approve");
+    assertThat(budget.position(tenant,dept,year).committed()).isEqualByComparingTo("50");
+    assertThat(budget.position(tenant,dept,year).paidAmount()).isEqualByComparingTo("50");
+    assertThat(budget.position(tenant,dept,nextYear(1)).committed()).isEqualByComparingTo("196.91");
+    assertThat(budget.position(tenant,dept,nextYear(1)).orderAmount()).isEqualByComparingTo("150");
+    assertThat(invoiceMapper.carriedPayment(tenant,f[2],f[3])).isTrue();
+    assertThatThrownBy(()->paymentLedger.reverse(f[2],f[3],new com.procurement.finance.api.ReversePaymentRequest("frozen-key","Cannot change frozen expense"))).hasMessageContaining("跨年度承接");
+    assertThat(jdbc.queryForMap("select amount,created_at from purchase_orders where id=?",f[1])).isEqualTo(original);
+  }
+
+  @Test
+  void hardCarryoverChecksOnlyUnpaidTargetResponsibilityAndRollsBackInsufficientBudget(){
+    var f=paidProject();var c=lifecycle.submit(f[0],lifecycleRequest(f[0],"carryover",nextYear(1)));
+    jdbc.update("insert into budget_policies(tenant_id,mode,reason,updated_by) values (?,'hard','IT',?)",tenant,author);
+    jdbc.update("insert into department_budgets(id,tenant_id,department_id,period,total_amount) values (?,?,?,?,196.90)","pool-"+f[0],tenant,dept,nextYear(1));
+    assertThatThrownBy(()->decide(c.id(),"approve")).hasMessageContaining("预算不足");context(author);
+    assertThat(budget.position(tenant,dept,year).committed()).isEqualByComparingTo("246.91");
+    assertThat(invoiceMapper.carriedPayment(tenant,f[2],f[3])).isFalse();
+    jdbc.update("update department_budgets set total_amount=196.91 where tenant_id=?",tenant);
+    decide(c.id(),"approve");
+    assertThat(budget.position(tenant,dept,nextYear(1)).committed()).isEqualByComparingTo("196.91");
+    assertThat(budget.position(tenant,dept,year).paidAmount()).isEqualByComparingTo("50");
+  }
+
+  @Test
+  void subsequentPaymentAndSecondCarryoverDoNotRefreezePriorYearExpense(){
+    var f=paidProject();carry(f[0],1);var newer=paidEntry(f[2],"25");
+    assertThat(invoiceMapper.carriedPayment(tenant,f[2],newer)).isFalse();
+    assertThat(lifecycle.preview(f[0]).paidAmount()).isEqualByComparingTo("75");
+    assertThat(budget.position(tenant,dept,nextYear(1)).paidAmount()).isEqualByComparingTo("25");
+    carry(f[0],2);
+    assertThat(budget.position(tenant,dept,year).committed()).isEqualByComparingTo("50");
+    assertThat(budget.position(tenant,dept,nextYear(1)).committed()).isEqualByComparingTo("25");
+    assertThat(budget.position(tenant,dept,nextYear(2)).committed()).isEqualByComparingTo("171.91");
+    assertThat(lifecycle.preview(f[0]).transferAmount()).isEqualByComparingTo("171.91");
+    assertThat(invoiceMapper.carriedPayment(tenant,f[2],newer)).isTrue();
+    assertThat(budgetMapper.rfqPools(tenant,jdbc.queryForObject("select rfq_id from purchase_orders where id=?",String.class,f[1]))).allMatch(row->nextYear(2).equals(row.get("period")));
+  }
+
+  @Test
+  void paidCarryoverRejectAndWithdrawalPreserveOriginalAllocation(){
+    var f=paidProject();var c=lifecycle.submit(f[0],lifecycleRequest(f[0],"carryover",nextYear(1)));
+    lifecycle.withdraw(f[0],c.id(),c.revision(),"Withdraw");
+    c=lifecycle.submit(f[0],lifecycleRequest(f[0],"carryover",nextYear(1)));decide(c.id(),"reject");
+    assertThat(budget.position(tenant,dept,year).committed()).isEqualByComparingTo("246.91");
+    assertThat(budget.position(tenant,dept,nextYear(1)).committed()).isEqualByComparingTo("0");
+    assertThat(invoiceMapper.carriedPayment(tenant,f[2],f[3])).isFalse();
+  }
+
+  @Test
+  void unknownPaidStateAndChangedPaymentIdentityCannotApproveCarryover(){
+    var f=paidProject();var c=lifecycle.submit(f[0],lifecycleRequest(f[0],"carryover",nextYear(1)));
+    String replacement=paidEntry(f[2],"50");
+    jdbc.update("insert into invoice_payment_entries(id,tenant_id,invoice_id,idempotency_key,amount,evidence_no,reversal_of,created_by) values (?,?,?,?, -50,'REV',?,?)","rev-"+replacement,tenant,f[2],"rev-"+replacement,f[3],author);
+    assertThatThrownBy(()->decide(c.id(),"approve")).hasMessageContaining("数据已变化");context(author);
+    lifecycle.withdraw(f[0],c.id(),c.revision(),"Recheck evidence");
+    jdbc.update("update invoices set payment_status='已付款' where id=?",f[2]);
+    assertThat(lifecycle.preview(f[0]).paidAmount()).isNull();
+    assertThat(lifecycle.preview(f[0]).transferAmount()).isNull();
+    assertThatThrownBy(()->lifecycle.submit(f[0],lifecycleRequest(f[0],"carryover",nextYear(1)))).hasMessageContaining("无法一致核验");
+  }
+
+  @Test
+  void paidAllocationSurvivesLossOfMutableSourceLinkAsHistoricalEvidence(){
+    var f=paidProject();carry(f[0],1);
+    jdbc.update("update purchase_demands set status='已取消' where id in (select demand_id from procurement_project_demands where tenant_id=? and project_id=?)",tenant,f[0]);
+    assertThat(budget.position(tenant,dept,year).committed()).isEqualByComparingTo("50");
+    assertThat(budget.position(tenant,dept,year).paidAmount()).isEqualByComparingTo("50");
+  }
+
+  @Test
+  void multipleRawFiscalRowsAreGroupedBeforeSubtractingFrozenPayment(){
+    var f=paidProject();carry(f[0],1);
+    var first=projects.demands(f[0]).getFirst();String duplicate="demand-"+UUID.randomUUID();
+    jdbc.update("insert into purchase_demands(id,tenant_id,title,department_id,requester_id,budget,status,created_at) select ?,tenant_id,title,department_id,requester_id,budget,'已转询价',created_at+interval '1 year' from purchase_demands where id=?",duplicate,first.id());
+    jdbc.update("insert into procurement_project_demands(tenant_id,project_id,demand_id,linked_by) values (?,?,?,?)",tenant,f[0],duplicate,author);
+    jdbc.update("insert into rfq_demands(id,tenant_id,rfq_id,demand_id) select ?,tenant_id,rfq_id,? from purchase_orders where id=?","link-"+duplicate,duplicate,f[1]);
+    var rows=lifecycle.preview(f[0]).sources();
+    assertThat(rows).hasSize(2);
+    assertThat(rows.stream().map(com.procurement.buyer.api.ProjectLifecycleContracts.Source::paidAmount).reduce(BigDecimal.ZERO,BigDecimal::add)).isEqualByComparingTo("50");
+    assertThat(rows.stream().map(com.procurement.buyer.api.ProjectLifecycleContracts.Source::orderAmount).reduce(BigDecimal.ZERO,BigDecimal::add)).isEqualByComparingTo("200");
   }
 
   @Test

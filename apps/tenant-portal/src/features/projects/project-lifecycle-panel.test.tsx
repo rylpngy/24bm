@@ -15,6 +15,8 @@ const f = vi.hoisted(() => ({
   blocked: false,
   manage: true,
   fail: false,
+  paid: false,
+  unknown: false,
   preview: vi.fn(),
   page: vi.fn(),
   submit: vi.fn(),
@@ -49,8 +51,17 @@ vi.mock('@24bid/api-client', () => ({
           businessPeriod: '2026',
           effectivePeriod: '2027',
           amount: 400,
-          sources: [],
-          carryoverBlockers: f.blocked ? ['已有付款，不能迁移'] : [],
+          paidAmount: f.unknown ? null : f.paid ? 150 : 0,
+          transferAmount: f.unknown ? null : f.paid ? 250 : 400,
+          payments: [],
+          sources: f.paid
+            ? [
+                { period: '2026', pending: 0, committed: 100, paidAmount: 100 },
+                { period: '2027', pending: 0, committed: 300, paidAmount: 50 },
+              ]
+            : [],
+          carryoverBlockers:
+            f.blocked || f.unknown ? ['付款资料无法核验，不能迁移'] : [],
           liquidationBlockers: ['订单未结清'],
         });
   },
@@ -101,6 +112,8 @@ beforeEach(() => {
   f.blocked = false;
   f.manage = true;
   f.fail = false;
+  f.paid = false;
+  f.unknown = false;
   vi.clearAllMocks();
 });
 afterEach(cleanup);
@@ -137,7 +150,7 @@ describe('project lifecycle', () => {
         expect.objectContaining({
           revision: 4,
           kind: 'carryover',
-          targetPeriod: '2028',
+          targetPeriod: String(Math.max(2028, new Date().getFullYear())),
           reason: '经过复核的年度责任',
           formData: { reference: 'verified' },
         }),
@@ -150,7 +163,7 @@ describe('project lifecycle', () => {
     fireEvent.click(screen.getByText('展开办理台账'));
     await screen.findByText('当前责任年度 2027');
     fireEvent.click(screen.getByText('申请跨年度承接'));
-    expect(screen.getByText('已有付款，不能迁移')).toBeTruthy();
+    expect(screen.getByText('付款资料无法核验，不能迁移')).toBeTruthy();
     fireEvent.change(screen.getByRole('textbox', { name: '申请原因' }), {
       target: { value: '不能越过资金核对' },
     });
@@ -163,5 +176,36 @@ describe('project lifecycle', () => {
     await screen.findByText('当前责任年度 2027');
     expect(screen.queryByText('申请跨年度承接')).toBeNull();
     expect(screen.queryByText('申请已有订单终止清算')).toBeNull();
+  });
+  it('separates historical paid expense from current responsibility without disabling paid carryover', async () => {
+    f.paid = true;
+    show();
+    fireEvent.click(screen.getByText('展开办理台账'));
+    await screen.findByText('当前责任年度 2027');
+    const table = screen.getByRole('table', { name: '逐年预算责任分摊' });
+    expect(within(table).getByText('2026 · 历史')).toBeTruthy();
+    expect(within(table).getByText('2027 · 当前')).toBeTruthy();
+    expect(screen.getByText('¥150.00')).toBeTruthy();
+    expect(screen.getByText('¥250.00')).toBeTruthy();
+    fireEvent.click(screen.getByText('申请跨年度承接'));
+    fireEvent.change(screen.getByRole('textbox', { name: '申请原因' }), {
+      target: { value: '仅承接未支付责任' },
+    });
+    expect(screen.getByRole('button', { name: '提交审批' })).not.toBeDisabled();
+    expect(screen.getByText(/已冻结付款不能直接冲销/)).toBeTruthy();
+  });
+  it('keeps unknown payments and transfer amount unknown instead of presenting zero', async () => {
+    f.unknown = true;
+    show();
+    fireEvent.click(screen.getByText('展开办理台账'));
+    await screen.findByText('当前责任年度 2027');
+    const values = screen.getByText('已核实净付款', {
+      selector: 'dt',
+    }).parentElement!;
+    expect(values.textContent).toContain('待核对');
+    expect(values.textContent).not.toContain('¥0.00');
+    fireEvent.click(screen.getByText('申请跨年度承接'));
+    expect(screen.getByText('付款资料无法核验，不能迁移')).toBeTruthy();
+    expect(screen.getByRole('button', { name: '提交审批' })).toBeDisabled();
   });
 });

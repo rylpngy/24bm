@@ -63,6 +63,31 @@ export function ProjectLifecyclePanel({
     enabled: expanded,
   });
   const manage = p.status === 'approved' && can('buyer:project:manage');
+  const annual = Object.values(
+    (preview.data?.sources || []).reduce<
+      Record<
+        string,
+        {
+          period: string;
+          committed: number;
+          pending: number;
+          paid: number | null;
+        }
+      >
+    >((rows, s) => {
+      const r = (rows[s.period] ||= {
+        period: s.period,
+        committed: 0,
+        pending: 0,
+        paid: 0,
+      });
+      r.committed += s.committed;
+      r.pending += s.pending;
+      r.paid =
+        r.paid === null || s.paidAmount === null ? null : r.paid + s.paidAmount;
+      return rows;
+    }, {}),
+  ).sort((a, b) => a.period.localeCompare(b.period));
   async function run(fn: () => Promise<unknown>) {
     if (busy) return;
     setBusy(true);
@@ -165,6 +190,72 @@ export function ProjectLifecyclePanel({
                 ))}
             </div>
           </div>
+          {preview.data && (
+            <>
+              <dl className="grid grid-cols-1 gap-4 border-y border-slate-200 py-4 sm:grid-cols-3">
+                {[
+                  ['累计预算责任', preview.data.amount],
+                  ['已核实净付款', preview.data.paidAmount],
+                  ['拟承接未支付责任', preview.data.transferAmount],
+                ].map(([label, value]) => (
+                  <div key={String(label)}>
+                    <dt className="text-xs text-slate-500">{label}</dt>
+                    <dd className="mt-1 font-semibold">
+                      {money(typeof value === 'number' ? value : null)}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+              <div className="overflow-x-auto rounded-lg border border-slate-200">
+                <table
+                  className="w-full min-w-[460px] text-left text-sm"
+                  aria-label="逐年预算责任分摊"
+                >
+                  <thead className="bg-slate-50 text-slate-500">
+                    <tr>
+                      {[
+                        '责任年度',
+                        '待批占用',
+                        '已确认责任',
+                        '已核实净付款',
+                      ].map((h) => (
+                        <th
+                          key={h}
+                          className="whitespace-nowrap px-4 py-3 font-medium"
+                        >
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {annual.map((a) => (
+                      <tr key={a.period} className="border-t border-slate-100">
+                        <td className="whitespace-nowrap px-4 py-3">
+                          {a.period}
+                          {a.period === preview.data?.effectivePeriod
+                            ? ' · 当前'
+                            : ' · 历史'}
+                        </td>
+                        <td className="px-4 py-3">{money(a.pending)}</td>
+                        <td className="px-4 py-3">{money(a.committed)}</td>
+                        <td className="px-4 py-3">
+                          {money(
+                            preview.data?.paidAmount === null ? null : a.paid,
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {annual.length === 0 && (
+                  <p className="p-4 text-sm text-slate-500">
+                    暂无已占用的年度预算责任
+                  </p>
+                )}
+              </div>
+            </>
+          )}
           {history.isLoading ? (
             <p className="text-sm text-slate-500">加载台账…</p>
           ) : (
@@ -258,7 +349,7 @@ export function ProjectLifecyclePanel({
               tone="info"
               message={
                 kind === 'carryover'
-                  ? '仅承接经核验尚未付款的采购责任。原项目、需求及订单年度与创建日期保持不变；不转移年度预算额度。已有付款项目须另行核对跨年资金。'
+                  ? '原年度已付款保留在原责任年度，仅将未支付责任承接至新年度；后续付款计入当前责任年度。原项目、需求、订单日期和年度预算额度不改写，已冻结付款不能直接冲销。'
                   : '保留原订单、收货、发票、付款及合同记录，独立审批后终止项目。未收货、未退款、发票不一致或合同未结清时不能办理。'
               }
             />

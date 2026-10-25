@@ -69,8 +69,27 @@ public class ProjectLifecycleService {
 
   private Preview inspect(Project p) {
     var sources = mapper.sources(p.tenantId(), p.id());
+    var frozenYears = mapper.frozenYears(p.tenantId(), p.id());
     var carry = new ArrayList<String>();
     var clear = new ArrayList<String>();
+    var paidEntries = mapper.paidEntries(p.tenantId(), p.id());
+    boolean known = sources.stream().allMatch(s -> s.paidAmount() != null);
+    var paid =
+        known
+            ? sources.stream().map(Source::paidAmount).reduce(BigDecimal.ZERO, BigDecimal::add)
+            : null;
+    if (mapper.invalidPayments(p.tenantId(), p.id()) > 0
+        || paidEntries.stream().anyMatch(e -> e.evidenceNo() == null || e.evidenceNo().isBlank())
+        || !known
+        || paidEntries.stream()
+                .map(PaymentBasis::amount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .compareTo(paid == null ? BigDecimal.ZERO : paid)
+            != 0) {
+      carry.add("付款状态、原始流水与预算已支付金额无法一致核验，请先核对，不能推算历史支出");
+      known = false;
+      paid = null;
+    }
     if (mapper.unresolvedAfterSales(p.tenantId(), p.id()) > 0)
       clear.add("存在未结售后或退换货责任：售后单完成不等于实物退回/退款已核验，请先处理，不能直接终止清算");
     if (!"approved".equals(p.status())) {
@@ -90,10 +109,21 @@ public class ProjectLifecycleService {
       clear.add("存在混合采购，不能代其他项目办理清算");
     }
     for (var s : sources) {
-      if (!p.departmentId().equals(s.departmentId()) || !period(p).equals(s.period()))
+      if (!p.departmentId().equals(s.departmentId())
+          || s.period().compareTo(period(p)) > 0
+          || (s.period().compareTo(period(p)) < 0 && !frozenYears.contains(s.period())))
         carry.add(s.sourceId() + "：预算归属与项目当前承接年度不一致");
-      if (s.paidAmount() == null || s.paidAmount().signum() != 0)
-        carry.add(s.sourceId() + "：已有付款或净付款不可核验，需先完成跨年度已支付资金核算，本轮不自动迁移");
+      if (s.paidAmount() != null
+          && (s.paidAmount().signum() < 0
+              || s.paidAmount().compareTo(s.committed()) > 0
+              || s.paidAmount().compareTo(s.orderAmount()) > 0))
+        carry.add(s.sourceId() + "：已付款超过订单或责任金额，请先核对");
+      if (s.period().compareTo(period(p)) < 0
+          && (s.paidAmount() == null
+              || s.pending().signum() != 0
+              || s.committed().compareTo(s.paidAmount()) != 0
+              || s.orderAmount().compareTo(s.paidAmount()) != 0))
+        carry.add(s.sourceId() + "：历史年度存在尚未承接的责任，须先核对逐年分摊");
     }
     boolean hasOrders = false;
     var seen = new HashSet<String>();
@@ -133,6 +163,9 @@ public class ProjectLifecycleService {
         p.period(),
         period(p),
         amount,
+        paid,
+        known ? amount.subtract(paid) : null,
+        paidEntries,
         sources,
         carry.stream().distinct().toList(),
         clear.stream().distinct().toList());
@@ -183,6 +216,7 @@ public class ProjectLifecycleService {
     snapshot.put("reason", r.reason());
     snapshot.put("project", policy.definition(p));
     snapshot.put("preview", v);
+    snapshot.put("paidEntryIds", v.payments().stream().map(PaymentBasis::id).toList());
     snapshot.put("packages", expansion.packages(project));
     if ("liquidation".equals(r.kind())) snapshot.put("execution", expansion.summary(project));
     String id = "project-lifecycle-" + UUID.randomUUID();
