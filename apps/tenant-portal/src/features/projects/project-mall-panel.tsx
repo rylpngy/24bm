@@ -156,7 +156,7 @@ export function ProjectMallPanel({
               >
                 采购订单
               </a>
-              <span className="self-center text-slate-500">
+              <span className="min-w-0 self-center break-words text-slate-500">
                 {selection.data.reason}
               </span>
             </div>
@@ -349,8 +349,9 @@ export function ProjectMallPanel({
               {lot.lines.map((l) => (
                 <button
                   type="button"
-                  className={btn}
+                  className={btn + ' max-w-full'}
                   key={l.materialId}
+                  title={l.name}
                   onClick={() =>
                     setForm((f) => ({
                       ...f,
@@ -362,7 +363,7 @@ export function ProjectMallPanel({
                   }
                 >
                   <Plus size={14} />
-                  {l.name}
+                  <span className="min-w-0 truncate">{l.name}</span>
                 </button>
               ))}
             </div>
