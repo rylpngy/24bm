@@ -25,6 +25,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ProcurementExecutionApplicationService {
+  private com.procurement.buyer.application.ProcurementProjectGuard projects;
+  @org.springframework.beans.factory.annotation.Autowired
+  void setProcurementProjects(com.procurement.buyer.application.ProcurementProjectGuard projects){this.projects=projects;}
+  public record ProjectDocument(String id,String title,String status,java.math.BigDecimal amount,String module,String recordId) {}
+  public record ProjectView(List<ProjectDocument> documents,java.math.BigDecimal orderAmount,java.math.BigDecimal invoicedAmount,java.math.BigDecimal paidAmount,List<String> blockers,boolean canArchive) {}
+  @Transactional(readOnly=true,isolation=Isolation.REPEATABLE_READ)
+  public ProjectView projectView(String rfq){var v=get(rfq);return new ProjectView(v.documents().stream().map(d->new ProjectDocument(d.id(),d.label(),d.status(),d.amount(),d.module(),d.recordId())).toList(),v.orderAmount(),v.invoicedAmount(),v.paidAmount(),v.blockers(),v.canArchive());}
+  @Transactional public String archiveProject(String rfq,String reason){return archive(rfq,reason).id();}
   private com.procurement.buyer.application.BudgetControlService budgetControl;
   @org.springframework.beans.factory.annotation.Autowired
   void setBudgetControlService(com.procurement.buyer.application.BudgetControlService control) { this.budgetControl=control; }
@@ -181,7 +189,9 @@ public class ProcurementExecutionApplicationService {
   private ObjectNode business(String tenant,String rfq) {
     String raw=mapper.snapshot(tenant,rfq);
     if(raw==null) throw new IllegalArgumentException("采购项目不存在");
-    return parse(raw);
+    var data=parse(raw);
+    if(projects!=null){String project=projects.projectForRfq(rfq);if(project!=null)data.set("procurementProject",json.valueToTree(projects.archiveDefinition(project)));}
+    return data;
   }
   private ObjectNode parse(String value) {
     try { return (ObjectNode) json.readTree(value); }
@@ -198,6 +208,7 @@ public class ProcurementExecutionApplicationService {
     data.set("closeoutChecks",json.valueToTree(mapper.closeoutBlockers(tenant,rfq)));
     data.set("workflowHistory",json.valueToTree(workflow.procurementExecutionHistory(businessIds(data))));
     List<Owner> owners=new ArrayList<>(); owners.add(new Owner("rfq",rfq));
+    if(data.has("procurementProject"))owners.add(new Owner("procurement_project",data.path("procurementProject").path("id").asText()));
     for (var d : data.path("demands")) { owners.add(new Owner("demand",d.path("id").asText())); owners.add(new Owner("purchase_demand",d.path("id").asText())); }
     for (var q : data.path("quotes")) owners.add(new Owner("quote",q.path("id").asText()));
     for (var c : data.path("contracts")) owners.add(new Owner("contract",c.path("id").asText()));
@@ -237,6 +248,7 @@ public class ProcurementExecutionApplicationService {
   }
   private List<String> businessIds(JsonNode data) {
     List<String> ids=new ArrayList<>(); ids.add(data.path("rfq").path("id").asText());
+    if(data.has("procurementProject"))ids.add(data.path("procurementProject").path("id").asText());
     for(String key : List.of("demands","orders","awards","contracts","invoices","paymentRequests")) for(var item:data.path(key)) {
       ids.add(item.path("id").asText());
       if (item.hasNonNull("paymentBatchNo") && !item.path("paymentBatchNo").asText().isBlank()) ids.add(item.path("paymentBatchNo").asText());

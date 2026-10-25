@@ -1,6 +1,10 @@
 # 24Bid 当前交付接手说明
 
-## 当前状态（2026-10-24，以本节为准）
+## 当前状态（2026-10-25，以本节为准）
+
+本批 `codex/unified-project-procurement` 基于已发布PR129/main `0e9198c3d6f33e690bdb66fd84e909e6cd2ca3a0`，完成统一项目库、独立Flowable立项、关联/生成需求、询比及招标下发、真实履约财务追溯、结项归档及预算防重复占用。V234只新增三张空表。操作和边界见`docs/project-procurement-guide.md`，真实验收记录见`docs/project-procurement-result.md`。本段为开发快照，最终合并和发布以GitHub及固定目录RESTORATION.md为准，不把验收副本当成原系统。
+
+原系统本批开发前为PR129固定目录`/Users/epl/.codex/deployments/24bid-base/0e9198c3d6f3`，5173—5176/API8080，原库`procurement_saas_base`、原桶`24bid-attachments`。新备份`srm-backup-1792898934146`含171表/131迁移/5对象；验收副本`project_integration_1792899381878`只在8097/5201及独立桶写入。默认保留warning，不导入验收数据，不切prod或改原认证参数。下面2026-10-24及更早记录均为历史。
 
 最新已合并并发布的原系统为PR128/main `3e93657756fe9838dc4f6aff22e1d70ee04f92b5`，固定目录`/Users/epl/.codex/deployments/24bid-base/3e93657756fe`，170表/130迁移/5附件。第二批SRM已完成双端业务、CI、四端只读验收与发布后摘要核对。下方PR127及更早内容均为历史。
 

@@ -62,6 +62,11 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class TenderApplicationService {
+  private com.procurement.buyer.application.ProcurementProjectGuard projects;
+  @org.springframework.beans.factory.annotation.Autowired
+  void setProcurementProjects(com.procurement.buyer.application.ProcurementProjectGuard projects){this.projects=projects;}
+  @Transactional
+  public String createProjectDraft(String title,BigDecimal amount){return create(new SaveTenderRequest(title,"公开招标",amount,"","综合评分法",BigDecimal.ZERO,null,null,null)).id();}
   private com.procurement.buyer.application.BudgetControlService budgetControl;
   @org.springframework.beans.factory.annotation.Autowired
   void setBudgetControlService(com.procurement.buyer.application.BudgetControlService control) { this.budgetControl=control; }
@@ -176,6 +181,7 @@ public class TenderApplicationService {
 
   @Transactional
   public TenderResponse publish(String tenderId) {
+    if(projects!=null){projects.lock();projects.requireExecution("tender",tenderId);}
     String tenantId = TenantAccessGuard.requireTenantId("buyer tender APIs");
     Tender tender = requireTenderForUpdate(tenantId, tenderId);
     tenantCapabilityApplicationService.requireMethodEnabled(tenantId, ProcurementMethodCatalog.TENDER.code());
@@ -322,6 +328,7 @@ public class TenderApplicationService {
   // 沿既有 发货→验收→发票→付款→合同 链履约;每个招标项目仅生成一张(幂等)。
   @Transactional
   public TenderResponse executeTender(String tenderId, ExecuteTenderRequest request) {
+    if(projects!=null){projects.lock();projects.requireExecution("tender",tenderId);}
     String tenantId = TenantAccessGuard.requireTenantId("buyer tender APIs");
     if(budgetControl!=null) budgetControl.lock(tenantId);
     Tender tender = requireTenderForUpdate(tenantId, tenderId);
@@ -335,6 +342,7 @@ public class TenderApplicationService {
     BigDecimal executionAmount = effectiveAmount(awarded, inquiryMapper.listByTender(tenantId, tenderId));
     String anchorRfqId = rfqApplicationService.createTenderAnchor(
         tender.title() + "(招标转执行)", awarded.supplierId());
+    rfqApplicationService.attachTenderProjectDemands(anchorRfqId,tenderId);
     String orderId = purchaseOrderApplicationService.createTenderOrder(
         anchorRfqId, awarded.supplierId(), executionAmount,
         request.expectedReceiptDate(),

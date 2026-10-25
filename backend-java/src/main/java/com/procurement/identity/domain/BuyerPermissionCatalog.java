@@ -18,6 +18,8 @@ public final class BuyerPermissionCatalog {
       new Point("buyer:ai:manage", "维护AI制度依据版本", "AI辅助"),
       new Point("buyer:analytics:read", "查看采购分析", "报表"),
       new Point("buyer:budget:read", "查看部门预算", "预算"),
+      new Point("buyer:project:read", "查看项目库", "项目"),
+      new Point("buyer:project:manage", "申报立项及项目执行管理", "项目"),
       new Point("buyer:budget:manage", "设置部门预算", "预算"),
       new Point("buyer:audit:read", "查看企业审计台账(需全部数据范围)", "管理"),
       new Point("buyer:workflow:manage", "配置与发布流程", "流程"),

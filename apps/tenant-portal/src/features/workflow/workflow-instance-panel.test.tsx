@@ -28,6 +28,19 @@ describe('workflow history form display', () => {
       .toBe('历史字段');
   });
 
+  it('can omit a duplicate business snapshot without omitting the form or approval history', () => {
+    const history: WorkflowInstanceHistory = {
+      workflowInstanceId: 'project-instance', businessType: 'project_initiation', businessId: 'project-1',
+      definitionVersionId: 'version-1', flowableProcessInstanceId: 'flow-1', status: 'approved',
+      initiatorId: 'author', businessSnapshot: { title: 'Duplicate project basis' },
+      formData: { basis: 'Specific project form' }, attachments: [], events: [],
+    };
+    render(<WorkflowInstancePanel history={history} hideBusinessSnapshot />);
+    expect(screen.queryByText('Duplicate project basis')).toBeNull();
+    expect(screen.getByText('Specific project form')).toBeInTheDocument();
+    expect(screen.getAllByText('完整流转记录').length).toBeGreaterThan(0);
+  });
+
   it.each([undefined, 'invalid', 'null', '{"fields":{}}', '{"fields":[null,{}, {"id":"x","label":""}]}'])
     ('handles absent or malformed historical schema: %s', (schema) => {
       expect(workflowFormLabels(schema).size).toBe(0);

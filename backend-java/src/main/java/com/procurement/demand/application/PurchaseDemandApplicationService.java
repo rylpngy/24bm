@@ -47,6 +47,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PurchaseDemandApplicationService {
+  public record ProjectLine(String materialId,java.math.BigDecimal quantity) {}
+  @Transactional
+  public String createProjectDemand(String title,String department,java.math.BigDecimal amount,List<ProjectLine> lines,String purpose) {
+    return create(new CreatePurchaseDemandRequest(title,department,amount,lines.stream().map(l->new com.procurement.demand.api.PurchaseDemandLineItemRequest(l.materialId(),l.quantity())).toList(),null,"普通",purpose)).id();
+  }
   private final PurchaseDemandMapper purchaseDemandMapper;
   private final PurchaseDemandItemMapper purchaseDemandItemMapper;
   private final ApprovalTaskMapper approvalTaskMapper;
