@@ -59,6 +59,7 @@ export * from './procurement-execution-controller/procurement-execution-controll
 export * from './procurement-project-controller/procurement-project-controller';
 export * from './project-closeout-controller/project-closeout-controller';
 export * from './project-expansion-controller/project-expansion-controller';
+export * from './project-mall-controller/project-mall-controller';
 export * from './public-mall-controller/public-mall-controller';
 export * from './public-opportunity-controller/public-opportunity-controller';
 export * from './public-portal-controller/public-portal-controller';

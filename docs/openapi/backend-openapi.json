@@ -26994,6 +26994,132 @@
           }
         }
       }
+    },
+    "/api/v1/buyer/projects/{project}/packages/{id}/mall-checkout": {
+      "post": {
+        "tags": [
+          "project-mall-controller"
+        ],
+        "operationId": "procurementProjectMallCheckout",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectMallCheckoutRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseProjectMallSelection"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/projects/{project}/packages/{id}/mall-selection": {
+      "get": {
+        "tags": [
+          "project-mall-controller"
+        ],
+        "operationId": "procurementProjectMallSelection",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseProjectMallSelection"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -42021,6 +42147,12 @@
             "additionalProperties": {
               "type": "string"
             }
+          },
+          "sourceMethods": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
           }
         }
       },
@@ -42173,13 +42305,43 @@
             "format": "int32"
           },
           "type": {
-            "pattern": "rfq|tender",
+            "pattern": "rfq|tender|auction",
             "type": "string"
           },
           "reason": {
             "maxLength": 1000,
             "minLength": 0,
             "type": "string"
+          },
+          "startPrice": {
+            "minimum": 0,
+            "exclusiveMinimum": true,
+            "type": "number"
+          },
+          "minDecrement": {
+            "minimum": 0,
+            "exclusiveMinimum": false,
+            "type": "number"
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deadlineAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "softCloseTriggerMinutes": {
+            "maximum": 120,
+            "minimum": 0,
+            "type": "integer",
+            "format": "int32"
+          },
+          "softCloseExtendMinutes": {
+            "maximum": 120,
+            "minimum": 0,
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -42504,6 +42666,113 @@
           },
           "actorName": {
             "type": "string"
+          }
+        }
+      },
+      "ProjectMallCheckoutRequest": {
+        "required": [
+          "items",
+          "reason",
+          "requestKey"
+        ],
+        "type": "object",
+        "properties": {
+          "revision": {
+            "minimum": 1,
+            "type": "integer",
+            "format": "int32"
+          },
+          "requestKey": {
+            "maxLength": 100,
+            "minLength": 0,
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 1000,
+            "minLength": 0,
+            "type": "string"
+          },
+          "items": {
+            "maxItems": 100,
+            "minItems": 0,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectMallSkuInput"
+            }
+          },
+          "expectedReceiptDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "addressId": {
+            "type": "string"
+          }
+        }
+      },
+      "ProjectMallSkuInput": {
+        "required": [
+          "quantity",
+          "skuId"
+        ],
+        "type": "object",
+        "properties": {
+          "skuId": {
+            "type": "string"
+          },
+          "quantity": {
+            "minimum": 0,
+            "exclusiveMinimum": true,
+            "type": "number"
+          }
+        }
+      },
+      "ApiResponseProjectMallSelection": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ProjectMallSelection"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ProjectMallSelection": {
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": "string"
+          },
+          "packageId": {
+            "type": "string"
+          },
+          "rfqId": {
+            "type": "string"
+          },
+          "orderId": {
+            "type": "string"
+          },
+          "requestKey": {
+            "type": "string"
+          },
+          "requestHash": {
+            "type": "string"
+          },
+          "snapshot": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "actorId": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       }

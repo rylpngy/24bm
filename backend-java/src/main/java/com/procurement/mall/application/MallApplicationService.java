@@ -161,6 +161,65 @@ public class MallApplicationService {
   }
 
   // 目录直购:在架商品 × 数量 → 商城锚点 RFQ(方式=商城,已定标) + 采购订单(含单行明细)。
+  public record ProjectRequirement(String materialId, String unit, BigDecimal quantity) {}
+  public record ProjectSku(String skuId, BigDecimal quantity) {}
+  public record ProjectSelection(String materialId, String skuId, String name, String brand,
+      String supplierId, String supplierName, String skuCode, String spec, String unit,
+      BigDecimal quantity, BigDecimal unitPrice, BigDecimal amount) {}
+  public record ProjectPurchase(String rfqId, String orderId, List<ProjectSelection> selections) {}
+
+  /** Project facade supplies approved requirements; all commercial values come from locked SKUs. */
+  @Transactional
+  public ProjectPurchase purchaseProjectPackage(String title, List<String> demands,
+      List<ProjectRequirement> requirements, List<ProjectSku> selections, BigDecimal ceiling,
+      LocalDate requestedDate, String addressId) {
+    lockBudget();
+    String tenant = TenantAccessGuard.requireTenantId("project mall");
+    tenantCapabilityApplicationService.requireMethodEnabled(tenant, ProcurementMethodCatalog.MALL.code());
+    if (selections == null || selections.isEmpty() || selections.size() > 100
+        || selections.stream().anyMatch(s -> s.quantity() == null || s.quantity().signum() <= 0))
+      throw new IllegalArgumentException("请选择有效的商城规格及数量");
+    purchaseControls.lockCatalog(selections.stream().map(ProjectSku::skuId).toList());
+    if (selections.stream().map(ProjectSku::skuId).distinct().count() != selections.size())
+      throw new IllegalArgumentException("规格重复，请合并同一SKU的数量");
+    var lines = selections.stream().map(s -> resolveLine(tenant, s.skuId(), s.quantity())).toList();
+    if (lines.stream().map(l -> l.product().supplierId()).distinct().count() != 1)
+      throw new IllegalArgumentException("同一商城分包须由同一供应商供货，多供应商请拆分分包");
+    var actual = new java.util.HashMap<String,BigDecimal>();
+    var expected = new java.util.HashMap<String,BigDecimal>();
+    for (var requirement : requirements) expected.merge(requirement.materialId(), requirement.quantity(), BigDecimal::add);
+    for (var line : lines) {
+      var requirement = requirements.stream().filter(r -> r.materialId().equals(line.sku().materialId())).findFirst()
+          .orElseThrow(() -> new IllegalArgumentException("SKU未关联该分包批准的物料"));
+      if (!requirement.unit().equals(line.sku().unit())) throw new IllegalArgumentException("商城规格单位与批准物料不一致");
+      actual.merge(line.sku().materialId(),line.quantity(),BigDecimal::add);
+    }
+    if (!actual.keySet().equals(expected.keySet()) || expected.entrySet().stream()
+        .anyMatch(e -> e.getValue().compareTo(actual.get(e.getKey())) != 0))
+      throw new IllegalArgumentException("商城选型必须完整覆盖分包物料及批准数量，不得多购、少购或替换物料");
+    BigDecimal amount = lines.stream().map(MallApplicationService::lineAmount).reduce(BigDecimal.ZERO,BigDecimal::add);
+    if (amount.signum() <= 0 || amount.compareTo(ceiling) > 0)
+      throw new IllegalStateException("商城成交额超过已批准需求或分包金额，请重新选型或先办理变更");
+    MallAddress address = resolveAddress(tenant,addressId);
+    purchaseControls.requireAllowed(amount,lines.stream().map(l -> l.product().categoryId()).toList(),address != null);
+    requireFulfillableQuantity(lines.stream().map(CartLine::quantity).reduce(BigDecimal.ZERO,BigDecimal::add));
+    LocalDate earliest = LocalDate.now().plusDays(lines.stream().mapToInt(l -> l.sku().leadTimeDays()).max().orElse(0));
+    if (requestedDate != null && requestedDate.isBefore(earliest)) throw new IllegalArgumentException("到货日期早于商城承诺交期："+earliest);
+    String supplier = lines.getFirst().product().supplierId();
+    String rfq = rfqApplicationService.createProjectMallAnchor(title,demands,supplier);
+    String order = purchaseOrderApplicationService.createMallOrder(rfq,supplier,amount,
+        requestedDate == null ? earliest : requestedDate,
+        lines.stream().map(l -> new PurchaseOrderApplicationService.DirectOrderLine(
+            l.product().name()+" · "+l.sku().skuCode()+" "+l.sku().spec(),l.sku().unit(),l.quantity(),l.unitPrice(),l.sku().id())).toList(),
+        formatAddress(address),address == null ? null : address.receiver(),address == null ? null : address.phone());
+    var snapshots = lines.stream().map(l -> new ProjectSelection(l.sku().materialId(),l.sku().id(),
+        l.product().name(),l.product().brand(),supplier,l.product().supplierName(),l.sku().skuCode(),
+        l.sku().spec(),l.sku().unit(),l.quantity(),l.unitPrice(),lineAmount(l))).toList();
+    lines.forEach(l -> deductStockIfTracked(tenant,l));
+    auditLogApplicationService.recordTenantAction("mall_order.project_created",AuditTargetType.PURCHASE_ORDER,order);
+    return new ProjectPurchase(rfq,order,snapshots);
+  }
+
   @Transactional
   public MallOrderResponse createDirectOrder(CreateMallOrderRequest request) {
     lockBudget();

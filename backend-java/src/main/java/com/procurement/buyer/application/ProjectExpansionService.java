@@ -261,6 +261,7 @@ public class ProjectExpansionService {
     }
     var runs = mapper.runs(t(), lot.id());
     var statuses = new LinkedHashMap<String, String>();
+    var methods = new LinkedHashMap<String, String>();
     for (var run : runs) {
       if (!permissions.currentUserHas("buyer:" + run.executionType() + ":read")) continue;
       try {
@@ -273,8 +274,10 @@ public class ProjectExpansionService {
               ? mapper.rfqStatus(t(), run.executionId())
               : mapper.tenderStatus(t(), run.executionId());
       if (status != null) statuses.put(run.executionId(), status);
+      methods.put(run.executionId(), "rfq".equals(run.executionType())
+          ? mapper.rfqMethod(t(), run.executionId()) : "招标");
     }
-    return new PackageDetail(lot, policy.lines(lot.lines()), ds, runs, statuses);
+    return new PackageDetail(lot, policy.lines(lot.lines()), ds, runs, statuses, methods);
   }
 
   @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
@@ -568,6 +571,11 @@ public class ProjectExpansionService {
   @Transactional
   public PackageDetail execute(String project, String id, PackageExecution a, boolean retry) {
     guard.lock();
+    if (!List.of("rfq","tender","auction").contains(a.type()))
+      throw new IllegalArgumentException("不支持的分包采购方式");
+    if (!"auction".equals(a.type()) && (a.startPrice()!=null || a.minDecrement()!=null
+        || a.startsAt()!=null || a.deadlineAt()!=null || a.softCloseTriggerMinutes()!=null || a.softCloseExtendMinutes()!=null))
+      throw new IllegalArgumentException("仅竞价采购可设置竞价参数");
     var p = mutable(project);
     var lot = requireLot(project, id, true);
     revision(lot.revision(), a.revision());
@@ -589,7 +597,17 @@ public class ProjectExpansionService {
     } else if (active.isPresent()) throw new IllegalStateException("分包已有有效执行，请勿重复下发");
     policy.validateLotDemands(lot);
     var ids = mapper.lotDemands(t(), id);
-    if ("rfq".equals(a.type())) rfqs.createProjectDraft(p.title() + " · " + lot.title(), ids);
+    if ("auction".equals(a.type())) {
+      var ceiling = ids.stream().map(d -> projects.demand(t(), d).budget())
+          .reduce(BigDecimal.ZERO, BigDecimal::add).min(lot.amount());
+      var start = a.startPrice() == null ? ceiling : a.startPrice();
+      if (start.signum() <= 0 || start.compareTo(ceiling) > 0)
+        throw new IllegalArgumentException("竞价起拍价不得超过已批准需求及分包金额");
+      if (a.minDecrement() != null && a.minDecrement().compareTo(start) > 0)
+        throw new IllegalArgumentException("最小降价步长不得大于起拍价");
+      rfqs.createProjectAuctionDraft(p.title() + " · " + lot.title(), ids, start,
+          a.minDecrement(), a.startsAt(), a.deadlineAt(),a.softCloseTriggerMinutes(),a.softCloseExtendMinutes());
+    } else if ("rfq".equals(a.type())) rfqs.createProjectDraft(p.title() + " · " + lot.title(), ids);
     else {
       String tender =
           tenders.createProjectDraft(

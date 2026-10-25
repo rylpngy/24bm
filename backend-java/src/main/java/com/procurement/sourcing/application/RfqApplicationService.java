@@ -56,6 +56,29 @@ public class RfqApplicationService {
     return create(new CreateRfqRequest(title,demands,List.of(),java.time.OffsetDateTime.now().plusDays(7),"","","综合评分","询比",null,null,null,true,null,null,null,null,null,null,null,null,null,null)).id();
   }
   @Transactional
+  public String createProjectAuctionDraft(String title, List<String> demands,
+      java.math.BigDecimal startPrice, java.math.BigDecimal decrement,
+      java.time.OffsetDateTime startsAt, java.time.OffsetDateTime deadline,
+      Integer triggerMinutes, Integer extendMinutes) {
+    return create(new CreateRfqRequest(title, demands, List.of(),
+        deadline == null ? java.time.OffsetDateTime.now().plusDays(7) : deadline,
+        "", "", "最低价法", RfqMethod.AUCTION, startPrice, decrement, null, true,
+        null, null, null, null, startsAt, triggerMinutes, extendMinutes, true, true, false)).id();
+  }
+
+  @Transactional
+  public String createProjectMallAnchor(String title, List<String> demands, String supplier) {
+    String tenant = TenantAccessGuard.requireTenantId("project mall");
+    if (projects == null || demands.isEmpty()) throw new IllegalStateException("商城项目来源缺失");
+    projects.lock();
+    validateDemands(tenant, demands);
+    validateSuppliers(tenant, List.of(supplier));
+    String anchor = createMallAnchor(title, supplier);
+    insertRfqDemandLinks(tenant, anchor, demands);
+    projects.bindRfq(demands, anchor);
+    return anchor;
+  }
+  @Transactional
   public void attachTenderProjectDemands(String rfq,String tender){
     if(projects==null)return;var ids=projects.tenderDemands(tender);if(ids.isEmpty())return;
     String tenant=TenantAccessGuard.requireTenantId("tender project");validateDemands(tenant,ids);insertRfqDemandLinks(tenant,rfq,ids);

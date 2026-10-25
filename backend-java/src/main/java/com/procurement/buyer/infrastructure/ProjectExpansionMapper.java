@@ -106,6 +106,9 @@ public interface ProjectExpansionMapper {
   @Select("select status from rfqs where tenant_id=#{t} and id=#{id}")
   String rfqStatus(@Param("t") String t, @Param("id") String id);
 
+  @Select("select method from rfqs where tenant_id=#{t} and id=#{id}")
+  String rfqMethod(@Param("t") String t, @Param("id") String id);
+
   @Select("select status from tenders where tenant_id=#{t} and id=#{id}")
   String tenderStatus(@Param("t") String t, @Param("id") String id);
 

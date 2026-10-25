@@ -147,6 +147,8 @@ function ProjectWorkspace() {
         String(q.queryKey[0]).startsWith('workflow-') ||
         String(q.queryKey[0]).includes('/buyer/demands') ||
         String(q.queryKey[0]).includes('/buyer/budgets') ||
+        String(q.queryKey[0]).includes('/buyer/mall') ||
+        String(q.queryKey[0]).includes('/buyer/orders') ||
         String(q.queryKey[0]).startsWith('budget-'),
     });
   };
