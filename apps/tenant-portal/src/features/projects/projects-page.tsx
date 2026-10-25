@@ -33,6 +33,7 @@ import { OwnerAttachments } from '../attachments/owner-attachments';
 import { WorkflowStatusPanel } from '../workflow/workflow-instance-panel';
 import { WorkflowSubmitDialog } from '../workflow/workflow-submit-dialog';
 import { projectAmount } from './project-amount';
+import { ProjectExpansionPanel } from './project-expansion-panel';
 
 const states: Record<string, string> = {
   draft: '草稿',
@@ -90,6 +91,7 @@ function ProjectWorkspace() {
     'withdraw' | 'terminate' | 'close' | 'create-demand' | null
   >(null);
   const [link, setLink] = useState('');
+  const [packageCount, setPackageCount] = useState<number | null>(null);
   const [draft, setDraft] = useState<ProcProjectDraft | null>(null);
   const list = useQuery({
     queryKey: ['project-list', page, status, keyword],
@@ -699,7 +701,7 @@ function ProjectWorkspace() {
                         />
                       </td>
                       <td className="whitespace-nowrap p-2">
-                            {money(projectAmount([l]))}
+                        {money(projectAmount([l]))}
                       </td>
                       <td className="p-2">
                         <input
@@ -831,9 +833,7 @@ function ProjectWorkspace() {
                               {l.quantity} {l.unit}
                             </td>
                             <td className="p-2">{money(l.unitPrice)}</td>
-                            <td className="p-2">
-                              {money(projectAmount([l]))}
-                            </td>
+                            <td className="p-2">{money(projectAmount([l]))}</td>
                             <td className="p-2">{l.purpose || '—'}</td>
                           </tr>
                         ))}
@@ -903,11 +903,22 @@ function ProjectWorkspace() {
               ) : (
                 <FeedbackNotice tone="info" message="无流程历史查看权限。" />
               )}
+              {['approved', 'closed'].includes(p.status) && (
+                <ProjectExpansionPanel
+                  key={p.id}
+                  project={p}
+                  lines={detail.data?.lines || []}
+                  demands={links.isError ? [] : links.data || []}
+                  onChanged={refresh}
+                  onPackagesReady={setPackageCount}
+                />
+              )}
               <section className="space-y-4 rounded-lg border border-slate-200 bg-white p-5">
                 <header className="flex flex-wrap justify-between gap-3">
                   <h2 className="font-bold">关联采购需求</h2>
                   {p.status === 'approved' &&
                     !p.executionId &&
+                    packageCount === 0 &&
                     can('buyer:project:manage') &&
                     can('buyer:demand:create') &&
                     !links.data?.length && (
@@ -956,6 +967,7 @@ function ProjectWorkspace() {
                 )}
                 {p.status === 'approved' &&
                   !p.executionId &&
+                  packageCount === 0 &&
                   can('buyer:project:manage') &&
                   can('buyer:demand:read') && (
                     <div className="flex flex-wrap gap-2">
@@ -1006,6 +1018,7 @@ function ProjectWorkspace() {
                 <div className="flex flex-wrap gap-2">
                   {p.status === 'approved' &&
                     !p.executionId &&
+                    packageCount === 0 &&
                     can('buyer:project:manage') &&
                     !!links.data?.length &&
                     links.data.every((d) => d.status === '已通过') && (

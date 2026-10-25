@@ -49,6 +49,9 @@ class ProcurementProjectIT {
   @Autowired ProcessDefinitionApplicationService definitions;
   @Autowired Validator validator;
   @Autowired com.procurement.sourcing.application.RfqApplicationService rfqs;
+  @Autowired ProjectExpansionService expansion;
+  @Autowired ProcurementProjectGuard projectGuard;
+  @Autowired ProjectAllocationPolicy allocation;
   String tenant, dept, author, reviewer, role, material;
   final String year = Year.now(ZoneId.of("Asia/Shanghai")).toString();
 
@@ -89,7 +92,7 @@ class ProcurementProjectIT {
         material,
         tenant);
     context(author);
-    for (String type : List.of("project_initiation", "purchase_demand")) {
+    for (String type : List.of("project_initiation", "purchase_demand", "project_change")) {
       var definition =
           definitions.createProcess(
               new CreateProcessDefinitionRequest("Project " + type, "", "file-text", type));
@@ -300,5 +303,250 @@ class ProcurementProjectIT {
     TenantContext.set("other-tenant", null, author);
     assertThatThrownBy(() -> projects.detail(d.project().id()))
         .isInstanceOf(RuntimeException.class);
+  }
+
+  com.procurement.buyer.api.ProjectExpansionContracts.PackageDetail lot(
+      String project, String qty) {
+    return expansion.savePackage(
+        project,
+        null,
+        new com.procurement.buyer.api.ProjectExpansionContracts.PackageDraft(
+            projects.detail(project).project().revision(),
+            0,
+            "Package " + UUID.randomUUID(),
+            List.of(
+                new com.procurement.buyer.api.ProjectExpansionContracts.Allocation(
+                    material, new BigDecimal(qty))),
+            List.of()));
+  }
+
+  com.procurement.buyer.api.ProjectExpansionContracts.PackageDetail ready(
+      com.procurement.buyer.api.ProjectExpansionContracts.PackageDetail lot) {
+    var d =
+        expansion.createDemand(
+            lot.info().projectId(),
+            lot.info().id(),
+            new com.procurement.buyer.api.ProjectExpansionContracts.PackageAction(
+                lot.info().revision(), "Generate scoped demand"));
+    demands.submit(d.demands().getFirst().id(), Map.of());
+    decide(d.demands().getFirst().id(), "approve");
+    return expansion.packages(lot.info().projectId()).stream()
+        .filter(l -> l.info().id().equals(lot.info().id()))
+        .findFirst()
+        .orElseThrow();
+  }
+
+  @Test
+  void packagesSplitDecimalBudgetWithTailRoundingAndCannotOverallocate() {
+    var p = approve(projects.create(draft(0))).project();
+    var a = lot(p.id(), "1");
+    var b = lot(p.id(), "1");
+    assertThat(a.info().amount()).isEqualByComparingTo("123.46");
+    assertThat(b.info().amount()).isEqualByComparingTo("123.45");
+    assertThat(a.info().projectRevision()).isEqualTo(1);
+    assertThat(b.info().projectRevision()).isEqualTo(1);
+    assertThatThrownBy(() -> lot(p.id(), "1")).hasMessageContaining("数量超过");
+    assertThatThrownBy(() -> projects.createDemand(p.id(), action(projects.detail(p.id()))))
+        .hasMessageContaining("分包");
+    expansion.cancel(
+        p.id(),
+        b.info().id(),
+        new com.procurement.buyer.api.ProjectExpansionContracts.PackageAction(
+            b.info().revision(), "Cancelled before procurement"));
+    assertThat(lot(p.id(), "1").info().amount()).isEqualByComparingTo("123.45");
+  }
+
+  @Test
+  void eachPackageHasIndependentDemandsAndOneActiveExecutionWithoutBudgetDuplication() {
+    var p = approve(projects.create(draft(0))).project();
+    var a = ready(lot(p.id(), "1"));
+    var b = ready(lot(p.id(), "1"));
+    var ea =
+        expansion.execute(
+            p.id(),
+            a.info().id(),
+            new com.procurement.buyer.api.ProjectExpansionContracts.PackageExecution(
+                a.info().revision(), "rfq", "First"),
+            false);
+    var eb =
+        expansion.execute(
+            p.id(),
+            b.info().id(),
+            new com.procurement.buyer.api.ProjectExpansionContracts.PackageExecution(
+                b.info().revision(), "rfq", "Second"),
+            false);
+    assertThat(ea.runs().getFirst().executionId()).isNotEqualTo(eb.runs().getFirst().executionId());
+    assertThat(projects.detail(p.id()).project().executionId()).isNull();
+    assertThat(
+            projects.execution(p.id()).documents().stream()
+                .filter(d -> d.module().equals("demands")))
+        .hasSize(2);
+    assertThat(budget.position(tenant, dept, year).committed()).isEqualByComparingTo("246.91");
+    assertThatThrownBy(
+            () ->
+                expansion.execute(
+                    p.id(),
+                    ea.info().id(),
+                    new com.procurement.buyer.api.ProjectExpansionContracts.PackageExecution(
+                        ea.info().revision(), "rfq", "duplicate"),
+                    false))
+        .hasMessageContaining("已有有效执行");
+  }
+
+  @Test
+  void approvedChangeOnlyAppliesAfterIndependentApprovalAndKeepsExistingPackageSnapshots() {
+    var p = approve(projects.create(draft(0))).project();
+    var a = lot(p.id(), "1");
+    p = projects.detail(p.id()).project();
+    String project = p.id();
+    var proposal =
+        new Draft(
+            "Expanded plan",
+            dept,
+            author,
+            year,
+            "Additional funds",
+            "Add equipment",
+            List.of(
+                new LineInput(material, new BigDecimal("3"), new BigDecimal("123.4567"), "Office")),
+            p.revision());
+    var c =
+        expansion.saveChange(
+            project,
+            null,
+            new com.procurement.buyer.api.ProjectExpansionContracts.ChangeDraft(
+                p.revision(), 0, "Additional approved scope", proposal));
+    assertThat(projects.detail(project).project().plannedAmount()).isEqualByComparingTo("246.91");
+    var pending =
+        expansion.submitChange(
+            project, c.id(), new Action(c.revision(), "Submit change", Map.of()));
+    assertThatThrownBy(() -> lot(project, "1")).hasMessageContaining("变更审批中");
+    decide(c.id(), "approve");
+    assertThat(projects.detail(project).project().plannedAmount()).isEqualByComparingTo("370.37");
+    assertThat(expansion.packages(project).getFirst().info().snapshot())
+        .isEqualTo(a.info().snapshot());
+    var b = lot(project, "1");
+    assertThat(b.info().projectRevision()).isEqualTo(2);
+    assertThat(allocation.tree(b.info().snapshot()).path("changeIds").toString()).contains(c.id());
+    assertThatThrownBy(
+            () ->
+                expansion.withdrawChange(
+                    project, c.id(), new Action(pending.revision() + 1, "Too late", Map.of())))
+        .hasMessageContaining("已结束");
+  }
+
+  @Test
+  void changeCannotReduceAllocatedQuantityOrBudgetAndRejectedAndWithdrawnFormsDoNotApply() {
+    var p = approve(projects.create(draft(0))).project();
+    lot(p.id(), "2");
+    String project = p.id();
+    p = projects.detail(project).project();
+    var smaller =
+        new Draft(
+            "Invalid",
+            dept,
+            author,
+            year,
+            "Funds",
+            "Reduce",
+            List.of(new LineInput(material, BigDecimal.ONE, BigDecimal.ONE, "")),
+            p.revision());
+    int version = p.revision();
+    assertThatThrownBy(
+            () ->
+                expansion.saveChange(
+                    project,
+                    null,
+                    new com.procurement.buyer.api.ProjectExpansionContracts.ChangeDraft(
+                        version, 0, "Invalid decrease", smaller)))
+        .hasMessageContaining("减少");
+    var valid =
+        new Draft(
+            "Changed title",
+            dept,
+            author,
+            year,
+            "Funds",
+            "Unchanged scope",
+            draft(0).lines(),
+            version);
+    var c =
+        expansion.saveChange(
+            project,
+            null,
+            new com.procurement.buyer.api.ProjectExpansionContracts.ChangeDraft(
+                version, 0, "Clarify title", valid));
+    var pending =
+        expansion.submitChange(project, c.id(), new Action(c.revision(), "Submit", Map.of()));
+    decide(c.id(), "reject");
+    assertThat(projects.detail(project).project().title()).isEqualTo("Office renewal");
+    var rejected = expansion.change(project, c.id(), false);
+    var again =
+        expansion.submitChange(
+            project, c.id(), new Action(rejected.revision(), "Resubmit", Map.of()));
+    assertThat(again.workflowInstanceId()).isNotEqualTo(pending.workflowInstanceId());
+    expansion.withdrawChange(project, c.id(), new Action(again.revision(), "Withdraw", Map.of()));
+    assertThat(projects.detail(project).project().revision()).isEqualTo(version);
+  }
+
+  @Test
+  void approvedChangePreservesLegacyExecutionSnapshotAndAllowsAdditionalPackages() {
+    var d = approve(projects.create(draft(0)));
+    d = projects.createDemand(d.project().id(), action(d));
+    var demand = projects.demands(d.project().id()).getFirst();
+    demands.submit(demand.id(), Map.of());
+    decide(demand.id(), "approve");
+    d =
+        projects.createExecution(
+            d.project().id(), new ExecutionRequest(d.project().revision(), "rfq"));
+    String project = d.project().id(), rfq = d.project().executionId();
+    String before =
+        com.procurement.sourcing.application.ProcurementExecutionArchiveWriter.hash(
+            projectGuard.archiveDefinitionForRfq(rfq));
+    var proposal =
+        new Draft(
+            "Legacy plus new scope",
+            dept,
+            author,
+            year,
+            "Funds",
+            "More equipment",
+            List.of(
+                new LineInput(material, new BigDecimal("3"), new BigDecimal("123.4567"), "Office")),
+            d.project().revision());
+    var change =
+        expansion.saveChange(
+            project,
+            null,
+            new com.procurement.buyer.api.ProjectExpansionContracts.ChangeDraft(
+                d.project().revision(), 0, "Extend scope", proposal));
+    expansion.submitChange(project, change.id(), new Action(change.revision(), "Submit", Map.of()));
+    decide(change.id(), "approve");
+    assertThat(
+            com.procurement.sourcing.application.ProcurementExecutionArchiveWriter.hash(
+                projectGuard.archiveDefinitionForRfq(rfq)))
+        .isEqualTo(before);
+    assertThat(lot(project, "1").info().amount()).isEqualByComparingTo("123.46");
+  }
+
+  @Test
+  void existingUnexecutedProjectDemandCanBeAdoptedByPackageWithoutRecreation() {
+    var d = approve(projects.create(draft(0)));
+    d = projects.createDemand(d.project().id(), action(d));
+    var source = projects.demands(d.project().id()).getFirst();
+    var adopted =
+        expansion.savePackage(
+            d.project().id(),
+            null,
+            new com.procurement.buyer.api.ProjectExpansionContracts.PackageDraft(
+                d.project().revision(),
+                0,
+                "Adopt historical demand",
+                List.of(
+                    new com.procurement.buyer.api.ProjectExpansionContracts.Allocation(
+                        material, new BigDecimal("2"))),
+                List.of(source.id())));
+    assertThat(adopted.demands()).extracting(Demand::id).containsExactly(source.id());
+    assertThat(projects.demands(d.project().id())).hasSize(1);
   }
 }

@@ -37,3 +37,4 @@ export * from './generated/model';
 export * from './generated/controllers';
 export * from './external-identity';
 export * from './procurement-projects';
+export * from './project-expansion';

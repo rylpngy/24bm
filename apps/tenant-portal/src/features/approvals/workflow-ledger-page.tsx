@@ -25,6 +25,7 @@ const statusLabel: Record<string, string> = {
 const businessLabel: Record<string, string> = {
   budget_change: '预算编制与调整', budget_exception: '超预算例外',
   project_initiation: '项目立项',
+  project_change: '立项变更',
   supplier_qualification_change: '供应商资质变更',
   purchase_demand: '采购需求', buyer_supplier_admission: '供应商准入', buyer_supplier_exit: '供应商退出', rfq_award: '询价定标',
   contract_approval: '合同审批', payment_request: '付款申请', payment_batch: '付款批次',

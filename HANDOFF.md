@@ -1,5 +1,11 @@
 # 24Bid 当前交付接手说明
 
+## 项目分包与变更批次（2026-10-25，优先阅读）
+
+当前分支codex/project-packages-change-control，基于已合并发布PR130/main 29b131fac676545fe827921693b0919ed5515c53，实现采购分包、多询比/招标执行、原需求纳包、无订单流标/废标重采、独立Flowable立项变更、包级及项目级结项和版本归档。V235仅新增5张空表。指南和证据见docs/project-packages-change-guide.md、docs/project-packages-change-result.md。下方“单项目只支持单执行、变更待后续”均为旧批次边界，不代表本批能力。
+
+本批写入验收使用packages_integration_1792911576962/8097/5201及独立桶，真实三包闭环3600元预算、2700元净付款、900元释放；审批变更不追溯修改旧包快照。原数据备份srm-backup-1792910222966含174表/132迁移/5对象；保留procurement_saas_base、24bid-attachments和预算warning。合并部署状态须看GitHub及固定发布目录RESTORATION.md，本段不将开发快照冒称已发布。项目变更业务类型project_change需管理员按岗位发布独立流程，不自动向原企业植入验收流程或测试账号。
+
 ## 当前状态（2026-10-25，以本节为准）
 
 本批 `codex/unified-project-procurement` 基于已发布PR129/main `0e9198c3d6f33e690bdb66fd84e909e6cd2ca3a0`，完成统一项目库、独立Flowable立项、关联/生成需求、询比及招标下发、真实履约财务追溯、结项归档及预算防重复占用。V234只新增三张空表。操作和边界见`docs/project-procurement-guide.md`，真实验收记录见`docs/project-procurement-result.md`。本段为开发快照，最终合并和发布以GitHub及固定目录RESTORATION.md为准，不把验收副本当成原系统。
