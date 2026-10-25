@@ -33,6 +33,7 @@ export interface ProjectPackage {
   demands: ProcProjectDemand[];
   runs: ProjectRun[];
   sourceStatuses: Record<string, string>;
+  sourceMethods?: Record<string, string>;
 }
 export const projectPackageBalances = (p: string) =>
   call<
@@ -106,14 +107,22 @@ export const projectPackageExecute = (
   p: string,
   id: string,
   revision: number,
-  type: 'rfq' | 'tender',
+  type: 'rfq' | 'tender' | 'auction',
   reason: string,
   retry = false,
+  auction?: {
+    startPrice?: number;
+    minDecrement?: number;
+    startsAt?: string;
+    deadlineAt?: string;
+    softCloseTriggerMinutes?: number;
+    softCloseExtendMinutes?: number;
+  },
 ) =>
   call<ProjectPackage>(
     p,
     `/packages/${encodeURIComponent(id)}/${retry ? 'retry' : 'execution'}`,
-    { revision, type, reason },
+    { revision, type, reason, ...auction },
   );
 export const projectPackageLink = (
   p: string,

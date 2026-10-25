@@ -17,6 +17,8 @@ public class ProcurementProjectGuard {
   private final BudgetControlService budget;
   private final com.procurement.buyer.infrastructure.ProjectExpansionMapper expansion;
   private final ProjectAllocationPolicy allocations;
+  @org.springframework.beans.factory.annotation.Autowired
+  private com.procurement.buyer.infrastructure.ProjectMallMapper mallSelections;
 
   public ProcurementProjectGuard(
       ProcurementProjectMapper mapper,
@@ -215,7 +217,11 @@ public class ProcurementProjectGuard {
             ? expansion.baseline(t, p.executionType(), p.executionId())
             : expansion.lot(t, run.packageId()).snapshot();
     if (snapshot == null) return allocations.json().valueToTree(archiveDefinition(id));
-    return allocations.tree(snapshot);
+    var definition = allocations.tree(snapshot);
+    String selection = mallSelections.snapshotForRfq(t, rfq);
+    if (selection != null && definition.isObject())
+      ((com.fasterxml.jackson.databind.node.ObjectNode)definition).set("mallSelection",allocations.tree(selection));
+    return definition;
   }
 
   public void requireStandaloneRebid(String tender) {

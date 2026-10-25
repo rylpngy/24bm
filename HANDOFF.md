@@ -1,5 +1,11 @@
 # 24Bid 当前交付接手说明
 
+## 商城与竞价分包贯通批次（2026-10-25，优先阅读）
+
+工作分支`codex/project-mall-auction`，基线`main@4ba948fd77411ed8f77e6690029d397d0af7b4b5`。已实现SKU与批准物料/量额精确映射、服务端商城价与库存/采购控制、防重复下单、成交快照、真实竞价规则与原需求预算、原履约及项目归档贯通。指南、验收及剩余范围见`docs/project-marketplace-guide.md`、`docs/project-marketplace-result.md`、`docs/project-execution-remaining-plan.md`。下方“商城/竞价分包未实现”属于前批历史边界。
+
+V237仅新增选型记录表；原181表、134条迁移及5原件保留，预算warning、原账号/认证和禁用种子保持不变。验收业务只写独立库。最终实际合并发布以GitHub及固定发布目录RESTORATION.md为准，私有runtime配置不提交Git。
+
 ## 项目执行收口批次（2026-10-25，优先阅读）
 
 当前分支codex/project-execution-closeout，基于已合并并发布PR131/main 19ac64ce6175c97908ca0f99556698f41940f06e。实现未下发需求重编、真实发起人撤回、无订单失败/未采购终止、六节点计划和实际进度、逾期监控、调整记录分页、处理前快照及整项目ZIP。需求和归档跨模块操作使用应用门面，不绕过源业务权限或放宽架构规则。V236仅新增2张空表。指南、剩余功能边界见docs/project-execution-closeout-guide.md和docs/project-execution-remaining-plan.md；不把商城/竞价分包、跨年度或有订单终止清算冒称已完成。

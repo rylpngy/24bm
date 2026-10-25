@@ -37,6 +37,7 @@ import {
   ProjectPlanSummary,
 } from './project-change-editor';
 import { projectAmount } from './project-amount';
+import { ProjectMallPanel } from './project-mall-panel';
 
 const labels: Record<string, string> = {
   draft: '草稿',
@@ -70,7 +71,7 @@ type Confirm = {
   kind: 'cancel' | 'create-demand' | 'close' | 'execute' | 'retry' | 'withdraw';
   id: string;
   revision: number;
-  type?: 'rfq' | 'tender';
+  type?: 'rfq' | 'tender' | 'auction';
 };
 export function ProjectExpansionPanel({
   project: p,
@@ -105,7 +106,15 @@ export function ProjectExpansionPanel({
     [confirm, setConfirm] = useState<Confirm | null>(null),
     [submit, setSubmit] = useState(false),
     [submitError, setSubmitError] = useState<unknown>();
-  const [method, setMethod] = useState<'rfq' | 'tender'>(() =>
+  const [auction, setAuction] = useState({
+    trigger: '5',
+    extend: '5',
+    price: '',
+    decrement: '0',
+    start: '',
+    deadline: '',
+  });
+  const [method, setMethod] = useState<'rfq' | 'tender' | 'auction'>(() =>
       can('buyer:rfq:manage') ? 'rfq' : 'tender',
     ),
     [link, setLink] = useState('');
@@ -832,6 +841,9 @@ export function ProjectExpansionPanel({
                     >
                       招标采购
                     </option>
+                    <option value="auction" disabled={!can('buyer:rfq:manage')}>
+                      竞价采购
+                    </option>
                   </select>
                   <button
                     type="button"
@@ -841,7 +853,23 @@ export function ProjectExpansionPanel({
                       !lot.demands.length ||
                       lot.demands.some((d) => d.status !== '已通过') ||
                       lot.runs.some((r) => r.status === 'active') ||
-                      !can(`buyer:${method}:manage`)
+                      !can(
+                        `buyer:${method === 'auction' ? 'rfq' : method}:manage`,
+                      ) ||
+                      (method === 'auction' &&
+                        (!auction.deadline ||
+                          Date.parse(auction.deadline) <= Date.now() ||
+                          (auction.start &&
+                            Date.parse(auction.start) >=
+                              Date.parse(auction.deadline)) ||
+                          (auction.price &&
+                            (Number(auction.price) <= 0 ||
+                              Number(auction.price) >
+                                Math.min(
+                                  lot.info.amount,
+                                  lot.demands.reduce((s, d) => s + d.budget, 0),
+                                ))) ||
+                          Number(auction.decrement) < 0))
                     }
                     onClick={() =>
                       setConfirm({
@@ -860,7 +888,12 @@ export function ProjectExpansionPanel({
                       className={btn}
                       disabled={
                         busy ||
-                        !can(`buyer:${method}:manage`) ||
+                        !can(
+                          `buyer:${method === 'auction' ? 'rfq' : method}:manage`,
+                        ) ||
+                        (method === 'auction' &&
+                          (!auction.deadline ||
+                            Date.parse(auction.deadline) <= Date.now())) ||
                         !lot.runs.some(
                           (r) =>
                             r.status === 'active' &&
@@ -881,6 +914,118 @@ export function ProjectExpansionPanel({
                     >
                       失败后重采
                     </button>
+                  )}
+                  {method === 'auction' && (
+                    <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                      <label className="space-y-1 text-xs">
+                        <span>
+                          起拍总价（上限{' '}
+                          {money(
+                            Math.min(
+                              lot.info.amount,
+                              lot.demands.reduce((s, d) => s + d.budget, 0),
+                            ),
+                          )}
+                          ）
+                        </span>
+                        <input
+                          aria-label="竞价起拍价"
+                          className={input}
+                          type="number"
+                          min="0.01"
+                          step="0.01"
+                          placeholder="默认批准需求金额"
+                          value={auction.price}
+                          onChange={(e) =>
+                            setAuction((a) => ({ ...a, price: e.target.value }))
+                          }
+                        />
+                      </label>
+                      <label className="space-y-1 text-xs">
+                        <span>最小降价步长</span>
+                        <input
+                          aria-label="竞价降价步长"
+                          className={input}
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={auction.decrement}
+                          onChange={(e) =>
+                            setAuction((a) => ({
+                              ...a,
+                              decrement: e.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+                      <label className="space-y-1 text-xs">
+                        <span>计划开始时间</span>
+                        <input
+                          aria-label="竞价开始时间"
+                          className={input}
+                          type="datetime-local"
+                          value={auction.start}
+                          onChange={(e) =>
+                            setAuction((a) => ({ ...a, start: e.target.value }))
+                          }
+                        />
+                      </label>
+                      <label className="space-y-1 text-xs">
+                        <span>
+                          竞价截止时间 <span className="text-red-600">*</span>
+                        </span>
+                        <input
+                          aria-label="竞价截止时间"
+                          className={input}
+                          type="datetime-local"
+                          value={auction.deadline}
+                          onChange={(e) =>
+                            setAuction((a) => ({
+                              ...a,
+                              deadline: e.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+                    </div>
+                  )}
+                  {method === 'auction' && (
+                    <div className="grid w-full gap-3 sm:grid-cols-2">
+                      <label className="space-y-1 text-xs">
+                        <span>延时触发窗口（分钟，0关闭）</span>
+                        <input
+                          aria-label="延时触发窗口"
+                          className={input}
+                          type="number"
+                          min="0"
+                          max="120"
+                          value={auction.trigger}
+                          onChange={(e) =>
+                            setAuction((a) => ({
+                              ...a,
+                              trigger: e.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+                      <label className="space-y-1 text-xs">
+                        <span>自动顺延时长（分钟）</span>
+                        <input
+                          aria-label="自动顺延时长"
+                          className={input}
+                          type="number"
+                          min="0"
+                          max="120"
+                          value={auction.extend}
+                          onChange={(e) =>
+                            setAuction((a) => ({
+                              ...a,
+                              extend: e.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+                    </div>
                   )}
                   {trace.data?.canClose && (
                     <button
@@ -979,6 +1124,13 @@ export function ProjectExpansionPanel({
                 </button>
               </form>
             )}
+          <ProjectMallPanel
+            key={lot.info.id}
+            projectId={p.id}
+            lot={lot}
+            enabled={canNew}
+            onChanged={onChanged}
+          />
           <h3 className="font-bold">采购执行历史</h3>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[650px] text-left text-sm">
@@ -995,7 +1147,8 @@ export function ProjectExpansionPanel({
                 {lot.runs.map((r) => (
                   <tr key={r.id} className="border-b border-slate-100">
                     <td className="whitespace-nowrap p-2">
-                      {r.executionType === 'rfq' ? '询比' : '招标'}
+                      {lot.sourceMethods?.[r.executionId] ||
+                        (r.executionType === 'rfq' ? '询比' : '招标')}
                     </td>
                     <td className="max-w-60 truncate p-2" title={r.executionId}>
                       {r.executionId}
@@ -1256,6 +1409,22 @@ export function ProjectExpansionPanel({
                   a.type!,
                   reason,
                   a.kind === 'retry',
+                  a.type === 'auction'
+                    ? {
+                        startPrice: auction.price
+                          ? Number(auction.price)
+                          : undefined,
+                        minDecrement: Number(auction.decrement),
+                        softCloseTriggerMinutes: Number(auction.trigger),
+                        softCloseExtendMinutes: Number(auction.extend),
+                        startsAt: auction.start
+                          ? new Date(auction.start).toISOString()
+                          : undefined,
+                        deadlineAt: auction.deadline
+                          ? new Date(auction.deadline).toISOString()
+                          : undefined,
+                      }
+                    : undefined,
                 ),
               '采购草稿已创建，请在采购执行详情中完善并发布。',
             );

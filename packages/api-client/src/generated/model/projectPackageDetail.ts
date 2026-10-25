@@ -10,6 +10,7 @@ import type { ProcurementProjectLine } from './procurementProjectLine';
 import type { ProcurementProjectDemand } from './procurementProjectDemand';
 import type { ProjectExecutionRun } from './projectExecutionRun';
 import type { ProjectPackageDetailSourceStatuses } from './projectPackageDetailSourceStatuses';
+import type { ProjectPackageDetailSourceMethods } from './projectPackageDetailSourceMethods';
 
 export interface ProjectPackageDetail {
   info?: ProjectPackageRecord;
@@ -17,4 +18,5 @@ export interface ProjectPackageDetail {
   demands?: ProcurementProjectDemand[];
   runs?: ProjectExecutionRun[];
   sourceStatuses?: ProjectPackageDetailSourceStatuses;
+  sourceMethods?: ProjectPackageDetailSourceMethods;
 }

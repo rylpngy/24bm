@@ -14,6 +14,10 @@ const required = (k) => {
   return process.env[k];
 };
 const closeoutChecks = process.env.PROJECT_CLOSEOUT_ACCEPTANCE === '1';
+const marketplaceChecks = process.env.PROJECT_MARKETPLACE_ACCEPTANCE === '1';
+const packageKeys = marketplaceChecks
+  ? ['rfq', 'tender', 'retry', 'auction', 'mall']
+  : ['rfq', 'tender', 'retry'];
 const password = required('ACCEPTANCE_PASSWORD'),
   supplierId = required('ACCEPTANCE_SUPPLIER_ID');
 const runId = `packages-${Date.now()}`,
@@ -32,6 +36,7 @@ async function api(
   body,
   method = body === undefined ? 'GET' : 'POST',
   expected = [200, 201],
+  errorPattern,
 ) {
   const r = await fetch(`${base}/api/v1/${path}`, {
     method,
@@ -47,6 +52,7 @@ async function api(
     expected.includes(r.status),
     `${method} ${path}: ${r.status} ${value.message}`,
   );
+  if (errorPattern) assert.match(value.message, errorPattern);
   return value.data;
 }
 const login = (account, scope, context = {}) =>
@@ -89,6 +95,7 @@ try {
       'order',
       'method:compare',
       'method:tender',
+      ...(marketplaceChecks ? ['mall', 'method:mall', 'method:auction'] : []),
     ],
     adminName: '项目负责人',
     adminEmail: report.account,
@@ -227,7 +234,7 @@ try {
         lines: [
           {
             materialId: material.id,
-            quantity: 6,
+            quantity: marketplaceChecks ? 12 : 6,
             unitPrice: 400,
             purpose: '办公',
           },
@@ -392,7 +399,17 @@ try {
     );
     await api('buyer/demands/' + demand.id + '/submit', b, { formData: {} });
     await decide(r, 'purchase_demand', demand.id);
-    const method = type === 'tender' ? 'tender' : 'rfq';
+    if (type === 'mall') {
+      report.records[type] = {
+        projectId: p.project.id,
+        packageId: lot.info.id,
+        demandId: demand.id,
+        planVersion: lot.info.projectRevision,
+      };
+      return { ...p, lot };
+    }
+    const method =
+      type === 'tender' ? 'tender' : type === 'auction' ? 'auction' : 'rfq';
     lot = await api(
       'buyer/projects/' +
         p.project.id +
@@ -400,7 +417,14 @@ try {
         lot.info.id +
         '/execution',
       b,
-      { revision: lot.info.revision, type: method, reason: '按分包独立下发' },
+      {
+        revision: lot.info.revision,
+        type: method,
+        reason: '按分包独立下发',
+        ...(type === 'auction'
+          ? { softCloseTriggerMinutes: 0, softCloseExtendMinutes: 0 }
+          : {}),
+      },
     );
     const original = lot.runs.find((x) => x.status === 'active');
     await api(
@@ -612,7 +636,10 @@ try {
       b,
       {
         title: rfqProject.project.title,
-        deadlineAt: future(7),
+        deadlineAt:
+          type === 'auction'
+            ? new Date(Date.now() + 25000).toISOString()
+            : future(7),
         invitedSupplierIds: [supplierId],
         quoteRequirement: '逐行报价',
         deliveryRequirement: '按期交货',
@@ -623,7 +650,7 @@ try {
     const demand = (await api('buyer/demands', b)).find(
       (x) => x.id === report.records[type].demandId,
     );
-    const quote = await api(`supplier/rfqs/${rfqId}/quotes`, s, {
+    const quoteBody = {
       amount: 900,
       taxRate: 13,
       deliveryDays: 3,
@@ -634,8 +661,62 @@ try {
         quantity: l.quantity,
         unitPrice: 300,
       })),
-    });
-    await api(`buyer/rfqs/${rfqId}/open`, b, { force: true });
+    };
+    let quote;
+    if (type === 'auction') {
+      assert.equal(
+        (await api('buyer/rfqs', b)).find((r) => r.id === rfqId).method,
+        '竞价',
+      );
+      await api(
+        `supplier/rfqs/${rfqId}/quotes`,
+        s,
+        {
+          ...quoteBody,
+          amount: 1302,
+          lineItems: quoteBody.lineItems.map((l) => ({ ...l, unitPrice: 434 })),
+        },
+        'POST',
+        [400, 409],
+        /起拍价/,
+      );
+      const initial = await api(`supplier/rfqs/${rfqId}/quotes`, s, {
+        ...quoteBody,
+        amount: 960,
+        lineItems: quoteBody.lineItems.map((l) => ({ ...l, unitPrice: 320 })),
+      });
+      await api(
+        `supplier/quotes/${initial.id}`,
+        s,
+        {
+          ...quoteBody,
+          amount: 990,
+          lineItems: quoteBody.lineItems.map((l) => ({ ...l, unitPrice: 330 })),
+        },
+        'PUT',
+        [400, 409],
+        /最低价/,
+      );
+      quote = await api(`supplier/quotes/${initial.id}`, s, quoteBody, 'PUT');
+      await api(
+        `buyer/rfqs/${rfqId}/open`,
+        b,
+        { force: true },
+        'POST',
+        [400, 409],
+        /deadline/,
+      );
+      const deadline = (await api('buyer/rfqs', b)).find(
+        (r) => r.id === rfqId,
+      ).deadlineAt;
+      await new Promise((resolve) =>
+        setTimeout(
+          resolve,
+          Math.max(0, Date.parse(deadline) - Date.now() + 1000),
+        ),
+      );
+    } else quote = await api(`supplier/rfqs/${rfqId}/quotes`, s, quoteBody);
+    await api(`buyer/rfqs/${rfqId}/open`, b, { force: type !== 'auction' });
     const award = await api(`buyer/rfqs/${rfqId}/award`, b, {
       quoteId: quote.id,
       reason: '合格报价',
@@ -674,7 +755,7 @@ try {
         lines: [
           {
             materialId: material.id,
-            quantity: 9,
+            quantity: marketplaceChecks ? 15 : 9,
             unitPrice: 400,
             purpose: '办公',
           },
@@ -684,7 +765,7 @@ try {
   );
   assert.equal(
     (await api('buyer/projects/' + shared.project.id, b)).project.plannedAmount,
-    2400,
+    marketplaceChecks ? 4800 : 2400,
   );
   const changeBytes = Buffer.from('变更证明原件 ' + runId);
   const proof = {
@@ -736,7 +817,7 @@ try {
   await decide(r, 'project_change', change.id);
   assert.equal(
     (await api('buyer/projects/' + shared.project.id, b)).project.plannedAmount,
-    3600,
+    marketplaceChecks ? 6000 : 3600,
   );
   const oldView = await api(
     'buyer/rfqs/' + report.records.rfq.rfqId + '/execution',
@@ -825,25 +906,89 @@ try {
   );
   await fulfill('tender', tenderProject, tenderOrder, tenderOrder.rfqId);
   await purchaseRfq('retry');
+  if (marketplaceChecks) {
+    await purchaseRfq('auction');
+    const mallProject = await project('mall'),
+      endpoint =
+        'buyer/projects/' +
+        shared.project.id +
+        '/packages/' +
+        mallProject.lot.info.id;
+    const listing = await api('buyer/mall/listings', b, {
+      supplierId,
+      materialId: material.id,
+      price: 300,
+      unit: '套',
+    });
+    report.skuId = listing.id;
+    const request = {
+      revision: mallProject.lot.info.revision,
+      requestKey: 'project-checkout-' + runId,
+      reason: '按批准目录选型下单',
+      items: [{ skuId: listing.id, quantity: 3 }],
+    };
+    await api(
+      endpoint + '/mall-checkout',
+      b,
+      { ...request, items: [{ skuId: listing.id, quantity: 4 }] },
+      'POST',
+      [400, 409],
+    );
+    const before = await api(
+      'buyer/projects/' + shared.project.id + '/budget',
+      b,
+    );
+    const selected = await api(endpoint + '/mall-checkout', b, request);
+    assert.equal(
+      (await api(endpoint + '/mall-checkout', b, request)).orderId,
+      selected.orderId,
+    );
+    await api(
+      endpoint + '/mall-checkout',
+      b,
+      { ...request, requestKey: 'duplicate-' + runId },
+      'POST',
+      [400, 409],
+    );
+    assert.equal(
+      (await api('buyer/projects/' + shared.project.id + '/budget', b))
+        .committed,
+      before.committed,
+    );
+    assert.equal(
+      (await api(endpoint + '/mall-selection', b)).orderId,
+      selected.orderId,
+    );
+    const order = (await api('buyer/orders', b)).find(
+      (o) => o.id === selected.orderId,
+    );
+    assert.ok(order);
+    assert.equal(order.amount, 900);
+    report.records.mall.executionId = selected.rfqId;
+    await fulfill('mall', mallProject, order, selected.rfqId);
+    check(
+      'auction uses real competitive bids and rejects over-start/increasing bids; mall bound checkout is idempotent and preserves approved quantity, source budget and SKU snapshot',
+    );
+  }
   assert.equal(report.records.rfq.planVersion, 1);
   assert.equal(report.records.tender.planVersion, 2);
   assert.equal(report.records.retry.planVersion, 2);
   const final = await api('buyer/projects/' + shared.project.id + '/budget', b);
-  assert.equal(final.paidAmount, 2700);
-  assert.equal(final.committed, 2700);
-  assert.equal(final.releasedAmount, 900);
+  assert.equal(final.paidAmount, packageKeys.length * 900);
+  assert.equal(final.committed, packageKeys.length * 900);
+  assert.equal(final.releasedAmount, packageKeys.length * 300);
   const summary = await api(
     'buyer/projects/' + shared.project.id + '/execution',
     b,
   );
   assert.equal(summary.canClose, true, JSON.stringify(summary.warnings));
-  assert.equal(summary.orderAmount, 2700);
-  assert.equal(summary.paidAmount, 2700);
+  assert.equal(summary.orderAmount, packageKeys.length * 900);
+  assert.equal(summary.paidAmount, packageKeys.length * 900);
   assert.equal(
     summary.documents.filter(
       (d) => d.module === 'demands' && d.status !== '已取消',
     ).length,
-    3,
+    packageKeys.length,
   );
   const fresh = await api('buyer/projects/' + shared.project.id, b);
   assert.equal(
@@ -855,7 +1000,7 @@ try {
     ).project.status,
     'closed',
   );
-  for (const key of ['rfq', 'tender', 'retry']) {
+  for (const key of packageKeys) {
     const run = report.records[key],
       view = await api('buyer/rfqs/' + run.rfqId + '/execution', b);
     assert.equal(
@@ -868,7 +1013,7 @@ try {
   const output = report.downloadDirectory;
   writeFileSync(output + '/change-original.txt', changeBytes);
   check(
-    'three independent packages aggregate once; 3600 demand budget, 2700 paid, 900 released; whole-project close reuses immutable archives',
+    `${packageKeys.length} independent packages aggregate once; ${packageKeys.length * 1200} demand budget, ${packageKeys.length * 900} paid, ${packageKeys.length * 300} released; whole-project close reuses immutable archives`,
   );
   if (closeoutChecks) {
     const endpoint = 'buyer/projects/' + shared.project.id;

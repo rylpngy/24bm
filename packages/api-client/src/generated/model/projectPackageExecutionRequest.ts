@@ -9,11 +9,32 @@
 export interface ProjectPackageExecutionRequest {
   /** @minimum 1 */
   revision?: number;
-  /** @pattern rfq|tender */
+  /** @pattern rfq|tender|auction */
   type: string;
   /**
    * @minLength 0
    * @maxLength 1000
    */
   reason: string;
+  /**
+   * @minimum 0
+   * @exclusiveMinimum
+   */
+  startPrice?: number;
+  /**
+   * @minimum 0
+   */
+  minDecrement?: number;
+  startsAt?: string;
+  deadlineAt?: string;
+  /**
+   * @minimum 0
+   * @maximum 120
+   */
+  softCloseTriggerMinutes?: number;
+  /**
+   * @minimum 0
+   * @maximum 120
+   */
+  softCloseExtendMinutes?: number;
 }

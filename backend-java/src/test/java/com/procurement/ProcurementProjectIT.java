@@ -53,8 +53,115 @@ class ProcurementProjectIT {
   @Autowired ProcurementProjectGuard projectGuard;
   @Autowired ProjectAllocationPolicy allocation;
   @Autowired ProjectCloseoutService closeout;
+  @Autowired ProjectMallService projectMall;
   @Autowired ProjectChangeAttachmentAccess changeAttachments;
   String tenant, dept, author, reviewer, role, material;
+
+  String mallSku(String price) {
+    String key="pm-"+UUID.randomUUID(), supplier=key+"s";
+    jdbc.update("update tenants set enabled_features=enabled_features || '[\"mall\",\"method:mall\",\"method:auction\"]'::jsonb where id=?",tenant);
+    jdbc.update("insert into enterprises(id,name,type) values (?,'Project supplier','supplier')",supplier);
+    jdbc.update("insert into buyer_supplier_relations(id,tenant_id,supplier_id,status,level) values (?,?,?,'已准入','普通')",key+"r",tenant,supplier);
+    jdbc.update("insert into supplier_qualifications(id,supplier_id,qualification_type,file_name,storage_key) values (?,?,'营业执照','license.txt','isolated-test')",key+"q",supplier);
+    jdbc.update("insert into mall_products(id,scope,tenant_id,supplier_id,name,brand,status) values (?,'tenant',?,?,'Project computer','Original brand','在架')",key,tenant,supplier);
+    jdbc.update("insert into mall_skus(id,product_id,sku_code,material_id,unit,price,status,stock_qty,lead_time_days) values (?,?,'Model A',?,'台',?,'在架',20,2)",key+"sku",key,material,new BigDecimal(price));
+    return key+"sku";
+  }
+
+  com.procurement.buyer.api.ProjectMallContracts.Checkout mallRequest(
+      com.procurement.buyer.api.ProjectExpansionContracts.PackageDetail l,String sku,String quantity) {
+    return new com.procurement.buyer.api.ProjectMallContracts.Checkout(l.info().revision(),"checkout-"+l.info().id(),"Approved catalogue selection",
+        List.of(new com.procurement.buyer.api.ProjectMallContracts.Item(sku,new BigDecimal(quantity))),null,null);
+  }
+
+  @Test
+  void mallUsesApprovedDemandPoolAndIdempotentStockOrderAndImmutableSelection() {
+    String sku=mallSku("100");var p=approve(projects.create(draft(0))).project();var l=ready(lot(p.id(),"2"));
+    var request=mallRequest(l,sku,"2");var first=projectMall.checkout(p.id(),l.info().id(),request);
+    assertThat(projectMall.checkout(p.id(),l.info().id(),request).orderId()).isEqualTo(first.orderId());
+    assertThat(jdbc.queryForObject("select stock_qty from mall_skus where id=?",BigDecimal.class,sku)).isEqualByComparingTo("18");
+    assertThat(jdbc.queryForObject("select count(*) from purchase_orders where tenant_id=?",Integer.class,tenant)).isEqualTo(1);
+    assertThat(jdbc.queryForObject("select count(*) from rfq_demands where tenant_id=? and rfq_id=?",Integer.class,tenant,first.rfqId())).isEqualTo(1);
+    assertThat(projects.execution(p.id()).orderAmount()).isEqualByComparingTo("200");
+    assertThat(budget.position(tenant,dept,year).committed()).isEqualByComparingTo("246.91");
+    assertThat(expansion.packages(p.id()).getFirst().sourceMethods().get(first.rfqId())).isEqualTo("商城");
+    jdbc.update("update mall_skus set price=110,spec='{\"model\":\"Future model\"}'::jsonb where id=?",sku);
+    assertThat(projectMall.selection(p.id(),l.info().id()).snapshot()).isEqualTo(first.snapshot());
+    assertThat(projectGuard.archiveDefinitionForRfq(first.rfqId()).path("mallSelection").toString()).contains("Original brand").doesNotContain("Future model");
+    assertThatThrownBy(()->projectMall.checkout(p.id(),l.info().id(),mallRequest(l,sku,"1"))).hasMessageContaining("重复下单");
+  }
+
+  @Test
+  void mallRejectsWrongQuantityUnitMaterialPriceAndRollsBackAllSources() {
+    String sku=mallSku("150");var p=approve(projects.create(draft(0))).project();var l=ready(lot(p.id(),"2"));
+    assertThatThrownBy(()->projectMall.checkout(p.id(),l.info().id(),mallRequest(l,sku,"2"))).hasMessageContaining("成交额超过");
+    assertThatThrownBy(()->projectMall.checkout(p.id(),l.info().id(),mallRequest(l,sku,"1"))).hasMessageContaining("批准数量");
+    jdbc.update("update mall_skus set unit='箱',price=100 where id=?",sku);
+    assertThatThrownBy(()->projectMall.checkout(p.id(),l.info().id(),mallRequest(l,sku,"2"))).hasMessageContaining("单位");
+    jdbc.update("update mall_skus set unit='台',material_id=null where id=?",sku);
+    assertThatThrownBy(()->projectMall.checkout(p.id(),l.info().id(),mallRequest(l,sku,"2"))).hasMessageContaining("未关联");
+    assertThat(jdbc.queryForObject("select count(*) from procurement_project_executions where tenant_id=?",Integer.class,tenant)).isZero();
+    assertThat(jdbc.queryForObject("select count(*) from purchase_orders where tenant_id=?",Integer.class,tenant)).isZero();
+    assertThat(jdbc.queryForObject("select stock_qty from mall_skus where id=?",BigDecimal.class,sku)).isEqualByComparingTo("20");
+  }
+
+  @Test
+  void mallCannotBypassIndependentApprovalOrExistingExecutionOrSourcePermissions() {
+    String sku=mallSku("100");var p=approve(projects.create(draft(0))).project();var raw=lot(p.id(),"2");
+    var l=expansion.createDemand(p.id(),raw.info().id(),new com.procurement.buyer.api.ProjectExpansionContracts.PackageAction(raw.info().revision(),"Create"));
+    assertThatThrownBy(()->projectMall.checkout(p.id(),l.info().id(),mallRequest(l,sku,"2"))).hasMessageContaining("审批通过");
+    demands.submit(l.demands().getFirst().id(),Map.of());decide(l.demands().getFirst().id(),"approve");
+    jdbc.update("update roles set permissions='[\"buyer:project:*\",\"buyer:demand:read\"]'::jsonb where id=?",role);
+    assertThatThrownBy(()->projectMall.checkout(p.id(),l.info().id(),mallRequest(l,sku,"2"))).isInstanceOf(RuntimeException.class);
+    jdbc.update("update roles set permissions='[\"buyer:*\"]'::jsonb where id=?",role);
+    expansion.execute(p.id(),l.info().id(),new com.procurement.buyer.api.ProjectExpansionContracts.PackageExecution(l.info().revision(),"rfq","Source first"),false);
+    assertThatThrownBy(()->projectMall.checkout(p.id(),l.info().id(),mallRequest(l,sku,"2"))).hasMessageContaining("分包已变化");
+  }
+
+  @Test
+  void auctionCreatesRealBoundDraftWithApprovedStartingCeilingAndRetainsBudget() {
+    mallSku("100");var p=approve(projects.create(draft(0))).project();var l=ready(lot(p.id(),"2"));
+    var invalid=new com.procurement.buyer.api.ProjectExpansionContracts.PackageExecution(l.info().revision(),"auction","Auction",new BigDecimal("300"),BigDecimal.ONE,null,null);
+    assertThatThrownBy(()->expansion.execute(p.id(),l.info().id(),invalid,false)).hasMessageContaining("起拍价");
+    var result=expansion.execute(p.id(),l.info().id(),new com.procurement.buyer.api.ProjectExpansionContracts.PackageExecution(l.info().revision(),"auction","Auction",new BigDecimal("240"),BigDecimal.ONE,OffsetDateTime.now(),OffsetDateTime.now().plusDays(2)),false);
+    var run=result.runs().getFirst();
+    assertThat(result.sourceMethods().get(run.executionId())).isEqualTo("竞价");
+    assertThat(jdbc.queryForObject("select auction_start_price from rfqs where id=?",BigDecimal.class,run.executionId())).isEqualByComparingTo("240");
+    assertThat(result.sourceStatuses().get(run.executionId())).isEqualTo("草稿");
+    assertThat(budget.position(tenant,dept,year).committed()).isEqualByComparingTo("246.91");
+    assertThat(projects.execution(p.id()).orderAmount()).isEqualByComparingTo("0");
+  }
+
+  @Test
+  void mallSupportsSeveralSkusForOneMaterialButRejectsDuplicateSkuAndMixedSuppliers() {
+    String a=mallSku("100"),b=mallSku("110");
+    var p=approve(projects.create(draft(0))).project();var l=ready(lot(p.id(),"2"));
+    var items=List.of(new com.procurement.buyer.api.ProjectMallContracts.Item(a,BigDecimal.ONE),new com.procurement.buyer.api.ProjectMallContracts.Item(b,BigDecimal.ONE));
+    var request=new com.procurement.buyer.api.ProjectMallContracts.Checkout(l.info().revision(),"multi","Multiple models",items,null,null);
+    assertThatThrownBy(()->projectMall.checkout(p.id(),l.info().id(),request)).hasMessageContaining("同一供应商");
+    jdbc.update("update mall_skus set product_id=(select product_id from mall_skus where id=?) where id=?",a,b);
+    var duplicate=new com.procurement.buyer.api.ProjectMallContracts.Checkout(l.info().revision(),"duplicate","Invalid",List.of(items.getFirst(),items.getFirst()),null,null);
+    assertThatThrownBy(()->projectMall.checkout(p.id(),l.info().id(),duplicate)).hasMessageContaining("规格重复");
+    var bought=projectMall.checkout(p.id(),l.info().id(),request);
+    assertThat(allocation.tree(bought.snapshot()).path("selections")).hasSize(2);
+    assertThat(projects.execution(p.id()).orderAmount()).isEqualByComparingTo("210");
+  }
+
+  @Test
+  void concurrentMallRequestsCreateOnlyOneOrderAndOneStockDeduction() throws Exception {
+    String sku=mallSku("100");var p=approve(projects.create(draft(0))).project();var l=ready(lot(p.id(),"2"));
+    var start=new java.util.concurrent.CountDownLatch(1);
+    try(var pool=java.util.concurrent.Executors.newFixedThreadPool(2)) {
+      var calls=new ArrayList<java.util.concurrent.Future<Boolean>>();
+      for(int i=0;i<2;i++) {final int n=i;calls.add(pool.submit(()->{context(author);try {start.await();
+        var base=mallRequest(l,sku,"2");projectMall.checkout(p.id(),l.info().id(),new com.procurement.buyer.api.ProjectMallContracts.Checkout(base.revision(),"concurrent-"+n,base.reason(),base.items(),null,null));return true;
+      } catch(RuntimeException e) {assertThat(e).isNotInstanceOf(org.springframework.dao.DataAccessException.class);return false;} finally {TenantContext.clear();}}));}
+      start.countDown();int won=0;for(var call:calls)if(call.get(15,java.util.concurrent.TimeUnit.SECONDS))won++;
+      assertThat(won).isEqualTo(1);
+    }
+    assertThat(jdbc.queryForObject("select count(*) from purchase_orders where tenant_id=?",Integer.class,tenant)).isEqualTo(1);
+    assertThat(jdbc.queryForObject("select stock_qty from mall_skus where id=?",BigDecimal.class,sku)).isEqualByComparingTo("18");
+  }
   final String year = Year.now(ZoneId.of("Asia/Shanghai")).toString();
 
   @BeforeEach

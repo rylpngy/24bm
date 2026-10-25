@@ -1,6 +1,19 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  type ReactNode,
+} from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+const DialogDepth = createContext(0);
+const dialogStack: Array<{ node: HTMLDivElement; depth: number }> = [];
+const topDialog = () =>
+  dialogStack.reduce<(typeof dialogStack)[number] | undefined>(
+    (top, entry) => (!top || entry.depth >= top.depth ? entry : top),
+    undefined,
+  )?.node;
 export const projectButton =
   'inline-flex h-9 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 disabled:opacity-40';
 export const projectInput =
@@ -23,6 +36,7 @@ export function ProjectDialog({
   onClose: () => void;
   busy?: boolean;
 }) {
+  const depth = useContext(DialogDepth);
   const panel = useRef<HTMLDivElement>(null),
     close = useRef(onClose),
     pending = useRef(busy);
@@ -32,8 +46,11 @@ export function ProjectDialog({
     const old = document.activeElement as HTMLElement | null;
     const overflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    panel.current?.focus();
+    const current = panel.current;
+    if (current) dialogStack.push({ node: current, depth });
+    if (topDialog() === current) current?.focus();
     const key = (e: KeyboardEvent) => {
+      if (topDialog() !== panel.current) return;
       if (e.key === 'Escape' && !pending.current) {
         e.preventDefault();
         close.current();
@@ -70,41 +87,48 @@ export function ProjectDialog({
     document.addEventListener('keydown', key);
     return () => {
       document.removeEventListener('keydown', key);
+      if (current) {
+        const index = dialogStack.findIndex((entry) => entry.node === current);
+        if (index >= 0) dialogStack.splice(index, 1);
+      }
       document.body.style.overflow = overflow;
       if (old?.isConnected) old.focus();
     };
   }, []);
   return createPortal(
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-3 sm:p-6"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget && !busy) onClose();
-      }}
-    >
+    <DialogDepth.Provider value={depth + 1}>
       <div
-        ref={panel}
-        tabIndex={-1}
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-        className="max-h-[90dvh] w-full max-w-5xl overflow-y-auto rounded-lg bg-white shadow-xl outline-none"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-3 sm:p-6"
+        style={{ zIndex: 50 + depth }}
+        onMouseDown={(e) => {
+          if (e.target === e.currentTarget && !busy) onClose();
+        }}
       >
-        <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-slate-200 bg-white p-5">
-          <h2 className="min-w-0 break-words text-lg font-bold">{title}</h2>
-          <button
-            type="button"
-            className={projectButton}
-            title="关闭"
-            aria-label="关闭"
-            disabled={busy}
-            onClick={onClose}
-          >
-            <X size={16} />
-          </button>
-        </header>
-        <div className="space-y-5 p-5">{children}</div>
+        <div
+          ref={panel}
+          tabIndex={-1}
+          role="dialog"
+          aria-modal="true"
+          aria-label={title}
+          className="max-h-[90dvh] w-full max-w-5xl overflow-y-auto rounded-lg bg-white shadow-xl outline-none"
+        >
+          <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-slate-200 bg-white p-5">
+            <h2 className="min-w-0 break-words text-lg font-bold">{title}</h2>
+            <button
+              type="button"
+              className={projectButton}
+              title="关闭"
+              aria-label="关闭"
+              disabled={busy}
+              onClick={onClose}
+            >
+              <X size={16} />
+            </button>
+          </header>
+          <div className="space-y-5 p-5">{children}</div>
+        </div>
       </div>
-    </div>,
+    </DialogDepth.Provider>,
     document.body,
   );
 }
