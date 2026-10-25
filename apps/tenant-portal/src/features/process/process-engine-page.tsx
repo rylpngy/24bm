@@ -46,6 +46,7 @@ const BUSINESS_TYPES = [
   { id: 'purchase_demand', label: '采购需求' },
   { id: 'budget_change', label: '预算编制与调整' },
   { id: 'project_initiation', label: '项目立项' },
+  { id: 'project_change', label: '立项变更' },
   { id: 'budget_exception', label: '超预算例外' },
   { id: 'supplier_qualification_change', label: '供应商资质变更' },
   { id: 'buyer_supplier_admission', label: '供应商准入' },

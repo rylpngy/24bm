@@ -387,6 +387,7 @@ public class TenderApplicationService {
   public TenderResponse rebidTender(String tenderId) {
     String tenantId = TenantAccessGuard.requireTenantId("buyer tender APIs");
     String userId = TenantAccessGuard.requireUserId("buyer tender APIs");
+    if(projects!=null){projects.lock();projects.requireStandaloneRebid(tenderId);}
     Tender origin = requireTenderForUpdate(tenantId, tenderId);
     TenderPolicy.requireRebiddable(origin);
     Tender existing = tenderMapper.findRebid(tenantId, tenderId);

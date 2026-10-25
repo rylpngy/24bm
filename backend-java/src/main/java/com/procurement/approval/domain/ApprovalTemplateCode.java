@@ -13,7 +13,7 @@ public final class ApprovalTemplateCode {
 
   public static String requireByBusinessType(String businessType) {
     return switch (businessType) {
-      case ApprovalBusinessType.PURCHASE_DEMAND, "budget_change", "budget_exception", "project_initiation" -> PURCHASE_DEMAND;
+      case ApprovalBusinessType.PURCHASE_DEMAND, "budget_change", "budget_exception", "project_initiation", "project_change" -> PURCHASE_DEMAND;
       case ApprovalBusinessType.LUDONG_PROJECT_APPLICATION ->
           throw new IllegalArgumentException("Ludong POC must use its published Flowable definition");
       case ApprovalBusinessType.BUYER_SUPPLIER_ADMISSION, "supplier_qualification_change" -> SUPPLIER_ADMISSION;

@@ -29,6 +29,7 @@ public class ProcurementProjectService {
   private final TenderApplicationService tenders;
   private final ProcurementExecutionApplicationService execution;
   private final BudgetControlService budget;
+  private final ProjectExpansionService expansions;
 
   public ProcurementProjectService(
       ProcurementProjectMapper mapper,
@@ -41,7 +42,7 @@ public class ProcurementProjectService {
       RfqApplicationService rfqs,
       TenderApplicationService tenders,
       ProcurementExecutionApplicationService execution,
-      BudgetControlService budget) {
+      BudgetControlService budget, ProjectExpansionService expansions) {
     this.mapper = mapper;
     this.guard = guard;
     this.permissions = permissions;
@@ -53,6 +54,7 @@ public class ProcurementProjectService {
     this.tenders = tenders;
     this.execution = execution;
     this.budget = budget;
+    this.expansions=expansions;
   }
 
   private String tenant() {
@@ -241,6 +243,7 @@ public class ProcurementProjectService {
     revision(p, r.revision());
     guard.approved(p);
     if (p.executionId() != null) throw new IllegalStateException("已下发采购，不能改变需求集合");
+    expansions.requireLegacyMode(p);
     permissions.require("buyer:demand:read");
     var d = mapper.demand(tenant(), r.demandId());
     if (d == null) throw new IllegalArgumentException("需求不存在");
@@ -265,6 +268,7 @@ public class ProcurementProjectService {
     guard.approved(p);
     if (!mapper.demands(tenant(), id).isEmpty() || p.executionId() != null)
       throw new IllegalStateException("已有需求，请维护关联需求，不重复生成");
+    expansions.requireLegacyMode(p);
     if (!p.period().equals(String.valueOf(LocalDate.now(ZoneId.of("Asia/Shanghai")).getYear())))
       throw new IllegalStateException("仅当前年度项目可生成需求，不能改变现有预算年度口径");
     String demand =
@@ -292,6 +296,7 @@ public class ProcurementProjectService {
     revision(p, r.revision());
     guard.approved(p);
     if (p.executionId() != null) throw new IllegalStateException("项目已有采购执行");
+    expansions.requireLegacyMode(p);
     var linked = demands(id);
     if (linked.isEmpty()
         || linked.stream()
@@ -321,52 +326,7 @@ public class ProcurementProjectService {
   }
 
   @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
-  public Execution execution(String id) {
-    var p = guard.require(id, false);
-    var linked = demands(id);
-    var docs = new ArrayList<Trace>();
-    var warnings = new ArrayList<String>();
-    BigDecimal demandAmount =
-        linked.stream().map(Demand::budget).reduce(BigDecimal.ZERO, BigDecimal::add);
-    if (demandAmount.compareTo(p.plannedAmount()) > 0)
-      warnings.add("关联需求金额超过立项金额，请核对；部门年度预算仍按既有策略控制");
-    if (linked.stream().anyMatch(d -> !List.of("已通过", "已转询价").contains(d.status())))
-      warnings.add("关联需求尚未全部审批通过");
-    if ("tender".equals(p.executionType())) {
-      permissions.require("buyer:tender:read");
-      scopes.requireCreatorAccess(mapper.tenderOwner(tenant(), p.executionId()));
-      docs.add(mapper.tenderTrace(tenant(), p.executionId()));
-    }
-    String rfq = executionRfq(p);
-    if (rfq == null) {
-      docs.addAll(mapper.demandTrace(tenant(), id));
-      warnings.add("尚未生成采购执行订单");
-      return new Execution(
-          linked,
-          docs,
-          demandAmount,
-          BigDecimal.ZERO,
-          BigDecimal.ZERO,
-          BigDecimal.ZERO,
-          warnings,
-          false);
-    }
-    var view = execution.projectView(rfq);
-    for (var d : view.documents())
-      docs.add(
-          new Trace(
-              d.module(), d.id(), d.title(), d.status(), d.amount(), d.module(), d.recordId()));
-    warnings.addAll(view.blockers());
-    return new Execution(
-        linked,
-        docs,
-        demandAmount,
-        view.orderAmount(),
-        view.invoicedAmount(),
-        view.paidAmount(),
-        warnings,
-        "approved".equals(p.status()) && view.canArchive());
-  }
+  public Execution execution(String id) { return expansions.summary(id); }
 
   public com.procurement.buyer.domain.BudgetPosition budget(String id) {
     var p = guard.require(id, false);
@@ -378,26 +338,14 @@ public class ProcurementProjectService {
   }
 
   @Transactional
-  public Detail close(String id, Action a) {
-    guard.lock();
-    var p = guard.require(id, true);
-    revision(p, a.revision());
-    guard.approved(p);
-    var state = execution(id);
-    if (!state.canClose())
-      throw new IllegalStateException("项目尚不能结项：" + String.join("；", state.warnings()));
-    String archive = execution.archiveProject(executionRfq(p), a.reason());
-    if (mapper.state(tenant(), id, p.revision(), "closed", null, a.reason()) != 1)
-      throw new IllegalStateException("项目已变化");
-    event(id, "closed", "归档:" + archive + ";" + a.reason());
-    return detail(id);
-  }
+  public Detail close(String id, Action a) { expansions.closeProject(id,a); return detail(id); }
 
   @Transactional
   public Detail terminate(String id, Action a) {
     guard.lock();
     var p = guard.require(id, true);
     revision(p, a.revision());
+    if(expansions.hasOpenWork(id))throw new IllegalStateException("请先处理分包及立项变更");
     if (List.of("submitted", "closed", "terminated").contains(p.status())
         || p.executionId() != null
         || !mapper.demands(tenant(), id).isEmpty())

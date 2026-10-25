@@ -214,6 +214,7 @@ export function workflowBusinessHref(history: Pick<WorkflowInstanceHistory, 'bus
   const target: Record<string, { module: string; id: unknown }> = {
     budget_change: { module: 'budgets', id: history.businessId },
     project_initiation: { module: 'projects', id: history.businessId },
+    project_change: { module: 'projects', id: snapshot.projectId },
     budget_exception: { module: 'budgets', id: history.businessId },
     supplier_qualification_change: { module: 'suppliers', id: snapshot.relationId },
     purchase_demand: { module: 'demands', id: history.businessId },
@@ -230,5 +231,6 @@ export function workflowBusinessHref(history: Pick<WorkflowInstanceHistory, 'bus
   const params = new URLSearchParams({ module: item.module });
   if (item.id != null && String(item.id)) params.set('recordId', String(item.id));
   if (history.businessType === 'supplier_qualification_change') params.set('tab', 'qualifications');
+  if (history.businessType === 'project_change') params.set('changeId', history.businessId);
   return `/?${params.toString()}`;
 }

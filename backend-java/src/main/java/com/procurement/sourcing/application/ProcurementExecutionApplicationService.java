@@ -190,7 +190,7 @@ public class ProcurementExecutionApplicationService {
     String raw=mapper.snapshot(tenant,rfq);
     if(raw==null) throw new IllegalArgumentException("采购项目不存在");
     var data=parse(raw);
-    if(projects!=null){String project=projects.projectForRfq(rfq);if(project!=null)data.set("procurementProject",json.valueToTree(projects.archiveDefinition(project)));}
+    if(projects!=null){var definition=projects.archiveDefinitionForRfq(rfq);if(definition!=null)data.set("procurementProject",json.valueToTree(definition));}
     return data;
   }
   private ObjectNode parse(String value) {
@@ -209,6 +209,7 @@ public class ProcurementExecutionApplicationService {
     data.set("workflowHistory",json.valueToTree(workflow.procurementExecutionHistory(businessIds(data))));
     List<Owner> owners=new ArrayList<>(); owners.add(new Owner("rfq",rfq));
     if(data.has("procurementProject"))owners.add(new Owner("procurement_project",data.path("procurementProject").path("id").asText()));
+    for(var change:data.path("procurementProject").path("changeIds"))owners.add(new Owner("procurement_project_change",change.asText()));
     for (var d : data.path("demands")) { owners.add(new Owner("demand",d.path("id").asText())); owners.add(new Owner("purchase_demand",d.path("id").asText())); }
     for (var q : data.path("quotes")) owners.add(new Owner("quote",q.path("id").asText()));
     for (var c : data.path("contracts")) owners.add(new Owner("contract",c.path("id").asText()));
@@ -249,6 +250,7 @@ public class ProcurementExecutionApplicationService {
   private List<String> businessIds(JsonNode data) {
     List<String> ids=new ArrayList<>(); ids.add(data.path("rfq").path("id").asText());
     if(data.has("procurementProject"))ids.add(data.path("procurementProject").path("id").asText());
+    for(var change:data.path("procurementProject").path("changeIds"))ids.add(change.asText());
     for(String key : List.of("demands","orders","awards","contracts","invoices","paymentRequests")) for(var item:data.path(key)) {
       ids.add(item.path("id").asText());
       if (item.hasNonNull("paymentBatchNo") && !item.path("paymentBatchNo").asText().isBlank()) ids.add(item.path("paymentBatchNo").asText());
