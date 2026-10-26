@@ -5,6 +5,11 @@ import type { WorkflowInstanceHistory } from '@24bid/api-client';
 import { WorkflowInstancePanel, workflowFormLabels } from './workflow-instance-panel';
 
 describe('workflow history form display', () => {
+  it('shows settlement line evidence rather than a raw financial JSON blob',()=>{
+    const history:WorkflowInstanceHistory={workflowInstanceId:'settlement-flow',businessType:'order_settlement',businessId:'settlement-1',definitionVersionId:'v1',flowableProcessInstanceId:'f1',status:'approved',initiatorId:'buyer',formData:{},businessSnapshot:{orderId:'order-1',finalAmount:250,settlementSnapshot:{assessment:{baseline:{internal:'DO-NOT-RENDER'},lines:[{id:'line-1',description:'Settlement computer',quantity:3,retainedQuantity:1,cancelledQuantity:2,unitPrice:300,settlementUnitPrice:250}]}}},attachments:[],events:[]};
+    render(<WorkflowInstancePanel history={history}/>);
+    expect(screen.getByText('送审清算行明细')).toBeInTheDocument();expect(screen.getByText('Settlement computer')).toBeInTheDocument();expect(screen.getByText('约定清算总额')).toBeInTheDocument();expect(screen.queryByText(/DO-NOT-RENDER/)).toBeNull();
+  });
   it('renders the bound schema labels and preserves unknown fields and false/zero values', () => {
     const history: WorkflowInstanceHistory = {
       workflowInstanceId: 'instance-1', businessType: 'buyer_supplier_exit', businessId: 'supplier-1',

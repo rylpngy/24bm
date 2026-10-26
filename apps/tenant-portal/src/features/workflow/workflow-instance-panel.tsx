@@ -51,7 +51,7 @@ export function WorkflowInstancePanel({
   hideBusinessSnapshot?: boolean;
 }) {
   const [downloadError, setDownloadError] = useState<string | null>(null);
-  const snapshotEntries = hideBusinessSnapshot ? [] : visibleEntries(history.businessSnapshot);
+  const snapshotEntries = hideBusinessSnapshot ? [] : visibleEntries(history.businessSnapshot).filter(([key])=>history.businessType!=='order_settlement'||key!=='settlementSnapshot');
   const formEntries = visibleEntries(history.formData);
   const formLabels = workflowFormLabels(history.formSchema);
   const detailHref = workflowBusinessHref(history);
@@ -108,6 +108,7 @@ export function WorkflowInstancePanel({
           <ContextBlock title="审批表单" icon={FileText} entries={formEntries} labels={formLabels} />
         </div>
       )}
+      {!compact&&!hideBusinessSnapshot&&history.businessType==='order_settlement'&&<SettlementSnapshot snapshot={history.businessSnapshot?.settlementSnapshot}/>}
 
       {!compact && (
         <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_0.8fr]">
@@ -140,6 +141,13 @@ export function WorkflowInstancePanel({
       )}
     </section>
   );
+}
+
+function SettlementSnapshot({snapshot}:{snapshot:unknown}){
+  const record=(x:unknown):Record<string,unknown>=>x!==null&&typeof x==='object'&&!Array.isArray(x)?x as Record<string,unknown>:{};
+  const assessment=record(record(snapshot).assessment),raw=assessment.lines;
+  const lines=Array.isArray(raw)?raw.map(record):[];
+  return <div className="mt-4 min-w-0 overflow-x-auto"><table className="w-full min-w-[640px] text-left text-xs"><caption className="mb-2 text-left font-bold text-slate-700">送审清算行明细</caption><thead className="bg-slate-50 text-slate-500"><tr>{['货物','原数量','保留数量','终止数量','原单价','清算单价'].map(t=><th key={t} className="whitespace-nowrap px-3 py-2">{t}</th>)}</tr></thead><tbody>{lines.map((l,i)=><tr key={String(l.id??i)} className="border-b border-slate-100">{[l.description,l.quantity,l.retainedQuantity,l.cancelledQuantity,l.unitPrice,l.settlementUnitPrice].map((value,j)=><td key={j} className="px-3 py-2 text-slate-700">{String(value??'—')}</td>)}</tr>)}</tbody></table></div>;
 }
 
 function ContextBlock({ title, icon: Icon, entries, labels }: { title: string; icon: React.ElementType; entries: Array<[string, unknown]>; labels?: Map<string, string> }) {
@@ -205,6 +213,7 @@ function fieldLabel(key: string) {
     exitReason: '退出原因', unreceivedOrderCount: '未收货订单数', unpaidInvoiceCount: '未付清发票数',
     contractNo: '合同编号', contractName: '合同名称', invoiceId: '发票编号', orderId: '订单编号', paymentBatchNo: '付款批次',
     exceptionType: '例外类型', exceptionReason: '例外原因', amount: '金额', requestCount: '申请数量', totalAmount: '总金额',
+    contractId:'合同编号',finalAmount:'约定清算总额',goodsAmount:'结算货款',initialPaid:'原已付款',
   };
   return labels[key] ?? key;
 }

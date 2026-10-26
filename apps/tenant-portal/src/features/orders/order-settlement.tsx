@@ -74,6 +74,7 @@ export function BuyerOrderSettlement({
             <WorkflowStatusPanel
               businessType="order_settlement"
               businessId={e.id}
+              hideBusinessSnapshot
             />
           ) : null
         }
