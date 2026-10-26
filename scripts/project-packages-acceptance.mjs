@@ -18,6 +18,8 @@ const marketplaceChecks = process.env.PROJECT_MARKETPLACE_ACCEPTANCE === '1';
 const lifecycleChecks = process.env.PROJECT_LIFECYCLE_ACCEPTANCE === '1';
 const paidCarryoverChecks =
   process.env.PROJECT_PAID_CARRYOVER_ACCEPTANCE === '1';
+const cancellationChecks =
+  process.env.PROJECT_ORDER_CANCELLATION_ACCEPTANCE === '1';
 const packageKeys = marketplaceChecks
   ? ['rfq', 'tender', 'retry', 'auction', 'mall']
   : ['rfq', 'tender', 'retry'];
@@ -1434,6 +1436,171 @@ try {
     );
     check(
       'Cross-year settlement conserves 900 paid/300 released and archives original order, source payments, approved carryovers and annual allocation',
+    );
+  }
+  if (cancellationChecks) {
+    assert.ok(
+      marketplaceChecks && report.skuId,
+      'Cancellation acceptance requires real marketplace fixture',
+    );
+    async function makeCancellation(title) {
+      let p = await api('buyer/projects', b, {
+        title,
+        departmentId: dept.id,
+        ownerId: reviewer.userId,
+        period: year,
+        fundingSource: '年度预算',
+        purpose: '核验未履行订单取消',
+        revision: 0,
+        lines: [
+          {
+            materialId: material.id,
+            quantity: 3,
+            unitPrice: 400,
+            purpose: '办公',
+          },
+        ],
+      });
+      const endpoint = 'buyer/projects/' + p.project.id;
+      await api(endpoint + '/submit', b, {
+        revision: p.project.revision,
+        reason: '独立立项',
+        formData: {},
+      });
+      await decide(r, 'project_initiation', p.project.id);
+      p = await api(endpoint, b);
+      let lot = await api(endpoint + '/packages', b, {
+        projectRevision: p.project.revision,
+        revision: 0,
+        title: '取消协商采购包',
+        lines: [{ materialId: material.id, quantity: 3 }],
+      });
+      lot = await api(
+        endpoint + '/packages/' + lot.info.id + '/create-demand',
+        b,
+        { revision: lot.info.revision, reason: '生成需求' },
+      );
+      await api('buyer/demands/' + lot.demands[0].id + '/submit', b, {
+        formData: {},
+      });
+      await decide(r, 'purchase_demand', lot.demands[0].id);
+      const checkout = await api(
+        endpoint + '/packages/' + lot.info.id + '/mall-checkout',
+        b,
+        {
+          revision: lot.info.revision,
+          requestKey: 'cancel-' + lot.info.id,
+          reason: '按批准目录采购',
+          items: [{ skuId: report.skuId, quantity: 3 }],
+        },
+      );
+      return {
+        projectId: p.project.id,
+        packageId: lot.info.id,
+        orderId: checkout.orderId,
+        rfqId: checkout.rfqId,
+      };
+    }
+    const c = await makeCancellation('双方取消与原单归档验证'),
+      path = 'buyer/orders/' + c.orderId + '/cancellations',
+      sp = 'supplier/orders/' + c.orderId + '/cancellations';
+    let entry = await api(path, b, {
+      requestKey: 'first',
+      reason: '计划调整，协商取消',
+    });
+    assert.equal(
+      (
+        await api(path, b, {
+          requestKey: 'first',
+          reason: '计划调整，协商取消',
+        })
+      ).id,
+      entry.id,
+    );
+    await api(
+      'supplier/orders/' + c.orderId + '/confirm',
+      s,
+      {},
+      'POST',
+      [409, 400],
+    );
+    await api(
+      path + '/' + entry.id,
+      b,
+      { action: 'accept', reason: '不得由采购方替供应商确认' },
+      'POST',
+      [400, 409],
+    );
+    await api(sp + '/' + entry.id, s, {
+      action: 'reject',
+      reason: '先核实采购计划',
+    });
+    assert.equal(
+      (await api('buyer/orders', b)).find((o) => o.id === c.orderId).status,
+      '待供应商确认',
+    );
+    entry = await api(path, b, { requestKey: 'second', reason: '撤回核对' });
+    await api(
+      path + '/' + entry.id,
+      r,
+      { action: 'withdraw', reason: '非发起人不能撤回' },
+      'POST',
+      [409, 400],
+    );
+    await api(path + '/' + entry.id, b, {
+      action: 'withdraw',
+      reason: '补充资料后再提交',
+    });
+    entry = await api(path, b, {
+      requestKey: 'third',
+      reason: '双方确认不再采购',
+    });
+    const accepted = await api(sp + '/' + entry.id, s, {
+      action: 'accept',
+      reason: '确认未发货、无合同及财务责任，同意取消',
+    });
+    assert.equal(accepted.status, 'accepted');
+    await api(sp + '/' + entry.id, s, { action: 'accept', reason: '幂等重试' });
+    const history = await api(path + '?page=2&size=1', b);
+    assert.equal(history.total, 3);
+    assert.equal(history.items.length, 1);
+    const order = (await api('buyer/orders', b)).find(
+      (o) => o.id === c.orderId,
+    );
+    assert.equal(order.status, '已取消');
+    assert.equal(order.amount, 900);
+    assert.equal(order.lineItems[0].quantity, 3);
+    const endpoint = 'buyer/projects/' + c.projectId;
+    const before = await api(endpoint + '/budget', b);
+    const lot = (await api(endpoint + '/packages', b)).find(
+      (l) => l.info.id === c.packageId,
+    );
+    await api(endpoint + '/packages/' + c.packageId + '/close', b, {
+      revision: lot.info.revision,
+      reason: '核验双方取消台账后结清',
+    });
+    const after = await api(endpoint + '/budget', b);
+    assert.equal(before.committed - after.committed, 1200);
+    assert.equal(before.orderAmount - after.orderAmount, 0);
+    const fresh = await api(endpoint, b);
+    await api(endpoint + '/close', b, {
+      revision: fresh.project.revision,
+      reason: '原单和双方记录完整归档',
+    });
+    const zip = await fetch(
+      base + '/api/v1/' + endpoint + '/archive/download',
+      { headers: { Authorization: 'Bearer ' + b } },
+    );
+    assert.equal(zip.status, 200);
+    writeFileSync(
+      report.downloadDirectory + '/cancelled-root.zip',
+      Buffer.from(await zip.arrayBuffer()),
+    );
+    report.records.cancellation = c;
+    report.records.cancellationUi =
+      await makeCancellation('浏览器两端取消办理验证');
+    check(
+      'Bilateral cancellation validates rejection, withdrawal ownership, pause, idempotent agreement, original amount/quantity, paginated history and 1200 responsibility release only after closeout',
     );
   }
   report.passed = true;

@@ -22,10 +22,19 @@ public final class ProcurementExecutionPolicy {
     for (var d : data.path("demands")) documents.add(doc(d,"需求：" + text(d,"title"),"status","budget","demands","id"));
     documents.add(new Document(text(rfq,"id"),"定标：" + text(rfq,"title"),text(rfq,"status"),null,"rfqs",text(rfq,"id")));
     if (list(data,"orders").isEmpty()) blockers.add("尚无采购订单");
+    var cancelled = new java.util.HashSet<String>();
     BigDecimal paid = BigDecimal.ZERO;
     boolean unknownPaid = false;
     for (var order : data.path("orders")) {
       String id = text(order,"id");
+      if ("已取消".equals(text(order,"status")) && matching(data,"orderCancellations","orderId",id).stream().anyMatch(c -> "accepted".equals(text(c,"status")) && !text(c,"createdBy").isBlank() && !text(c,"completedBy").isBlank() && !text(c,"completedAt").isBlank() && !text(c,"reason").isBlank() && !text(c,"response").isBlank())) {
+        if (!matching(data,"receipts","orderId",id).isEmpty() || !matching(data,"contracts","relatedOrderId",id).isEmpty() || !matching(data,"invoices","orderId",id).isEmpty()) blockers.add("已取消订单 "+id+" 仍有关联履约或财务责任");
+        else {
+          cancelled.add(id);
+          documents.add(doc(order,"已取消订单（保留原金额）："+id,"status","amount","orders","id"));
+          continue;
+        }
+      }
       if (!Set.of("已收货","已完成").contains(text(order,"status"))) blockers.add("订单 " + id + " 尚未完成收货或已取消");
       documents.add(doc(order,"订单：" + id,"status","amount","orders","id"));
       var lines = matching(data,"orderLines","orderId",id);
@@ -103,7 +112,7 @@ public final class ProcurementExecutionPolicy {
     for (var reason : data.path("closeoutChecks")) blockers.add(reason.asText());
     for (var reason : data.path("attachmentChecks")) blockers.add(reason.asText());
     BigDecimal invoiced = sum(list(data,"invoices").stream().filter(ProcurementExecutionPolicy::validInvoice).toList(),"amount");
-    BigDecimal ordered = sum(list(data,"orders"),"amount");
+    BigDecimal ordered = sum(list(data,"orders").stream().filter(o -> !cancelled.contains(text(o,"id"))).toList(),"amount");
     return new Evaluation(List.copyOf(documents), sum(list(data,"demands"),"budget"), ordered,
         invoiced, unknownPaid ? null : paid, unknownPaid ? null : ordered.subtract(paid), blockers.stream().distinct().toList());
   }

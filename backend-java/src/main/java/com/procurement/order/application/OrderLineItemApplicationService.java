@@ -74,6 +74,7 @@ public class OrderLineItemApplicationService {
     return id;
   }
 
+  public void recordStockReservation(String tenant,String id,java.math.BigDecimal quantity){orderLineItemMapper.recordStockReservation(tenant,id,quantity);}
   public List<OrderLineItemResponse> listForOrder(String tenantId, String orderId) {
     List<OrderLineItem> lines = orderLineItemMapper.listByOrder(tenantId, orderId);
     if (lines == null) {

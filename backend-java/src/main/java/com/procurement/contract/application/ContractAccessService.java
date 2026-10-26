@@ -54,5 +54,8 @@ public class ContractAccessService {
         scope.restricted() ? scope.requesterId() : null)) {
       throw new PermissionDeniedException("订单不存在或无权创建合同");
     }
+    String status=mapper.lockOrderStatus(tenant,id);
+    if(status==null)throw new IllegalArgumentException("订单不存在");
+    if(java.util.Set.of("取消协商中","已取消").contains(status))throw new IllegalStateException("订单正在取消或已取消，不能新建合同");
   }
 }

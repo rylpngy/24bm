@@ -27,7 +27,7 @@ public interface ProcurementExecutionMapper {
                    expected_receipt_date as "expectedReceiptDate",updated_at as "updatedAt"
             from purchase_orders where tenant_id=#{tenant} and rfq_id=#{rfq}),
       ol as (select l.id,l.order_id as "orderId",l.description,l.unit,l.quantity,l.unit_price as "unitPrice",
-                    l.line_amount as "lineAmount",l.sort_no as "sortNo"
+                    l.line_amount as "lineAmount",l.sort_no as "sortNo",l.reserved_stock_qty as "reservedStockQty"
              from order_line_items l join o on o.id=l.order_id where l.tenant_id=#{tenant}),
       rec as (select a.id,a.order_id as "orderId",a.receiver_id as "receiverId",a.result,
                      a.received_quantity as "receivedQuantity",a.qualified_quantity as "qualifiedQuantity",
@@ -79,6 +79,7 @@ public interface ProcurementExecutionMapper {
         'demands',coalesce((select jsonb_agg(to_jsonb(d) order by id) from d),'[]'::jsonb),
         'demandItems',coalesce((select jsonb_agg(to_jsonb(di) order by id) from di),'[]'::jsonb),
         'orders',coalesce((select jsonb_agg(to_jsonb(o) order by id) from o),'[]'::jsonb),
+        'orderCancellations',coalesce((select jsonb_agg(jsonb_build_object('id',x.id,'orderId',x.order_id,'status',x.status,'reason',x.reason,'createdBy',x.created_by,'createdAt',x.created_at,'completedBy',x.completed_by,'completedAt',x.completed_at,'response',x.response) order by x.created_at,x.id) from order_cancellation_requests x join o on o.id=x.order_id where x.tenant_id=#{tenant}),'[]'::jsonb),
         'orderLines',coalesce((select jsonb_agg(to_jsonb(ol) order by id) from ol),'[]'::jsonb),
         'receipts',coalesce((select jsonb_agg(to_jsonb(rec) order by id) from rec),'[]'::jsonb),
         'receiptLines',coalesce((select jsonb_agg(to_jsonb(rl) order by id) from rl),'[]'::jsonb),
@@ -103,6 +104,7 @@ public interface ProcurementExecutionMapper {
         select '订单 ' || o.id || '：' || f.blocking_reason as reason
         from purchase_orders o join finance_fulfillment_checks f on f.tenant_id=o.tenant_id and f.order_id=o.id
         where o.tenant_id=#{tenant} and o.rfq_id=#{rfq} and f.blocking_reason is not null
+        and not (o.status='已取消' and exists(select 1 from order_cancellation_requests c where c.tenant_id=o.tenant_id and c.order_id=o.id and c.status='accepted'))
         union all
         select '发票 ' || i.id || '：' || f.blocking_reason
         from purchase_orders o join invoices i on i.tenant_id=o.tenant_id and i.order_id=o.id

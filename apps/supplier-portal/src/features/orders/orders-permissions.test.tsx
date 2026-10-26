@@ -6,6 +6,7 @@ import { OrdersPage } from './orders-page';
 const mutations = vi.hoisted(() => ({ confirm: vi.fn(), ship: vi.fn(), issue: vi.fn() }));
 beforeEach(() => vi.clearAllMocks());
 vi.mock('@24bid/api-client', () => ({
+  useOrderCancellation: () => ({data:{blockers:[],items:[],total:0,actorId:'viewer'},loading:false,loadError:false,error:'',busy:false,page:1,setPage:vi.fn(),refresh:vi.fn(),act:vi.fn()}),
   useSupplierOrderList: () => ({ data: { data: [
     { id: 'confirm-me', status: '待供应商确认' }, { id: 'ship-me', status: '待发货', lineItems: [{ id: 'line-1', quantity: 10, description: '物料' }] }, { id: 'invoice-me', status: '已收货', amount: 1200 },
     { id: 'partial-me', status: '已发货', lineItems: [{ id: 'line-2', quantity: 10, description: '分批物料' }] },

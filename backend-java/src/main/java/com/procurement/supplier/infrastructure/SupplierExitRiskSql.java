@@ -6,7 +6,8 @@ public final class SupplierExitRiskSql {
 
   public static final String CTE = """
       with scoped_orders as (
-        select * from purchase_orders where tenant_id = #{tenantId} and supplier_id = #{supplierId}
+        select * from purchase_orders o where tenant_id = #{tenantId} and supplier_id = #{supplierId}
+        and not (o.status='已取消' and exists(select 1 from order_cancellation_requests c where c.tenant_id=o.tenant_id and c.order_id=o.id and c.status='accepted'))
       ), scoped_invoices as (
         select * from invoices where tenant_id = #{tenantId} and
           (supplier_id = #{supplierId} or order_id in (select id from scoped_orders))
