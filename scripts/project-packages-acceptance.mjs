@@ -1923,7 +1923,7 @@ try {
               requestKey: k + '-' + runId,
               kind: k,
               amount,
-              evidenceNo: k + '-' + runId,
+              evidenceNo: k + '-' + kind + '-' + runId,
               attachmentId: attachment,
               remark: '已核验清算原件',
             });
