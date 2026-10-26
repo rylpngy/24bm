@@ -64,6 +64,7 @@ class ContractMergedScopePostgresIT {
           create table rfqs(id text primary key,tenant_id text,owner_id text,method text);
           create table purchase_demands(id text primary key,tenant_id text,department_id text);
           create table rfq_demands(tenant_id text,rfq_id text,demand_id text);
+          create table order_settlements(id text,tenant_id text,order_id text,contract_id text,status text);
           create table purchase_orders(id text primary key,tenant_id text,rfq_id text,supplier_id text,amount numeric,
             status text,expected_receipt_date date,created_at timestamptz default now(),updated_at timestamptz default now(),
             delivery_address text,contact_name text,contact_phone text,payment_terms text);
@@ -151,6 +152,13 @@ class ContractMergedScopePostgresIT {
         assertThatThrownBy(() -> service.createCurrentTenantContract(create(order))).isInstanceOf(PermissionDeniedException.class);
       }
     }
+  }
+
+  @Test void settlementFreezeDoesNotBroadenScopeOrPermitContractMutation(){
+    TenantContext.set("t",null,"u-all");
+    try(var statement=session.getConnection().createStatement()){statement.execute("insert into order_settlements values ('settlement','t','o-a','c-a','approved')");}catch(java.sql.SQLException e){throw new IllegalStateException(e);}
+    assertThatThrownBy(()->service.updateCurrentTenantContract("c-a",update())).isInstanceOf(IllegalStateException.class).hasMessageContaining("清算");
+    assertThat(service.listCurrentTenantContracts(null,null,null)).extracting(c->c.id()).contains("c-a");
   }
 
   @Test void missingRoleNeverBecomesUnrestricted() {
