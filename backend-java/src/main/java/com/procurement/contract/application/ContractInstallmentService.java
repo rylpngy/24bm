@@ -52,7 +52,9 @@ public class ContractInstallmentService {
     if (!"已生效".equals(contract.status()) || "已归档".equals(contract.archiveStatus())) {
       throw new IllegalStateException("关联合同未生效或已归档，不能登记付款");
     }
-    if (!supplier.equals(contract.supplierId()) || invoiceAmount.compareTo(contract.amount()) != 0) {
+    var basis=allocations.orderBasis(tenant,order,entry);
+    if (basis==null || !basis.verified() || basis.amount().compareTo(contract.amount())!=0
+        || !supplier.equals(contract.supplierId()) || invoiceAmount.signum()<=0 || invoiceAmount.compareTo(contract.amount())>0) {
       throw new IllegalStateException("发票供应商或金额与关联合同不一致");
     }
     var schedule = balances(tenant, order);
@@ -63,10 +65,11 @@ public class ContractInstallmentService {
     if (schedule.stream().anyMatch(m -> !m.verified())) {
       throw new IllegalStateException("合同存在缺少金额流水的历史付款或计划异常，请先核对");
     }
-    if (schedule.stream().map(Balance::paid).reduce(BigDecimal.ZERO, BigDecimal::add).compareTo(previouslyPaid) != 0) {
+    // Contract milestones span all invoices; the caller checks this invoice's own balance.
+    if (schedule.stream().map(Balance::paid).reduce(BigDecimal.ZERO, BigDecimal::add).compareTo(basis.previousPaid()) != 0) {
       throw new IllegalStateException("合同已分配金额与发票付款流水不一致，请先核对付款计划");
     }
-    if (schedule.stream().map(Balance::amount).reduce(BigDecimal.ZERO, BigDecimal::add).compareTo(invoiceAmount) != 0) {
+    if (schedule.stream().map(Balance::amount).reduce(BigDecimal.ZERO, BigDecimal::add).compareTo(contract.amount()) != 0) {
       throw new IllegalStateException("合同付款计划合计与合同金额不一致");
     }
     var eligible = schedule.stream().filter(m -> m.reached() && (selected == null || selected.equals(m.id()))).toList();

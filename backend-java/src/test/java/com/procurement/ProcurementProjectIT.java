@@ -62,6 +62,25 @@ class ProcurementProjectIT {
   String tenant, dept, author, reviewer, role, material;
   @Autowired com.procurement.finance.application.InvoiceApplicationService invoiceService;
   @Autowired com.procurement.finance.application.FinanceActionApplicationService financeActions;
+  @Autowired com.procurement.contract.application.ContractInstallmentService contractInstallments;
+  @Autowired org.springframework.transaction.PlatformTransactionManager txManager;
+  @Test void multipleInvoicePaymentsShareContractMilestonesWithoutConfusingInvoiceLocalBalances(){
+    var c=cancellationCase();String line=receivedLine(c),contract=settlementContract(c,true);invoiceSupplier(c);
+    var a=invoiceService.create(c.order(),installmentRequest(line,"milestone-a",1,100));var b=invoiceService.create(c.order(),installmentRequest(line,"milestone-b",1,100));context(author);
+    String m1="milestone-"+UUID.randomUUID(),m2="milestone-"+UUID.randomUUID();jdbc.update("insert into contract_payment_milestones(id,tenant_id,contract_id,name,percent,amount,status,sort_no,reached) values (?,?,?,'第一批',50,100,'待付',0,true),(?,?,?,'第二批',50,100,'待付',1,false)",m1,tenant,contract,m2,tenant,contract);
+    var tx=new org.springframework.transaction.support.TransactionTemplate(txManager);
+    java.util.function.BiConsumer<String,String> pay=(invoice,milestone)->tx.executeWithoutResult(status->{String entry="payment-"+UUID.randomUUID();
+      if(invoice.equals(b.id()))jdbc.update("update invoices set payment_status='已付款' where id=?",invoice);
+      jdbc.update("insert into invoice_payment_entries(id,tenant_id,invoice_id,idempotency_key,amount,evidence_no,created_by) values (?,?,?,? ,100,?,?)",entry,tenant,invoice,entry,"BANK-"+entry,author);
+      contractInstallments.allocate(tenant,c.order(),c.supplier(),new BigDecimal("100"),entry,new BigDecimal("100"),milestone,BigDecimal.ZERO);
+      jdbc.update("update invoices set payment_status='已付款' where id=?",invoice);
+    });
+    pay.accept(a.id(),m1);assertThatThrownBy(()->pay.accept(b.id(),m2)).hasMessageContaining("已达成里程碑");
+    assertThat(jdbc.queryForObject("select count(*) from invoice_payment_entries where tenant_id=?",Integer.class,tenant)).isEqualTo(1);
+    jdbc.update("update contract_payment_milestones set reached=true,reached_at=now() where id=?",m2);pay.accept(b.id(),m2);
+    assertThat(contractInstallments.balances(tenant,c.order())).allMatch(x->x.verified()&&x.remaining().signum()==0);
+    assertThat(jdbc.queryForObject("select blocking_reason from contract_closeout_checks where contract_id=?",String.class,contract)).isNull();
+  }
   void invoiceSupplier(CancelCase c){jdbc.update("update roles set permissions=permissions||'[\"supplier:invoice:read\",\"supplier:invoice:manage\"]'::jsonb where id=?",c.user()+"role");supplier(c);}
   com.procurement.finance.api.CreateInvoiceRequest installmentRequest(String line,String key,int quantity,int amount){return new com.procurement.finance.api.CreateInvoiceRequest(BigDecimal.valueOf(amount),"INV-"+key,"",null,BigDecimal.ZERO,key,List.of(new com.procurement.finance.api.CreateInvoiceRequest.Line(line,BigDecimal.valueOf(quantity))));}
   @Test void installmentInvoicesRetainEachLineAndCanBePaidWithoutFalseFullOrderVariance(){

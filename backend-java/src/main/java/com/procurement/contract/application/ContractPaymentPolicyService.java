@@ -13,12 +13,15 @@ public class ContractPaymentPolicyService {
   private final ContractMapper contracts;
   private final ContractPaymentMilestoneMapper milestones;
   private final AuditLogApplicationService audit;
+  private final com.procurement.contract.infrastructure.ContractPaymentAllocationMapper allocations;
 
   public ContractPaymentPolicyService(ContractMapper contracts,
-      ContractPaymentMilestoneMapper milestones, AuditLogApplicationService audit) {
+      ContractPaymentMilestoneMapper milestones, AuditLogApplicationService audit,
+      com.procurement.contract.infrastructure.ContractPaymentAllocationMapper allocations) {
     this.contracts = contracts;
     this.milestones = milestones;
     this.audit = audit;
+    this.allocations = allocations;
   }
 
   // Called inside the finance transaction, after finance has checked record-level access.
@@ -30,8 +33,10 @@ public class ContractPaymentPolicyService {
     if (!"已生效".equals(contract.status()) || "已归档".equals(contract.archiveStatus())) {
       throw new IllegalStateException("关联合同未生效或已归档，不能登记付款");
     }
+    var basis=allocations.orderBasis(tenantId,orderId,null);
     if (!supplierId.equals(contract.supplierId()) || contract.amount() == null
-        || invoiceAmount.compareTo(contract.amount()) != 0) {
+        || basis==null || !basis.verified() || basis.amount().compareTo(contract.amount())!=0
+        || invoiceAmount.signum()<=0 || invoiceAmount.compareTo(contract.amount())>0) {
       throw new IllegalStateException("发票供应商或金额与关联合同不一致，请先核对合同");
     }
     var schedule = milestones.listByContract(tenantId, contract.id());
@@ -41,7 +46,7 @@ public class ContractPaymentPolicyService {
     }
     BigDecimal total = BigDecimal.ZERO;
     for (var milestone : schedule) {
-      if (!milestone.reached()) {
+      if (!milestone.reached() && invoiceAmount.compareTo(contract.amount())==0) {
         throw new IllegalStateException("合同付款条件尚未达成：" + milestone.name());
       }
       if (milestone.amount() == null || milestone.amount().signum() < 0
