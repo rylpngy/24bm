@@ -60,6 +60,66 @@ class ProcurementProjectIT {
   @Autowired com.procurement.finance.infrastructure.InvoiceMapper invoiceMapper;
   @Autowired com.procurement.buyer.infrastructure.BudgetLifecycleMapper budgetMapper;
   String tenant, dept, author, reviewer, role, material;
+  @Autowired com.procurement.order.application.OrderCancellationService cancellations;
+  @Autowired com.procurement.order.application.PurchaseOrderApplicationService orderService;
+  @Autowired com.procurement.contract.application.ContractApplicationService contractService;
+  record CancelCase(String project,String lot,String order,String sku,String supplier,String user) {}
+  CancelCase cancellationCase() {
+    String sku=mallSku("100");var p=approve(projects.create(draft(0))).project();var l=ready(lot(p.id(),"2"));
+    var checkout=projectMall.checkout(p.id(),l.info().id(),mallRequest(l,sku,"2"));
+    String supplier=jdbc.queryForObject("select supplier_id from purchase_orders where id=?",String.class,checkout.orderId()),user="cancel-supplier-"+UUID.randomUUID(),r=user+"role";
+    jdbc.update("insert into users(id,supplier_id,name,status) values (?,?,'Cancellation supplier','active')",user,supplier);
+    jdbc.update("insert into roles(id,supplier_id,scope,name,permissions) values (?,?,'supplier','Order manager','[\"supplier:order:manage\",\"supplier:order:read\"]'::jsonb)",r,supplier);
+    jdbc.update("insert into user_roles(user_id,role_id) values (?,?)",user,r);
+    return new CancelCase(p.id(),l.info().id(),checkout.orderId(),sku,supplier,user);
+  }
+  void supplier(CancelCase c){TenantContext.set(null,c.supplier(),c.user());}
+  com.procurement.order.api.OrderCancellationContracts.Request cancelRequest(String key){return new com.procurement.order.api.OrderCancellationContracts.Request(key,"原计划调整，协商取消未履行订单");}
+  com.procurement.order.api.OrderCancellationContracts.Decision cancelDecision(String action){return new com.procurement.order.api.OrderCancellationContracts.Decision(action,"确认未履行责任，记录双方意见");}
+  @Test void orderCancellationIsBilateralRestoresStockOnceAndClosesWithOriginalEvidence(){
+    var c=cancellationCase();var entry=cancellations.request(c.order(),cancelRequest("same"));
+    assertThat(cancellations.request(c.order(),cancelRequest("same")).id()).isEqualTo(entry.id());
+    assertThatThrownBy(()->cancellations.decide(c.order(),entry.id(),cancelDecision("accept"),false)).isInstanceOf(IllegalArgumentException.class);
+    supplier(c);assertThatThrownBy(()->orderService.confirmCurrentSupplierOrder(c.order())).isInstanceOf(IllegalStateException.class);
+    cancellations.decide(c.order(),entry.id(),cancelDecision("accept"),true);cancellations.decide(c.order(),entry.id(),cancelDecision("accept"),true);
+    assertThat(jdbc.queryForObject("select stock_qty from mall_skus where id=?",BigDecimal.class,c.sku())).isEqualByComparingTo("20");
+    assertThat(jdbc.queryForObject("select amount from purchase_orders where id=?",BigDecimal.class,c.order())).isEqualByComparingTo("200");
+    context(author);assertThat(budget.position(tenant,dept,year).orderAmount()).isEqualByComparingTo("0");
+    assertThat(budget.position(tenant,dept,year).committed()).isEqualByComparingTo("246.91");
+    expansion.closePackage(c.project(),c.lot(),new com.procurement.buyer.api.ProjectExpansionContracts.PackageAction(expansion.packages(c.project()).getFirst().info().revision(),"双方取消后核验归档"));
+    assertThat(budget.position(tenant,dept,year).committed()).isEqualByComparingTo("0");
+    assertThat(jdbc.queryForObject("select snapshot::text from procurement_execution_archives where tenant_id=?",String.class,tenant)).contains("orderCancellations",entry.id(),"双方");
+  }
+  @Test void cancellationRejectWithdrawRestorePriorStatusAndScopeCannotCrossSupplier(){
+    var c=cancellationCase();var first=cancellations.request(c.order(),cancelRequest("first"));
+    context(reviewer);assertThatThrownBy(()->cancellations.decide(c.order(),first.id(),cancelDecision("withdraw"),false)).isInstanceOf(IllegalStateException.class);
+    supplier(c);cancellations.decide(c.order(),first.id(),cancelDecision("reject"),true);
+    context(author);assertThat(jdbc.queryForObject("select status from purchase_orders where id=?",String.class,c.order())).isEqualTo("待供应商确认");
+    var second=cancellations.request(c.order(),cancelRequest("second"));cancellations.decide(c.order(),second.id(),cancelDecision("withdraw"),false);
+    assertThat(cancellations.view(c.order(),false,1,1).total()).isEqualTo(2);assertThat(cancellations.view(c.order(),false,2,1).items()).hasSize(1);
+    TenantContext.set(null,"wrong-supplier",c.user());assertThatThrownBy(()->cancellations.view(c.order(),true,1,10)).isInstanceOf(IllegalArgumentException.class);
+    assertThat(jdbc.queryForObject("select stock_qty from mall_skus where id=?",BigDecimal.class,c.sku())).isEqualByComparingTo("18");
+  }
+  @Test void cancellationBlocksContractShipmentAndUnverifiableInventory(){
+    var c=cancellationCase();var entry=cancellations.request(c.order(),cancelRequest("one"));
+    assertThatThrownBy(()->contractService.createCurrentTenantContract(new com.procurement.contract.api.CreateContractRequest("C-1","合同",c.order(),new BigDecimal("200"),"草案","未履行",null,null,null,"",""))).isInstanceOf(IllegalStateException.class);
+    jdbc.update("update mall_skus set stock_qty=null where id=?",c.sku());supplier(c);
+    assertThatThrownBy(()->cancellations.decide(c.order(),entry.id(),cancelDecision("accept"),true)).isInstanceOf(IllegalStateException.class);
+    assertThat(jdbc.queryForObject("select status from purchase_orders where id=?",String.class,c.order())).isEqualTo("取消协商中");
+    assertThat(jdbc.queryForObject("select status from order_cancellation_requests where id=?",String.class,entry.id())).isEqualTo("pending");
+    context(author);cancellations.decide(c.order(),entry.id(),cancelDecision("withdraw"),false);
+    jdbc.update("update purchase_orders set status='已发货' where id=?",c.order());assertThatThrownBy(()->cancellations.request(c.order(),cancelRequest("late"))).isInstanceOf(IllegalStateException.class);
+  }
+  @Test void concurrentSupplierAgreementRestoresInventoryExactlyOnce() throws Exception {
+    var c=cancellationCase();var e=cancellations.request(c.order(),cancelRequest("concurrent"));
+    try(var pool=java.util.concurrent.Executors.newFixedThreadPool(2)){
+      java.util.concurrent.Callable<String> action=()->{supplier(c);try{return cancellations.decide(c.order(),e.id(),cancelDecision("accept"),true).status();}finally{TenantContext.clear();}};
+      var first=pool.submit(action);var second=pool.submit(action);
+      assertThat(first.get(20,java.util.concurrent.TimeUnit.SECONDS)).isEqualTo("accepted");assertThat(second.get(20,java.util.concurrent.TimeUnit.SECONDS)).isEqualTo("accepted");
+    }
+    assertThat(jdbc.queryForObject("select stock_qty from mall_skus where id=?",BigDecimal.class,c.sku())).isEqualByComparingTo("20");
+    assertThat(jdbc.queryForObject("select count(*) from order_cancellation_requests where order_id=? and status='accepted'",Integer.class,c.order())).isEqualTo(1);
+  }
 
   String mallSku(String price) {
     String key="pm-"+UUID.randomUUID(), supplier=key+"s";

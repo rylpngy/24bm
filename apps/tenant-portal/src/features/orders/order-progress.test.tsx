@@ -5,6 +5,7 @@ import { OrdersPage } from './orders-page';
 const fixture = vi.hoisted(() => ({ delivered: true }));
 vi.mock('../../lib/use-buyer-permissions', () => ({ useBuyerPermissions: () => ({ can: () => true }) }));
 vi.mock('@24bid/api-client', () => ({
+  useOrderCancellation: () => ({data:{blockers:['已完成订单不能取消'],items:[],total:0,actorId:'viewer'},loading:false,loadError:false,error:'',busy:false,page:1,setPage:vi.fn(),refresh:vi.fn(),act:vi.fn()}),
   usePurchaseOrderList: () => ({ data: { data: [{ id: 'received-order', status: '已收货', amount: 1200 }] } }),
   useBuyerSupplierList: () => ({ data: { data: [] } }),
   useBuyerReceiptList: () => ({ data: { data: [] } }),

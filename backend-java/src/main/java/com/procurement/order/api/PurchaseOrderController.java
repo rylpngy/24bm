@@ -18,6 +18,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/buyer/orders")
 public class PurchaseOrderController {
+  @org.springframework.beans.factory.annotation.Autowired private com.procurement.order.application.OrderCancellationService cancellation;
+  @GetMapping("/{orderId}/cancellations")
+  public ApiResponse<OrderCancellationContracts.View> cancellations(@PathVariable String orderId,@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="10") int size){return ApiResponse.ok(cancellation.view(orderId,false,page,size));}
+  @PostMapping("/{orderId}/cancellations")
+  public ApiResponse<OrderCancellationContracts.Entry> cancel(@PathVariable String orderId,@Valid @RequestBody OrderCancellationContracts.Request request){return ApiResponse.ok(cancellation.request(orderId,request));}
+  @PostMapping("/{orderId}/cancellations/{requestId}")
+  public ApiResponse<OrderCancellationContracts.Entry> cancellationDecision(@PathVariable String orderId,@PathVariable String requestId,@Valid @RequestBody OrderCancellationContracts.Decision request){return ApiResponse.ok(cancellation.decide(orderId,requestId,request,false));}
   private final PurchaseOrderApplicationService purchaseOrderApplicationService;
 
   public PurchaseOrderController(PurchaseOrderApplicationService purchaseOrderApplicationService) {

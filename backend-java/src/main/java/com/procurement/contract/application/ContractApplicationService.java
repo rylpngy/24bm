@@ -190,6 +190,7 @@ public class ContractApplicationService {
       throw new IllegalArgumentException("Purchase order not found in tenant scope: " + request.relatedOrderId());
     }
 
+    if (java.util.Set.of("取消协商中","已取消").contains(order.status())) throw new IllegalStateException("订单正在取消或已取消，不能新建合同");
     String contractId = newId();
     contractMapper.insert(
         contractId,

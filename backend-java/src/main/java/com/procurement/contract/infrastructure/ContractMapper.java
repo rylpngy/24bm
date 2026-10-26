@@ -14,6 +14,8 @@ import org.apache.ibatis.annotations.Update;
 
 @Mapper
 public interface ContractMapper {
+  @org.apache.ibatis.annotations.Select("select status from purchase_orders where tenant_id=#{tenant} and id=#{order} for update")
+  String lockOrderStatus(@org.apache.ibatis.annotations.Param("tenant")String tenant,@org.apache.ibatis.annotations.Param("order")String order);
 
   @Select("""
       select o.id from purchase_orders o join contracts c on c.tenant_id=o.tenant_id and c.related_order_id=o.id

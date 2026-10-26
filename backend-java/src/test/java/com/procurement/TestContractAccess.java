@@ -19,6 +19,7 @@ final class TestContractAccess {
     Mockito.when(mapper.canAccessAttachment(Mockito.anyString(), Mockito.anyString(), Mockito.isNull(), Mockito.isNull())).thenReturn(true);
     Mockito.when(mapper.canAccessOrder(Mockito.anyString(), Mockito.anyString(), Mockito.isNull(), Mockito.isNull())).thenReturn(true);
     Mockito.when(mapper.lockById(Mockito.anyString(), Mockito.anyString())).thenAnswer(invocation -> invocation.getArgument(1));
+    Mockito.when(mapper.lockOrderStatus(Mockito.anyString(),Mockito.anyString())).thenReturn("待发货");
     ReflectionTestUtils.setField(service, "contractAccess", new ContractAccessService(
         mapper, Mockito.mock(PermissionService.class), scopes));
   }
