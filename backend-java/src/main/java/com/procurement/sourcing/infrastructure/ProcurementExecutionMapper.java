@@ -27,7 +27,7 @@ public interface ProcurementExecutionMapper {
                    expected_receipt_date as "expectedReceiptDate",updated_at as "updatedAt"
             from purchase_orders where tenant_id=#{tenant} and rfq_id=#{rfq}),
       ol as (select l.id,l.order_id as "orderId",l.description,l.unit,l.quantity,l.unit_price as "unitPrice",
-                    l.line_amount as "lineAmount",l.sort_no as "sortNo"
+                    l.line_amount as "lineAmount",l.sort_no as "sortNo",l.reserved_stock_qty as "reservedStockQty"
              from order_line_items l join o on o.id=l.order_id where l.tenant_id=#{tenant}),
       rec as (select a.id,a.order_id as "orderId",a.receiver_id as "receiverId",a.result,
                      a.received_quantity as "receivedQuantity",a.qualified_quantity as "qualifiedQuantity",

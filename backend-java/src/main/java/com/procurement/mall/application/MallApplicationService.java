@@ -210,7 +210,7 @@ public class MallApplicationService {
     String order = purchaseOrderApplicationService.createMallOrder(rfq,supplier,amount,
         requestedDate == null ? earliest : requestedDate,
         lines.stream().map(l -> new PurchaseOrderApplicationService.DirectOrderLine(
-            l.product().name()+" · "+l.sku().skuCode()+" "+l.sku().spec(),l.sku().unit(),l.quantity(),l.unitPrice(),l.sku().id())).toList(),
+            l.product().name()+" · "+l.sku().skuCode()+" "+l.sku().spec(),l.sku().unit(),l.quantity(),l.unitPrice(),l.sku().id(),l.sku().stockQty()==null?BigDecimal.ZERO:l.quantity())).toList(),
         formatAddress(address),address == null ? null : address.receiver(),address == null ? null : address.phone());
     var snapshots = lines.stream().map(l -> new ProjectSelection(l.sku().materialId(),l.sku().id(),
         l.product().name(),l.product().brand(),supplier,l.product().supplierName(),l.sku().skuCode(),
@@ -254,7 +254,7 @@ public class MallApplicationService {
         amount,
         expectedReceiptDate,
         List.of(new PurchaseOrderApplicationService.DirectOrderLine(line.product().name()+" · "+line.sku().skuCode()+" "+line.sku().spec(),
-            line.sku().unit(),request.quantity(),line.unitPrice(),line.sku().id())),
+            line.sku().unit(),request.quantity(),line.unitPrice(),line.sku().id(),line.sku().stockQty()==null?BigDecimal.ZERO:request.quantity())),
         formatAddress(address),address==null?null:address.receiver(),address==null?null:address.phone());
     deductStockIfTracked(tenantId, line);
     auditLogApplicationService.recordTenantAction(
@@ -409,7 +409,7 @@ public class MallApplicationService {
           expectedReceiptDate,
           lines.stream()
               .map(l -> new PurchaseOrderApplicationService.DirectOrderLine(
-                  l.product().name()+" · "+l.sku().skuCode()+" "+l.sku().spec(),l.sku().unit(),l.quantity(),l.unitPrice(),l.sku().id()))
+                  l.product().name()+" · "+l.sku().skuCode()+" "+l.sku().spec(),l.sku().unit(),l.quantity(),l.unitPrice(),l.sku().id(),l.sku().stockQty()==null?BigDecimal.ZERO:l.quantity()))
               .toList(),
           formatAddress(address),
           address == null ? null : address.receiver(),

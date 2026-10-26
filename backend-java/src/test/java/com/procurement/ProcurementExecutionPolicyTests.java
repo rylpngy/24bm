@@ -11,7 +11,7 @@ class ProcurementExecutionPolicyTests {
   @Test void cancelledOrderNeedsBilateralEvidenceAndNoRemainingObligations() throws Exception {
     var data=complete();((ObjectNode)data.path("orders").get(0)).put("status","已取消");
     assertThat(ProcurementExecutionPolicy.evaluate(data).blockers()).isNotEmpty();
-    data.withArray("orderCancellations").addObject().put("id","cancel").put("orderId","o").put("status","accepted").put("createdBy","buyer").put("completedBy","supplier").put("completedAt","2026-10-26").put("reason","计划调整").put("response","确认取消");
+    data.withArray("orderCancellations").addObject().put("id","cancel").put("orderId","o").put("status","accepted").put("createdBy","buyer").put("completedBy","supplier").put("completedAt",java.time.OffsetDateTime.now().minusDays(1).toString()).put("reason","计划调整").put("response","确认取消");
     assertThat(ProcurementExecutionPolicy.evaluate(data).blockers()).anyMatch(b->b.contains("财务责任"));
     for(String key:java.util.List.of("receipts","receiptLines","contracts","invoices","payments"))data.withArray(key).removeAll();
     var result=ProcurementExecutionPolicy.evaluate(data);assertThat(result.blockers()).isEmpty();assertThat(result.orderAmount()).isEqualByComparingTo("0");assertThat(result.budgetAmount()).isEqualByComparingTo("150");

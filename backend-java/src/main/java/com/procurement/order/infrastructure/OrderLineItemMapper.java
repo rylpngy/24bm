@@ -11,6 +11,8 @@ import org.apache.ibatis.annotations.Update;
 
 @Mapper
 public interface OrderLineItemMapper {
+  @Update("update order_line_items set reserved_stock_qty=#{quantity,jdbcType=NUMERIC} where tenant_id=#{tenant} and id=#{id}")
+  void recordStockReservation(@Param("tenant")String tenant,@Param("id")String id,@Param("quantity")BigDecimal quantity);
 
   @Update("update order_line_items set source_sku_id=#{skuId} where tenant_id=#{tenantId} and id=#{id}")
   void assignSourceSku(@Param("tenantId") String tenantId,@Param("id") String id,@Param("skuId") String skuId);

@@ -1,3 +1,5 @@
+alter table order_line_items add column reserved_stock_qty numeric(18,4) check(reserved_stock_qty>=0 and reserved_stock_qty<=quantity);
+-- Null is historical/unknown; zero explicitly records an untracked SKU at checkout.
 create table order_cancellation_requests (
  id text primary key, tenant_id text not null references tenants(id),
  order_id text not null references purchase_orders(id), supplier_id text not null references enterprises(id),

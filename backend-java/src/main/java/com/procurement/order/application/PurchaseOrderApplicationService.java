@@ -220,10 +220,11 @@ public class PurchaseOrderApplicationService {
 
   // 商城直购行(跨模块编排用的简单命令对象,避免暴露 api DTO)。
   public record DirectOrderLine(
-      String description, String unit, java.math.BigDecimal quantity, java.math.BigDecimal unitPrice,String sourceSkuId) {
+      String description, String unit, java.math.BigDecimal quantity, java.math.BigDecimal unitPrice,String sourceSkuId,java.math.BigDecimal reservedStockQty) {
     public DirectOrderLine(String description,String unit,java.math.BigDecimal quantity,java.math.BigDecimal unitPrice) {
-      this(description,unit,quantity,unitPrice,null);
+      this(description,unit,quantity,unitPrice,null,null);
     }
+    public DirectOrderLine(String description,String unit,java.math.BigDecimal quantity,java.math.BigDecimal unitPrice,String sku){this(description,unit,quantity,unitPrice,sku,null);}
   }
 
   // 商城直购订单:由商城模块编排调用,锚点 RFQ 已就位;返回订单号(避免跨模块暴露 api DTO)。
@@ -293,8 +294,9 @@ public class PurchaseOrderApplicationService {
         orderLineItemApplicationService.addDirectLine(
             tenantId, orderId, line.description(), line.unit(), line.quantity(), line.unitPrice());
       } else {
-        orderLineItemApplicationService.addDirectLineWithSource(tenantId,orderId,line.description(),line.unit(),
+        String lineId=orderLineItemApplicationService.addDirectLineWithSource(tenantId,orderId,line.description(),line.unit(),
             line.quantity(),line.unitPrice(),line.sourceSkuId(),++sortNo);
+        orderLineItemApplicationService.recordStockReservation(tenantId,lineId,line.reservedStockQty());
       }
     }
     auditLogApplicationService.recordTenantAction(

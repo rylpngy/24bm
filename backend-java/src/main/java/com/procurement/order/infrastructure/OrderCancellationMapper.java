@@ -32,7 +32,8 @@ public interface OrderCancellationMapper {
   @Select(
       """
 select reason from (
-select '已有关联合同，请先按合同解约流程处理' reason where exists(select 1 from contracts where tenant_id=#{t} and related_order_id=#{o})
+ select '已有关联合同，请先按合同解约流程处理' reason where exists(select 1 from contracts where tenant_id=#{t} and related_order_id=#{o})
+ union all select '历史商城扣库依据缺失，须先核对原始库存责任' where exists(select 1 from order_line_items where tenant_id=#{t} and order_id=#{o} and source_sku_id is not null and reserved_stock_qty is null)
 union all select '已有发货或收货记录，不能按未履行订单取消' where exists(select 1 from deliveries where tenant_id=#{t} and order_id=#{o}) or exists(select 1 from receipts where tenant_id=#{t} and order_id=#{o})
 union all select '已有发票或付款责任，须先走清算流程' where exists(select 1 from invoices where tenant_id=#{t} and order_id=#{o})
 union all select '存在售后记录，须先核对责任' where exists(select 1 from mall_after_sales where tenant_id=#{t} and order_id=#{o})
@@ -76,7 +77,7 @@ union all select '采购执行已归档，不能直接取消' where exists(selec
 
   @Select(
       "select source_sku_id from order_line_items where tenant_id=#{t} and order_id=#{o} and"
-          + " source_sku_id is not null group by source_sku_id order by source_sku_id")
+          + " source_sku_id is not null and reserved_stock_qty>0 group by source_sku_id order by source_sku_id")
   List<String> skuIds(@Param("t") String t, @Param("o") String o);
 
   @Select("select id from mall_skus where id=#{id} and stock_qty is not null for update")
@@ -84,8 +85,8 @@ union all select '采购执行已归档，不能直接取消' where exists(selec
 
   @Update(
       "update mall_skus s set stock_qty=stock_qty+q.quantity,updated_at=now() from (select"
-          + " source_sku_id,sum(quantity) quantity from order_line_items where tenant_id=#{t} and"
-          + " order_id=#{o} group by source_sku_id)q where s.id=q.source_sku_id and s.stock_qty is"
+          + " source_sku_id,sum(reserved_stock_qty) quantity from order_line_items where tenant_id=#{t} and"
+          + " order_id=#{o} and reserved_stock_qty>0 group by source_sku_id)q where s.id=q.source_sku_id and s.stock_qty is"
           + " not null")
   int restoreStock(@Param("t") String t, @Param("o") String o);
 }

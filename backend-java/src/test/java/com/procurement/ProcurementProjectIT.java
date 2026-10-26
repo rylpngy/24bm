@@ -65,7 +65,10 @@ class ProcurementProjectIT {
   @Autowired com.procurement.contract.application.ContractApplicationService contractService;
   record CancelCase(String project,String lot,String order,String sku,String supplier,String user) {}
   CancelCase cancellationCase() {
-    String sku=mallSku("100");var p=approve(projects.create(draft(0))).project();var l=ready(lot(p.id(),"2"));
+    return cancellationCase(true);
+  }
+  CancelCase cancellationCase(boolean tracked) {
+    String sku=mallSku("100");if(!tracked)jdbc.update("update mall_skus set stock_qty=null where id=?",sku);var p=approve(projects.create(draft(0))).project();var l=ready(lot(p.id(),"2"));
     var checkout=projectMall.checkout(p.id(),l.info().id(),mallRequest(l,sku,"2"));
     String supplier=jdbc.queryForObject("select supplier_id from purchase_orders where id=?",String.class,checkout.orderId()),user="cancel-supplier-"+UUID.randomUUID(),r=user+"role";
     jdbc.update("insert into users(id,supplier_id,name,status) values (?,?,'Cancellation supplier','active')",user,supplier);
@@ -119,6 +122,15 @@ class ProcurementProjectIT {
     }
     assertThat(jdbc.queryForObject("select stock_qty from mall_skus where id=?",BigDecimal.class,c.sku())).isEqualByComparingTo("20");
     assertThat(jdbc.queryForObject("select count(*) from order_cancellation_requests where order_id=? and status='accepted'",Integer.class,c.order())).isEqualTo(1);
+  }
+  @Test void untrackedCheckoutNeverAddsInventoryAndLegacyUnknownIsBlocked(){
+    var c=cancellationCase(false);
+    assertThat(jdbc.queryForObject("select reserved_stock_qty from order_line_items where order_id=?",BigDecimal.class,c.order())).isEqualByComparingTo("0");
+    var e=cancellations.request(c.order(),cancelRequest("untracked"));jdbc.update("update mall_skus set stock_qty=50 where id=?",c.sku());supplier(c);cancellations.decide(c.order(),e.id(),cancelDecision("accept"),true);
+    assertThat(jdbc.queryForObject("select stock_qty from mall_skus where id=?",BigDecimal.class,c.sku())).isEqualByComparingTo("50");
+    context(author);var legacy=cancellationCase();jdbc.update("update order_line_items set reserved_stock_qty=null where order_id=?",legacy.order());
+    assertThat(cancellations.view(legacy.order(),false,1,10).blockers()).anyMatch(b->b.contains("扣库依据"));
+    assertThatThrownBy(()->cancellations.request(legacy.order(),cancelRequest("legacy"))).isInstanceOf(IllegalStateException.class);
   }
 
   String mallSku(String price) {
