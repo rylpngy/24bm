@@ -12,6 +12,7 @@ import {
   type LudongAiReviewMetrics, type LudongApplication, type WorkflowTask,
 } from './api';
 import { LudongPocApplicationSnapshot } from './ludong-poc-application-snapshot';
+import { WorkflowTaskOperations } from '../process/workflow-task-operations';
 
 type ReviewData = Record<string, unknown>;
 type FieldDefinition = {
@@ -153,6 +154,7 @@ export function LudongPocApprovalDialog({
   const node = taskNodeId(task);
   const form = nodeForms[node];
   const update = (key: string, value: unknown) => setReviewData({ ...reviewData, [key]: value });
+  const [operationBusy, setOperationBusy] = useState(false);
   const complete = form?.fields.every((field) => !field.required || String(reviewData[field.id] ?? '').trim());
   const argumentationRejected = node === 'argumentation_review'
     && reviewData.argumentationOpinion === '不同意';
@@ -216,11 +218,12 @@ export function LudongPocApprovalDialog({
           {argumentationRejected && <FeedbackNotice tone="error" message="论证结论为“不同意”，本节点只能驳回，不能审批通过。" />}
           <Field label="审批意见"><textarea value={comment} onChange={(e) => setComment(e.target.value)} className={cn(inputClass, 'h-24 py-3 leading-6')} /></Field>
           <FeedbackNotice tone="info" message="签字由当前登录账号和办理时间自动形成电子审批记录。后续办理人可查看本节点提交的全部信息。" />
+          <WorkflowTaskOperations taskId={task.taskId} disabled={busy} onTransferred={onClose} onBusyChange={setOperationBusy} />
         </div>
 
         <footer className="flex justify-end gap-3 border-t border-slate-100 bg-slate-50/70 p-4">
-          <ActionButton icon={XCircle} tone="red" size="md" disabled={busy} onClick={() => onComplete('reject')}>驳回</ActionButton>
-          <PrimaryActionButton icon={CheckCircle2} size="md" flushTop busy={busy} pendingLabel="提交中" disabled={!form || !complete || argumentationRejected} onClick={() => onComplete('approve')}>审批通过并签字</PrimaryActionButton>
+          <ActionButton icon={XCircle} tone="red" size="md" disabled={busy || operationBusy} onClick={() => onComplete('reject')}>驳回</ActionButton>
+          <PrimaryActionButton icon={CheckCircle2} size="md" flushTop busy={busy} pendingLabel="提交中" disabled={operationBusy || !form || !complete || argumentationRejected} onClick={() => onComplete('approve')}>审批通过并签字</PrimaryActionButton>
         </footer>
       </section>
     </div>

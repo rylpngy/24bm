@@ -141,8 +141,15 @@ public class LudongPocApplicationService {
     permissionService.require("buyer:ludong-poc:write");
     String tenantId = tenant();
     String userId = user();
-    LudongPocApplication application = requireApplication(tenantId, id);
+    LudongPocApplication application = mapper.findByTenantAndIdForUpdate(tenantId, id);
+    if (application == null) throw new IllegalArgumentException("申报不存在或不在当前企业范围内");
     Map<String, Object> form = readMap(application.formDataJson());
+    List<Map<String, Object>> items = readItems(application.itemsJson());
+    validate(new LudongPocApplicationRequest(application.projectName(), application.applicantUnit(),
+        application.departmentId(), application.budgetAmount(), form, items), form, items);
+    BigDecimal total = items.stream().map(item -> new BigDecimal(String.valueOf(item.get("quantity")))
+        .multiply(new BigDecimal(String.valueOf(item.get("unitPrice"))))).reduce(BigDecimal.ZERO, BigDecimal::add);
+    if (total.compareTo(application.budgetAmount()) != 0) throw new IllegalArgumentException("设备清单合计与预算不一致，请编辑并重新保存");
     validateWorkflowFlags(form);
     // 默认流程只在首次启用时初始化。后续必须使用管理员在配置器中
     // 发布的版本，不能在业务提交时用代码内默认 schema 覆盖租户配置。

@@ -689,6 +689,11 @@ public class UnifiedWorkflowApplicationService {
         .anyMatch(WorkflowBusinessCompletionHandler::requiresIndependentApprover);
   }
 
+  public boolean initiatorRequiresIndependentApprover(String businessType) {
+    return completionHandlers.stream().filter(handler -> handler.businessType().equals(businessType))
+        .anyMatch(WorkflowBusinessCompletionHandler::requiresIndependentApprover);
+  }
+
   private boolean canHandle(Task task, String userId, List<String> roleGroups) {
     if (task.getAssignee() != null && !task.getAssignee().isBlank()) {
       return userId.equals(task.getAssignee());

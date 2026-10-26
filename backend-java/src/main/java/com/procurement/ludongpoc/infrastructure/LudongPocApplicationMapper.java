@@ -23,6 +23,9 @@ public interface LudongPocApplicationMapper {
   @Select("select " + COLUMNS + " from ludong_poc_applications where tenant_id = #{tenantId} and id = #{id}")
   LudongPocApplication findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
 
+  @Select("select " + COLUMNS + " from ludong_poc_applications where tenant_id = #{tenantId} and id = #{id} for update")
+  LudongPocApplication findByTenantAndIdForUpdate(@Param("tenantId") String tenantId, @Param("id") String id);
+
   @Insert("""
       insert into ludong_poc_applications (
         id, tenant_id, application_no, project_name, applicant_unit, department_id,
