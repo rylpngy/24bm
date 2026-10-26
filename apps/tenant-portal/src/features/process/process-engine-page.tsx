@@ -49,6 +49,7 @@ const BUSINESS_TYPES = [
   { id: 'project_change', label: '立项变更' },
   { id: 'project_carryover', label: '跨年度承接' },
   { id: 'project_liquidation', label: '项目终止清算' },
+  { id: 'order_settlement', label: '合同解除与订单清算' },
   { id: 'budget_exception', label: '超预算例外' },
   { id: 'supplier_qualification_change', label: '供应商资质变更' },
   { id: 'buyer_supplier_admission', label: '供应商准入' },

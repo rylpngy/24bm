@@ -200,6 +200,7 @@ export function ContractsPage() {
         {failedAction && <FeedbackNotice tone="error" message={financeErrorMessage(failedAction.error, '合同操作失败')} />}
 
         {c.id && <WorkflowStatusPanel businessType="contract_approval" businessId={c.id} />}
+        {c.relatedOrderId&&<a href={`?module=orders&recordId=${encodeURIComponent(c.relatedOrderId)}`} className="inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">关联订单与合同清算</a>}
 
         <div className="grid gap-4 xl:grid-cols-[1fr_20rem]">
           <div className="min-w-0 space-y-4">

@@ -26,9 +26,14 @@ import type {
 
 import type {
   ApiResponseListPurchaseOrderResponse,
+  ApiResponseOrderCancellationEntry,
+  ApiResponseOrderCancellationView,
   ApiResponsePurchaseOrderResponse,
   ApiResponseVoid,
   CreatePurchaseOrderRequest,
+  OrderCancellationDecision,
+  OrderCancellationRequest,
+  PurchaseOrderCancellationsParams,
   PurchaseOrderListParams,
   UpdatePurchaseOrderRequest
 } from '.././model';
@@ -239,6 +244,219 @@ const {mutation: mutationOptions} = options ?
       > => {
 
       const mutationOptions = getPurchaseOrderCreateMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const purchaseOrderCancellations = (
+    orderId: string,
+    params?: PurchaseOrderCancellationsParams,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseOrderCancellationView>(
+      {url: `/api/v1/buyer/orders/${orderId}/cancellations`, method: 'GET',
+        params, signal
+    },
+      );
+    }
+
+
+
+
+export const getPurchaseOrderCancellationsQueryKey = (orderId?: string,
+    params?: PurchaseOrderCancellationsParams,) => {
+    return [
+    `/api/v1/buyer/orders/${orderId}/cancellations`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+
+export const getPurchaseOrderCancellationsQueryOptions = <TData = Awaited<ReturnType<typeof purchaseOrderCancellations>>, TError = ErrorType<ApiResponseVoid>>(orderId: string,
+    params?: PurchaseOrderCancellationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof purchaseOrderCancellations>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPurchaseOrderCancellationsQueryKey(orderId,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof purchaseOrderCancellations>>> = ({ signal }) => purchaseOrderCancellations(orderId,params, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(orderId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof purchaseOrderCancellations>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type PurchaseOrderCancellationsQueryResult = NonNullable<Awaited<ReturnType<typeof purchaseOrderCancellations>>>
+export type PurchaseOrderCancellationsQueryError = ErrorType<ApiResponseVoid>
+
+
+export function usePurchaseOrderCancellations<TData = Awaited<ReturnType<typeof purchaseOrderCancellations>>, TError = ErrorType<ApiResponseVoid>>(
+ orderId: string,
+    params: undefined |  PurchaseOrderCancellationsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof purchaseOrderCancellations>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof purchaseOrderCancellations>>,
+          TError,
+          Awaited<ReturnType<typeof purchaseOrderCancellations>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePurchaseOrderCancellations<TData = Awaited<ReturnType<typeof purchaseOrderCancellations>>, TError = ErrorType<ApiResponseVoid>>(
+ orderId: string,
+    params?: PurchaseOrderCancellationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof purchaseOrderCancellations>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof purchaseOrderCancellations>>,
+          TError,
+          Awaited<ReturnType<typeof purchaseOrderCancellations>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function usePurchaseOrderCancellations<TData = Awaited<ReturnType<typeof purchaseOrderCancellations>>, TError = ErrorType<ApiResponseVoid>>(
+ orderId: string,
+    params?: PurchaseOrderCancellationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof purchaseOrderCancellations>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function usePurchaseOrderCancellations<TData = Awaited<ReturnType<typeof purchaseOrderCancellations>>, TError = ErrorType<ApiResponseVoid>>(
+ orderId: string,
+    params?: PurchaseOrderCancellationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof purchaseOrderCancellations>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPurchaseOrderCancellationsQueryOptions(orderId,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const purchaseOrderCancel = (
+    orderId: string,
+    orderCancellationRequest: BodyType<OrderCancellationRequest>,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseOrderCancellationEntry>(
+      {url: `/api/v1/buyer/orders/${orderId}/cancellations`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: orderCancellationRequest, signal
+    },
+      );
+    }
+
+
+
+export const getPurchaseOrderCancelMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof purchaseOrderCancel>>, TError,{orderId: string;data: BodyType<OrderCancellationRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof purchaseOrderCancel>>, TError,{orderId: string;data: BodyType<OrderCancellationRequest>}, TContext> => {
+
+const mutationKey = ['purchaseOrderCancel'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof purchaseOrderCancel>>, {orderId: string;data: BodyType<OrderCancellationRequest>}> = (props) => {
+          const {orderId,data} = props ?? {};
+
+          return  purchaseOrderCancel(orderId,data,)
+        }
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PurchaseOrderCancelMutationResult = NonNullable<Awaited<ReturnType<typeof purchaseOrderCancel>>>
+    export type PurchaseOrderCancelMutationBody = BodyType<OrderCancellationRequest>
+    export type PurchaseOrderCancelMutationError = ErrorType<ApiResponseVoid>
+
+    export const usePurchaseOrderCancel = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof purchaseOrderCancel>>, TError,{orderId: string;data: BodyType<OrderCancellationRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof purchaseOrderCancel>>,
+        TError,
+        {orderId: string;data: BodyType<OrderCancellationRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getPurchaseOrderCancelMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const purchaseOrderCancellationDecision = (
+    orderId: string,
+    requestId: string,
+    orderCancellationDecision: BodyType<OrderCancellationDecision>,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseOrderCancellationEntry>(
+      {url: `/api/v1/buyer/orders/${orderId}/cancellations/${requestId}`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: orderCancellationDecision, signal
+    },
+      );
+    }
+
+
+
+export const getPurchaseOrderCancellationDecisionMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof purchaseOrderCancellationDecision>>, TError,{orderId: string;requestId: string;data: BodyType<OrderCancellationDecision>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof purchaseOrderCancellationDecision>>, TError,{orderId: string;requestId: string;data: BodyType<OrderCancellationDecision>}, TContext> => {
+
+const mutationKey = ['purchaseOrderCancellationDecision'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof purchaseOrderCancellationDecision>>, {orderId: string;requestId: string;data: BodyType<OrderCancellationDecision>}> = (props) => {
+          const {orderId,requestId,data} = props ?? {};
+
+          return  purchaseOrderCancellationDecision(orderId,requestId,data,)
+        }
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PurchaseOrderCancellationDecisionMutationResult = NonNullable<Awaited<ReturnType<typeof purchaseOrderCancellationDecision>>>
+    export type PurchaseOrderCancellationDecisionMutationBody = BodyType<OrderCancellationDecision>
+    export type PurchaseOrderCancellationDecisionMutationError = ErrorType<ApiResponseVoid>
+
+    export const usePurchaseOrderCancellationDecision = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof purchaseOrderCancellationDecision>>, TError,{orderId: string;requestId: string;data: BodyType<OrderCancellationDecision>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof purchaseOrderCancellationDecision>>,
+        TError,
+        {orderId: string;requestId: string;data: BodyType<OrderCancellationDecision>},
+        TContext
+      > => {
+
+      const mutationOptions = getPurchaseOrderCancellationDecisionMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }

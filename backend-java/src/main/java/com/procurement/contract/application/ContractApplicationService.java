@@ -280,6 +280,7 @@ public class ContractApplicationService {
     String tenantId = TenantAccessGuard.requireTenantId("buyer contract APIs");
     // Match payment/after-sales lock order; fresh queries discard any pre-lock SESSION snapshots.
     String orderId = contractMapper.lockOrderForContract(tenantId, contractId);
+    if(contractMapper.settlementLocked(tenantId,contractId))throw new IllegalStateException("合同已进入清算，请从清算台账完成归档");
     if (orderId == null || contractMapper.lockById(tenantId, contractId) == null) {
       throw new IllegalStateException("合同关联订单或合同已变化，请刷新重试");
     }

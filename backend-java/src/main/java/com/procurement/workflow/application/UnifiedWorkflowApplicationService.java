@@ -1050,6 +1050,7 @@ public class UnifiedWorkflowApplicationService {
     LinkedHashMap<String, String> owners = new LinkedHashMap<>();
     owners.put(instance.businessType(), instance.businessId());
     switch (instance.businessType()) {
+      case "order_settlement" -> putOwner(owners,"order_settlement_document",snapshot.get("orderId"));
       case "project_initiation" -> owners.put("procurement_project",instance.businessId());
       case "project_change" -> {owners.put("procurement_project_change",instance.businessId());putOwner(owners,"procurement_project",snapshot.get("projectId"));}
       case "project_carryover", "project_liquidation" -> putOwner(owners,"procurement_project",snapshot.get("projectId"));
@@ -1086,6 +1087,7 @@ public class UnifiedWorkflowApplicationService {
 
   private static String workflowBusinessName(String businessType) {
     return switch (businessType) {
+      case "order_settlement" -> "合同解除与订单清算";
       case "project_initiation" -> "项目立项";
       case "project_change" -> "立项变更";
       case "project_carryover" -> "跨年度承接";

@@ -26,13 +26,17 @@ import type {
 
 import type {
   ApiResponseListPurchaseOrderResponse,
+  ApiResponseOrderCancellationEntry,
+  ApiResponseOrderCancellationView,
   ApiResponsePurchaseOrderResponse,
   ApiResponseVoid,
+  OrderCancellationDecision,
+  SupplierOrderCancellationsParams,
   SupplierOrderListParams
 } from '.././model';
 
 import { customInstance } from '../../http-client';
-import type { ErrorType } from '../../http-client';
+import type { ErrorType , BodyType } from '../../http-client';
 
 
 
@@ -169,6 +173,160 @@ export function useSupplierOrderList<TData = Awaited<ReturnType<typeof supplierO
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getSupplierOrderListQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const supplierOrderCancellationDecision = (
+    orderId: string,
+    requestId: string,
+    orderCancellationDecision: BodyType<OrderCancellationDecision>,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseOrderCancellationEntry>(
+      {url: `/api/v1/supplier/orders/${orderId}/cancellations/${requestId}`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: orderCancellationDecision, signal
+    },
+      );
+    }
+
+
+
+export const getSupplierOrderCancellationDecisionMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierOrderCancellationDecision>>, TError,{orderId: string;requestId: string;data: BodyType<OrderCancellationDecision>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof supplierOrderCancellationDecision>>, TError,{orderId: string;requestId: string;data: BodyType<OrderCancellationDecision>}, TContext> => {
+
+const mutationKey = ['supplierOrderCancellationDecision'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierOrderCancellationDecision>>, {orderId: string;requestId: string;data: BodyType<OrderCancellationDecision>}> = (props) => {
+          const {orderId,requestId,data} = props ?? {};
+
+          return  supplierOrderCancellationDecision(orderId,requestId,data,)
+        }
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SupplierOrderCancellationDecisionMutationResult = NonNullable<Awaited<ReturnType<typeof supplierOrderCancellationDecision>>>
+    export type SupplierOrderCancellationDecisionMutationBody = BodyType<OrderCancellationDecision>
+    export type SupplierOrderCancellationDecisionMutationError = ErrorType<ApiResponseVoid>
+
+    export const useSupplierOrderCancellationDecision = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierOrderCancellationDecision>>, TError,{orderId: string;requestId: string;data: BodyType<OrderCancellationDecision>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof supplierOrderCancellationDecision>>,
+        TError,
+        {orderId: string;requestId: string;data: BodyType<OrderCancellationDecision>},
+        TContext
+      > => {
+
+      const mutationOptions = getSupplierOrderCancellationDecisionMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const supplierOrderCancellations = (
+    orderId: string,
+    params?: SupplierOrderCancellationsParams,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseOrderCancellationView>(
+      {url: `/api/v1/supplier/orders/${orderId}/cancellations`, method: 'GET',
+        params, signal
+    },
+      );
+    }
+
+
+
+
+export const getSupplierOrderCancellationsQueryKey = (orderId?: string,
+    params?: SupplierOrderCancellationsParams,) => {
+    return [
+    `/api/v1/supplier/orders/${orderId}/cancellations`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+
+export const getSupplierOrderCancellationsQueryOptions = <TData = Awaited<ReturnType<typeof supplierOrderCancellations>>, TError = ErrorType<ApiResponseVoid>>(orderId: string,
+    params?: SupplierOrderCancellationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierOrderCancellations>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSupplierOrderCancellationsQueryKey(orderId,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierOrderCancellations>>> = ({ signal }) => supplierOrderCancellations(orderId,params, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(orderId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierOrderCancellations>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type SupplierOrderCancellationsQueryResult = NonNullable<Awaited<ReturnType<typeof supplierOrderCancellations>>>
+export type SupplierOrderCancellationsQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useSupplierOrderCancellations<TData = Awaited<ReturnType<typeof supplierOrderCancellations>>, TError = ErrorType<ApiResponseVoid>>(
+ orderId: string,
+    params: undefined |  SupplierOrderCancellationsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierOrderCancellations>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof supplierOrderCancellations>>,
+          TError,
+          Awaited<ReturnType<typeof supplierOrderCancellations>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSupplierOrderCancellations<TData = Awaited<ReturnType<typeof supplierOrderCancellations>>, TError = ErrorType<ApiResponseVoid>>(
+ orderId: string,
+    params?: SupplierOrderCancellationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierOrderCancellations>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof supplierOrderCancellations>>,
+          TError,
+          Awaited<ReturnType<typeof supplierOrderCancellations>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSupplierOrderCancellations<TData = Awaited<ReturnType<typeof supplierOrderCancellations>>, TError = ErrorType<ApiResponseVoid>>(
+ orderId: string,
+    params?: SupplierOrderCancellationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierOrderCancellations>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useSupplierOrderCancellations<TData = Awaited<ReturnType<typeof supplierOrderCancellations>>, TError = ErrorType<ApiResponseVoid>>(
+ orderId: string,
+    params?: SupplierOrderCancellationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierOrderCancellations>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getSupplierOrderCancellationsQueryOptions(orderId,params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

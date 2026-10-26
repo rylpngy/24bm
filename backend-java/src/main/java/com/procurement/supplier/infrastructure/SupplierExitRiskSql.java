@@ -8,11 +8,12 @@ public final class SupplierExitRiskSql {
       with scoped_orders as (
         select * from purchase_orders o where tenant_id = #{tenantId} and supplier_id = #{supplierId}
         and not (o.status='已取消' and exists(select 1 from order_cancellation_requests c where c.tenant_id=o.tenant_id and c.order_id=o.id and c.status='accepted'))
+        and not exists(select 1 from order_settlements s where s.tenant_id=o.tenant_id and s.order_id=o.id and s.status='settled')
       ), scoped_invoices as (
-        select * from invoices where tenant_id = #{tenantId} and
+        select * from invoices i where tenant_id = #{tenantId} and not exists(select 1 from order_settlements s where s.tenant_id=i.tenant_id and s.order_id=i.order_id and s.status='settled') and
           (supplier_id = #{supplierId} or order_id in (select id from scoped_orders))
       ), scoped_contracts as (
-        select * from contracts where tenant_id = #{tenantId} and supplier_id = #{supplierId}
+        select * from contracts c where tenant_id = #{tenantId} and supplier_id = #{supplierId} and not exists(select 1 from order_settlements s where s.tenant_id=c.tenant_id and s.contract_id=c.id and s.status='settled')
       ), milestone_balances as (
         select m.*, coalesce((select sum(a.amount) from contract_payment_allocations a
           where a.tenant_id = #{tenantId} and a.milestone_id = m.id), 0) as paid

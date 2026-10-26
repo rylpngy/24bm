@@ -23,10 +23,25 @@ public final class ProcurementExecutionPolicy {
     documents.add(new Document(text(rfq,"id"),"定标：" + text(rfq,"title"),text(rfq,"status"),null,"rfqs",text(rfq,"id")));
     if (list(data,"orders").isEmpty()) blockers.add("尚无采购订单");
     var cancelled = new java.util.HashSet<String>();
+    var settled = new java.util.HashSet<String>();
+    BigDecimal settlementTotal=BigDecimal.ZERO,settlementInvoices=BigDecimal.ZERO;
     BigDecimal paid = BigDecimal.ZERO;
     boolean unknownPaid = false;
     for (var order : data.path("orders")) {
       String id = text(order,"id");
+      var clearing=matching(data,"orderSettlements","orderId",id).stream().filter(s->"settled".equals(text(s,"status"))).toList();
+      if("已清算".equals(text(order,"status"))&&clearing.size()==1){
+        var s=clearing.get(0);var proof=matching(data,"settlementEvidence","settlementId",text(s,"id"));
+        BigDecimal net=amount(s,"initialPaid");for(var p:proof)if("payment".equals(text(p,"kind")))net=net.add(amount(p,"amount"));else if("refund".equals(text(p,"kind")))net=net.subtract(amount(p,"amount"));
+        boolean approved=list(data,"workflowHistory").stream().anyMatch(h->text(h.path("instance"),"id").equals(text(s,"workflowInstanceId"))&&"approved".equals(text(h.path("instance"),"status")));
+        if(!approved||text(s,"supplierActor").isBlank()||text(s,"completedBy").isBlank()||text(s,"completedAt").isBlank()||net.compareTo(amount(s,"finalAmount"))!=0)blockers.add("订单 "+id+" 清算审批、确认或净付款证据不完整");
+        if(amount(s,"goodsAmount").signum()>0&&proof.stream().noneMatch(p->"invoice".equals(text(p,"kind"))&&amount(p,"amount").compareTo(amount(s,"goodsAmount"))==0))blockers.add("订单 "+id+" 缺少最终结算发票凭证");
+        settled.add(id);settlementTotal=settlementTotal.add(amount(s,"finalAmount"));settlementInvoices=settlementInvoices.add(amount(s,"goodsAmount"));paid=paid.add(net);
+        documents.add(doc(order,"清算订单（原金额留档）："+id,"status","amount","orders","id"));documents.add(new Document(text(s,"id"),"合同解除及清算："+id,"已清算",amount(s,"finalAmount"),"orders",id));
+        for(var c:matching(data,"contracts","relatedOrderId",id))documents.add(doc(c,"合同原始记录："+text(c,"contractName"),"status","amount","contracts","id"));
+        for(var i:matching(data,"invoices","orderId",id))documents.add(doc(i,"原始发票（以清算净额为准）："+text(i,"id"),"paymentStatus","amount","invoices","id"));
+        continue;
+      }
       if ("已取消".equals(text(order,"status")) && matching(data,"orderCancellations","orderId",id).stream().anyMatch(c -> "accepted".equals(text(c,"status")) && !text(c,"createdBy").isBlank() && !text(c,"completedBy").isBlank() && !text(c,"completedAt").isBlank() && !text(c,"reason").isBlank() && !text(c,"response").isBlank())) {
         if (!matching(data,"receipts","orderId",id).isEmpty() || !matching(data,"contracts","relatedOrderId",id).isEmpty() || !matching(data,"invoices","orderId",id).isEmpty()) blockers.add("已取消订单 "+id+" 仍有关联履约或财务责任");
         else {
@@ -111,8 +126,8 @@ public final class ProcurementExecutionPolicy {
     for (var a : data.path("legacyApprovals")) if (Set.of("pending","待审批","待审核","processing").contains(text(a,"status"))) blockers.add("存在未完成历史审批：" + text(a,"id"));
     for (var reason : data.path("closeoutChecks")) blockers.add(reason.asText());
     for (var reason : data.path("attachmentChecks")) blockers.add(reason.asText());
-    BigDecimal invoiced = sum(list(data,"invoices").stream().filter(ProcurementExecutionPolicy::validInvoice).toList(),"amount");
-    BigDecimal ordered = sum(list(data,"orders").stream().filter(o -> !cancelled.contains(text(o,"id"))).toList(),"amount");
+    BigDecimal invoiced = settlementInvoices.add(sum(list(data,"invoices").stream().filter(i->!settled.contains(text(i,"orderId"))).filter(ProcurementExecutionPolicy::validInvoice).toList(),"amount"));
+    BigDecimal ordered = settlementTotal.add(sum(list(data,"orders").stream().filter(o -> !cancelled.contains(text(o,"id"))&&!settled.contains(text(o,"id"))).toList(),"amount"));
     return new Evaluation(List.copyOf(documents), sum(list(data,"demands"),"budget"), ordered,
         invoiced, unknownPaid ? null : paid, unknownPaid ? null : ordered.subtract(paid), blockers.stream().distinct().toList());
   }

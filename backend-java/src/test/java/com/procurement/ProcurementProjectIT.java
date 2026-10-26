@@ -63,6 +63,62 @@ class ProcurementProjectIT {
   @Autowired com.procurement.order.application.OrderCancellationService cancellations;
   @Autowired com.procurement.order.application.PurchaseOrderApplicationService orderService;
   @Autowired com.procurement.contract.application.ContractApplicationService contractService;
+  @Autowired com.procurement.order.application.OrderSettlementService settlements;
+  @org.springframework.boot.test.mock.mockito.SpyBean com.procurement.attachment.application.AttachmentApplicationService settlementAttachments;
+  String settlementProof(CancelCase c) throws Exception {
+    String id="proof-"+UUID.randomUUID();byte[] data=("Agreement "+id).getBytes(java.nio.charset.StandardCharsets.UTF_8);String sha=java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(data));
+    jdbc.update("insert into attachments(id,tenant_id,owner_type,owner_id,file_name,storage_key,uploaded_by,visibility,status) values (?,?,'order_settlement_document',?,'agreement.txt',?,?,'buyer_internal','active')",id,tenant,c.order(),"test/"+id,author);
+    org.mockito.Mockito.doReturn(List.of(new com.procurement.attachment.application.AttachmentApplicationService.ProcurementExecutionAttachmentMetadata(id,tenant,"order_settlement_document",c.order(),"agreement.txt",(long)data.length,sha))).when(settlementAttachments).procurementExecutionAttachmentMetadata("order_settlement_document",c.order());
+    org.mockito.Mockito.doReturn(new com.procurement.attachment.application.AttachmentApplicationService.DownloadedObject("agreement.txt",data,"text/plain")).when(settlementAttachments).loadCurrentTenantObject(id);
+    return id;
+  }
+  String settlementContract(CancelCase c,boolean active){
+    var contract=contractService.createCurrentTenantContract(new com.procurement.contract.api.CreateContractRequest("SET-"+UUID.randomUUID(),"Settlement contract",c.order(),new BigDecimal("200"),"草案","未履行",null,null,null,"",""));
+    if(active)jdbc.update("update contracts set status='已生效' where id=?",contract.id());return contract.id();
+  }
+  com.procurement.order.api.OrderSettlementContracts.Action settlementAction(com.procurement.order.api.OrderSettlementContracts.Entry e,String action){return new com.procurement.order.api.OrderSettlementContracts.Action(e.revision(),action,"核对原始依据与双方结算协议",Map.of());}
+  com.procurement.order.api.OrderSettlementContracts.Entry approveSettlement(CancelCase c,com.procurement.order.api.OrderSettlementContracts.Entry e){supplier(c);e=settlements.act(c.order(),e.id(),settlementAction(e,"accept"),true);context(author);e=settlements.act(c.order(),e.id(),settlementAction(e,"submit"),false);decide(e.id(),"approve");context(author);return settlements.detail(c.order(),e.id(),false).record();}
+  @Test void contractDraftVoidRequiresSupplierAndIndependentFlowableThenRestoresStock() throws Exception {
+    var c=cancellationCase();String contract=settlementContract(c,false),proof=settlementProof(c);var request=new com.procurement.order.api.OrderSettlementContracts.Proposal("void","取消草案，双方确认未履行",BigDecimal.ZERO,proof,null);
+    var e=settlements.propose(c.order(),request);assertThat(settlements.propose(c.order(),request).id()).isEqualTo(e.id());
+    assertThatThrownBy(()->settlements.act(c.order(),e.id(),settlementAction(e,"accept"),false)).isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(()->jdbc.update("insert into invoices(id,tenant_id,supplier_id,order_id,amount,invoice_no,payment_status) values (?, ?, ?, ?,200,'ILLEGAL','待付款')","invoice-"+UUID.randomUUID(),tenant,c.supplier(),c.order())).isInstanceOf(org.springframework.dao.DataAccessException.class);
+    supplier(c);assertThat(new String(settlements.agreement(c.order(),e.id(),true),java.nio.charset.StandardCharsets.UTF_8)).contains(proof);context(author);
+    var approved=approveSettlement(c,e);assertThat(approved.status()).isEqualTo("approved");
+    settlements.act(c.order(),approved.id(),settlementAction(approved,"complete"),false);
+    assertThat(jdbc.queryForObject("select status from contracts where id=?",String.class,contract)).isEqualTo("已撤销");
+    assertThat(jdbc.queryForObject("select stock_qty from mall_skus where id=?",BigDecimal.class,c.sku())).isEqualByComparingTo("20");
+    assertThat(jdbc.queryForObject("select amount from purchase_orders where id=?",BigDecimal.class,c.order())).isEqualByComparingTo("200");
+    assertThatThrownBy(()->settlements.act(c.order(),approved.id(),settlementAction(approved,"complete"),false)).isInstanceOf(IllegalStateException.class);
+    assertThat(budget.position(tenant,dept,year).orderAmount()).isEqualByComparingTo("0");
+  }
+  @Test void settlementRejectWithdrawAndScopePreserveOriginalData() throws Exception {
+    var c=cancellationCase();settlementContract(c,true);String proof=settlementProof(c);var e=settlements.propose(c.order(),new com.procurement.order.api.OrderSettlementContracts.Proposal("reject","合同解除",BigDecimal.ZERO,proof,null));
+    context(reviewer);var first=e;assertThatThrownBy(()->settlements.act(c.order(),first.id(),settlementAction(first,"withdraw"),false)).isInstanceOf(IllegalStateException.class);
+    supplier(c);e=settlements.act(c.order(),e.id(),settlementAction(e,"reject"),true);assertThat(e.status()).isEqualTo("rejected");context(author);
+    assertThat(jdbc.queryForObject("select status from purchase_orders where id=?",String.class,c.order())).isEqualTo("待供应商确认");
+    e=settlements.propose(c.order(),new com.procurement.order.api.OrderSettlementContracts.Proposal("withdraw","合同解除",BigDecimal.ZERO,proof,null));settlements.act(c.order(),e.id(),settlementAction(e,"withdraw"),false);
+    assertThat(settlements.view(c.order(),false,1,1).total()).isEqualTo(2);
+    assertThat(jdbc.queryForObject("select stock_qty from mall_skus where id=?",BigDecimal.class,c.sku())).isEqualByComparingTo("18");
+    TenantContext.set(null,"wrong-supplier",c.user());assertThatThrownBy(()->settlements.view(c.order(),true,1,10)).isInstanceOf(IllegalArgumentException.class);
+  }
+  @Test void partialReductionRegistersRealNetPaymentWithoutChangingOriginalQuantities() throws Exception {
+    var c=cancellationCase();settlementContract(c,true);String proof=settlementProof(c),line=jdbc.queryForObject("select id from order_line_items where order_id=?",String.class,c.order());
+    String delivery="d-"+UUID.randomUUID(),receipt="r-"+UUID.randomUUID();
+    jdbc.update("insert into deliveries(id,tenant_id,order_id,supplier_id,carrier,tracking_no,status,shipped_quantity) values (?,?,?,?,'物流','TRACK','已发货',1)",delivery,tenant,c.order(),c.supplier());
+    jdbc.update("insert into delivery_line_items(id,tenant_id,delivery_id,order_line_id,shipped_quantity) values (?,?,?,?,1)",delivery+"l",tenant,delivery,line);
+    jdbc.update("insert into receipts(id,tenant_id,order_id,receiver_id,result,received_quantity,qualified_quantity,inspection_conclusion) values (?,?,?,?,'验收合格',1,1,'全部合格')",receipt,tenant,c.order(),author);
+    jdbc.update("insert into receipt_line_items(id,tenant_id,receipt_id,order_line_id,description,unit,ordered_quantity,received_quantity,qualified_quantity) values (?,?,?,?,'电脑','台',2,1,1)",receipt+"l",tenant,receipt,line);
+    jdbc.update("update purchase_orders set status='已发货' where id=?",c.order());
+    var e=settlements.propose(c.order(),new com.procurement.order.api.OrderSettlementContracts.Proposal("partial","保留验收1台，终止剩余1台",BigDecimal.ZERO,proof,null));assertThat(e.goodsAmount()).isEqualByComparingTo("100");assertThat(e.kind()).isEqualTo("reduction");e=approveSettlement(c,e);var approved=e;
+    assertThatThrownBy(()->settlements.act(c.order(),approved.id(),settlementAction(approved,"complete"),false)).hasMessageContaining("净付款");
+    settlements.evidence(c.order(),e.id(),new com.procurement.order.api.OrderSettlementContracts.EvidenceRequest("pay","payment",new BigDecimal("100"),"BANK-"+e.id(),proof,"实际付讫凭证"));
+    settlements.evidence(c.order(),e.id(),new com.procurement.order.api.OrderSettlementContracts.EvidenceRequest("invoice","invoice",new BigDecimal("100"),"INV-"+e.id(),proof,"最终结算货款核对"));
+    settlements.act(c.order(),e.id(),settlementAction(e,"complete"),false);
+    assertThat(jdbc.queryForObject("select quantity from order_line_items where id=?",BigDecimal.class,line)).isEqualByComparingTo("2");
+    assertThat(jdbc.queryForObject("select stock_qty from mall_skus where id=?",BigDecimal.class,c.sku())).isEqualByComparingTo("19");
+    assertThat(budget.position(tenant,dept,year).orderAmount()).isEqualByComparingTo("100");assertThat(budget.position(tenant,dept,year).paidAmount()).isEqualByComparingTo("100");
+  }
   record CancelCase(String project,String lot,String order,String sku,String supplier,String user) {}
   CancelCase cancellationCase() {
     return cancellationCase(true);
@@ -277,7 +333,7 @@ class ProcurementProjectIT {
         material,
         tenant);
     context(author);
-    for (String type : List.of("project_initiation", "purchase_demand", "project_change", "project_carryover", "project_liquidation")) {
+    for (String type : List.of("project_initiation", "purchase_demand", "project_change", "project_carryover", "project_liquidation", "order_settlement")) {
       var definition =
           definitions.createProcess(
               new CreateProcessDefinitionRequest("Project " + type, "", "file-text", type));

@@ -27700,6 +27700,642 @@
           }
         }
       }
+    },
+    "/api/v1/supplier/orders/{orderId}/settlements/{id}/actions": {
+      "post": {
+        "tags": [
+          "supplier-order-settlement-controller"
+        ],
+        "operationId": "SupplierOrderSettlement_action",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderSettlementAction"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOrderSettlementRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/orders/{orderId}/settlements": {
+      "get": {
+        "tags": [
+          "order-settlement-controller"
+        ],
+        "operationId": "OrderSettlement_list",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOrderSettlementView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "order-settlement-controller"
+        ],
+        "operationId": "OrderSettlement_create",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderSettlementProposal"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOrderSettlementRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/orders/{orderId}/settlements/{id}/evidence": {
+      "post": {
+        "tags": [
+          "order-settlement-controller"
+        ],
+        "operationId": "OrderSettlement_evidence",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderSettlementEvidenceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOrderSettlementEvidence"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/orders/{orderId}/settlements/{id}/actions": {
+      "post": {
+        "tags": [
+          "order-settlement-controller"
+        ],
+        "operationId": "OrderSettlement_action",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderSettlementAction"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOrderSettlementRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/supplier/orders/{orderId}/settlements": {
+      "get": {
+        "tags": [
+          "supplier-order-settlement-controller"
+        ],
+        "operationId": "SupplierOrderSettlement_list",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOrderSettlementView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/supplier/orders/{orderId}/settlements/{id}": {
+      "get": {
+        "tags": [
+          "supplier-order-settlement-controller"
+        ],
+        "operationId": "SupplierOrderSettlement_detail",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOrderSettlementDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/supplier/orders/{orderId}/settlements/{id}/agreement": {
+      "get": {
+        "tags": [
+          "supplier-order-settlement-controller"
+        ],
+        "operationId": "SupplierOrderSettlement_agreement",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/orders/{orderId}/settlements/{id}": {
+      "get": {
+        "tags": [
+          "order-settlement-controller"
+        ],
+        "operationId": "OrderSettlement_detail",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOrderSettlementDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/orders/{orderId}/settlements/{id}/agreement": {
+      "get": {
+        "tags": [
+          "order-settlement-controller"
+        ],
+        "operationId": "OrderSettlement_agreement",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -43741,6 +44377,390 @@
           },
           "message": {
             "type": "string"
+          }
+        }
+      },
+      "OrderSettlementAction": {
+        "required": [
+          "action",
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "revision": {
+            "minimum": 1,
+            "type": "integer",
+            "format": "int32"
+          },
+          "action": {
+            "pattern": "accept|reject|withdraw|submit|complete",
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 1000,
+            "minLength": 0,
+            "type": "string"
+          },
+          "formData": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "ApiResponseOrderSettlementRecord": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/OrderSettlementRecord"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "OrderSettlementRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "orderId": {
+            "type": "string"
+          },
+          "contractId": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "previousStatus": {
+            "type": "string"
+          },
+          "snapshot": {
+            "type": "string"
+          },
+          "goodsAmount": {
+            "type": "number"
+          },
+          "compensationAmount": {
+            "type": "number"
+          },
+          "finalAmount": {
+            "type": "number"
+          },
+          "initialPaid": {
+            "type": "number"
+          },
+          "initialInvoiced": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "workflowInstanceId": {
+            "type": "string"
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "supplierActor": {
+            "type": "string"
+          },
+          "supplierComment": {
+            "type": "string"
+          },
+          "supplierActedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completedBy": {
+            "type": "string"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "agreementId": {
+            "type": "string"
+          },
+          "agreementName": {
+            "type": "string"
+          },
+          "agreementSha": {
+            "type": "string"
+          }
+        }
+      },
+      "OrderSettlementProposal": {
+        "required": [
+          "agreementId",
+          "compensation",
+          "reason",
+          "requestKey"
+        ],
+        "type": "object",
+        "properties": {
+          "requestKey": {
+            "maxLength": 100,
+            "minLength": 0,
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 1000,
+            "minLength": 0,
+            "type": "string"
+          },
+          "compensation": {
+            "minimum": 0,
+            "exclusiveMinimum": false,
+            "type": "number"
+          },
+          "agreementId": {
+            "type": "string"
+          },
+          "prices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Price"
+            }
+          }
+        }
+      },
+      "Price": {
+        "required": [
+          "lineId",
+          "unitPrice"
+        ],
+        "type": "object",
+        "properties": {
+          "lineId": {
+            "type": "string"
+          },
+          "unitPrice": {
+            "minimum": 0,
+            "exclusiveMinimum": false,
+            "type": "number"
+          }
+        }
+      },
+      "OrderSettlementEvidenceRequest": {
+        "required": [
+          "amount",
+          "attachmentId",
+          "evidenceNo",
+          "kind",
+          "remark",
+          "requestKey"
+        ],
+        "type": "object",
+        "properties": {
+          "requestKey": {
+            "maxLength": 100,
+            "minLength": 0,
+            "type": "string"
+          },
+          "kind": {
+            "pattern": "refund|payment|invoice|compensation_receipt",
+            "type": "string"
+          },
+          "amount": {
+            "minimum": 0,
+            "exclusiveMinimum": false,
+            "type": "number"
+          },
+          "evidenceNo": {
+            "maxLength": 150,
+            "minLength": 0,
+            "type": "string"
+          },
+          "attachmentId": {
+            "type": "string"
+          },
+          "remark": {
+            "maxLength": 1000,
+            "minLength": 0,
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseOrderSettlementEvidence": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/OrderSettlementEvidence"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "OrderSettlementEvidence": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "settlementId": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "evidenceNo": {
+            "type": "string"
+          },
+          "attachmentId": {
+            "type": "string"
+          },
+          "contentSha": {
+            "type": "string"
+          },
+          "remark": {
+            "type": "string"
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ApiResponseOrderSettlementView": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/OrderSettlementView"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "OrderSettlementPreview": {
+        "type": "object",
+        "properties": {
+          "contractId": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "goodsAmount": {
+            "type": "number"
+          },
+          "paidAmount": {
+            "type": "number"
+          },
+          "invoicedAmount": {
+            "type": "number"
+          },
+          "baseline": {
+            "type": "string"
+          },
+          "blockers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "OrderSettlementView": {
+        "type": "object",
+        "properties": {
+          "preview": {
+            "$ref": "#/components/schemas/OrderSettlementPreview"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderSettlementRecord"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "actorId": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseOrderSettlementDetail": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/OrderSettlementDetail"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "OrderSettlementDetail": {
+        "type": "object",
+        "properties": {
+          "record": {
+            "$ref": "#/components/schemas/OrderSettlementRecord"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderSettlementEvidence"
+            }
+          },
+          "netPaid": {
+            "type": "number"
+          },
+          "refundDue": {
+            "type": "number"
+          },
+          "paymentDue": {
+            "type": "number"
+          },
+          "blockers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       }

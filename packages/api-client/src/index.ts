@@ -42,3 +42,6 @@ export * from './project-closeout';
 export * from './project-marketplace';
 export * from './project-lifecycle';
 export * from './order-cancellation';
+export {projectLifecycleHistory,projectLifecyclePreview,projectLifecycleSubmit,projectLifecycleWithdraw} from './project-lifecycle';
+export type {ProjectLifecyclePreview,ProjectLifecycleRecord,ProjectLifecycleSource} from './project-lifecycle';
+export type {OrderCancellationEntry,OrderCancellationView} from './order-cancellation';

@@ -14,6 +14,10 @@ import org.apache.ibatis.annotations.Update;
 
 @Mapper
 public interface ContractMapper {
+  @Select("select exists(select 1 from order_settlements s join contracts c on c.tenant_id=s.tenant_id and c.related_order_id=s.order_id where c.tenant_id=#{tenantId} and c.id=#{id} and s.status not in ('rejected','withdrawn'))")
+  boolean settlementLocked(@Param("tenantId")String tenantId,@Param("id")String id);
+  @Update("update contracts c set status=case when s.kind='draft_void' then '已撤销' else '已解除' end,archive_status='已归档',updated_at=now() from order_settlements s where c.tenant_id=#{tenantId} and c.id=#{id} and s.tenant_id=c.tenant_id and s.contract_id=c.id and s.id=#{settlement} and s.status='settled'")
+  int archiveSettlement(@Param("tenantId")String tenantId,@Param("id")String id,@Param("settlement")String settlement);
   @org.apache.ibatis.annotations.Select("select status from purchase_orders where tenant_id=#{tenant} and id=#{order} for update")
   String lockOrderStatus(@org.apache.ibatis.annotations.Param("tenant")String tenant,@org.apache.ibatis.annotations.Param("order")String order);
 

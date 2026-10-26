@@ -211,6 +211,7 @@ public class ProcurementExecutionApplicationService {
     data.set("closeoutChecks",json.valueToTree(mapper.closeoutBlockers(tenant,rfq)));
     data.set("workflowHistory",json.valueToTree(workflow.procurementExecutionHistory(businessIds(data))));
     List<Owner> owners=new ArrayList<>(); owners.add(new Owner("rfq",rfq));
+    for(var order:data.path("orders"))owners.add(new Owner("order_settlement_document",order.path("id").asText()));
     if(data.has("procurementProject"))owners.add(new Owner("procurement_project",data.path("procurementProject").path("id").asText()));
     for(var change:data.path("procurementProject").path("changeIds"))owners.add(new Owner("procurement_project_change",change.asText()));
     for (var d : data.path("demands")) { owners.add(new Owner("demand",d.path("id").asText())); owners.add(new Owner("purchase_demand",d.path("id").asText())); }
@@ -254,7 +255,7 @@ public class ProcurementExecutionApplicationService {
     List<String> ids=new ArrayList<>(); ids.add(data.path("rfq").path("id").asText());
     if(data.has("procurementProject"))ids.add(data.path("procurementProject").path("id").asText());
     for(var change:data.path("procurementProject").path("changeIds"))ids.add(change.asText());
-    for(String key : List.of("demands","orders","awards","contracts","invoices","paymentRequests")) for(var item:data.path(key)) {
+    for(String key : List.of("demands","orders","awards","contracts","invoices","paymentRequests","orderSettlements")) for(var item:data.path(key)) {
       ids.add(item.path("id").asText());
       if (item.hasNonNull("paymentBatchNo") && !item.path("paymentBatchNo").asText().isBlank()) ids.add(item.path("paymentBatchNo").asText());
     }

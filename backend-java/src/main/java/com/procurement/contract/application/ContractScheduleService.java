@@ -54,7 +54,7 @@ public class ContractScheduleService {
         scope.restricted() ? scope.requesterId() : null)) {
       throw new com.procurement.common.tenant.PermissionDeniedException("合同不存在或无权访问");
     }
-    if (write) contractMapper.lockById(tenantId, contractId);
+    if (write) {contractMapper.lockOrderForContract(tenantId,contractId);if(contractMapper.settlementLocked(tenantId,contractId))throw new IllegalStateException("合同已进入清算，不能修改付款计划");contractMapper.lockById(tenantId, contractId);}
   }
 
   private ContractLedger requireContract(String tenantId, String contractId) {

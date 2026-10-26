@@ -8,6 +8,8 @@ import org.apache.ibatis.annotations.*;
 
 @Mapper
 public interface ProjectLifecycleMapper {
+  @Select("select count(*) from order_settlements s join purchase_orders o on o.tenant_id=s.tenant_id and o.id=s.order_id where s.tenant_id=#{t} and s.status not in ('rejected','withdrawn') and exists(select 1 from rfq_demands rd join procurement_project_demands d on d.tenant_id=rd.tenant_id and d.demand_id=rd.demand_id where rd.tenant_id=o.tenant_id and rd.rfq_id=o.rfq_id and d.project_id=#{p})")
+  int orderSettlements(@Param("t")String t,@Param("p")String p);
   @Select(
       "select distinct source_period from procurement_project_lifecycle_requests where"
           + " tenant_id=#{t} and project_id=#{p} and kind='carryover' and status='approved'")
@@ -22,7 +24,14 @@ where e.tenant_id=#{t} and e.amount>0
 and exists(select 1 from rfq_demands rd join procurement_project_demands d on d.tenant_id=rd.tenant_id and d.demand_id=rd.demand_id
   where rd.tenant_id=o.tenant_id and rd.rfq_id=o.rfq_id and d.project_id=#{p})
 and not exists(select 1 from invoice_payment_entries rev where rev.tenant_id=e.tenant_id and rev.invoice_id=e.invoice_id and rev.reversal_of=e.id)
-order by e.id
+union all
+select e.id,null::text,o.id,o.rfq_id,case when e.kind='refund' then -e.amount else e.amount end,e.evidence_no
+from order_settlement_evidence e join order_settlements s on s.tenant_id=e.tenant_id and s.id=e.settlement_id
+join purchase_orders o on o.tenant_id=s.tenant_id and o.id=s.order_id
+where e.tenant_id=#{t} and e.kind in ('payment','refund') and s.status in ('approved','settled')
+and exists(select 1 from rfq_demands rd join procurement_project_demands d on d.tenant_id=rd.tenant_id and d.demand_id=rd.demand_id
+  where rd.tenant_id=o.tenant_id and rd.rfq_id=o.rfq_id and d.project_id=#{p})
+order by id
 """)
   List<PaymentBasis> paidEntries(@Param("t") String t, @Param("p") String p);
 
