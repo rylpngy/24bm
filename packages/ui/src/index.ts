@@ -84,4 +84,5 @@ export { MallComparisonTable } from './components/mall-comparison-table';
 export type { MallComparisonQuote } from './components/mall-comparison-table';
 export { ProductImage, ProductImageGallery } from './components/product-image';
 export {OrderCancellationPanel} from './components/order-cancellation-panel';
+export { PhysicalAfterSalesPanel } from './components/physical-after-sales-panel';
 export type { ProductImageProps, ProductGalleryImage } from './components/product-image';

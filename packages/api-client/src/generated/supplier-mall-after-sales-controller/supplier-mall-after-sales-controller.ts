@@ -6,27 +6,33 @@
  * OpenAPI spec version: v1
  */
 import {
+  useMutation,
   useQuery
 } from '@tanstack/react-query';
 import type {
   DataTag,
   DefinedInitialDataOptions,
   DefinedUseQueryResult,
+  MutationFunction,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
 
 import type {
   ApiResponseListMallAfterSalesEvent,
-  ApiResponseVoid
+  ApiResponsePhysicalAfterSalesView,
+  ApiResponseVoid,
+  PhysicalAfterSalesAction
 } from '.././model';
 
 import { customInstance } from '../../http-client';
-import type { ErrorType } from '../../http-client';
+import type { ErrorType , BodyType } from '../../http-client';
 
 
 
@@ -106,6 +112,244 @@ export function useSupplierMallAfterSalesHistory<TData = Awaited<ReturnType<type
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getSupplierMallAfterSalesHistoryQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const supplierMallAfterSalesPhysical = (
+    id: string,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponsePhysicalAfterSalesView>(
+      {url: `/api/v1/supplier/mall/after-sales/${id}/physical`, method: 'GET', signal
+    },
+      );
+    }
+
+
+
+
+export const getSupplierMallAfterSalesPhysicalQueryKey = (id?: string,) => {
+    return [
+    `/api/v1/supplier/mall/after-sales/${id}/physical`
+    ] as const;
+    }
+
+
+export const getSupplierMallAfterSalesPhysicalQueryOptions = <TData = Awaited<ReturnType<typeof supplierMallAfterSalesPhysical>>, TError = ErrorType<ApiResponseVoid>>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierMallAfterSalesPhysical>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSupplierMallAfterSalesPhysicalQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierMallAfterSalesPhysical>>> = ({ signal }) => supplierMallAfterSalesPhysical(id, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierMallAfterSalesPhysical>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type SupplierMallAfterSalesPhysicalQueryResult = NonNullable<Awaited<ReturnType<typeof supplierMallAfterSalesPhysical>>>
+export type SupplierMallAfterSalesPhysicalQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useSupplierMallAfterSalesPhysical<TData = Awaited<ReturnType<typeof supplierMallAfterSalesPhysical>>, TError = ErrorType<ApiResponseVoid>>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierMallAfterSalesPhysical>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof supplierMallAfterSalesPhysical>>,
+          TError,
+          Awaited<ReturnType<typeof supplierMallAfterSalesPhysical>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSupplierMallAfterSalesPhysical<TData = Awaited<ReturnType<typeof supplierMallAfterSalesPhysical>>, TError = ErrorType<ApiResponseVoid>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierMallAfterSalesPhysical>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof supplierMallAfterSalesPhysical>>,
+          TError,
+          Awaited<ReturnType<typeof supplierMallAfterSalesPhysical>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSupplierMallAfterSalesPhysical<TData = Awaited<ReturnType<typeof supplierMallAfterSalesPhysical>>, TError = ErrorType<ApiResponseVoid>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierMallAfterSalesPhysical>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useSupplierMallAfterSalesPhysical<TData = Awaited<ReturnType<typeof supplierMallAfterSalesPhysical>>, TError = ErrorType<ApiResponseVoid>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierMallAfterSalesPhysical>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getSupplierMallAfterSalesPhysicalQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const supplierMallAfterSalesPhysicalAction = (
+    id: string,
+    physicalAfterSalesAction: BodyType<PhysicalAfterSalesAction>,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponsePhysicalAfterSalesView>(
+      {url: `/api/v1/supplier/mall/after-sales/${id}/physical`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: physicalAfterSalesAction, signal
+    },
+      );
+    }
+
+
+
+export const getSupplierMallAfterSalesPhysicalActionMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierMallAfterSalesPhysicalAction>>, TError,{id: string;data: BodyType<PhysicalAfterSalesAction>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof supplierMallAfterSalesPhysicalAction>>, TError,{id: string;data: BodyType<PhysicalAfterSalesAction>}, TContext> => {
+
+const mutationKey = ['supplierMallAfterSalesPhysicalAction'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierMallAfterSalesPhysicalAction>>, {id: string;data: BodyType<PhysicalAfterSalesAction>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  supplierMallAfterSalesPhysicalAction(id,data,)
+        }
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SupplierMallAfterSalesPhysicalActionMutationResult = NonNullable<Awaited<ReturnType<typeof supplierMallAfterSalesPhysicalAction>>>
+    export type SupplierMallAfterSalesPhysicalActionMutationBody = BodyType<PhysicalAfterSalesAction>
+    export type SupplierMallAfterSalesPhysicalActionMutationError = ErrorType<ApiResponseVoid>
+
+    export const useSupplierMallAfterSalesPhysicalAction = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierMallAfterSalesPhysicalAction>>, TError,{id: string;data: BodyType<PhysicalAfterSalesAction>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof supplierMallAfterSalesPhysicalAction>>,
+        TError,
+        {id: string;data: BodyType<PhysicalAfterSalesAction>},
+        TContext
+      > => {
+
+      const mutationOptions = getSupplierMallAfterSalesPhysicalActionMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const supplierMallAfterSalesPhysicalFile = (
+    id: string,
+    event: string,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<string>(
+      {url: `/api/v1/supplier/mall/after-sales/${id}/physical/${event}/file`, method: 'GET', signal
+    },
+      );
+    }
+
+
+
+
+export const getSupplierMallAfterSalesPhysicalFileQueryKey = (id?: string,
+    event?: string,) => {
+    return [
+    `/api/v1/supplier/mall/after-sales/${id}/physical/${event}/file`
+    ] as const;
+    }
+
+
+export const getSupplierMallAfterSalesPhysicalFileQueryOptions = <TData = Awaited<ReturnType<typeof supplierMallAfterSalesPhysicalFile>>, TError = ErrorType<ApiResponseVoid>>(id: string,
+    event: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierMallAfterSalesPhysicalFile>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSupplierMallAfterSalesPhysicalFileQueryKey(id,event);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierMallAfterSalesPhysicalFile>>> = ({ signal }) => supplierMallAfterSalesPhysicalFile(id,event, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id && event), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierMallAfterSalesPhysicalFile>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type SupplierMallAfterSalesPhysicalFileQueryResult = NonNullable<Awaited<ReturnType<typeof supplierMallAfterSalesPhysicalFile>>>
+export type SupplierMallAfterSalesPhysicalFileQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useSupplierMallAfterSalesPhysicalFile<TData = Awaited<ReturnType<typeof supplierMallAfterSalesPhysicalFile>>, TError = ErrorType<ApiResponseVoid>>(
+ id: string,
+    event: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierMallAfterSalesPhysicalFile>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof supplierMallAfterSalesPhysicalFile>>,
+          TError,
+          Awaited<ReturnType<typeof supplierMallAfterSalesPhysicalFile>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSupplierMallAfterSalesPhysicalFile<TData = Awaited<ReturnType<typeof supplierMallAfterSalesPhysicalFile>>, TError = ErrorType<ApiResponseVoid>>(
+ id: string,
+    event: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierMallAfterSalesPhysicalFile>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof supplierMallAfterSalesPhysicalFile>>,
+          TError,
+          Awaited<ReturnType<typeof supplierMallAfterSalesPhysicalFile>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSupplierMallAfterSalesPhysicalFile<TData = Awaited<ReturnType<typeof supplierMallAfterSalesPhysicalFile>>, TError = ErrorType<ApiResponseVoid>>(
+ id: string,
+    event: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierMallAfterSalesPhysicalFile>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useSupplierMallAfterSalesPhysicalFile<TData = Awaited<ReturnType<typeof supplierMallAfterSalesPhysicalFile>>, TError = ErrorType<ApiResponseVoid>>(
+ id: string,
+    event: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierMallAfterSalesPhysicalFile>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getSupplierMallAfterSalesPhysicalFileQueryOptions(id,event,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

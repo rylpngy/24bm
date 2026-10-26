@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import {BuyerOrderSettlement} from './order-settlement';
+import { OrderAfterSales } from './order-after-sales';
 import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
 import { ArrowLeft, Info, Truck } from 'lucide-react';
 import {
@@ -116,6 +117,7 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
 
         {o.id&&<BuyerOrderCancellation orderId={o.id} canManage={can('buyer:order:manage')} refresh={()=>query.refetch()}/>}
         {o.id&&<BuyerOrderSettlement orderId={o.id} canManage={can('buyer:order:manage')&&can('buyer:contract:manage')} canFinance={can('buyer:order:manage')&&can('buyer:payment:register')} refresh={()=>query.refetch()}/>}
+        {o.id && <OrderAfterSales orderId={o.id} status={o.status ?? ''} canPurchase={can('buyer:mall:purchase')} lines={(o.lineItems ?? []).filter(l => Boolean(l.id) && (l.quantity ?? 0) > 0).map(l => ({ id: l.id!, quantity: l.quantity!, description: l.description }))} />}
         <div className="grid gap-4 xl:grid-cols-[1fr_20rem]">
           <div className="min-w-0 space-y-4">
             {/* 抬头信息 */}

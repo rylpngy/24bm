@@ -17,5 +17,9 @@ public record MallAfterSales(
     String status,
     String supplierReply,
     OffsetDateTime createdAt,
-    OffsetDateTime updatedAt) {
+    OffsetDateTime updatedAt,
+    String financialStatus) {
+  public MallAfterSales(String id,String tenantId,String orderId,String orderLineId,String supplierId,String supplierName,String type,BigDecimal quantity,String reason,String status,String supplierReply,OffsetDateTime createdAt,OffsetDateTime updatedAt) {
+    this(id,tenantId,orderId,orderLineId,supplierId,supplierName,type,quantity,reason,status,supplierReply,createdAt,updatedAt,null);
+  }
 }
