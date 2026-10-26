@@ -53,7 +53,8 @@ class SupplierQuoteListFilterTests {
           org.mockito.Mockito.mock(com.procurement.sourcing.application.RfqItemQueryService.class),
           auditLogApplicationService,
           notificationApplicationService,
-          org.mockito.Mockito.mock(org.springframework.context.ApplicationEventPublisher.class));
+          org.mockito.Mockito.mock(org.springframework.context.ApplicationEventPublisher.class),
+          org.mockito.Mockito.mock(com.procurement.sourcing.application.QuoteVersionService.class));
 
   @AfterEach
   void clearTenantContext() {

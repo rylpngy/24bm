@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import type { QuotationPackage } from '@24bid/shared/quotation';
 import {
   ArrowLeft,
   Ban,
@@ -15,6 +16,7 @@ import {
 } from 'lucide-react';
 import {
   type RfqResponse,
+  axiosInstance,
   useRfqAbort,
   useRfqAnnounceResult,
   useRfqOpen,
@@ -29,6 +31,7 @@ import {
 } from '@24bid/api-client';
 import { ConfirmDialog, FeedbackNotice, StatusPill, cn } from '@24bid/ui';
 import { QuoteComparisonTable } from './quote-comparison-table';
+import { RfqQuotationPackage } from './rfq-quotation-package';
 import { RfqClarificationsBuyer } from './rfq-clarifications';
 import { RfqResultBuyer } from './rfq-result';
 import { RfqSupplierPerformance } from './rfq-supplier-performance';
@@ -76,7 +79,7 @@ const awardGateHint = (method?: string, bidders = 0): string => {
   if (method === '商城') return '商城采购按商品目录/货架规则执行，不强制供应商报价定标。';
   if (method === '单一来源') return bidders >= 1 ? '单一来源已收到报价，可定标。' : '单一来源须有 1 家有效报价。';
   return bidders >= 3
-    ? `已收到 ${bidders} 家有效报价,满足法定家数。`
+    ? `已收到 ${bidders} 家报价，达到参考报价家数；仍需人工核验技术响应及采购规则。`
     : `${method ?? '询比'}参考定标家数为 3 家有效报价(当前 ${bidders} 家)。依法必须招标/政府采购项目应予流标;民企等非依法必招项目可继续定标,系统将自动留痕。`;
 };
 
@@ -127,7 +130,13 @@ export function RfqProjectDetail({
   const isDraft = rfq.status === '草稿';
   const invited = rfq.invitedSupplierIds ?? [];
   const quotes = rfq.quotes ?? [];
-  const quotedSuppliers = new Set(quotes.map((q) => q.supplierId));
+  const quotation=useQuery({queryKey:['quotation-package',rfq.id],enabled:!!rfq.id&&rfq.method==='询比',
+    queryFn:async()=>(await axiosInstance.get<{data:QuotationPackage}>(`/api/v1/buyer/rfqs/${rfq.id}/quotation-package`)).data.data});
+  const receivedCount=quotation.data?.policy.fullQuoteRequired?quotation.data.validQuoteCount:quotes.length;
+  const quotedSuppliers = new Set([...quotes.map((q) => q.supplierId),...(quotation.data?.submittedSupplierIds??[])]);
+  useEffect(()=>{if(quotation.data?.deadlineAt&&quotation.data.deadlineAt!==rfq.deadlineAt)
+    void queryClient.invalidateQueries({predicate:q=>typeof q.queryKey[0]==='string'&&(q.queryKey[0] as string).includes('/buyer/rfqs')});
+  },[quotation.data?.deadlineAt,rfq.deadlineAt,queryClient]);
   const countdown = useCountdown(rfq.deadlineAt, quoting);
   const deadlinePassed = rfq.deadlineAt ? new Date(rfq.deadlineAt).getTime() <= Date.now() : false;
 
@@ -204,7 +213,7 @@ export function RfqProjectDetail({
                           : index === 2
                             ? isDraft ? '草稿 · 待发布' : '待发布'
                             : index === 3
-                              ? `${quotes.length}/${invited.length || '不限'} 家已报`
+                              ? `${receivedCount}/${invited.length || '不限'} 家已报`
                               : rfq.status === '定标审批中' ? '定标审批中' : rfq.status === '已定标' ? (rfq.resultAnnouncedAt ? '已定标·已公告' : '已定标·待公告') : '比价定标中'
                         : '待开始'}
                 </p>
@@ -240,7 +249,7 @@ export function RfqProjectDetail({
       {isDraft && draftEdit && <form className="space-y-3 rounded-lg border bg-white p-5" onSubmit={(event) => {
         event.preventDefault(); if (!rfq.id || !draftEdit.deadline || !draftEdit.title.trim()) return;
         update.mutate({ rfqId: rfq.id, data: { title: draftEdit.title.trim(), invitedSupplierIds: invited,
-          deadlineAt: new Date(draftEdit.deadline).toISOString(), quoteRequirement: draftEdit.quote,
+          deadlineAt: draftEdit.deadline===rfq.deadlineAt?.slice(0,16)?rfq.deadlineAt:new Date(draftEdit.deadline).toISOString(), quoteRequirement: draftEdit.quote,
           deliveryRequirement: draftEdit.delivery, evaluationMethod: draftEdit.evaluation } }, {
           onSuccess: () => { setDraftEdit(null); refresh(); }, onError: reportError,
         });
@@ -278,7 +287,7 @@ export function RfqProjectDetail({
           <CheckCircle2 size={18} className="mx-auto text-emerald-600" />
           <p className="mt-1 text-xs font-black text-slate-400">已报价 / 受邀</p>
           <p className="mt-1 font-mono text-2xl font-black text-slate-950">
-            {quotes.length} / {invited.length || '公开'}
+            {receivedCount} / {invited.length || '公开'}
           </p>
         </div>
         <div className="rounded-lg border border-slate-200 bg-white p-4 text-center shadow-sm">
@@ -303,6 +312,8 @@ export function RfqProjectDetail({
 
       {feedback && <FeedbackNotice tone="success" message={feedback} />}
       {error && <FeedbackNotice tone="error" message={error} />}
+
+      {rfq.id&&rfq.method==='询比'&&<RfqQuotationPackage rfqId={rfq.id} status={rfq.status} supplierNames={supplierNames} items={rfq.items} />}
 
       {/* 参考智能审批详情布局:主栏(参与进度/澄清/定标)+ 右栏(商机报名紧凑卡) */}
       <div className={(enrollments.data?.data ?? []).length > 0 ? 'grid items-start gap-4 xl:grid-cols-[1fr_22rem]' : undefined}>
@@ -356,7 +367,7 @@ export function RfqProjectDetail({
         </div>
         <div className="mt-3 divide-y divide-slate-100">
           {invited.length === 0 && (
-            <p className="py-3 text-xs font-bold text-slate-400">公开征集,不预先限定供应商;已收到 {quotes.length} 家报价。</p>
+            <p className="py-3 text-xs font-bold text-slate-400">公开征集,不预先限定供应商;已收到 {receivedCount} 家报价。</p>
           )}
           {invited.map((supplierId) => {
             const submitted = quotedSuppliers.has(supplierId);

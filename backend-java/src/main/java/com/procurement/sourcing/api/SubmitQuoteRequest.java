@@ -8,7 +8,11 @@ import java.util.List;
 // lineItems 可选:提供时服务端按行汇总覆盖 amount(头/明细一致);为空时沿用 amount(兼容旧报价)。
 public record SubmitQuoteRequest(
     @Positive BigDecimal amount,
-    @Positive BigDecimal taxRate,
+    @jakarta.validation.constraints.DecimalMin("0") @jakarta.validation.constraints.DecimalMax("100") BigDecimal taxRate,
     @Positive Integer deliveryDays,
-    @Valid List<QuoteLineItemRequest> lineItems) {
+    @Valid List<QuoteLineItemRequest> lineItems,
+    @Valid QuotationDetails details) {
+  public SubmitQuoteRequest(BigDecimal amount, BigDecimal taxRate, Integer deliveryDays, List<QuoteLineItemRequest> lineItems) {
+    this(amount,taxRate,deliveryDays,lineItems,null);
+  }
 }

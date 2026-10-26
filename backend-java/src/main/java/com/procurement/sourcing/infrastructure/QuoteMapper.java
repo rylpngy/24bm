@@ -11,6 +11,20 @@ import org.apache.ibatis.annotations.Update;
 
 @Mapper
 public interface QuoteMapper {
+  @Select("select full_quote_required from rfq_quotation_policies where tenant_id=#{tenant} and rfq_id=#{rfq}")
+  Boolean fullQuotationRequired(@Param("tenant")String tenant,@Param("rfq")String rfq);
+  @Select("select * from rfq_quotation_policies where tenant_id=#{tenant} and rfq_id=#{rfq}")
+  QuotationMapper.Policy quotationPolicy(@Param("tenant")String tenant,@Param("rfq")String rfq);
+  @Select("select count(*) from rfq_deadline_extensions where tenant_id=#{tenant} and rfq_id=#{rfq} and round=#{round} and mode='automatic'")
+  int automaticExtensions(@Param("tenant")String tenant,@Param("rfq")String rfq,@Param("round")int round);
+  @Select("""
+      select count(distinct q.supplier_id) from quotes q
+      where q.tenant_id=#{tenant} and q.rfq_id=#{rfq} and q.round=#{round} and q.status='已提交' and q.amount>0
+      and exists(select 1 from rfq_invites i where i.tenant_id=q.tenant_id and i.rfq_id=q.rfq_id and i.supplier_id=q.supplier_id)
+      and (not #{strict} or coalesce((select (v.snapshot_json->>'complete')::boolean from quote_versions v
+        where v.tenant_id=q.tenant_id and v.quote_id=q.id order by v.version_no desc limit 1),false))
+      """)
+  int validQuotationCount(@Param("tenant")String tenant,@Param("rfq")String rfq,@Param("round")int round,@Param("strict")boolean strict);
 
   // 当前轮去重:同一供应商在同一轮只能有一份报价(允许跨轮再报)。
   @Select("""

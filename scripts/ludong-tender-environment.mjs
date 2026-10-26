@@ -25,6 +25,7 @@ const env = {
   MINIO_SECRET_KEY: secrets.POC_STORAGE_PASSWORD, MINIO_BUCKET: 'ludong-tender-attachments',
   APP_SEED_LOCATIONS: 'classpath:db/poc/ludong,classpath:db/poc/ludong-tender',
   APP_WORKFLOW_DEADLINES_ENABLED: 'true', APP_WORKFLOW_DEADLINES_INTERVAL_MS: '10000',
+  APP_RFQ_QUOTATION_EXTENSIONS_ENABLED: 'true', APP_RFQ_QUOTATION_EXTENSIONS_INTERVAL_MS: '10000',
   SELF_LOGIN_ENABLED: 'true', KEYCLOAK_ENABLED: 'false', TENANT_HEADER_FALLBACK_ENABLED: 'false',
   CORS_ALLOWED_ORIGINS: 'http://127.0.0.1:5288,http://127.0.0.1:5289',
   DEV_API_PROXY_TARGET: 'http://127.0.0.1:8098',
@@ -122,11 +123,11 @@ if (command === 'prepare') {
   const actual = spawnSync('ps', ['-p', String(state.pid), '-o', 'command='], { encoding: 'utf8' }).stdout || '';
   const jar = state.args?.at(-1);
   const oldTarget = resolve(root, 'backend-java/target/procurement-saas-backend-0.1.0-SNAPSHOT.jar');
-  if (!jar || (jar !== oldTarget && !jar.startsWith(resolve(runtime, 'releases') + '/')) || !actual.includes(jar)) {
+  if (!jar || (jar !== oldTarget && !jar.startsWith(resolve(runtime, 'releases') + '/')) || (actual.trim() && !actual.includes(jar))) {
     throw new Error('Backend PID does not match this POC worktree; refusing to stop it');
   }
-  process.kill(state.pid, 'SIGTERM');
-  for (let attempt = 0; attempt < 30; attempt++) {
+  if (actual.trim()) process.kill(state.pid, 'SIGTERM');
+  for (let attempt = 0; actual.trim() && attempt < 30; attempt++) {
     try { process.kill(state.pid, 0); } catch { break; }
     await new Promise((r) => setTimeout(r, 1000));
   }
