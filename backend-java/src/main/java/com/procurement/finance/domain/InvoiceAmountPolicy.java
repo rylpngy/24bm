@@ -5,6 +5,11 @@ import java.math.BigDecimal;
 public final class InvoiceAmountPolicy {
   private InvoiceAmountPolicy() {}
 
+  public static boolean isInstallment(BigDecimal invoiceAmount, BigDecimal orderAmount) {
+    return invoiceAmount != null && orderAmount != null
+        && invoiceAmount.signum() > 0 && invoiceAmount.compareTo(orderAmount) < 0;
+  }
+
   public static void requireInvoiceCreationAmountMatchesOrder(
       BigDecimal invoiceAmount,
       BigDecimal orderAmount,
