@@ -28,6 +28,15 @@ class OrderSettlementPolicyTests {
   }
 
   final OrderSettlementPolicy p = new OrderSettlementPolicy(new ObjectMapper());
+  @Test void verifiedQualityResolutionAllowsReturnedDefectsWithoutRewritingReceipt(){
+    var b=baseline();var l=(ObjectNode)b.path("lines").get(0);l.put("qualified",0);l.put("verifiedReturned",1);
+    assertThat(p.assess(p.write(b),null).blockers()).isNotEmpty();l.put("resolvedUnqualified",1);
+    var result=p.assess(p.write(b),null);assertThat(result.blockers()).isEmpty();assertThat(result.goods()).isZero();assertThat(p.tree(result.snapshot()).path("baseline").path("lines").get(0).path("qualified").intValue()).isZero();
+  }
+  @Test void partialOrExcessiveQualityResolutionCannotClearNegativeReceipt(){
+    var b=baseline();var l=(ObjectNode)b.path("lines").get(0);l.put("shipped",2);l.put("received",2);l.put("qualified",0);l.put("resolvedUnqualified",1);assertThat(p.assess(p.write(b),null).blockers()).isNotEmpty();
+    l.put("resolvedUnqualified",3);assertThat(p.assess(p.write(b),null).blockers()).isNotEmpty();l.put("resolvedUnqualified",2);assertThat(p.assess(p.write(b),null).blockers()).isEmpty();
+  }
 
   ObjectNode baseline() {
     return (ObjectNode)

@@ -66,6 +66,29 @@ class ProcurementProjectIT {
   @Autowired com.procurement.order.application.OrderSettlementService settlements;
   @Autowired com.procurement.mall.application.PhysicalAfterSalesService physical;
   @Autowired com.procurement.mall.application.MallServiceApplicationService afterSales;
+  @Autowired com.procurement.order.application.ReceiptQualityService quality;
+  String negativeReceipt(CancelCase c,int qualified){String id=jdbc.queryForObject("select id from receipts where order_id=?",String.class,c.order());jdbc.update("update receipts set qualified_quantity=?,inspection_conclusion=?,disposition='退货换货',quality_note='到货质检异常' where id=?",qualified,qualified==0?"全部不合格":"部分合格",id);jdbc.update("update receipt_line_items set qualified_quantity=? where receipt_id=?",qualified,id);return id;}
+  void finishPhysical(CancelCase c,String id,String type){context(author);physical.act(id,physicalAction(id+"-out","return_dispatch"),false);supplier(c);physical.act(id,physicalAction(id+"-received","return_receipt"),true);if(type.equals("换货")){physical.act(id,physicalAction(id+"-replacement","replacement_dispatch"),true);context(author);physical.act(id,physicalAction(id+"-pass","inspection_pass"),false);supplier(c);}afterSales.handleAfterSales(id,new com.procurement.mall.api.HandleAfterSalesRequest("已完成","实物核验完毕",id+"-OK"));context(author);afterSales.buyerAction(id,"confirm","确认实物处理结果");}
+  com.procurement.order.api.ReceiptQualityContracts.Request qualityRequest(String receipt,String afterSalesId){var line=quality.view(receipt).lines().getFirst();return new com.procurement.order.api.ReceiptQualityContracts.Request(line.receiptLineId(),afterSalesId,"核对原验收批次与实物签收/复验原件");}
+  @Test void rejectedReceiptExchangeClearsQualityOnlyAfterExplicitReviewAndRetainsOriginalInspection(){
+    var c=cancellationCase();settlementContract(c,true);String id=physicalCase(c,"换货"),r=negativeReceipt(c,1);finishPhysical(c,id,"换货");
+    assertThat(jdbc.queryForObject("select blocking_reason from finance_fulfillment_checks where tenant_id=? and order_id=?",String.class,tenant,c.order())).contains("不合格");
+    assertThatThrownBy(()->quality.resolve(r,new com.procurement.order.api.ReceiptQualityContracts.Request("foreign",id,"wrong line"))).hasMessageContaining("验收行");
+    var request=qualityRequest(r,id);var result=quality.resolve(r,request);assertThat(result.lines().getFirst().unresolvedQuantity()).isZero();assertThat(result.lines().getFirst().exchangedQuantity()).isEqualByComparingTo("1");assertThat(quality.resolve(r,request).resolutions()).hasSize(1);
+    assertThat(jdbc.queryForObject("select blocking_reason from finance_fulfillment_checks where tenant_id=? and order_id=?",String.class,tenant,c.order())).isNull();
+    assertThat(jdbc.queryForObject("select qualified_quantity from receipts where id=?",Integer.class,r)).isEqualTo(1);assertThat(jdbc.queryForObject("select amount from purchase_orders where id=?",BigDecimal.class,c.order())).isEqualByComparingTo("200");
+    assertThatThrownBy(()->quality.resolve(r,new com.procurement.order.api.ReceiptQualityContracts.Request(request.receiptLineId(),id,"覆盖核销"))).hasMessageContaining("不得覆盖");
+    assertThatThrownBy(()->jdbc.update("delete from receipt_after_sales_resolutions where receipt_id=?",r)).isInstanceOf(org.springframework.dao.DataAccessException.class);
+    TenantContext.set("another-tenant",null,author);assertThatThrownBy(()->quality.view(r)).hasMessageContaining("不存在");
+  }
+  @Test void rejectedReceiptReturnThenRefundUsesRetainedGoodsAndBudgetWithoutChangingOriginalFacts() throws Exception {
+    var c=cancellationCase();settlementContract(c,true);String id=physicalCase(c,"退货"),r=negativeReceipt(c,1),proof=settlementProof(c);finishPhysical(c,id,"退货");
+    assertThat(settlements.view(c.order(),false,1,10).preview().blockers()).isNotEmpty();quality.resolve(r,qualityRequest(r,id));
+    String inv="inv-"+UUID.randomUUID();jdbc.update("insert into invoices(id,tenant_id,supplier_id,order_id,amount,invoice_no,payment_status) values (?,?,?,?,200,'PREPAID','已付款')",inv,tenant,c.supplier(),c.order());jdbc.update("insert into invoice_payment_entries(id,tenant_id,invoice_id,idempotency_key,amount,evidence_no,created_by) values (?,?,?,'paid',200,'BANK',?)","paid-"+UUID.randomUUID(),tenant,inv,author);
+    var e=settlements.propose(c.order(),new com.procurement.order.api.OrderSettlementContracts.Proposal("bad-return","不合格品退回核销后退款清算",BigDecimal.ZERO,proof,null));assertThat(e.goodsAmount()).isEqualByComparingTo("100");e=approveSettlement(c,e);settlements.evidence(c.order(),e.id(),new com.procurement.order.api.OrderSettlementContracts.EvidenceRequest("refund","refund",new BigDecimal("100"),"REFUND-"+e.id(),proof,"实际到账"));settlements.evidence(c.order(),e.id(),new com.procurement.order.api.OrderSettlementContracts.EvidenceRequest("invoice","invoice",new BigDecimal("100"),"CREDIT-"+e.id(),proof,"最终货款红冲核对"));settlements.act(c.order(),e.id(),settlementAction(e,"complete"),false);
+    assertThat(budget.position(tenant,dept,year).orderAmount()).isEqualByComparingTo("100");assertThat(budget.position(tenant,dept,year).paidAmount()).isEqualByComparingTo("100");assertThat(jdbc.queryForObject("select qualified_quantity from receipts where id=?",Integer.class,r)).isEqualTo(1);
+    var snapshot=jdbc.queryForObject("select snapshot::text from order_settlements where id=?",String.class,e.id());assertThat(snapshot).contains("resolvedUnqualified","verifiedReturned");
+  }
   String receivedLine(CancelCase c) {
     String line=jdbc.queryForObject("select id from order_line_items where order_id=?",String.class,c.order());
     String d="delivery-"+UUID.randomUUID(),r="receipt-"+UUID.randomUUID();

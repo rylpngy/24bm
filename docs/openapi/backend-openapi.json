@@ -28670,6 +28670,114 @@
           }
         }
       }
+    },
+    "/api/v1/buyer/receipts/{id}/quality-resolutions": {
+      "get": {
+        "tags": [
+          "buyer-receipt-controller"
+        ],
+        "operationId": "BuyerReceipt_quality",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseReceiptQualityView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "buyer-receipt-controller"
+        ],
+        "operationId": "BuyerReceipt_resolve",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReceiptQualityRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseReceiptQualityView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -45220,6 +45328,170 @@
             }
           },
           "financialStatus": {
+            "type": "string"
+          }
+        }
+      },
+      "ReceiptQualityRequest": {
+        "required": [
+          "afterSalesId",
+          "reason",
+          "receiptLineId"
+        ],
+        "type": "object",
+        "properties": {
+          "receiptLineId": {
+            "type": "string"
+          },
+          "afterSalesId": {
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 2000,
+            "minLength": 0,
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseReceiptQualityView": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ReceiptQualityView"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ReceiptQualityCandidate": {
+        "type": "object",
+        "properties": {
+          "afterSalesId": {
+            "type": "string"
+          },
+          "orderLineId": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "physicalEventId": {
+            "type": "string"
+          },
+          "physicalSha256": {
+            "type": "string"
+          }
+        }
+      },
+      "ReceiptQualityLine": {
+        "type": "object",
+        "properties": {
+          "receiptLineId": {
+            "type": "string"
+          },
+          "orderLineId": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "receivedQuantity": {
+            "type": "number"
+          },
+          "qualifiedQuantity": {
+            "type": "number"
+          },
+          "returnedQuantity": {
+            "type": "number"
+          },
+          "exchangedQuantity": {
+            "type": "number"
+          },
+          "unresolvedQuantity": {
+            "type": "number"
+          },
+          "valid": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ReceiptQualityResolution": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "receiptLineId": {
+            "type": "string"
+          },
+          "afterSalesId": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "physicalEventId": {
+            "type": "string"
+          },
+          "physicalSha256": {
+            "type": "string"
+          },
+          "fileName": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "reviewedBy": {
+            "type": "string"
+          },
+          "reviewedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ReceiptQualityView": {
+        "type": "object",
+        "properties": {
+          "receiptId": {
+            "type": "string"
+          },
+          "orderId": {
+            "type": "string"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReceiptQualityLine"
+            }
+          },
+          "candidates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReceiptQualityCandidate"
+            }
+          },
+          "resolutions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReceiptQualityResolution"
+            }
+          },
+          "canResolve": {
+            "type": "boolean"
+          },
+          "boundary": {
             "type": "string"
           }
         }

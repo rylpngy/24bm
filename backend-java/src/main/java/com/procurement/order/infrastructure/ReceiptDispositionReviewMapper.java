@@ -7,6 +7,8 @@ import org.apache.ibatis.annotations.*;
 
 @Mapper
 public interface ReceiptDispositionReviewMapper {
+  @Select("select count(*) from receipt_after_sales_resolutions where tenant_id=#{tenant} and receipt_id=#{receipt}")
+  int qualityResolutions(@Param("tenant")String tenant,@Param("receipt")String receipt);
   @Select("select id from rfqs where tenant_id=#{tenant} and id=#{rfq} for update")
   String lockRfq(@Param("tenant") String tenant, @Param("rfq") String rfq);
 

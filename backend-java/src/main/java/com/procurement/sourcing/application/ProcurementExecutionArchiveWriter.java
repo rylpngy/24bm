@@ -59,6 +59,7 @@ public final class ProcurementExecutionArchiveWriter {
       history.set("dispositionReviews",snapshot.path("dispositionReviews"));
       history.set("afterSalesHistory",snapshot.path("afterSalesHistory"));
       history.set("physicalAfterSales",snapshot.path("physicalAfterSales"));
+      history.set("qualityResolutions",snapshot.path("qualityResolutions"));
       files.put("审核历史.json",json.writerWithDefaultPrettyPrinter().writeValueAsBytes(history));
       attachments.forEach((path,bytes) -> {
         if (!path.startsWith("附件/") || path.contains("..") || path.contains("\\") || files.putIfAbsent(path,bytes) != null)

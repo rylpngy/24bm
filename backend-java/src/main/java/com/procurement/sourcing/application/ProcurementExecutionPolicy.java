@@ -69,7 +69,7 @@ public final class ProcurementExecutionPolicy {
           }
           received = received.add(quantity);
           boolean concession = acceptedDisposition(data,receipt);
-          accepted = accepted.add(concession ? quantity : qualified);
+          accepted = accepted.add(concession ? quantity : qualified.add(resolvedQuantity(data,rl)));
         }
         if (amount(line,"quantity").signum() <= 0 || received.compareTo(amount(line,"quantity")) != 0) {
           blockers.add("订单 " + id + " 行 " + text(line,"id") + " 未足额收货或超量收货");
@@ -81,7 +81,8 @@ public final class ProcurementExecutionPolicy {
         boolean qualified = "全部合格".equals(text(receipt,"inspectionConclusion"));
         boolean concession = Set.of("部分合格","全部不合格").contains(text(receipt,"inspectionConclusion"))
             && acceptedDisposition(data,receipt);
-        if (!qualified && !concession) blockers.add("订单 " + id + " 验收质检或不合格处置未通过");
+        boolean resolved=Set.of("部分合格","全部不合格").contains(text(receipt,"inspectionConclusion")) && matching(data,"receiptLines","receiptId",text(receipt,"id")).stream().allMatch(rl->amount(rl,"receivedQuantity").subtract(amount(rl,"qualifiedQuantity")).compareTo(resolvedQuantity(data,rl))==0);
+        if (!qualified && !concession && !resolved) blockers.add("订单 " + id + " 验收质检或不合格处置未通过");
         var detail = matching(data,"receiptLines","receiptId",text(receipt,"id"));
         if (detail.isEmpty() || sum(detail,"receivedQuantity").compareTo(amount(receipt,"receivedQuantity")) != 0
             || sum(detail,"qualifiedQuantity").compareTo(amount(receipt,"qualifiedQuantity")) != 0
@@ -134,6 +135,12 @@ public final class ProcurementExecutionPolicy {
 
   private static boolean validInvoice(JsonNode invoice) {
     return !Set.of("作废","已作废","已取消","已红冲","void","voided","cancelled").contains(text(invoice,"paymentStatus"));
+  }
+  private static BigDecimal resolvedQuantity(JsonNode data,JsonNode receiptLine) {
+    var rows=matching(data,"receiptQualityClearance","receiptLineId",text(receiptLine,"id"));
+    if(rows.size()!=1||!rows.get(0).path("valid").asBoolean(false))return BigDecimal.ZERO;
+    var row=rows.get(0);var quantity=amount(row,"returnedQuantity").add(amount(row,"exchangedQuantity"));
+    return quantity.signum()>=0 && quantity.compareTo(amount(receiptLine,"receivedQuantity").subtract(amount(receiptLine,"qualifiedQuantity")))<=0 ? quantity : BigDecimal.ZERO;
   }
   private static boolean acceptedDisposition(JsonNode data,JsonNode receipt) {
     if ("让步接收".equals(text(receipt,"disposition"))) return true;
