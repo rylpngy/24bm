@@ -302,7 +302,7 @@ export function ContractsPage() {
         </div>
 
         {/* 底部悬浮操作条:阶段化动作常驻可见 */}
-        <div className="sticky bottom-4 z-30 rounded-lg border border-slate-200 bg-white/95 px-5 py-4 shadow-lg shadow-slate-300/40 backdrop-blur">
+        <div className="rounded-lg border border-slate-200 bg-white px-5 py-4 shadow-sm shadow-slate-200/40">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
               <FileSignature size={14} className="shrink-0 text-blue-600" />
