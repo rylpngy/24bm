@@ -82,9 +82,9 @@ export function LudongPocApp() {
   );
 
   useEffect(() => {
-    if (permissionQuery.isPending) return;
+    if (!permissionQuery.isSuccess) return;
     if (!visibleModules.some((item) => item.id === moduleId)) setModuleId('dashboard');
-  }, [moduleId, visibleModules, permissionQuery.isPending]);
+  }, [moduleId, visibleModules, permissionQuery.isSuccess]);
 
   if (!session || session.tenantId !== 'tenant-ludong-poc') return <LudongPocLogin />;
 
@@ -118,6 +118,7 @@ export function LudongPocApp() {
       accountLabel={`${session.displayName} · 鲁东大学 POC`}
       onSignOut={signOut}
     >
+      {permissionQuery.isError && <div className="mb-4 space-y-2"><FeedbackNotice tone="error" message="暂时无法读取菜单权限，当前页面已保留，请重试。"/><button type="button" className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700" disabled={permissionQuery.isFetching} onClick={()=>void permissionQuery.refetch()}>重新加载权限</button></div>}
       {moduleId === 'dashboard' && (
         <Dashboard
           onNavigate={navigate}

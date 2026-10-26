@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Banknote, CalendarClock, FileDiff, FileSignature, FileText, Info, Plus } from 'lucide-react';
+import { ArrowLeft, Banknote, CalendarClock, FileDiff, FileSignature, FileText, Info, Plus, ScanText } from 'lucide-react';
 import {
   useBuyerContractCreate,
   useBuyerContractList,
@@ -34,6 +34,7 @@ import { ContractPaymentReconciliationPanel, ContractReconciliationDetail } from
 import { ContractEsignPanel } from './contract-esign-panel';
 import { WorkflowSubmitDialog } from '../workflow/workflow-submit-dialog';
 import { WorkflowStatusPanel } from '../workflow/workflow-instance-panel';
+import { ContractReviewWorkspace } from './review/contract-review-workspace';
 
 const currency = (v?: number) =>
   v == null ? '—' : `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
@@ -83,6 +84,7 @@ export function ContractsPage() {
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
+  const [reviewMode,setReviewMode]=useState(()=>new URLSearchParams(window.location.search).get('view')==='review');
 
   const query = useBuyerContractList();
   const orders = usePurchaseOrderList();
@@ -156,6 +158,10 @@ export function ContractsPage() {
   };
 
   const selected = selectedId ? contracts.find((c) => c.id === selectedId) : undefined;
+
+  if(reviewMode)return <ContractReviewWorkspace canManage={canManage} onBack={()=>{
+    const url=new URL(window.location.href);url.searchParams.delete('view');url.searchParams.delete('reviewDocument');window.history.replaceState(null,'',url);setReviewMode(false);
+  }}/>;
 
   if (query.isError) return <FeedbackNotice tone="error" message={financeErrorMessage(query.error, '合同加载失败')} />;
   const failedAction = [create, submit, reviewApproval, renew, updateStatus, archive].find((action) => action.isError);
@@ -448,7 +454,8 @@ export function ContractsPage() {
             setPage(1);
           }}
         />
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <button type="button" onClick={()=>setReviewMode(true)} className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md border border-blue-200 bg-blue-50 px-3 text-xs font-bold text-blue-700"><ScanText size={14}/>智能审查</button>
           <SearchInput
             className="mb-0"
             placeholder="按合同名称 / 编号 / 订单号搜索"

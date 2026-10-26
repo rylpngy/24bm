@@ -14,9 +14,13 @@ if (!existsSync(secretsPath)) writeFileSync(secretsPath, JSON.stringify({
   JWT_SECRET: randomBytes(48).toString('hex'),
 }), { mode: 0o600, flag: 'wx' });
 const secrets = JSON.parse(readFileSync(secretsPath, 'utf8'));
+const modelPath = resolve(runtime, 'contract-model.json');
+const modelConfig = existsSync(modelPath) ? JSON.parse(readFileSync(modelPath, 'utf8')) : {};
+const modelKeys = ['CONTRACT_REVIEW_MODEL_ENABLED','CONTRACT_REVIEW_MODEL_ENDPOINT','CONTRACT_REVIEW_MODEL_API_KEY','CONTRACT_REVIEW_MODEL_NAME'];
+const contractModel = Object.fromEntries(modelKeys.filter(key => typeof modelConfig[key] === 'string').map(key => [key,modelConfig[key]]));
 const javaHome = process.env.JAVA_HOME || '/opt/homebrew/opt/openjdk@21';
 const env = {
-  ...process.env, ...secrets, JAVA_HOME: javaHome,
+  ...process.env, ...secrets, ...contractModel, JAVA_HOME: javaHome,
   PATH: `${javaHome}/bin:${process.env.PATH}`,
   SERVER_PORT: '8098', SERVER_ADDRESS: '127.0.0.1',
   DB_URL: 'jdbc:postgresql://127.0.0.1:26432/ludong_tender_poc',

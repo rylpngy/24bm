@@ -126,3 +126,41 @@ node scripts/ludong-tender-quotation-smoke.mjs --prepare-ui
 脚本固定8098，所需资质原件为明确标识的合成测试文件，绝不创建指向不存在文件的证照。
 测试仅回拨本次新建RFQ在独立数据库的截止时间，不改原系统或系统时间；保留全部测试记录。
 实际结果与文件位于忽略目录`.ludong-tender-runtime/quotation-acceptance/`，不提交密钥或身份令牌。
+
+## 合同智能审查
+
+管理员进入`http://127.0.0.1:5288/?solution=ludong-poc&module=contracts&view=review`，或“采购合同→智能审查”。
+“规则配置与版本”新建规则集，增改规则，保存草稿后发布；发布版本不可覆盖，旧审查继续引用原版本。
+可导入明确标识的演示规则；它们不是学校正式制度，正式使用前由业务/法务确认依据。
+
+上传2MB内DOCX或UTF-8文本，在审查设置选已发布版本及甲方/乙方视角；“仅规则检查”不外发正文，
+“规则+AI审查”主动将本次正文及配置依据发送至已配置服务。原文位置与引文由系统绑定，不接受模型编造的位置或引文。
+点击风险位置定位对应版本正文；确认修订时检查完整段落、修改建议并填写人工说明。
+采纳生成新校对稿，原件及正式合同条款不变；正文变化后剩余旧意见不能继续套用，须重新审查。
+人工确认历史保留采纳/不采纳、前后文本、操作者和时间；原件、历次校对稿均可下载。
+
+目前不支持PDF/扫描件/OCR及任意Word排版的保真修订；校对稿导出不代替签署正本。
+模型不可用、引用或结构校验失败会明确标识“未评估”，不当作无风险或审核通过。
+模型建议中的无依据商务数值及文件名称不会直接采用；不能以系统约束保证AI判断100%准确。
+
+模型配置只由部署人员在本地忽略文件`.ludong-tender-runtime/contract-model.json`提供，权限0600。
+环境脚本仅加载以下四个字段，不通过前端配置或返回密钥：
+
+|字段|说明|
+|---|---|
+|CONTRACT_REVIEW_MODEL_ENABLED|显式true启用，其他环境默认不启用|
+|CONTRACT_REVIEW_MODEL_ENDPOINT|完整HTTPS兼容接口，末尾为/chat/completions；禁止将密钥放入地址|
+|CONTRACT_REVIEW_MODEL_API_KEY|通过安全途径提供；不随Git交付|
+|CONTRACT_REVIEW_MODEL_NAME|模型名称；本次实际验证为qwen-plus|
+
+仅支持受信任HTTPS服务（本地测试允许回环HTTP），不跳过证书校验或跟随重定向。
+每次最多两项模型调用，超时或服务失败显式回退；没有把原审批AI配置顺带切换到本服务。
+
+```bash
+node scripts/ludong-tender-contract-review-smoke.mjs
+node scripts/ludong-tender-contract-review-smoke.mjs --model
+```
+
+第一条验证规则与人工修订闭环；第二条额外向已授权模型服务发送合成材料，真实验证甲乙方语义审查，可能产生服务用量。
+脚本固定8098，不清库、不删除历史；所有合同、规则及审批内容均明确标为合成验收样本。
+结果、合成DOCX原件和修订稿保存在`.ludong-tender-runtime/contract-review-acceptance/`。
