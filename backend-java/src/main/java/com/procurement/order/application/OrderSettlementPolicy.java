@@ -15,6 +15,7 @@ public class OrderSettlementPolicy {
     ObjectNode assessment = json.createObjectNode();
     assessment.set("lines", tree(entry.snapshot()).path("assessment").path("lines"));
     safe.set("assessment", assessment);
+    if (tree(entry.snapshot()).has("invoicePlan")) safe.set("invoicePlan", tree(entry.snapshot()).path("invoicePlan"));
     node.put("snapshot", write(safe));
     return json.convertValue(node, Entry.class);
   }
@@ -55,7 +56,8 @@ public class OrderSettlementPolicy {
     var errors = new ArrayList<String>();
     var contract = b.path("contracts");
     String contractId = null, kind = "termination";
-    if (contract.size() != 1) errors.add("仅支持关联一个合同的订单");
+    if (contract.size() > 1) errors.add("关联多个合同须先核对合同归属");
+    else if (contract.isEmpty()) kind = "order_closeout";
     else {
       var c = contract.get(0);
       contractId = c.path("id").asText();
@@ -116,7 +118,6 @@ public class OrderSettlementPolicy {
     if (!priceMap.isEmpty()) errors.add("清算单价含不属于本订单的行");
     if (original.compareTo(b.path("amount").decimalValue()) != 0) errors.add("订单总额与行明细不一致");
     BigDecimal paid = BigDecimal.ZERO, invoiced = BigDecimal.ZERO;
-    if (b.path("invoices").size() > 1) errors.add("多发票订单需先核对分摊，本轮不自动推算");
     for (var i : b.path("invoices")) {
       BigDecimal face = i.path("amount").decimalValue(), balance = BigDecimal.ZERO;
       for (var e : b.path("payments"))
@@ -130,13 +131,19 @@ public class OrderSettlementPolicy {
           || ("待付款".equals(state) && balance.signum() != 0)
           || ("部分付款".equals(state) && (balance.signum() <= 0 || balance.compareTo(face) >= 0)))
         errors.add("历史付款状态与真实金额流水不一致，不能按零推算");
-      if (face.compareTo(b.path("amount").decimalValue()) != 0) errors.add("原始发票金额与订单不一致");
+      if (face.signum() <= 0 || !i.path("supplier_id").asText(b.path("supplierId").asText()).equals(b.path("supplierId").asText())) errors.add("原始发票金额或供应商不一致");
       paid = paid.add(balance);
       invoiced = invoiced.add(face);
     }
+    if (invoiced.compareTo(b.path("amount").decimalValue()) > 0) errors.add("原始累计开票金额超过订单金额");
+    for (var payment : b.path("payments")) {
+      boolean found = false;
+      for (var invoice : b.path("invoices")) if (invoice.path("id").asText().equals(payment.path("invoice_id").asText())) found = true;
+      if (!found || payment.path("amount").decimalValue().signum() <= 0) errors.add("付款流水缺少本订单有效发票归属");
+    }
     if ("draft_void".equals(kind) && (received || invoiced.signum() > 0 || paid.signum() > 0))
       errors.add("有实际履约或财务记录的草案不能直接撤销");
-    if (!"draft_void".equals(kind) && received && residual) kind = "reduction";
+    if (!Set.of("draft_void", "order_closeout").contains(kind) && received && residual) kind = "reduction";
     ObjectNode result = json.createObjectNode();
     result.set("baseline", b);
     result.set("lines", lines);
@@ -159,6 +166,7 @@ public class OrderSettlementPolicy {
   }
 
   public List<String> completionBlockers(Entry e, List<Evidence> items) {
+    if (tree(e.snapshot()).has("invoicePlan")) return new OrderSettlementAllocationPolicy(json).completionBlockers(tree(e.snapshot()).path("invoicePlan"), items);
     var b = new ArrayList<String>();
     if (net(e, items).compareTo(e.finalAmount()) != 0) b.add("实际净付款尚未等于约定清算金额");
     if (e.goodsAmount().signum() > 0 || e.initialInvoiced().signum() > 0) {

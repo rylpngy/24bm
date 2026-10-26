@@ -109,3 +109,90 @@ it('keeps detail errors visible and prevents stale detail actions', () => {
   expect(screen.getByRole('alert').textContent).toContain('详情加载失败');
   expect(screen.queryByRole('button', { name: '撤回申请' })).toBeNull();
 });
+it('renders explicit invoice allocation inputs and post-return retained quantities', () => {
+  const s = state();
+  s.data.preview.baseline = JSON.stringify({
+    allocationRequired: true,
+    invoiceBasis: [
+      { source: 'i1', label: '发票一', face: 100, paid: 100 },
+      { source: '~unbilled', label: '未开票货款', face: 100, paid: 0 },
+    ],
+    lines: [
+      {
+        id: 'line',
+        description: '电脑',
+        quantity: 3,
+        received: 3,
+        retainedQuantity: 2,
+        cancelledQuantity: 1,
+        unitPrice: 100,
+      },
+    ],
+  });
+  render(<OrderSettlementPanel state={s} canManage onAgreement={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: '发起合同清算' }));
+  expect(
+    screen.getByRole('spinbutton', { name: '发票一清算货款' }),
+  ).toBeTruthy();
+  expect(
+    screen.getByRole('spinbutton', { name: '未开票货款清算货款' }),
+  ).toBeTruthy();
+  const row = screen.getByText('电脑').closest('tr')!;
+  expect(row.children[2].textContent).toBe('2');
+  expect(row.children[3].textContent).toBe('1');
+});
+it('no-contract creation uses order permission while contract creation remains restricted', () => {
+  const s = state();
+  const view = render(
+    <OrderSettlementPanel
+      state={s}
+      canManage
+      canContractManage={false}
+      onAgreement={vi.fn()}
+    />,
+  );
+  expect(screen.queryByRole('button', { name: '发起合同清算' })).toBeNull();
+  const noContract = {
+    ...s,
+    data: { ...s.data, preview: { ...s.data.preview, contractId: undefined } },
+    detail: { ...s.detail, record: { ...s.detail.record, contractId: null } },
+  };
+  view.rerender(
+    <OrderSettlementPanel
+      state={noContract}
+      canManage
+      canContractManage={false}
+      onAgreement={vi.fn()}
+    />,
+  );
+  expect(screen.getByRole('button', { name: '发起订单清算' })).toBeTruthy();
+});
+it('shows each invoice balance even when aggregate net is balanced', () => {
+  const s = state();
+  s.detail.record.snapshot = JSON.stringify({
+    invoicePlan: [
+      { source: 'a', label: '已付发票', face: 100, paid: 100, target: 0 },
+      { source: 'b', label: '待付发票', face: 100, paid: 0, target: 100 },
+    ],
+  });
+  s.detail.record.status = 'approved';
+  render(
+    <OrderSettlementPanel
+      state={s}
+      canManage
+      canFinance
+      onAgreement={vi.fn()}
+    />,
+  );
+  expect(
+    screen.getByRole('combobox', { name: /^发票或款项归属/ }),
+  ).toBeTruthy();
+  expect(
+    screen.getByText('已付发票', { selector: 'td' }).closest('tr')!.children[3]
+      .textContent,
+  ).toContain('100.00');
+  expect(
+    screen.getByText('待付发票', { selector: 'td' }).closest('tr')!.children[4]
+      .textContent,
+  ).toContain('100.00');
+});

@@ -35,7 +35,9 @@ public final class ProcurementExecutionPolicy {
         BigDecimal net=amount(s,"initialPaid");for(var p:proof)if("payment".equals(text(p,"kind")))net=net.add(amount(p,"amount"));else if("refund".equals(text(p,"kind")))net=net.subtract(amount(p,"amount"));
         boolean approved=list(data,"workflowHistory").stream().anyMatch(h->text(h.path("instance"),"id").equals(text(s,"workflowInstanceId"))&&"approved".equals(text(h.path("instance"),"status")));
         if(!approved||text(s,"supplierActor").isBlank()||text(s,"completedBy").isBlank()||text(s,"completedAt").isBlank()||net.compareTo(amount(s,"finalAmount"))!=0)blockers.add("订单 "+id+" 清算审批、确认或净付款证据不完整");
-        if(amount(s,"goodsAmount").signum()>0&&proof.stream().noneMatch(p->"invoice".equals(text(p,"kind"))&&amount(p,"amount").compareTo(amount(s,"goodsAmount"))==0))blockers.add("订单 "+id+" 缺少最终结算发票凭证");
+        if(s.path("snapshot").path("invoicePlan").isArray()) {
+          if(!com.procurement.order.application.OrderSettlementAllocationPolicy.archiveComplete(s,proof))blockers.add("订单 "+id+" 逐票清算或凭证核验不完整");
+        } else if(amount(s,"goodsAmount").signum()>0&&proof.stream().noneMatch(p->"invoice".equals(text(p,"kind"))&&amount(p,"amount").compareTo(amount(s,"goodsAmount"))==0))blockers.add("订单 "+id+" 缺少最终结算发票凭证");
         settled.add(id);settlementTotal=settlementTotal.add(amount(s,"finalAmount"));settlementInvoices=settlementInvoices.add(amount(s,"goodsAmount"));paid=paid.add(net);
         documents.add(doc(order,"清算订单（原金额留档）："+id,"status","amount","orders","id"));documents.add(new Document(text(s,"id"),"合同解除及清算："+id,"已清算",amount(s,"finalAmount"),"orders",id));
         for(var c:matching(data,"contracts","relatedOrderId",id))documents.add(doc(c,"合同原始记录："+text(c,"contractName"),"status","amount","contracts","id"));

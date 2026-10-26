@@ -11,11 +11,13 @@ import { WorkflowStatusPanel } from '../workflow/workflow-instance-panel';
 export function BuyerOrderSettlement({
   orderId,
   canManage,
+  canContractManage = true,
   canFinance,
   refresh,
 }: {
   orderId: string;
   canManage: boolean;
+  canContractManage?: boolean;
   canFinance: boolean;
   refresh: () => unknown;
 }) {
@@ -55,6 +57,7 @@ export function BuyerOrderSettlement({
       <OrderSettlementPanel
         state={s}
         canManage={canManage}
+        canContractManage={canContractManage}
         canFinance={canFinance}
         attachments={
           <OwnerAttachments

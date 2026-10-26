@@ -13,7 +13,22 @@ public final class OrderSettlementContracts {
       @NotBlank @Size(max = 1000) String reason,
       @NotNull @DecimalMin("0") @Digits(integer = 14, fraction = 2) BigDecimal compensation,
       @NotBlank String agreementId,
-      List<@jakarta.validation.Valid Price> prices) {}
+      List<@jakarta.validation.Valid Price> prices,
+      List<@jakarta.validation.Valid Allocation> allocations) {
+    public Proposal(
+        String requestKey,
+        String reason,
+        BigDecimal compensation,
+        String agreementId,
+        List<Price> prices) {
+      this(requestKey, reason, compensation, agreementId, prices, null);
+    }
+  }
+
+  @Schema(name = "OrderSettlementAllocation")
+  public record Allocation(
+      @NotBlank @Size(max = 150) String source,
+      @NotNull @DecimalMin("0") @Digits(integer = 14, fraction = 2) BigDecimal goodsAmount) {}
 
   public record Price(
       @NotBlank String lineId,
@@ -33,7 +48,18 @@ public final class OrderSettlementContracts {
       @NotNull @DecimalMin("0") @Digits(integer = 14, fraction = 2) BigDecimal amount,
       @NotBlank @Size(max = 150) String evidenceNo,
       @NotBlank String attachmentId,
-      @NotBlank @Size(max = 1000) String remark) {}
+      @NotBlank @Size(max = 1000) String remark,
+      @Size(max = 150) String source) {
+    public EvidenceRequest(
+        String requestKey,
+        String kind,
+        BigDecimal amount,
+        String evidenceNo,
+        String attachmentId,
+        String remark) {
+      this(requestKey, kind, amount, evidenceNo, attachmentId, remark, null);
+    }
+  }
 
   @Schema(name = "OrderSettlementRecord")
   public record Entry(
@@ -74,7 +100,33 @@ public final class OrderSettlementContracts {
       String contentSha,
       String remark,
       String createdBy,
-      OffsetDateTime createdAt) {}
+      OffsetDateTime createdAt,
+      String source) {
+    public Evidence(
+        String id,
+        String settlementId,
+        String kind,
+        BigDecimal amount,
+        String evidenceNo,
+        String attachmentId,
+        String contentSha,
+        String remark,
+        String createdBy,
+        OffsetDateTime createdAt) {
+      this(
+          id,
+          settlementId,
+          kind,
+          amount,
+          evidenceNo,
+          attachmentId,
+          contentSha,
+          remark,
+          createdBy,
+          createdAt,
+          null);
+    }
+  }
 
   @Schema(name = "OrderSettlementPreview")
   public record Preview(

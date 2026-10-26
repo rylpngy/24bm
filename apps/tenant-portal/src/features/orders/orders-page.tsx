@@ -116,7 +116,7 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
         <p className="text-xs font-bold">发货累计 {deliveryBatches.reduce((s, d) => s + (d.shippedQuantity ?? 0), 0)} · 收货累计 {receiptBatches.reduce((s, r) => s + (r.receivedQuantity ?? 0), 0)} · 合格累计 {receiptBatches.reduce((s, r) => s + (r.qualifiedQuantity ?? 0), 0)} · 待收总量 {['已取消','已清算'].includes(o.status??'')?0:(o.lineItems ?? []).length ? Math.max(0, (o.lineItems ?? []).reduce((s, l) => s + (l.quantity ?? 0), 0) - receiptBatches.reduce((s, r) => s + (r.receivedQuantity ?? 0), 0)) : '待核对'}</p>
 
         {o.id&&<BuyerOrderCancellation orderId={o.id} canManage={can('buyer:order:manage')} refresh={()=>query.refetch()}/>}
-        {o.id&&<BuyerOrderSettlement orderId={o.id} canManage={can('buyer:order:manage')&&can('buyer:contract:manage')} canFinance={can('buyer:order:manage')&&can('buyer:payment:register')} refresh={()=>query.refetch()}/>}
+        {o.id&&<BuyerOrderSettlement orderId={o.id} canManage={can('buyer:order:manage')} canContractManage={can('buyer:contract:manage')} canFinance={can('buyer:order:manage')&&can('buyer:payment:register')} refresh={()=>query.refetch()}/>}
         {o.id && <OrderAfterSales orderId={o.id} status={o.status ?? ''} canPurchase={can('buyer:mall:purchase')} lines={(o.lineItems ?? []).filter(l => Boolean(l.id) && (l.quantity ?? 0) > 0).map(l => ({ id: l.id!, quantity: l.quantity!, description: l.description }))} />}
         <div className="grid gap-4 xl:grid-cols-[1fr_20rem]">
           <div className="min-w-0 space-y-4">

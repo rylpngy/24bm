@@ -58,6 +58,20 @@ class FinanceInvoiceAuditLogTests {
     TenantContext.clear();
   }
 
+  @org.junit.jupiter.api.BeforeEach
+  void lockReceivedOrder() {
+    when(invoiceMapper.lockOrder("tenant-1", "po-1")).thenReturn("已收货");
+  }
+
+  @Test
+  void invoiceCreationRechecksLockedOrderBeforeUniquenessAndInsert() {
+    TenantContext.set(null, "supplier-1", "supplier-user");
+    when(purchaseOrderMapper.findBySupplierAndId("supplier-1", "po-1")).thenReturn(order());
+    when(invoiceMapper.lockOrder("tenant-1", "po-1")).thenReturn("待清算");
+    assertThatThrownBy(() -> invoiceApplicationService.create("po-1", new CreateInvoiceRequest(BigDecimal.valueOf(100), "INV-LOCK", null, null, null))).isInstanceOf(IllegalStateException.class);
+    verify(invoiceMapper, never()).countByTenantAndOrder("tenant-1", "po-1");
+  }
+
   @Test
   void listSupplierInvoicesAppliesFiltersInsideCurrentSupplier() {
     TenantContext.set(null, "supplier-1", "supplier-user");

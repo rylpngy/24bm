@@ -59,6 +59,11 @@ class FinanceInvoiceNotificationTests {
     TenantContext.clear();
   }
 
+  @org.junit.jupiter.api.BeforeEach
+  void lockReceivedOrder() {
+    when(invoiceMapper.lockOrder("tenant-1", "po-1")).thenReturn("已收货");
+  }
+
   @Test
   void supplierInvoiceCreationNotifiesActiveBuyerUsers() {
     TenantContext.set(null, "supplier-1", "supplier-user");

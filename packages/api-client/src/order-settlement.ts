@@ -5,7 +5,7 @@ import type { ApiEnvelope } from './workflow-runtime';
 export interface SettlementEntry {
   id: string;
   orderId: string;
-  contractId: string;
+  contractId: string | null;
   kind: string;
   reason: string;
   snapshot: string;
@@ -22,6 +22,7 @@ export interface SettlementEntry {
   supplierComment?: string;
 }
 export interface SettlementEvidence {
+  source?: string | null;
   id: string;
   kind: string;
   amount: number;

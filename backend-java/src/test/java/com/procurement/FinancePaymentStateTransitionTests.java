@@ -308,6 +308,7 @@ class FinancePaymentStateTransitionTests {
 
   @Test
   void invoiceCreationPersistsInitialReconciliationStatement() {
+    when(invoiceMapper.lockOrder("tenant-1", "po-1")).thenReturn("已收货");
     TenantContext.set(null, "supplier-1", "supplier-user");
     PurchaseOrder order = order(BigDecimal.valueOf(100));
     when(purchaseOrderMapper.findBySupplierAndId("supplier-1", "po-1"))

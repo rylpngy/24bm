@@ -44981,6 +44981,12 @@
             "items": {
               "$ref": "#/components/schemas/Price"
             }
+          },
+          "allocations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderSettlementAllocation"
+            }
           }
         }
       },
@@ -45038,6 +45044,11 @@
             "maxLength": 1000,
             "minLength": 0,
             "type": "string"
+          },
+          "source": {
+            "maxLength": 150,
+            "minLength": 0,
+            "type": "string"
           }
         }
       },
@@ -45088,6 +45099,9 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "source": {
+            "type": "string"
           }
         }
       },
@@ -45493,6 +45507,25 @@
           },
           "boundary": {
             "type": "string"
+          }
+        }
+      },
+      "OrderSettlementAllocation": {
+        "required": [
+          "goodsAmount",
+          "source"
+        ],
+        "type": "object",
+        "properties": {
+          "source": {
+            "maxLength": 150,
+            "minLength": 0,
+            "type": "string"
+          },
+          "goodsAmount": {
+            "minimum": 0,
+            "exclusiveMinimum": false,
+            "type": "number"
           }
         }
       }

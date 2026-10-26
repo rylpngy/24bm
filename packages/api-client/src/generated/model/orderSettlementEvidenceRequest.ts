@@ -29,4 +29,9 @@ export interface OrderSettlementEvidenceRequest {
    * @maxLength 1000
    */
   remark: string;
+  /**
+   * @minLength 0
+   * @maxLength 150
+   */
+  source?: string;
 }
