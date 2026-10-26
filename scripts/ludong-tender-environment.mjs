@@ -34,6 +34,7 @@ const env = {
   CORS_ALLOWED_ORIGINS: 'http://127.0.0.1:5288,http://127.0.0.1:5289',
   DEV_API_PROXY_TARGET: 'http://127.0.0.1:8098',
   VITE_JAVA_API_BASE_URL: '', VITE_SELF_LOGIN: 'true', VITE_KEYCLOAK_URL: '', VITE_KEYCLOAK_ENABLED: 'false',
+  VITE_PORTAL_URL: 'http://127.0.0.1:5288/?solution=ludong-poc',
 };
 function run(command, args, cwd = root) {
   const result = spawnSync(command, args, { cwd, env, stdio: 'inherit' });

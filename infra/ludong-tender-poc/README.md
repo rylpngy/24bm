@@ -2,6 +2,20 @@
 
 本环境复用当前24Bid及学校POC模块，不是旧版POC的恢复，也不是生产交付完成声明。
 
+## 第六批交付与操作说明
+
+- 客户手册：`docs/deliverables/鲁东大学采购管理系统POC演示操作手册.docx`。账号与三项操作步骤均在其中。
+- 真实完整审批/表格/附件验收：`node scripts/ludong-tender-final-acceptance.mjs`，固定8098，新增合成项目，不清库。
+- 一致备份、构建留存及隔离恢复：`node scripts/ludong-tender-backup-drill.mjs`。
+  先构建两端，再短暂停止本工作区已核验的8098进程；备份原库和全部对象后立即恢复8098。
+  在同一独立基础设施中新建`poc_drill_<时间戳>`库和`ludong-poc-drill-<时间戳>`桶，不覆盖任何既有库/桶。
+  校验195张表及全部附件摘要，并在临时8198验证真实登录、业务列表和鉴权原件下载，最后停止临时进程，保留副本。
+- 受限产物：`.ludong-tender-runtime/backups/<时间戳>/`，包含数据库dump、附件、两端dist、Java包、摘要和恢复结果。
+  目录不含运行密钥，但包含业务数据，应按敏感备份保护；不是可公开发布的安装包。
+  当前服务仍使用Vite开发门户；保存构建不等于切换生产静态服务，不承诺异机或完全离线运行。
+- 供应商POC“门户首页”通过`VITE_PORTAL_URL`指向5288学校入口，更新后执行`restart-portals`才会重新加载环境变量。
+- 手机关键路径已实测390×844；全菜单移动验收、学校正式制度确认及带讲解的20分钟彩排仍见执行台账，不冒充全部完成。
+
 |组件|地址或标识|
 |---|---|
 |采购人|http://127.0.0.1:5288/?solution=ludong-poc|
@@ -38,7 +52,7 @@ node scripts/ludong-tender-environment.mjs restart-backend
 ```
 
 只重启本工作区记录的POC后端PID，且核验实际JAR路径。运行JAR复制到本地不可变发布副本，
-后续构建不会覆盖运行中的JAR。开发门户使用Vite热更新，最终彩排前另行冻结构建。
+后续构建不会覆盖运行中的JAR。开发门户使用Vite热更新；第六批提供独立冻结构建及恢复脚本。
 
 本地生成的随机数据库密码、对象存储密码和JWT密钥存于忽略目录
 `.ludong-tender-runtime/secrets.json`，权限0600。不提交Git，不作为客户通用密码。
@@ -101,7 +115,7 @@ node scripts/ludong-tender-configuration-smoke.mjs --verify-overdue
 
 自然小时时限不包含节假日工作日历。定时超期提醒由`app.workflow.deadlines.enabled=true`显式启用，
 间隔参数为`app.workflow.deadlines.interval-ms`，默认60000毫秒；独立POC启用且设置10000毫秒。
-超期不自动批准或驳回。手机完整验收、Word逐页视觉检查及合同必演仍待后续完成；报价必演见下。
+超期不自动批准或驳回。此处为第三批记录；后续Word和手机关键路径实测见台账第六批，报价和合同见下。
 
 ## 完整报价与延期演示
 
