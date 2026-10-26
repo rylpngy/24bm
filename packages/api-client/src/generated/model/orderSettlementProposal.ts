@@ -6,6 +6,7 @@
  * OpenAPI spec version: v1
  */
 import type { Price } from './price';
+import type { OrderSettlementAllocation } from './orderSettlementAllocation';
 
 export interface OrderSettlementProposal {
   /**
@@ -24,4 +25,5 @@ export interface OrderSettlementProposal {
   compensation: number;
   agreementId: string;
   prices?: Price[];
+  allocations?: OrderSettlementAllocation[];
 }

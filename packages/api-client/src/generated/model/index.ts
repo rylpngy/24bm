@@ -512,6 +512,7 @@ export * from './orderCancellationView';
 export * from './orderLineItemResponse';
 export * from './orderSettlementAction';
 export * from './orderSettlementActionFormData';
+export * from './orderSettlementAllocation';
 export * from './orderSettlementDetail';
 export * from './orderSettlementEvidence';
 export * from './orderSettlementEvidenceRequest';

@@ -17,4 +17,5 @@ export interface OrderSettlementEvidence {
   remark?: string;
   createdBy?: string;
   createdAt?: string;
+  source?: string;
 }

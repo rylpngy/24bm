@@ -144,7 +144,10 @@ class SupplierExitClearanceIT {
     assertThat(risk().blocked()).isFalse();
     jdbc.update("update invoices set supplier_id='ecother' where id='eci'");
     assertThat(risk().paymentVerificationRequiredCount()).isEqualTo(1);
+    // Simulate a legacy order corrected after invoicing; new invoice writes are capped.
+    jdbc.update("update purchase_orders set amount=120 where id='eco'");
     jdbc.update("update invoices set supplier_id='ecs',amount=120 where id='eci'");
+    jdbc.update("update purchase_orders set amount=100 where id='eco'");
     jdbc.update("update invoice_payment_entries set amount=120 where id='ecep'");
     assertThat(risk().paymentVerificationRequiredCount()).isEqualTo(1);
     jdbc.update("update invoices set amount=100 where id='eci'");
@@ -165,10 +168,10 @@ class SupplierExitClearanceIT {
     }
   }
 
-  @Test void duplicateInvoicesRemainProhibitedByDatabasePolicy() {
+  @Test void duplicateFullInvoicesRemainProhibitedByCumulativeDatabasePolicy() {
     order(); invoice("待付款");
     assertThatThrownBy(() -> jdbc.update("insert into invoices(id,tenant_id,supplier_id,order_id,amount,payment_status) values ('ecdup','eca','ecs','eco',100,'待付款')"))
-        .isInstanceOf(org.springframework.dao.DuplicateKeyException.class);
+        .isInstanceOf(org.springframework.dao.DataAccessException.class).hasMessageContaining("累计发票金额");
   }
 
   @Test void archivedContractAmountMustMatchInvoiceWithoutMilestones() {

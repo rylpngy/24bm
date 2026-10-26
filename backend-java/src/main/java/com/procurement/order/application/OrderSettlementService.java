@@ -109,7 +109,7 @@ public class OrderSettlementService {
             a.invoiced(),
             supplier
                 ? "{}"
-                : policy.write(Map.of("lines", policy.tree(a.snapshot()).path("lines"))),
+                : policy.write(Map.of("lines", policy.tree(a.snapshot()).path("lines"), "invoiceBasis", allocation().basis(policy.tree(a.snapshot()).path("baseline")), "allocationRequired", allocation().required(policy.tree(a.snapshot()).path("baseline")))),
             supplier ? List.of() : blockers(o, a)),
         mapper.page(o.tenantId(), id, size, (long) (page - 1) * size).stream()
             .map(policy::sanitizedEntry)
@@ -126,12 +126,24 @@ public class OrderSettlementService {
     var e = entry(o, id);
     var items = mapper.evidence(o.tenantId(), id);
     var n = policy.net(e, items);
+    BigDecimal refundDue = n.subtract(e.finalAmount()).max(BigDecimal.ZERO);
+    BigDecimal paymentDue = e.finalAmount().subtract(n).max(BigDecimal.ZERO);
+    var plan = policy.tree(e.snapshot()).path("invoicePlan");
+    if (plan.isArray()) {
+      refundDue = BigDecimal.ZERO;
+      paymentDue = BigDecimal.ZERO;
+      for (var row : plan) {
+        BigDecimal difference = allocation().balance(row, items).subtract(row.path("target").decimalValue());
+        refundDue = refundDue.add(difference.max(BigDecimal.ZERO));
+        paymentDue = paymentDue.add(difference.negate().max(BigDecimal.ZERO));
+      }
+    }
     return new Detail(
         policy.sanitizedEntry(e),
         items,
         n,
-        n.subtract(e.finalAmount()).max(BigDecimal.ZERO),
-        e.finalAmount().subtract(n).max(BigDecimal.ZERO),
+        refundDue,
+        paymentDue,
         policy.completionBlockers(e, items));
   }
 
@@ -161,18 +173,18 @@ public class OrderSettlementService {
   @Transactional
   public Entry propose(String id, Proposal r) {
     var o = order(id, false, true);
-    permissions.require("buyer:contract:manage");
     var old = mapper.byKey(o.tenantId(), id, r.requestKey());
     if (old != null) {
       var s = policy.tree(old.snapshot());
       if (!old.reason().equals(r.reason().strip())
           || !old.agreementId().equals(r.agreementId())
           || old.compensationAmount().compareTo(r.compensation()) != 0
-          || !s.path("proposal").equals(policy.tree(policy.write(r))))
+          || !sameProposal(s.path("proposal"), r))
         throw new IllegalStateException("同一提交编号内容不同");
       return policy.sanitizedEntry(old);
     }
     var a = policy.assess(mapper.baseline(o.tenantId(), id), r.prices());
+    if (a.contractId() != null) permissions.require("buyer:contract:manage");
     allowed(blockers(o, a));
     BigDecimal total = a.goods().add(r.compensation());
     if (total.compareTo(o.amount()) > 0) throw new IllegalStateException("清算金额不得超过原订单金额；增额须另行变更审批");
@@ -182,6 +194,8 @@ public class OrderSettlementService {
     var snapshot = new LinkedHashMap<String, Object>();
     snapshot.put("assessment", policy.tree(a.snapshot()));
     snapshot.put("proposal", r);
+    var plan = allocation().plan(policy.tree(a.snapshot()).path("baseline"), a.goods(), r.compensation(), r.allocations());
+    if (plan != null) snapshot.put("invoicePlan", plan);
     var v = new HashMap<String, Object>();
     v.put("id", "settlement-" + UUID.randomUUID());
     v.put("t", o.tenantId());
@@ -248,7 +262,7 @@ public class OrderSettlementService {
       state(o, e, "withdrawn", null);
       status(o, e.previousStatus());
     } else if ("submit".equals(a)) {
-      permissions.require("buyer:contract:manage");
+      if (e.contractId() != null) permissions.require("buyer:contract:manage");
       if (!actor().equals(e.createdBy()) || !"agreed".equals(e.status()))
         throw new IllegalStateException("须供应商先确认，由原发起人提审");
       unchanged(o, e);
@@ -267,7 +281,7 @@ public class OrderSettlementService {
                       "orderId",
                       order,
                       "contractId",
-                      e.contractId(),
+                      e.contractId() == null ? "" : e.contractId(),
                       "reason",
                       e.reason(),
                       "finalAmount",
@@ -297,7 +311,7 @@ public class OrderSettlementService {
       if (mapper.restoreStock(o.tenantId(), order) != skus.size())
         throw new IllegalStateException("库存恢复数量不一致");
       state(o, e, "settled", null);
-      contracts.archive(o.tenantId(), e.contractId(), id);
+      if (e.contractId() != null) contracts.archive(o.tenantId(), e.contractId(), id);
       status(o, "已清算");
     } else throw new IllegalArgumentException("无效操作");
     event(o, a, r.reason());
@@ -316,13 +330,18 @@ public class OrderSettlementService {
           || previous.amount().compareTo(r.amount()) != 0
           || !previous.evidenceNo().equals(r.evidenceNo().strip())
           || !previous.attachmentId().equals(r.attachmentId())
-          || !previous.remark().equals(r.remark().strip()))
+          || !previous.remark().equals(r.remark().strip())
+          || !Objects.equals(previous.source(), r.source()))
         throw new IllegalStateException("同一凭证请求内容不同");
       return previous;
     }
     if (!"approved".equals(e.status())) throw new IllegalStateException("审批通过后才能登记清算凭证");
     unchanged(o, e);
-    var n = policy.net(e, mapper.evidence(o.tenantId(), id));
+    var items = mapper.evidence(o.tenantId(), id);
+    var n = policy.net(e, items);
+    var plan = policy.tree(e.snapshot()).path("invoicePlan");
+    if (plan.isArray()) allocation().validate(plan, items, r);
+    else if (r.source() != null) throw new IllegalArgumentException("本清算方案未设置逐票归属");
     BigDecimal limit =
         switch (r.kind()) {
           case "refund" -> n.subtract(e.finalAmount());
@@ -331,10 +350,10 @@ public class OrderSettlementService {
           case "compensation_receipt" -> e.compensationAmount();
           default -> throw new IllegalArgumentException("无效凭证类型");
         };
-    if (r.amount().signum() < 0
+    if (!plan.isArray() && (r.amount().signum() < 0
         || (Set.of("refund", "payment").contains(r.kind())
             ? (r.amount().signum() <= 0 || r.amount().compareTo(limit) > 0)
-            : r.amount().compareTo(limit) != 0)) throw new IllegalStateException("凭证金额与当前应清算金额不符");
+            : r.amount().compareTo(limit) != 0))) throw new IllegalStateException("凭证金额与当前应清算金额不符");
     var p = proof(o, r.attachmentId());
     var v = new HashMap<String, Object>();
     v.put("id", "settlement-proof-" + UUID.randomUUID());
@@ -348,6 +367,7 @@ public class OrderSettlementService {
     v.put("sha", p.contentSha256());
     v.put("remark", r.remark().strip());
     v.put("actor", actor());
+    v.put("source", r.source());
     mapper.insertEvidence(v);
     event(o, "evidence", r.kind() + ":" + r.amount() + ":" + r.evidenceNo());
     return mapper.evidenceByKey(o.tenantId(), id, r.requestKey());
@@ -386,5 +406,15 @@ public class OrderSettlementService {
     notifications.notifyActiveTenantUsers(o.tenantId(), "合同清算进度", "订单 " + o.id() + "：" + action);
     notifications.notifyActiveSupplierUsers(
         o.tenantId(), o.supplierId(), "合同清算进度", "订单 " + o.id() + "：" + action);
+  }
+
+  private OrderSettlementAllocationPolicy allocation() {
+    return new OrderSettlementAllocationPolicy(new com.fasterxml.jackson.databind.ObjectMapper());
+  }
+
+  private boolean sameProposal(com.fasterxml.jackson.databind.JsonNode saved, Proposal request) {
+    var normalized = saved.deepCopy();
+    if (normalized.isObject() && !normalized.has("allocations")) ((com.fasterxml.jackson.databind.node.ObjectNode) normalized).putNull("allocations");
+    return normalized.equals(policy.tree(policy.write(request)));
   }
 }

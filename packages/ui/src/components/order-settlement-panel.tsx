@@ -4,7 +4,7 @@ import { Pagination } from './pagination';
 interface Entry {
   id: string;
   orderId: string;
-  contractId: string;
+  contractId: string | null;
   kind: string;
   reason: string;
   snapshot: string;
@@ -23,6 +23,7 @@ interface Entry {
 interface Detail {
   record: Entry;
   evidence: {
+    source?: string | null;
     id: string;
     kind: string;
     amount: number;
@@ -75,6 +76,7 @@ const labels: Record<string, string> = {
   draft_void: '合同草案撤销',
   termination: '合同解除',
   reduction: '部分履约减量',
+  order_closeout: '无独立合同订单清算',
   payment: '补付款',
   refund: '退款',
   invoice: '最终发票/红冲核对',
@@ -89,6 +91,20 @@ const money = (n: number) =>
 function parse(s: string) {
   try {
     return JSON.parse(s) as {
+      invoiceBasis?: {
+        source: string;
+        label: string;
+        face: number;
+        paid: number;
+      }[];
+      allocationRequired?: boolean;
+      invoicePlan?: {
+        source: string;
+        label: string;
+        face: number;
+        paid: number;
+        target: number;
+      }[];
       lines?: {
         id: string;
         description: string;
@@ -120,6 +136,7 @@ export function OrderSettlementPanel({
   state: s,
   supplier = false,
   canManage = false,
+  canContractManage = true,
   canFinance = false,
   attachments,
   attachmentOptions = [],
@@ -130,6 +147,7 @@ export function OrderSettlementPanel({
   state: State;
   supplier?: boolean;
   canManage?: boolean;
+  canContractManage?: boolean;
   canFinance?: boolean;
   attachments?: ReactNode;
   attachmentOptions?: { id: string; fileName: string }[];
@@ -142,6 +160,8 @@ export function OrderSettlementPanel({
     [agreement, setAgreement] = useState(''),
     [compensation, setCompensation] = useState('0'),
     [prices, setPrices] = useState<Record<string, string>>({}),
+    [allocations, setAllocations] = useState<Record<string, string>>({}),
+    [source, setSource] = useState(''),
     [kind, setKind] = useState('refund'),
     [amount, setAmount] = useState(''),
     [reference, setReference] = useState(''),
@@ -149,6 +169,11 @@ export function OrderSettlementPanel({
     [remark, setRemark] = useState('');
   const e = s.detail?.record,
     lines = parse(s.data?.preview.baseline || '{}').lines || [];
+  const basis = parse(s.data?.preview.baseline || '{}');
+  const invoicePlan = e ? parse(e.snapshot).invoicePlan : undefined;
+  const mayManage =
+    canManage &&
+    (!(e?.contractId || s.data?.preview.contractId) || canContractManage);
   return (
     <section
       aria-label="合同解除与订单清算"
@@ -166,12 +191,12 @@ export function OrderSettlementPanel({
             <RefreshCw size={14} />
           </button>
           {!supplier &&
-            canManage &&
+            mayManage &&
             s.data &&
             !s.data.preview.blockers.length && (
               <button className={button} onClick={() => setCreating(!creating)}>
                 <FileCheck2 size={14} />
-                发起合同清算
+                {s.data.preview.contractId ? '发起合同清算' : '发起订单清算'}
               </button>
             )}
         </div>
@@ -211,6 +236,14 @@ export function OrderSettlementPanel({
                   lineId,
                   unitPrice: Number(p),
                 })),
+                ...(basis.allocationRequired
+                  ? {
+                      allocations: (basis.invoiceBasis || []).map((x) => ({
+                        source: x.source,
+                        goodsAmount: Number(allocations[x.source]),
+                      })),
+                    }
+                  : {}),
               })
             ) {
               setCreating(false);
@@ -238,8 +271,8 @@ export function OrderSettlementPanel({
                   <tr key={l.id}>
                     <td className="py-2">{l.description}</td>
                     <td>{l.quantity}</td>
-                    <td>{l.received}</td>
-                    <td>{l.quantity - l.received}</td>
+                    <td>{l.retainedQuantity ?? l.received}</td>
+                    <td>{l.cancelledQuantity ?? l.quantity - l.received}</td>
                     <td>
                       <input
                         aria-label={`清算单价 ${l.description}`}
@@ -259,6 +292,42 @@ export function OrderSettlementPanel({
               </tbody>
             </table>
           </div>
+          {basis.allocationRequired && (
+            <fieldset className="space-y-3 rounded-md border border-slate-200 p-3">
+              <legend className="px-1 text-sm font-semibold">
+                逐票货款归属
+              </legend>
+              {(basis.invoiceBasis || []).map((x) => (
+                <label
+                  key={x.source}
+                  className="grid items-center gap-2 text-sm sm:grid-cols-[minmax(0,1fr)_10rem]"
+                >
+                  <span className="min-w-0 break-words">
+                    {x.label}
+                    <span className="block text-xs text-slate-500">
+                      原金额 {money(x.face)} · 已付 {money(x.paid)}
+                    </span>
+                  </span>
+                  <input
+                    className={input}
+                    aria-label={`${x.label}清算货款`}
+                    required
+                    type="number"
+                    min="0"
+                    max={x.face}
+                    step="0.01"
+                    value={allocations[x.source] ?? ''}
+                    onChange={(v) =>
+                      setAllocations({
+                        ...allocations,
+                        [x.source]: v.target.value,
+                      })
+                    }
+                  />
+                </label>
+              ))}
+            </fieldset>
+          )}
           <label className="block text-sm">
             补偿款
             <input
@@ -404,6 +473,52 @@ export function OrderSettlementPanel({
                 </div>
               </div>
               <p className="break-words text-sm">{e.reason}</p>
+              {invoicePlan && (
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[580px] text-left text-sm">
+                    <thead>
+                      <tr>
+                        <th>发票 / 款项</th>
+                        <th>约定净额</th>
+                        <th>实际净付</th>
+                        <th>待退款</th>
+                        <th>待补付</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {invoicePlan.map((row) => {
+                        const net =
+                          row.paid +
+                          s
+                            .detail!.evidence.filter(
+                              (p) => p.source === row.source,
+                            )
+                            .reduce(
+                              (n, p) =>
+                                n +
+                                (p.kind === 'payment'
+                                  ? p.amount
+                                  : p.kind === 'refund'
+                                    ? -p.amount
+                                    : 0),
+                              0,
+                            );
+                        return (
+                          <tr key={row.source}>
+                            <td className="max-w-56 break-words py-2">
+                              {row.label}
+                            </td>
+                            <td>{money(row.target)}</td>
+                            <td>{money(net)}</td>
+                            <td>{money(Math.max(0, net - row.target))}</td>
+                            <td>{money(Math.max(0, row.target - net))}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
               <button className={button} onClick={() => onAgreement(e)}>
                 <Download size={14} />
                 下载清算协议
@@ -433,7 +548,7 @@ export function OrderSettlementPanel({
               {e.supplierComment && (
                 <p className="text-sm">供应商确认：{e.supplierComment}</p>
               )}
-              {canManage &&
+              {mayManage &&
                 ((supplier && e.status === 'supplier_pending') ||
                   (!supplier &&
                     e.createdBy === s.data?.actorId &&
@@ -491,6 +606,7 @@ export function OrderSettlementPanel({
                         evidenceNo: reference,
                         attachmentId: proof,
                         remark,
+                        ...(invoicePlan ? { source } : {}),
                       })
                     ) {
                       setReference('');
@@ -501,6 +617,24 @@ export function OrderSettlementPanel({
                   <h4 className="font-semibold">登记实际清算凭证</h4>
                   {attachments}
                   <div className="grid gap-3 sm:grid-cols-2">
+                    {invoicePlan && (
+                      <label className="text-sm">
+                        发票或款项归属
+                        <select
+                          className={input}
+                          required
+                          value={source}
+                          onChange={(v) => setSource(v.target.value)}
+                        >
+                          <option value="">请选择归属</option>
+                          {invoicePlan.map((row) => (
+                            <option key={row.source} value={row.source}>
+                              {row.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
                     <label className="text-sm">
                       类型
                       <select
@@ -585,7 +719,7 @@ export function OrderSettlementPanel({
                     }
                     onClick={() => void s.act(e, 'complete', remark)}
                   >
-                    完成清算并归档合同
+                    {e.contractId ? '完成清算并归档合同' : '完成订单清算'}
                   </button>
                 </form>
               )}
@@ -594,6 +728,7 @@ export function OrderSettlementPanel({
                   <thead>
                     <tr>
                       <th>凭证</th>
+                      {invoicePlan && <th>款项归属</th>}
                       <th>金额</th>
                       <th>编号</th>
                       <th>登记时间</th>
@@ -603,6 +738,12 @@ export function OrderSettlementPanel({
                     {s.detail!.evidence.map((p) => (
                       <tr key={p.id}>
                         <td className="py-2">{labels[p.kind]}</td>
+                        {invoicePlan && (
+                          <td className="max-w-48 break-words">
+                            {invoicePlan.find((row) => row.source === p.source)
+                              ?.label || '未归属'}
+                          </td>
+                        )}
                         <td>{money(p.amount)}</td>
                         <td>{p.evidenceNo}</td>
                         <td>{new Date(p.createdAt).toLocaleString('zh-CN')}</td>

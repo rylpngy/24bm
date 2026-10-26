@@ -1633,20 +1633,25 @@ try {
         const order = (await api('buyer/orders', b)).find(
           (o) => o.id === c.orderId,
         );
-        const contract = await api('buyer/contracts', b, {
-          contractNo: 'SET-' + kind + '-' + runId,
-          contractName: '清算合同 ' + kind,
-          relatedOrderId: order.id,
-          amount: order.amount,
-          status: '草案',
-          fulfillmentProgress: '待履约',
-          paymentTerms: '验收后支付',
-        });
+        const contract =
+          kind === 'no-contract'
+            ? null
+            : await api('buyer/contracts', b, {
+                contractNo: 'SET-' + kind + '-' + runId,
+                contractName: '清算合同 ' + kind,
+                relatedOrderId: order.id,
+                amount: order.amount,
+                status: '草案',
+                fulfillmentProgress: '待履约',
+                paymentTerms: '验收后支付',
+              });
         if (kind !== 'void') {
-          await api(`buyer/contracts/${contract.id}/approval`, b, {
-            formData: {},
-          });
-          await decide(r, 'contract_approval', contract.id);
+          if (contract) {
+            await api(`buyer/contracts/${contract.id}/approval`, b, {
+              formData: {},
+            });
+            await decide(r, 'contract_approval', contract.id);
+          }
           await api(`supplier/orders/${order.id}/confirm`, s, {});
           const qty = kind === 'partial' ? 1 : 3;
           await api(`supplier/orders/${order.id}/deliveries`, s, {
@@ -1712,6 +1717,14 @@ try {
         }
         if (['refund', 'physical-return', 'physical-exchange'].includes(kind))
           await invoiceAndPay();
+        if (kind === 'allocation-ui') {
+          report.records.allocationUi = {
+            ...c,
+            contractId: contract.id,
+            lineId: order.lineItems[0].id,
+          };
+          return;
+        }
         if (kind.startsWith('physical-') || quality) {
           const type = ['physical-return', 'quality-return'].includes(kind)
             ? '退货'
@@ -1935,10 +1948,9 @@ try {
           reason: '双方核对已履行数量和最终价款',
           compensation: 0,
           agreementId: attachment,
-          prices:
-            kind === 'refund'
-              ? [{ lineId: order.lineItems[0].id, unitPrice: 200 }]
-              : [],
+          prices: ['refund', 'no-contract'].includes(kind)
+            ? [{ lineId: order.lineItems[0].id, unitPrice: 200 }]
+            : [],
         });
         const agreement = await fetch(
           base + '/api/v1/' + sp + '/' + entry.id + '/agreement',
@@ -1986,7 +1998,8 @@ try {
             () => assert.fail('Must require financial evidence'),
             () => {},
           );
-          if (kind === 'quality-return') await evidence('payment', 600);
+          if (['quality-return', 'no-contract'].includes(kind))
+            await evidence('payment', 600);
           else if (kind === 'partial') await evidence('payment', 300);
           else await evidence('refund', 300);
           await evidence('invoice', kind === 'partial' ? 300 : 600);
@@ -2039,7 +2052,7 @@ try {
         report.records['settlement_' + kind] = {
           ...c,
           settlementId: entry.id,
-          contractId: contract.id,
+          contractId: contract?.id ?? null,
           netPaid: detail.netPaid,
         };
         check(
@@ -2059,6 +2072,9 @@ try {
           await settlementCase(kind);
       if (process.env.PROJECT_RECEIPT_QUALITY_ACCEPTANCE === '1')
         for (const kind of ['quality-return', 'quality-exchange', 'quality-ui'])
+          await settlementCase(kind);
+      if (process.env.PROJECT_ALLOCATION_SETTLEMENT_ACCEPTANCE === '1')
+        for (const kind of ['no-contract', 'allocation-ui'])
           await settlementCase(kind);
     }
     check(

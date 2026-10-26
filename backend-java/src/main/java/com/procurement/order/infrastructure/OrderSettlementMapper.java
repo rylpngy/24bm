@@ -112,22 +112,22 @@ values(#{id},#{t},#{o},#{supplier},#{contract},#{key},#{kind},#{reason},#{previo
 
   @Select(
       "select"
-          + " id,settlement_id,kind,amount,evidence_no,attachment_id,content_sha,remark,created_by,created_at"
+          + " id,settlement_id,kind,amount,evidence_no,attachment_id,content_sha,remark,created_by,created_at,source"
           + " from order_settlement_evidence where tenant_id=#{t} and settlement_id=#{id} order by"
           + " created_at,id")
   List<Evidence> evidence(@Param("t") String t, @Param("id") String id);
 
   @Select(
       "select"
-          + " id,settlement_id,kind,amount,evidence_no,attachment_id,content_sha,remark,created_by,created_at"
+          + " id,settlement_id,kind,amount,evidence_no,attachment_id,content_sha,remark,created_by,created_at,source"
           + " from order_settlement_evidence where tenant_id=#{t} and settlement_id=#{id} and"
           + " request_key=#{key}")
   Evidence evidenceByKey(@Param("t") String t, @Param("id") String id, @Param("key") String key);
 
   @Insert(
       "insert into"
-          + " order_settlement_evidence(id,tenant_id,settlement_id,request_key,kind,amount,evidence_no,attachment_id,content_sha,remark,created_by)"
-          + " values(#{id},#{t},#{settlement},#{key},#{kind},#{amount},#{reference},#{attachment},#{sha},#{remark},#{actor})")
+          + " order_settlement_evidence(id,tenant_id,settlement_id,request_key,kind,amount,evidence_no,attachment_id,content_sha,remark,created_by,source)"
+          + " values(#{id},#{t},#{settlement},#{key},#{kind},#{amount},#{reference},#{attachment},#{sha},#{remark},#{actor},#{source,jdbcType=VARCHAR})")
   void insertEvidence(Map<String, Object> values);
 
   @Select(
