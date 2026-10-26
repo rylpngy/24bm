@@ -15,6 +15,8 @@ const FLAGGED = new Set(['金额差异', '数量短缺']);
 // 行级三单对账状态 → 徽章配色。
 const STATUS_STYLE: Record<string, string> = {
   三单一致: 'bg-emerald-100 text-emerald-700',
+  本票分次匹配: 'bg-emerald-100 text-emerald-700',
+  数量超开: 'bg-red-100 text-red-700',
   金额差异: 'bg-red-100 text-red-700',
   数量短缺: 'bg-amber-100 text-amber-700',
   未开票: 'bg-slate-200 text-slate-600',

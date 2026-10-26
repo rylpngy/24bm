@@ -4956,6 +4956,9 @@ class HttpSecurityContractTests {
             .contentType(MediaType.APPLICATION_JSON)
             .content(validInvoicePayload()))
         .andExpect(status().isForbidden());
+    mockMvc.perform(get("/api/v1/supplier/orders/po-demo/invoices/preview")
+            .header("Authorization", "Bearer " + buyerToken))
+        .andExpect(status().isForbidden());
     mockMvc.perform(get("/api/v1/supplier/invoices/invoice-demo/payment-audit-logs")
             .header("Authorization", "Bearer " + buyerToken))
         .andExpect(status().isForbidden());

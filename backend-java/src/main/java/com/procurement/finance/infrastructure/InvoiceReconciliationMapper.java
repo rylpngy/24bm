@@ -59,7 +59,7 @@ public interface InvoiceReconciliationMapper {
         reconciliation.next_action,
         purchase_order.amount as order_amount,
         invoice.amount as invoice_amount,
-        invoice.amount - purchase_order.amount as variance_amount,
+        case when exists(select 1 from finance_invoice_closeout_checks c where c.tenant_id=invoice.tenant_id and c.invoice_id=invoice.id and c.blocking_reason is null) then 0 else invoice.amount - purchase_order.amount end as variance_amount,
         case
           when purchase_order.status in ('已收货', '已完成') then '已收货'
           else '待收货'
@@ -109,7 +109,7 @@ public interface InvoiceReconciliationMapper {
         reconciliation.next_action,
         purchase_order.amount as order_amount,
         invoice.amount as invoice_amount,
-        invoice.amount - purchase_order.amount as variance_amount,
+        case when exists(select 1 from finance_invoice_closeout_checks c where c.tenant_id=invoice.tenant_id and c.invoice_id=invoice.id and c.blocking_reason is null) then 0 else invoice.amount - purchase_order.amount end as variance_amount,
         case
           when purchase_order.status in ('已收货', '已完成') then '已收货'
           else '待收货'

@@ -6,16 +6,26 @@
  * OpenAPI spec version: v1
  */
 import {
-  useMutation
+  useMutation,
+  useQuery
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
   MutationFunction,
   QueryClient,
+  QueryFunction,
+  QueryKey,
+  UndefinedInitialDataOptions,
   UseMutationOptions,
-  UseMutationResult
+  UseMutationResult,
+  UseQueryOptions,
+  UseQueryResult
 } from '@tanstack/react-query';
 
 import type {
+  ApiResponseInvoiceIssuancePreview,
   ApiResponseInvoiceResponse,
   ApiResponseVoid,
   CreateInvoiceRequest
@@ -86,3 +96,85 @@ const {mutation: mutationOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
+    export const supplierInvoicePreview = (
+    orderId: string,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseInvoiceIssuancePreview>(
+      {url: `/api/v1/supplier/orders/${orderId}/invoices/preview`, method: 'GET', signal
+    },
+      );
+    }
+
+
+
+
+export const getSupplierInvoicePreviewQueryKey = (orderId?: string,) => {
+    return [
+    `/api/v1/supplier/orders/${orderId}/invoices/preview`
+    ] as const;
+    }
+
+
+export const getSupplierInvoicePreviewQueryOptions = <TData = Awaited<ReturnType<typeof supplierInvoicePreview>>, TError = ErrorType<ApiResponseVoid>>(orderId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierInvoicePreview>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSupplierInvoicePreviewQueryKey(orderId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierInvoicePreview>>> = ({ signal }) => supplierInvoicePreview(orderId, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(orderId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierInvoicePreview>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type SupplierInvoicePreviewQueryResult = NonNullable<Awaited<ReturnType<typeof supplierInvoicePreview>>>
+export type SupplierInvoicePreviewQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useSupplierInvoicePreview<TData = Awaited<ReturnType<typeof supplierInvoicePreview>>, TError = ErrorType<ApiResponseVoid>>(
+ orderId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierInvoicePreview>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof supplierInvoicePreview>>,
+          TError,
+          Awaited<ReturnType<typeof supplierInvoicePreview>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSupplierInvoicePreview<TData = Awaited<ReturnType<typeof supplierInvoicePreview>>, TError = ErrorType<ApiResponseVoid>>(
+ orderId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierInvoicePreview>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof supplierInvoicePreview>>,
+          TError,
+          Awaited<ReturnType<typeof supplierInvoicePreview>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSupplierInvoicePreview<TData = Awaited<ReturnType<typeof supplierInvoicePreview>>, TError = ErrorType<ApiResponseVoid>>(
+ orderId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierInvoicePreview>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useSupplierInvoicePreview<TData = Awaited<ReturnType<typeof supplierInvoicePreview>>, TError = ErrorType<ApiResponseVoid>>(
+ orderId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierInvoicePreview>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getSupplierInvoicePreviewQueryOptions(orderId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}

@@ -37,6 +37,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class InvoiceApplicationService {
+  @org.springframework.beans.factory.annotation.Autowired private InvoiceInstallmentService installments;
+
+  public com.procurement.finance.api.InvoiceIssuancePreview issuancePreview(String orderId) {
+    return installments.preview(orderId);
+  }
   private final PurchaseOrderMapper purchaseOrderMapper;
   private final ReceiptMapper receiptMapper;
   private final InvoiceMapper invoiceMapper;
@@ -121,6 +126,10 @@ public class InvoiceApplicationService {
     if (order == null) {
       throw new IllegalArgumentException("Purchase order not found for supplier scope: " + orderId);
     }
+    if (request.lineItems() != null) {
+      var issued = installments.issue(order, request);
+      return issued.created() ? finishCreation(order, request, issued.id()) : toResponse(invoiceMapper.findByTenantAndId(order.tenantId(),issued.id()));
+    }
     // Serialize the legacy full-order invoice path with imported split invoices and settlement.
     InvoiceCreationStatusPolicy.requireReceivedOrder(order.status(), orderId);
     tenantFeatureApplicationService.requireEnabled(order.tenantId(), TenantFeatureKey.FINANCE);
@@ -144,6 +153,10 @@ public class InvoiceApplicationService {
         request.taxRate() == null ? new java.math.BigDecimal("13.00") : request.taxRate());
     // 从订单行项复制为发票行项,贯通「订单→发票」并支撑三单匹配的行级对账。
     copyLineItemsFromOrder(order.tenantId(), order.id(), invoiceId);
+    return finishCreation(order, request, invoiceId);
+  }
+
+  private InvoiceResponse finishCreation(PurchaseOrder order, CreateInvoiceRequest request, String invoiceId) {
     auditLogApplicationService.recordTenantAction(
         order.tenantId(),
         InvoiceAuditAction.CREATED,
@@ -159,7 +172,7 @@ public class InvoiceApplicationService {
         newId("recon"),
         order.tenantId(),
         invoiceId,
-        supplierId,
+        order.supplierId(),
         order.id(),
         response.reconciliationStage(),
         response.nextReconciliationAction());

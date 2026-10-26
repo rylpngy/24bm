@@ -28778,6 +28778,56 @@
           }
         }
       }
+    },
+    "/api/v1/supplier/orders/{orderId}/invoices/preview": {
+      "get": {
+        "tags": [
+          "supplier-invoice-controller"
+        ],
+        "operationId": "SupplierInvoice_preview",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseInvoiceIssuancePreview"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -33085,6 +33135,19 @@
             "minimum": 0,
             "exclusiveMinimum": false,
             "type": "number"
+          },
+          "requestKey": {
+            "maxLength": 100,
+            "minLength": 0,
+            "type": "string"
+          },
+          "lineItems": {
+            "maxItems": 200,
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InvoiceIssuanceLine"
+            }
           }
         }
       },
@@ -45526,6 +45589,90 @@
             "minimum": 0,
             "exclusiveMinimum": false,
             "type": "number"
+          }
+        }
+      },
+      "InvoiceIssuanceLine": {
+        "required": [
+          "orderLineId",
+          "quantity"
+        ],
+        "type": "object",
+        "properties": {
+          "orderLineId": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          }
+        }
+      },
+      "ApiResponseInvoiceIssuancePreview": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/InvoiceIssuancePreview"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "InvoiceIssuanceBalance": {
+        "type": "object",
+        "properties": {
+          "orderLineId": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "orderedQuantity": {
+            "type": "number"
+          },
+          "unitPrice": {
+            "type": "number"
+          },
+          "invoicedQuantity": {
+            "type": "number"
+          },
+          "remainingQuantity": {
+            "type": "number"
+          }
+        }
+      },
+      "InvoiceIssuancePreview": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string"
+          },
+          "orderAmount": {
+            "type": "number"
+          },
+          "invoicedAmount": {
+            "type": "number"
+          },
+          "remainingAmount": {
+            "type": "number"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InvoiceIssuanceBalance"
+            }
+          },
+          "blockers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       }
