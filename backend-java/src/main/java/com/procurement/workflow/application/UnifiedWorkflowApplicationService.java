@@ -260,6 +260,27 @@ public class UnifiedWorkflowApplicationService {
     auditLogApplicationService.recordTenantAction(tenant,"workflow.cancelled","project_change".equals(instance.businessType())?"procurement_project_change":"procurement_project",instance.businessId(),reason.strip());
   }
 
+  @Transactional
+  public void withdrawLudongApplication(String workflowInstanceId, String reason) {
+    String tenant = TenantAccessGuard.requireTenantId("school application withdrawal");
+    String actor = TenantAccessGuard.requireUserId("school application withdrawal");
+    permissionService.require("buyer:ludong-poc:write");
+    if (reason == null || reason.isBlank() || reason.length() > 1000) throw new IllegalArgumentException("撤回原因必填且不得超过1000字");
+    var instance = workflowBusinessInstanceMapper.findByTenantAndIdForUpdate(tenant, workflowInstanceId);
+    if (instance == null || !"ludong_project_application".equals(instance.businessType())) throw new IllegalArgumentException("采购申报审批不存在");
+    if (!actor.equals(instance.initiatorId()) || !isVisible(instance, dataScopeService.currentUserDataScope())) {
+      throw new PermissionDeniedException("只有原发起人可撤回本人申报审批");
+    }
+    if (!WorkflowInstanceStatus.PROCESSING.equals(instance.status())) throw new IllegalStateException("只能撤回在审申报");
+    runtimeService.deleteProcessInstance(instance.flowableProcessInstanceId(), reason.strip());
+    if (workflowBusinessInstanceMapper.complete(tenant, instance.id(), WorkflowInstanceStatus.CANCELLED, actor) != 1) {
+      throw new IllegalStateException("审批实例已变化，请刷新");
+    }
+    workflowTaskEventMapper.insert("workflow-event-" + UUID.randomUUID(), tenant, instance.id(), null, null, null, "cancelled", actor, reason.strip());
+    requireCompletionHandler(instance.businessType()).onCancelled(instance, actor, reason.strip());
+    auditLogApplicationService.recordTenantAction(tenant, "workflow.cancelled", instance.businessType(), instance.businessId(), reason.strip());
+  }
+
   public List<UnifiedWorkflowTaskResponse> listCurrentUserTasks() {
     String tenantId = TenantAccessGuard.requireTenantId("unified workflow APIs");
     String userId = TenantAccessGuard.requireUserId("unified workflow APIs");
@@ -321,7 +342,7 @@ public class UnifiedWorkflowApplicationService {
       return List.of();
     }
     return history.events().stream()
-        .filter(event -> "approved".equals(event.action()) && event.actorId() != null)
+        .filter(event -> event.effective() && "approved".equals(event.action()) && event.actorId() != null)
         .map(event -> new WorkflowApprovalSignature(
             event.nodeId(), event.actorName() == null ? event.actorId() : event.actorName(), event.createdAt()))
         .toList();
@@ -363,6 +384,12 @@ public class UnifiedWorkflowApplicationService {
         .toList();
     if (!canHandle(task, userId, roleGroups)) {
       throw new PermissionDeniedException("当前用户不是该审批任务的办理人或候选人");
+    }
+    if (org.flowable.task.api.DelegationState.PENDING.equals(task.getDelegationState())) {
+      throw new IllegalStateException("该任务正在加审，请使用加审意见入口，不得代替原节点审批");
+    }
+    if (approved && Boolean.TRUE.equals(taskService.getVariableLocal(taskId, "additionalReviewRejected"))) {
+      throw new IllegalStateException("加审意见为不同意，只能退回或驳回，不可直接通过");
     }
     businessHandler.validateTask(instance, approved);
     if (task.getAssignee() == null || task.getAssignee().isBlank()) {
@@ -694,6 +721,10 @@ public class UnifiedWorkflowApplicationService {
         .anyMatch(WorkflowBusinessCompletionHandler::requiresIndependentApprover);
   }
 
+  public boolean supportsTaskRework(String businessType) {
+    return requireCompletionHandler(businessType).supportsTaskRework();
+  }
+
   private boolean canHandle(Task task, String userId, List<String> roleGroups) {
     if (task.getAssignee() != null && !task.getAssignee().isBlank()) {
       return userId.equals(task.getAssignee());
@@ -798,8 +829,12 @@ public class UnifiedWorkflowApplicationService {
       String tenantId, String workflowInstanceId, String employeeNo) {
     List<WorkflowTaskEvent> events = workflowTaskEventMapper.listByTenantAndWorkflowInstance(
         tenantId, workflowInstanceId);
+    var invalidated = events.stream().filter(event -> "approval_invalidated".equals(event.action()))
+        .map(WorkflowTaskEvent::flowableTaskId).collect(java.util.stream.Collectors.toSet());
     for (int index = events.size() - 1; index >= 0; index--) {
       WorkflowTaskEvent event = events.get(index);
+      if ("returned".equals(event.action())) break;
+      if (invalidated.contains(event.flowableTaskId())) continue;
       if (!"approved".equals(event.action()) || event.actorId() == null) continue;
       BuyerUser actor = buyerUserMapper.findByTenantAndId(tenantId, event.actorId());
       if (employeeNo.equals(approvalEmployeeNo(actor))) {
@@ -866,7 +901,7 @@ public class UnifiedWorkflowApplicationService {
     }
   }
 
-  private void recordCreatedTasks(String tenantId, String workflowInstanceId, String flowableProcessInstanceId) {
+  void recordCreatedTasks(String tenantId, String workflowInstanceId, String flowableProcessInstanceId) {
     WorkflowBusinessInstance instance = workflowBusinessInstanceMapper.findByTenantAndId(tenantId, workflowInstanceId);
     for (Task task : taskService.createTaskQuery()
         .processInstanceId(flowableProcessInstanceId)
@@ -972,10 +1007,15 @@ public class UnifiedWorkflowApplicationService {
       String tenantId, WorkflowBusinessInstance instance) {
     WorkflowDefinitionVersion version = workflowDefinitionPublicationService.findVersion(
         tenantId, instance.definitionVersionId());
-    List<WorkflowTaskEventResponse> events = workflowTaskEventMapper
-        .listByTenantAndWorkflowInstance(tenantId, instance.id())
-        .stream()
-        .map(this::toTaskEventResponse)
+    List<WorkflowTaskEvent> rawEvents = workflowTaskEventMapper.listByTenantAndWorkflowInstance(tenantId, instance.id());
+    var invalidated = rawEvents.stream().filter(event -> "approval_invalidated".equals(event.action()))
+        .map(WorkflowTaskEvent::flowableTaskId).collect(java.util.stream.Collectors.toSet());
+    List<WorkflowTaskEventResponse> events = rawEvents.stream()
+        .map(event -> {
+          var response = toTaskEventResponse(event);
+          return "approved".equals(event.action()) && invalidated.contains(event.flowableTaskId())
+              ? response.superseded() : response;
+        })
         .toList();
     BuyerUser initiator = buyerUserMapper.findByTenantAndId(tenantId, instance.initiatorId());
     BuyerUser completedBy = instance.completedBy() == null

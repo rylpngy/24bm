@@ -77,6 +77,12 @@ public class LudongPocController {
     return ApiResponse.ok(applicationService.submit(id));
   }
 
+  @GetMapping("/applications/{id}/approval-records")
+  public ApiResponse<List<com.procurement.ludongpoc.domain.LudongPocReviewRecord>> reviewHistory(
+      @PathVariable String id, @RequestParam String instanceId) {
+    return ApiResponse.ok(applicationService.reviewHistory(id, instanceId));
+  }
+
   @PostMapping("/tasks/{taskId}/complete")
   public ApiResponse<LudongPocTaskCompletionResponse> completeTask(
       @PathVariable String taskId,

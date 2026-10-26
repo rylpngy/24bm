@@ -13,11 +13,11 @@ public interface WorkflowTaskEventMapper {
   @Insert("""
       insert into workflow_task_events (
         id, tenant_id, workflow_instance_id, flowable_task_id, node_id, node_name,
-        action, actor_id, comment
+        action, actor_id, comment, created_at
       ) values (
         #{id}, #{tenantId}, #{workflowInstanceId}, #{flowableTaskId,jdbcType=VARCHAR},
         #{nodeId,jdbcType=VARCHAR}, #{nodeName,jdbcType=VARCHAR}, #{action},
-        #{actorId,jdbcType=VARCHAR}, nullif(trim(#{comment,jdbcType=VARCHAR}), '')
+        #{actorId,jdbcType=VARCHAR}, nullif(trim(#{comment,jdbcType=VARCHAR}), ''), clock_timestamp()
       )
       on conflict (tenant_id, workflow_instance_id, flowable_task_id, action)
         where flowable_task_id is not null do nothing

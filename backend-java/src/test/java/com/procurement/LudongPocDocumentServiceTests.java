@@ -46,7 +46,7 @@ class LudongPocDocumentServiceTests {
     LudongPocReviewRecordMapper reviewMapper = mock(LudongPocReviewRecordMapper.class);
     LudongPocApplication application = application(objectMapper);
     when(applicationService.requireForExport(APPLICATION_ID)).thenReturn(application);
-    when(reviewMapper.listByApplication(TENANT_ID, APPLICATION_ID)).thenReturn(reviews(objectMapper));
+    when(reviewMapper.listEffectiveByApplication(TENANT_ID, APPLICATION_ID)).thenReturn(reviews(objectMapper));
     when(workflowService.listApprovalSignatures("ludong_project_application", APPLICATION_ID))
         .thenReturn(signatures());
     LudongPocDocumentService service = new LudongPocDocumentService(
@@ -113,7 +113,7 @@ class LudongPocDocumentServiceTests {
     UnifiedWorkflowApplicationService workflowService = mock(UnifiedWorkflowApplicationService.class);
     LudongPocReviewRecordMapper reviewMapper = mock(LudongPocReviewRecordMapper.class);
     when(applicationService.requireForExport(APPLICATION_ID)).thenReturn(application(objectMapper));
-    when(reviewMapper.listByApplication(TENANT_ID, APPLICATION_ID)).thenReturn(List.of());
+    when(reviewMapper.listEffectiveByApplication(TENANT_ID, APPLICATION_ID)).thenReturn(List.of());
     when(workflowService.listApprovalSignatures("ludong_project_application", APPLICATION_ID))
         .thenReturn(List.of());
     LudongPocDocumentService service = new LudongPocDocumentService(
@@ -145,7 +145,7 @@ class LudongPocDocumentServiceTests {
     AttachmentApplicationService attachmentService = mock(AttachmentApplicationService.class);
     LudongPocApplication application = application(objectMapper);
     when(applicationService.requireForExport(APPLICATION_ID)).thenReturn(application);
-    when(reviewMapper.listByApplication(TENANT_ID, APPLICATION_ID)).thenReturn(reviews(objectMapper));
+    when(reviewMapper.listEffectiveByApplication(TENANT_ID, APPLICATION_ID)).thenReturn(reviews(objectMapper));
     when(workflowService.listApprovalSignatures("ludong_project_application", APPLICATION_ID))
         .thenReturn(signatures());
 

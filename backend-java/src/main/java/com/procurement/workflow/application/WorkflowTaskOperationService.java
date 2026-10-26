@@ -27,7 +27,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class WorkflowTaskOperationService {
   public record Recipient(String id, String name, String employeeNo) {}
-  public record TaskTiming(String taskId, OffsetDateTime dueAt) {}
+  public record TaskTiming(String taskId, OffsetDateTime dueAt, boolean additionalReview,
+      boolean additionalRejected, boolean reworkSupported) {}
   private final UnifiedWorkflowApplicationService workflows;
   private final WorkflowBusinessInstanceMapper instances;
   private final WorkflowTaskEventMapper events;
@@ -95,11 +96,14 @@ public class WorkflowTaskOperationService {
 
   @Transactional
   public TaskTiming timing(String taskId) {
-    workflows.requireCurrentUserTask(taskId);
+    var context = workflows.requireCurrentUserTask(taskId);
     Task task = tasks.createTaskQuery().taskId(taskId).active().singleResult();
     if (task == null) throw new IllegalStateException("审批任务已变化，请刷新");
     return new TaskTiming(taskId, task.getDueDate() == null ? null
-        : task.getDueDate().toInstant().atOffset(ZoneOffset.UTC));
+        : task.getDueDate().toInstant().atOffset(ZoneOffset.UTC),
+        org.flowable.task.api.DelegationState.PENDING.equals(task.getDelegationState()),
+        Boolean.TRUE.equals(tasks.getVariableLocal(taskId, "additionalReviewRejected")),
+        workflows.supportsTaskRework(context.businessType()));
   }
 
   @Transactional
@@ -115,6 +119,9 @@ public class WorkflowTaskOperationService {
     workflows.requireCurrentUserTask(taskId);
     Task task = tasks.createTaskQuery().taskId(taskId).active().singleResult();
     if (task == null) throw new IllegalStateException("审批任务已变化，请刷新");
+    if ("transfer".equals(request.action()) && org.flowable.task.api.DelegationState.PENDING.equals(task.getDelegationState())) {
+      throw new IllegalStateException("加审办理中不能转审，请先提交加审意见");
+    }
     List<String> recipientIds = request.recipientIds() == null ? List.of() : request.recipientIds().stream().distinct().toList();
     String event;
     String detail = request.reason();

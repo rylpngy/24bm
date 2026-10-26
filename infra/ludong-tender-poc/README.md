@@ -69,7 +69,16 @@ node scripts/ludong-tender-environment.mjs restart-backend
 `node scripts/ludong-tender-workflow-smoke.mjs`只访问固定8098，通过API新建完整材料样本，实际提交并推进首个审批节点，
 验证转审、抄送、时限、旧办理人权限失效及业务状态一致性，不向原系统写入数据。
 不会自动清除测试记录。剩余任务、评分口径见`docs/ludong-tender-poc-checklist.md`。
-未完整实现/验收加审、指定节点退回、全部报价细项和合同智能审查前，不应声明三项必演全部通过。
+未完整验收流程配置、全部报价细项和合同智能审查前，不应声明三项必演全部通过。
 
 `node scripts/ludong-tender-environment-smoke.mjs`验证两端同源代理、三个供应商登录，以及
 独立MinIO上传、下载和SHA256字节一致性。它会添加一份明确标记的合成测试附件，不清理历史附件。
+
+`node scripts/ludong-tender-rework-smoke.mjs`验证原生加审、指定前序节点退回、撤回和修改重提。
+脚本固定访问8098，不清库；新建合成项目并跑完最终审批，下载两份Word和ZIP到
+`.ludong-tender-runtime/rework-acceptance/`。它检查最新轮次的材料和签署，不代替Word逐页视觉验收。
+
+操作演示：以LDU200001办理首节点，在“任务协同”选择加审并指定有效审核人；以对应工号登录填写加审意见后，
+由原办理人继续主审批。前序节点办理完成后，下游办理人可选择已完成的前序节点退回并填写原因。
+申报人LDU100001可在本人在办项目详情撤回，修改草稿后重新提交；“历次审批”保留原轮次资料。
+加审不同意不能绕过继续通过；退回后原签署失效且须重新审核；目前指定节点退回只支持串行单任务流程。

@@ -429,7 +429,8 @@ public class LudongPocDocumentService {
   private Map<String, Object> data(LudongPocApplication application) {
     try {
       Map<String, Object> result = new LinkedHashMap<>(objectMapper.readValue(application.formDataJson(), MAP_TYPE));
-      for (LudongPocReviewRecord review : reviewRecordMapper.listByApplication(application.tenantId(), application.id())) {
+      LudongPocTaskFormCatalog.clearApprovalFields(result);
+      for (LudongPocReviewRecord review : reviewRecordMapper.listEffectiveByApplication(application.tenantId(), application.id())) {
         if ("approve".equals(review.decision())) {
           result.putAll(objectMapper.readValue(review.reviewDataJson(), MAP_TYPE));
         }

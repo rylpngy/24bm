@@ -19,6 +19,9 @@ import {
 import { useAuthStore } from '../../lib/auth-store';
 import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
 import { WorkflowInstanceReminder } from '../process/workflow-instance-reminder';
+import { WorkflowApplicationWithdrawal } from '../process/workflow-application-withdrawal';
+import { AdditionalReviewHistory } from '../process/additional-review-panel';
+import { LudongWorkflowHistory } from './ludong-workflow-history';
 import { ProcessEnginePage } from '../process/process-engine-page';
 import { OrgStructurePage } from '../org/org-structure-page';
 import { TeamPage } from '../team/team-page';
@@ -409,9 +412,11 @@ function ApplicationDetail({ application, onBack }: { application: LudongApplica
   const downloadable = ['approved', 'archived'].includes(app.status);
   return (
     <div className="space-y-5">
-      <PageHeader title={app.projectName} subtitle={`${app.applicationNo} · ${app.applicantUnit}`} onBack={onBack} meta={<Status applicationStatus={app.status} />} actions={downloadable ? <>
-        <ActionButton icon={Download} onClick={() => ludongApi.downloadDemand(app.id)}>需求表</ActionButton><ActionButton icon={Download} onClick={() => ludongApi.downloadApplication(app.id)}>申请单</ActionButton><PrimaryActionButton icon={Archive} flushTop onClick={() => ludongApi.downloadArchive(app.id)}>打包归档</PrimaryActionButton>
-      </> : undefined} />
+      <PageHeader title={app.projectName} subtitle={`${app.applicationNo} · ${app.applicantUnit}`} onBack={onBack} meta={<Status applicationStatus={app.status} />} actions={<>
+        {downloadable && <><ActionButton icon={Download} onClick={() => ludongApi.downloadDemand(app.id)}>需求表</ActionButton><ActionButton icon={Download} onClick={() => ludongApi.downloadApplication(app.id)}>申请单</ActionButton><PrimaryActionButton icon={Archive} flushTop onClick={() => ludongApi.downloadArchive(app.id)}>打包归档</PrimaryActionButton></>}
+        {app.status === 'in_approval' && history.data && history.data.initiatorId === session?.userId
+          && <WorkflowApplicationWithdrawal instanceId={history.data.workflowInstanceId} />}
+      </>} />
       <DetailHeroCard eyebrow="货物类采购项目" title={app.projectName} meta={`${app.applicationNo} · 创建于 ${formatDate(app.createdAt)}`} status={statusLabels[app.status]} amountLabel={currency(app.budgetAmount)} facts={[
         { label: '申报单位', value: app.applicantUnit }, { label: '项目负责人', value: app.formData.projectLeaderName || '—' }, { label: '经费来源', value: app.formData.fundingSource || '—' }, { label: '采购方式', value: app.formData.procurementMethod || '—' },
       ]} />
@@ -423,7 +428,8 @@ function ApplicationDetail({ application, onBack }: { application: LudongApplica
         </div>
         <div className="space-y-5">
           <WorkflowCard history={history.data} loading={history.isLoading} />
-          {app.status === 'in_approval' && history.data && app.createdBy === session?.userId
+          {history.data && <AdditionalReviewHistory instanceId={history.data.workflowInstanceId} />}
+          {app.status === 'in_approval' && history.data && history.data.initiatorId === session?.userId
             && <WorkflowInstanceReminder instanceId={history.data.workflowInstanceId} />}
           <RouteDecisionSummary app={app} />
           <SectionCard title="系统生成表格" icon={FileArchive}><div className="space-y-2"><DocumentRow name="采购需求表（货物类）" ready={downloadable} /><DocumentRow name="采购及招标申请单、受理单" ready={downloadable} /></div></SectionCard>
@@ -432,6 +438,7 @@ function ApplicationDetail({ application, onBack }: { application: LudongApplica
       <SectionCard title="统一附件台账" icon={FileArchive} extra={<StatusPill label={app.status === 'archived' ? '已封存' : '持续归集'} />}>
         <LudongPocArchiveMaterials applicationId={app.id} readOnly={app.status === 'archived'} />
       </SectionCard>
+      <LudongWorkflowHistory application={app} renderProgress={(value) => <WorkflowCard history={value} loading={false} />} />
     </div>
   );
 }
@@ -662,7 +669,7 @@ function WorkflowCard({ history, loading }: { history?: WorkflowHistory | null; 
         <summary className="cursor-pointer text-sm font-bold text-slate-700">完整操作记录（{history.events.length}）</summary>
         <div className="mt-3 space-y-3">
           {history.events.map((event) => <div key={event.id} className="border-l-2 border-slate-200 pl-3 text-xs leading-5 text-slate-500">
-            <p className="font-bold text-slate-800">{workflowActionLabel(event.action)} · {event.nodeName}</p>
+            <p className="font-bold text-slate-800">{workflowActionLabel(event.action)} · {event.nodeName}{event.effective === false ? '（已失效，须重新审批）' : ''}</p>
             <p>{event.actorName || event.actorId || '系统'} · {new Date(event.createdAt).toLocaleString('zh-CN')}</p>
             {event.comment && <p className="break-words">{event.comment}</p>}
           </div>)}
@@ -674,7 +681,9 @@ function WorkflowCard({ history, loading }: { history?: WorkflowHistory | null; 
 
 function workflowActionLabel(action: string) {
   return ({ created: '任务到达', claimed: '认领', approved: '通过', rejected: '驳回', completed: '结束',
-    transferred: '转审', copied: '抄送', reminded: '催办通知', deadline_changed: '调整办理时限' } as Record<string, string>)[action] || action;
+    transferred: '转审', copied: '抄送', reminded: '催办通知', deadline_changed: '调整办理时限',
+    returned: '退回重审', approval_invalidated: '原审批转为历史', cancelled: '发起人撤回',
+    additional_requested: '发起加审', additional_approved: '加审同意', additional_rejected: '加审不同意' } as Record<string, string>)[action] || action;
 }
 
 function RouteDecisionSummary({ app }: { app: LudongApplication }) {

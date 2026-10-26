@@ -54,6 +54,10 @@ final class LudongPocTaskFormCatalog {
     return taskDefinitionKey.startsWith("task_") ? taskDefinitionKey.substring(5) : taskDefinitionKey;
   }
 
+  static void clearApprovalFields(Map<String, Object> form) {
+    FORMS.values().forEach(node -> node.allowed().forEach(form::remove));
+  }
+
   static Map<String, Object> validate(
       String nodeId, String action, Map<String, Object> reviewData) {
     NodeForm form = FORMS.get(nodeId);

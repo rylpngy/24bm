@@ -89,11 +89,21 @@ public class LudongPocApplicationService {
   public List<LudongPocPriorApprovalEvidence> listPriorApprovals(String id) {
     requireRead();
     LudongPocApplication application = requireApplication(tenant(), id);
-    return reviewRecordMapper.listByApplication(application.tenantId(), application.id()).stream()
+    return reviewRecordMapper.listEffectiveByApplication(application.tenantId(), application.id()).stream()
         .map(review -> new LudongPocPriorApprovalEvidence(
             review.nodeId(), review.reviewerId(), review.decision(),
             readMap(review.reviewDataJson()), review.comment(), review.reviewedAt()))
         .toList();
+  }
+
+  public List<LudongPocReviewRecord> reviewHistory(String applicationId, String instanceId) {
+    requireRead();
+    requireApplication(tenant(), applicationId);
+    var history = workflowService.getCurrentTenantHistory(instanceId);
+    if (!LudongPocWorkflowDefinition.BUSINESS_TYPE.equals(history.businessType()) || !applicationId.equals(history.businessId())) {
+      throw new IllegalArgumentException("审批实例与申报不匹配");
+    }
+    return reviewRecordMapper.listByInstance(tenant(), applicationId, instanceId);
   }
 
   @Transactional
@@ -144,6 +154,7 @@ public class LudongPocApplicationService {
     LudongPocApplication application = mapper.findByTenantAndIdForUpdate(tenantId, id);
     if (application == null) throw new IllegalArgumentException("申报不存在或不在当前企业范围内");
     Map<String, Object> form = readMap(application.formDataJson());
+    LudongPocTaskFormCatalog.clearApprovalFields(form);
     List<Map<String, Object>> items = readItems(application.itemsJson());
     validate(new LudongPocApplicationRequest(application.projectName(), application.applicantUnit(),
         application.departmentId(), application.budgetAmount(), form, items), form, items);
@@ -170,7 +181,10 @@ public class LudongPocApplicationService {
         Map.of(
             "applicationNo", application.applicationNo(),
             "projectName", application.projectName(),
-            "applicantUnit", application.applicantUnit())));
+            "applicantUnit", application.applicantUnit(),
+            "departmentId", application.departmentId(),
+            "budgetAmount", application.budgetAmount(),
+            "formData", form, "items", items)));
     auditService.recordCurrentTenantAction(
         "ludong_poc.submitted", "ludong_project_application", id, "提交统一 Flowable 审批");
     return get(id);
@@ -636,6 +650,7 @@ public class LudongPocApplicationService {
         .filter(item -> "是".equals(String.valueOf(item.get("governmentMallCatalog"))))
         .count();
     Map<String, Object> normalized = new LinkedHashMap<>(formData);
+    LudongPocTaskFormCatalog.clearApprovalFields(normalized);
     normalized.entrySet().removeIf(entry -> entry.getValue() == null);
     normalized.remove("sameFundingUnit");
     normalized.remove("configurationStandard");
@@ -701,7 +716,8 @@ public class LudongPocApplicationService {
 
   private Map<String, Object> accumulatedData(LudongPocApplication value) {
     Map<String, Object> result = new LinkedHashMap<>(readMap(value.formDataJson()));
-    for (var review : reviewRecordMapper.listByApplication(value.tenantId(), value.id())) {
+    LudongPocTaskFormCatalog.clearApprovalFields(result);
+    for (var review : reviewRecordMapper.listEffectiveByApplication(value.tenantId(), value.id())) {
       if ("approve".equals(review.decision())) {
         result.putAll(readMap(review.reviewDataJson()));
       }

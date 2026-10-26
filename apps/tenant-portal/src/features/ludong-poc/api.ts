@@ -76,9 +76,11 @@ export interface WorkflowTask {
 
 export interface WorkflowEvent {
   id: string;
+  flowableTaskId?: string;
   nodeName: string;
   nodeId: string;
   action: string;
+  effective?: boolean;
   actorId?: string;
   actorName?: string;
   comment?: string;
@@ -90,6 +92,7 @@ export interface WorkflowHistory {
   businessType?: string;
   businessId?: string;
   status: string;
+  definitionVersionId?: string;
   initiatorId?: string;
   initiatorName?: string;
   completedBy?: string;
@@ -106,6 +109,7 @@ export interface WorkflowLedgerItem {
   workflowInstanceId: string;
   businessType: string;
   businessId: string;
+  definitionVersionId?: string;
   status: string;
   initiatorId: string;
   initiatorName?: string;
@@ -305,6 +309,13 @@ export const ludongApi = {
     );
     return response.data.data;
   },
+  instances: (id: string, page: number) => unwrap<{items: WorkflowLedgerItem[]; total: number}>(axiosInstance.get(
+    `/api/v1/buyer/workflow/instances/business/ludong_project_application/${id}/instances`, {params: {page, pageSize: 5}})),
+  historyById: (id: string) => unwrap<WorkflowHistory>(axiosInstance.get(`/api/v1/buyer/workflow/instances/${id}/history`)),
+  reviewRecords: (id: string, instanceId: string) => unwrap<{
+    id: string; workflowTaskId: string; nodeId: string; reviewerId: string; decision: string;
+    reviewDataJson: string; comment: string; reviewedAt: string;
+  }[]>(axiosInstance.get(`/api/v1/buyer/ludong-poc/applications/${id}/approval-records`, {params: {instanceId}})),
   downloadDemand: (id: string) => downloadReport(
     `/api/v1/buyer/ludong-poc/applications/${id}/documents/demand.docx`, '采购需求表（货物类）.docx'),
   downloadApplication: (id: string) => downloadReport(

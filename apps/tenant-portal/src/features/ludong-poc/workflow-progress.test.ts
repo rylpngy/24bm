@@ -34,6 +34,14 @@ function history(overrides: Partial<WorkflowHistory> = {}): WorkflowHistory {
 }
 
 describe('buildLudongWorkflowProgress', () => {
+  it('does not count superseded signatures as completed after a return', () => {
+    const state = history();
+    state.currentTask!.taskDefinitionKey = 'task_argumentation_review';
+    state.events[0].effective = false;
+    const nodes = buildLudongWorkflowProgress(state);
+    expect(nodes.find((node) => node.id === 'argumentation_review')?.status).toBe('current');
+    expect(workflowProgressCounts(nodes).completed).toBe(0);
+  });
   it('marks completed, current, pending and conditionally skipped nodes', () => {
     const nodes = buildLudongWorkflowProgress(history());
 

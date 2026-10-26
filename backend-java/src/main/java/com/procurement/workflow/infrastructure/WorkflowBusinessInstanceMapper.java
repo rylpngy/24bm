@@ -28,7 +28,7 @@ public interface WorkflowBusinessInstanceMapper {
       <if test="query.view == 'processed'">
         and exists (select 1 from workflow_task_events e where e.tenant_id = w.tenant_id
           and e.workflow_instance_id = w.id and e.actor_id = #{query.userId}
-          and e.action in ('approved', 'rejected'))
+          and e.action in ('approved', 'rejected', 'additional_approved', 'additional_rejected'))
       </if>
       <if test="query.keyword != ''">
         and (position(lower(#{query.keyword}) in lower(w.business_id)) &gt; 0
@@ -221,7 +221,7 @@ public interface WorkflowBusinessInstanceMapper {
           where e.workflow_instance_id = w.id
             and e.tenant_id = w.tenant_id
             and e.actor_id = #{actorId}
-            and e.action in ('approved', 'rejected')
+            and e.action in ('approved', 'rejected', 'additional_approved', 'additional_rejected')
         )
       order by w.updated_at desc
       limit #{limit}

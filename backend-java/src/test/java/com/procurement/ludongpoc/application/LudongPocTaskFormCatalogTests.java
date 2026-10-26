@@ -9,6 +9,16 @@ import org.junit.jupiter.api.Test;
 class LudongPocTaskFormCatalogTests {
 
   @Test
+  void stripsApprovalFieldsFromApplicantPayloadWithoutRemovingBusinessInputs() {
+    Map<String, Object> payload = new java.util.LinkedHashMap<>(Map.of(
+        "purchaseReason", "申请人的购置理由", "argumentationOpinion", "伪造通过",
+        "argumentationComment", "过期意见", "technicalLeaderOpinion", "同意",
+        "procurementBudgetStatus", "旧预算结论"));
+    LudongPocTaskFormCatalog.clearApprovalFields(payload);
+    assertThat(payload).containsOnlyKeys("purchaseReason").containsEntry("purchaseReason", "申请人的购置理由");
+  }
+
+  @Test
   void validatesNewParticipantApprovalForms() {
     assertThat(LudongPocTaskFormCatalog.validate(
         "technical_leader_review", "approve", Map.of("technicalLeaderOpinion", "同意")))

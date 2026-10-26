@@ -13,6 +13,8 @@ import {
 } from './api';
 import { LudongPocApplicationSnapshot } from './ludong-poc-application-snapshot';
 import { WorkflowTaskOperations } from '../process/workflow-task-operations';
+import { AdditionalReviewDecision, AdditionalReviewHistory } from '../process/additional-review-panel';
+import { workflowTaskClient } from '../process/workflow-task-client';
 
 type ReviewData = Record<string, unknown>;
 type FieldDefinition = {
@@ -155,6 +157,7 @@ export function LudongPocApprovalDialog({
   const form = nodeForms[node];
   const update = (key: string, value: unknown) => setReviewData({ ...reviewData, [key]: value });
   const [operationBusy, setOperationBusy] = useState(false);
+  const timing = useQuery({queryKey: ['workflow-task-timing', task.taskId], queryFn: () => workflowTaskClient.timing(task.taskId)});
   const complete = form?.fields.every((field) => !field.required || String(reviewData[field.id] ?? '').trim());
   const argumentationRejected = node === 'argumentation_review'
     && reviewData.argumentationOpinion === '不同意';
@@ -190,8 +193,8 @@ export function LudongPocApprovalDialog({
       <section className="flex max-h-[94dvh] w-full max-w-5xl flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-2xl">
         <div className="flex items-start gap-3 border-b border-slate-100 p-5">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700"><ClipboardCheck size={19} /></span>
-          <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h2 className="text-lg font-black text-slate-950">{form?.title ?? task.taskName}</h2><StatusPill label="当前待办" /></div><p className="mt-1 truncate text-xs font-bold text-slate-500">{app?.projectName} · {app?.applicationNo}</p></div>
-          <button type="button" onClick={onClose} aria-label="关闭" title="关闭" className="flex h-8 w-8 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100"><X size={18} /></button>
+          <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h2 className="text-lg font-black text-slate-950">{form?.title ?? task.taskName}</h2><StatusPill label={timing.data?.additionalReview ? '加审待办' : '当前待办'} /></div><p className="mt-1 truncate text-xs font-bold text-slate-500">{app?.projectName} · {app?.applicationNo}</p></div>
+          <button type="button" disabled={busy || operationBusy} onClick={onClose} aria-label="关闭" title="关闭" className="flex h-8 w-8 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100"><X size={18} /></button>
         </div>
 
         <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5">
@@ -209,22 +212,27 @@ export function LudongPocApprovalDialog({
             onUseComment={(value) => setComment(value)}
             onFeedback={(findingId, disposition) => aiFeedback.mutate({ findingId, disposition })}
           />
-          {!form && <FeedbackNotice tone="error" message={`当前节点 ${node} 尚未配置办理表单，请联系管理员。`} />}
-          {form && <SectionCard title="本节点办理内容" icon={ClipboardCheck} className="shadow-none">
+          <AdditionalReviewHistory instanceId={task.workflowInstanceId} />
+          {timing.isError && <FeedbackNotice tone="error" message="任务状态加载失败，请关闭后重试。" />}
+          {timing.data?.additionalReview && <AdditionalReviewDecision taskId={task.taskId} onDone={onClose} onBusyChange={setOperationBusy} />}
+          {!form && !timing.data?.additionalReview && <FeedbackNotice tone="error" message={`当前节点 ${node} 尚未配置办理表单，请联系管理员。`} />}
+          {form && !timing.data?.additionalReview && <SectionCard title="本节点办理内容" icon={ClipboardCheck} className="shadow-none">
             <div className="grid gap-4 md:grid-cols-2">
               {form.fields.map((field) => <TaskField key={field.id} field={field} value={reviewData[field.id]} onChange={(value) => update(field.id, value)} />)}
             </div>
           </SectionCard>}
+          {!timing.data?.additionalReview && <>
           {argumentationRejected && <FeedbackNotice tone="error" message="论证结论为“不同意”，本节点只能驳回，不能审批通过。" />}
           <Field label="审批意见"><textarea value={comment} onChange={(e) => setComment(e.target.value)} className={cn(inputClass, 'h-24 py-3 leading-6')} /></Field>
           <FeedbackNotice tone="info" message="签字由当前登录账号和办理时间自动形成电子审批记录。后续办理人可查看本节点提交的全部信息。" />
           <WorkflowTaskOperations taskId={task.taskId} disabled={busy} onTransferred={onClose} onBusyChange={setOperationBusy} />
+          </>}
         </div>
 
-        <footer className="flex justify-end gap-3 border-t border-slate-100 bg-slate-50/70 p-4">
+        {!timing.data?.additionalReview && <footer className="flex flex-wrap justify-end gap-3 border-t border-slate-100 bg-slate-50/70 p-4">
           <ActionButton icon={XCircle} tone="red" size="md" disabled={busy || operationBusy} onClick={() => onComplete('reject')}>驳回</ActionButton>
-          <PrimaryActionButton icon={CheckCircle2} size="md" flushTop busy={busy} pendingLabel="提交中" disabled={operationBusy || !form || !complete || argumentationRejected} onClick={() => onComplete('approve')}>审批通过并签字</PrimaryActionButton>
-        </footer>
+          <PrimaryActionButton icon={CheckCircle2} size="md" flushTop busy={busy} pendingLabel="提交中" disabled={timing.isPending || timing.isError || timing.data?.additionalRejected || operationBusy || !form || !complete || argumentationRejected} onClick={() => onComplete('approve')}>审批通过并签字</PrimaryActionButton>
+        </footer>}
       </section>
     </div>
   );
