@@ -24,6 +24,7 @@ const env = {
   MINIO_ENDPOINT: 'http://127.0.0.1:29000', MINIO_ACCESS_KEY: 'ludong-tender-poc',
   MINIO_SECRET_KEY: secrets.POC_STORAGE_PASSWORD, MINIO_BUCKET: 'ludong-tender-attachments',
   APP_SEED_LOCATIONS: 'classpath:db/poc/ludong,classpath:db/poc/ludong-tender',
+  APP_WORKFLOW_DEADLINES_ENABLED: 'true', APP_WORKFLOW_DEADLINES_INTERVAL_MS: '10000',
   SELF_LOGIN_ENABLED: 'true', KEYCLOAK_ENABLED: 'false', TENANT_HEADER_FALLBACK_ENABLED: 'false',
   CORS_ALLOWED_ORIGINS: 'http://127.0.0.1:5288,http://127.0.0.1:5289',
   DEV_API_PROXY_TARGET: 'http://127.0.0.1:8098',

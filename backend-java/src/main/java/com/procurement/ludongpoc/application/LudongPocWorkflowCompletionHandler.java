@@ -41,6 +41,11 @@ public class LudongPocWorkflowCompletionHandler implements WorkflowBusinessCompl
   public boolean supportsTaskRework() { return true; }
 
   @Override
+  public java.util.List<String> attachmentOwnerTypes() {
+    return LudongPocArchiveMaterialCatalog.supported().stream().map(LudongPocArchiveMaterialCatalog.Category::ownerType).toList();
+  }
+
+  @Override
   public void onCancelled(WorkflowBusinessInstance instance, String actorId, String reason) {
     if (mapper.complete(instance.tenantId(), instance.businessId(), "draft") != 1) {
       throw new IllegalStateException("申报状态已变化，不能恢复草稿");

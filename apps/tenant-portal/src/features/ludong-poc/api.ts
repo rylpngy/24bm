@@ -88,6 +88,9 @@ export interface WorkflowEvent {
 }
 
 export interface WorkflowHistory {
+  flowSchema?: string;
+  amount?: number;
+  departmentId?: string;
   workflowInstanceId: string;
   businessType?: string;
   businessId?: string;
@@ -180,7 +183,8 @@ const unwrap = async <T>(promise: Promise<{ data: Envelope<T> }>) => (await prom
 export type LudongArchiveMaterialCategory =
   | 'project_attachment'
   | 'mall_confirmation'
-  | 'supplementary_evidence';
+  | 'supplementary_evidence'
+  | `custom_${number}`;
 
 export interface LudongArchiveMaterialCategoryMeta {
   id: LudongArchiveMaterialCategory;
@@ -220,7 +224,8 @@ interface AttachmentUploadTicket {
 }
 
 async function listArchiveMaterials(applicationId: string): Promise<LudongArchiveMaterial[]> {
-  const groups = await Promise.all(ludongArchiveMaterialCategories.map(async (category) => {
+  const categories = await listArchiveMaterialCategories(applicationId);
+  const groups = await Promise.all(categories.map(async (category) => {
     const values = await unwrap<AttachmentPayload[]>(axiosInstance.get('/api/v1/buyer/attachments', {
       params: { ownerType: category.ownerType, ownerId: applicationId },
     }));
@@ -229,12 +234,17 @@ async function listArchiveMaterials(applicationId: string): Promise<LudongArchiv
   return groups.flat().sort((left, right) => right.createdAt.localeCompare(left.createdAt));
 }
 
+async function listArchiveMaterialCategories(applicationId: string): Promise<LudongArchiveMaterialCategoryMeta[]> {
+  return unwrap(axiosInstance.get(`/api/v1/buyer/ludong-poc/applications/${applicationId}/attachment-categories`));
+}
+
 async function uploadArchiveMaterial(
   applicationId: string,
   categoryId: LudongArchiveMaterialCategory,
   file: File,
 ): Promise<void> {
-  const category = ludongArchiveMaterialCategories.find((item) => item.id === categoryId);
+  const categories = await listArchiveMaterialCategories(applicationId);
+  const category = categories.find((item) => item.id === categoryId);
   if (!category) throw new Error('Unsupported archive material category');
   const ticket = await unwrap<AttachmentUploadTicket>(axiosInstance.post(
     '/api/v1/buyer/attachments/upload-ticket',
@@ -300,6 +310,7 @@ export const ludongApi = {
   aiReviewMetrics: () => unwrap<LudongAiReviewMetrics>(
     axiosInstance.get('/api/v1/buyer/ludong-poc/ai-review/metrics')),
   listArchiveMaterials,
+  listArchiveMaterialCategories,
   uploadArchiveMaterial,
   downloadArchiveMaterial: (material: Pick<LudongArchiveMaterial, 'id' | 'fileName'>) =>
     downloadReport(`/api/v1/buyer/attachments/${material.id}/download`, material.fileName),

@@ -934,6 +934,10 @@ public class UnifiedWorkflowApplicationService {
 
   private void notifyTaskRecipients(
       String tenantId, Task task, WorkflowBusinessInstance instance) {
+    notifyTaskRecipients(tenantId, task, instance, NotificationTitle.WORKFLOW_TASK_PENDING);
+  }
+
+  private int notifyTaskRecipients(String tenantId, Task task, WorkflowBusinessInstance instance, String title) {
     LinkedHashSet<String> recipients = new LinkedHashSet<>();
     if (task.getAssignee() != null && !task.getAssignee().isBlank()) {
       recipients.add(task.getAssignee());
@@ -957,8 +961,28 @@ public class UnifiedWorkflowApplicationService {
     notificationApplicationService.notifyTenantUsers(
         tenantId,
         recipients,
-        NotificationTitle.WORKFLOW_TASK_PENDING,
+        title,
         task.getName() + "待办理：" + workflowBusinessName(instance.businessType()) + " " + instance.businessId());
+    return recipients.size();
+  }
+
+  @Transactional
+  public void remindOverdueTask(String taskId) {
+    Task candidate = taskService.createTaskQuery().taskId(taskId).active().singleResult();
+    if (candidate == null || candidate.getTenantId() == null) return;
+    var instance = workflowBusinessInstanceMapper.findByTenantAndFlowableProcessInstanceId(candidate.getTenantId(), candidate.getProcessInstanceId());
+    if (instance == null) return;
+    instance = workflowBusinessInstanceMapper.findByTenantAndIdForUpdate(instance.tenantId(), instance.id());
+    Task task = taskService.createTaskQuery().taskId(taskId).active().singleResult();
+    if (instance == null || !"processing".equals(instance.status()) || task == null || task.getDueDate() == null
+        || task.getDueDate().after(new java.util.Date())) return;
+    String due = Long.toString(task.getDueDate().getTime());
+    if (due.equals(taskService.getVariableLocal(taskId, "deadlineNotifiedFor"))) return;
+    if (notifyTaskRecipients(instance.tenantId(), task, instance, "审批任务超期提醒") == 0) return;
+    taskService.setVariableLocal(taskId, "deadlineNotifiedFor", due);
+    workflowTaskEventMapper.insert("workflow-overdue-" + UUID.randomUUID(), instance.tenantId(), instance.id(), null,
+        task.getTaskDefinitionKey(), task.getName(), "reminded", null, "系统超期提醒；任务=" + taskId + "；办理时限=" + task.getDueDate());
+    // The actorless workflow event records the scheduler honestly, without impersonating a user.
   }
 
   private Task firstActiveTask(String flowableProcessInstanceId) {
@@ -1042,7 +1066,8 @@ public class UnifiedWorkflowApplicationService {
         activeTask == null ? null : toTaskResponse(activeTask, instance),
         instance.createdAt(),
         instance.completedAt(),
-        events);
+        events,
+        version == null ? null : version.flowSchema());
   }
 
   private WorkflowInstanceLedgerResponse toLedgerResponse(
@@ -1094,6 +1119,8 @@ public class UnifiedWorkflowApplicationService {
     Map<String, Object> snapshot = readJson(instance.businessSnapshot());
     LinkedHashMap<String, String> owners = new LinkedHashMap<>();
     owners.put(instance.businessType(), instance.businessId());
+    completionHandlers.stream().filter(handler -> handler.businessType().equals(instance.businessType()))
+        .flatMap(handler -> handler.attachmentOwnerTypes().stream()).forEach(type -> owners.put(type, instance.businessId()));
     switch (instance.businessType()) {
       case "project_initiation" -> owners.put("procurement_project",instance.businessId());
       case "project_change" -> {owners.put("procurement_project_change",instance.businessId());putOwner(owners,"procurement_project",snapshot.get("projectId"));}

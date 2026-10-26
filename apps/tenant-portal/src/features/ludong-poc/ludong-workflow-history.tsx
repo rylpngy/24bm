@@ -54,11 +54,14 @@ export function LudongWorkflowHistory({ application, renderProgress }: {
               let values: LudongApplication['formData'] = {};
               try { values = JSON.parse(record.reviewDataJson); } catch { return <FeedbackNotice key={record.id} tone="error" message="历史节点表单格式异常，需管理员核对。" />; }
               const sections = buildApprovalSnapshotSections({...application,formData:values});
+              const facts = sections.flatMap((section) => section.facts).filter(([,value]) => !!value);
+              if (values.customNodeOpinion) facts.push(['审批结论',String(values.customNodeOpinion)]);
+              if (values.customNodeComment) facts.push(['审批意见',String(values.customNodeComment)]);
               return <article key={record.id} className="py-4 first:pt-0 last:pb-0">
                 <div className="flex flex-wrap items-center justify-between gap-2"><strong className="text-sm text-slate-900">{event?.nodeName || record.nodeId} · {event?.actorName || record.reviewerId}</strong>
                   <StatusPill label={event?.effective === false ? '已失效' : record.decision === 'approve' ? '通过' : '驳回'} /></div>
                 <p className="mt-1 text-xs text-slate-500">{new Date(record.reviewedAt).toLocaleString('zh-CN')}</p>
-                <dl className="mt-3 grid gap-3 sm:grid-cols-2">{sections.flatMap((section) => section.facts).filter(([,value]) => !!value).map(([label,value]) =>
+                <dl className="mt-3 grid gap-3 sm:grid-cols-2">{facts.map(([label,value]) =>
                   <div key={label} className="text-sm"><dt className="text-slate-500">{label}</dt><dd className="mt-1 whitespace-pre-wrap break-words text-slate-900">{value}</dd></div>)}</dl>
                 {record.comment && <p className="mt-3 whitespace-pre-wrap break-words text-sm text-slate-700">办理意见：{record.comment}</p>}
               </article>;

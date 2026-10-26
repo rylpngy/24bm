@@ -39,6 +39,7 @@ public class WorkflowDefinitionPublicationService {
   private final AuditLogApplicationService auditLogApplicationService;
   private final PermissionService permissionService;
   private final ObjectMapper objectMapper;
+  private final List<com.procurement.workflow.definition.WorkflowPublicationPolicy> publicationPolicies;
 
   public WorkflowDefinitionPublicationService(
       ProcessDefinitionMapper processDefinitionMapper,
@@ -49,7 +50,8 @@ public class WorkflowDefinitionPublicationService {
       ApprovalTemplateMapper approvalTemplateMapper,
       AuditLogApplicationService auditLogApplicationService,
       PermissionService permissionService,
-      ObjectMapper objectMapper) {
+      ObjectMapper objectMapper,
+      List<com.procurement.workflow.definition.WorkflowPublicationPolicy> publicationPolicies) {
     this.processDefinitionMapper = processDefinitionMapper;
     this.workflowDefinitionVersionMapper = workflowDefinitionVersionMapper;
     this.workflowSchemaValidator = workflowSchemaValidator;
@@ -59,6 +61,7 @@ public class WorkflowDefinitionPublicationService {
     this.auditLogApplicationService = auditLogApplicationService;
     this.permissionService = permissionService;
     this.objectMapper = objectMapper;
+    this.publicationPolicies = publicationPolicies;
   }
 
   @Transactional
@@ -225,6 +228,7 @@ public class WorkflowDefinitionPublicationService {
     WorkflowBusinessTypeCatalog.requireSupported(businessType);
     WorkflowDefinitionSchema schema = workflowSchemaValidator.validate(
         tenantId, definition.formSchema(), definition.flowSchema());
+    for (var policy : publicationPolicies) policy.validate(businessType, definition.formSchema(), definition.flowSchema());
     int versionNo = workflowDefinitionVersionMapper.nextVersionNo(tenantId, definition.id());
     CompiledWorkflowBpmn compiled = flowableProcessCompiler.compile(
         definition.id(), businessType, versionNo, definition.name(), schema, tenantId);

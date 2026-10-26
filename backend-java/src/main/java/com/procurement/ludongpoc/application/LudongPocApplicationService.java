@@ -53,6 +53,7 @@ public class LudongPocApplicationService {
   private final LudongPocReviewRecordMapper reviewRecordMapper;
   private final MaterialApplicationService materialApplicationService;
   private final DepartmentApplicationService departmentApplicationService;
+  private final com.procurement.attachment.infrastructure.AttachmentMapper attachments;
 
   public LudongPocApplicationService(
       LudongPocApplicationMapper mapper,
@@ -63,7 +64,8 @@ public class LudongPocApplicationService {
       ObjectMapper objectMapper,
       LudongPocReviewRecordMapper reviewRecordMapper,
       MaterialApplicationService materialApplicationService,
-      DepartmentApplicationService departmentApplicationService) {
+      DepartmentApplicationService departmentApplicationService,
+      com.procurement.attachment.infrastructure.AttachmentMapper attachments) {
     this.mapper = mapper;
     this.publicationService = publicationService;
     this.workflowService = workflowService;
@@ -73,6 +75,40 @@ public class LudongPocApplicationService {
     this.reviewRecordMapper = reviewRecordMapper;
     this.materialApplicationService = materialApplicationService;
     this.departmentApplicationService = departmentApplicationService;
+    this.attachments = attachments;
+  }
+
+  public List<LudongPocArchiveMaterialCatalog.Category> archiveCategories(String id) {
+    requireRead();
+    return archiveCategories(requireApplication(tenant(), id));
+  }
+
+  public List<LudongPocArchiveMaterialCatalog.Category> archiveCategories(LudongPocApplication application) {
+    String schema = attachmentFormSchema(application);
+    List<LudongPocArchiveMaterialCatalog.Category> configured = LudongPocArchiveMaterialCatalog.parse(readTree(schema));
+    var result = new java.util.ArrayList<>(configured);
+    for (var category : LudongPocArchiveMaterialCatalog.supported()) {
+      if (result.stream().noneMatch(item -> item.ownerType().equals(category.ownerType()))
+          && !attachments.listActiveByTenantAndOwner(application.tenantId(), category.ownerType(), application.id()).isEmpty()) {
+        result.add(category);
+      }
+    }
+    return List.copyOf(result);
+  }
+
+  private String attachmentFormSchema(LudongPocApplication application) {
+    if (!List.of("draft", "rejected").contains(application.status())) {
+      String frozen = mapper.latestWorkflowFormSchema(application.tenantId(), application.id());
+      if (frozen != null) return frozen;
+      return "{}";
+    }
+    var published = publicationService.findPublishedVersion(application.tenantId(), LudongPocWorkflowDefinition.BUSINESS_TYPE);
+    return published == null ? "{}" : published.formSchema();
+  }
+
+  private JsonNode readTree(String source) {
+    try { return objectMapper.readTree(source == null ? "{}" : source); }
+    catch (Exception exception) { throw new IllegalStateException("已发布附件配置无法解析", exception); }
   }
 
   public List<LudongPocApplicationResponse> list() {
@@ -165,6 +201,15 @@ public class LudongPocApplicationService {
     // 默认流程只在首次启用时初始化。后续必须使用管理员在配置器中
     // 发布的版本，不能在业务提交时用代码内默认 schema 覆盖租户配置。
     ensureRequiredWorkflowDefinition(tenantId, userId);
+    var published = publicationService.findPublishedVersion(tenantId, LudongPocWorkflowDefinition.BUSINESS_TYPE);
+    JsonNode attachmentConfig = readTree(published == null ? "{}" : published.formSchema());
+    if (attachmentConfig.has("attachmentCategories")) {
+      for (var category : LudongPocArchiveMaterialCatalog.parse(attachmentConfig)) {
+        if (category.required() && attachments.listActiveByTenantAndOwner(tenantId, category.ownerType(), id).isEmpty()) {
+          throw new IllegalArgumentException("请先上传必备材料：" + category.label());
+        }
+      }
+    }
     if (mapper.markSubmitted(tenantId, id, userId) == 0) {
       throw new IllegalStateException("当前申报状态不允许提交审批");
     }

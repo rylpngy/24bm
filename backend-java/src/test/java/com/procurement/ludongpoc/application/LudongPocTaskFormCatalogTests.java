@@ -7,6 +7,14 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class LudongPocTaskFormCatalogTests {
+  @Test void customPublishedNodesHaveAnExplicitBoundedDecisionForm() {
+    assertThat(LudongPocTaskFormCatalog.validate("custom_review", "approve", Map.of("customNodeOpinion","同意")))
+        .containsEntry("customNodeOpinion", "同意");
+    assertThatThrownBy(()->LudongPocTaskFormCatalog.validate("custom_review", "approve", Map.of("customNodeOpinion","不同意")))
+        .hasMessageContaining("只能驳回");
+    assertThatThrownBy(()->LudongPocTaskFormCatalog.validate("custom_review", "approve", Map.of("customNodeOpinion","同意","items","forged")))
+        .hasMessageContaining("不允许填写");
+  }
 
   @Test
   void stripsApprovalFieldsFromApplicantPayloadWithoutRemovingBusinessInputs() {

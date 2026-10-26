@@ -49,6 +49,7 @@ export interface FlowStep {
   // 只用于显示旧草稿，发布时后端会拒绝，避免旧自由文本成为新运行时配置。
   assignee?: string;
   branches?: FlowBranch[];
+  deadlineHours?: number;
 }
 
 export interface FlowSchema {
@@ -149,6 +150,7 @@ function normalizeStep(
     type: source.type === 'auto' || source.type === 'condition' ? source.type : 'approver',
     title: typeof source.title === 'string' ? source.title : undefined,
     assignment,
+    deadlineHours: typeof source.deadlineHours === 'number' ? source.deadlineHours : undefined,
     assignee: typeof source.assignee === 'string' ? source.assignee : undefined,
     branches: Array.isArray(source.branches)
       ? source.branches.map((branch) => {
@@ -277,6 +279,7 @@ function matches(c: BranchCondition, values: Record<string, string>): boolean {
 }
 
 export interface ResolvedStep {
+  id: string;
   type: StepType;
   title: string;
   assignee?: string;
@@ -299,12 +302,13 @@ export function evaluateFlow(
         walk(s.branches[idx].steps);
       } else if (s.type === 'approver') {
         path.push({
+          id: s.id,
           type: 'approver',
           title: s.title ?? '审批人',
           assignee: assignmentText(s.assignment, [], [], s.assignee),
         });
       } else if (s.type === 'auto') {
-        path.push({ type: 'auto', title: s.title ?? '系统自动通过' });
+        path.push({ id: s.id, type: 'auto', title: s.title ?? '系统自动通过' });
       }
     }
   };

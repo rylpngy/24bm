@@ -98,7 +98,9 @@ export function WorkflowTaskOperations({ taskId, disabled, onTransferred, onBusy
           disabled={disabled || operation.isPending} onChange={(event) => setReason(event.target.value)} />
       </label>
     </div>
-    {timing.data?.dueAt && <p className="mt-3 text-sm text-slate-500">当前办理时限：{new Date(timing.data.dueAt).toLocaleString('zh-CN')}</p>}
+    {timing.data?.dueAt && <p className={`mt-3 text-sm ${new Date(timing.data.dueAt).getTime()<Date.now()?'font-bold text-red-600':'text-slate-500'}`}>
+      当前办理时限：{new Date(timing.data.dueAt).toLocaleString('zh-CN')}
+      {new Date(timing.data.dueAt).getTime()<Date.now()?'（已超期）':''}</p>}
     {(recipients.isError || timing.isError) && <FeedbackNotice tone="error" message="任务信息加载失败，请关闭后重新打开。" />}
     {targets.isError && <FeedbackNotice tone="error" message="可退回节点加载失败，请刷新后重试。" />}
     {timing.data?.additionalRejected && <FeedbackNotice tone="error" message="加审意见为不同意，只能退回或驳回。" />}

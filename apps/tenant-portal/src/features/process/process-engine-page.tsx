@@ -32,6 +32,7 @@ import {
 import { FeedbackNotice, Tabs, cn } from '@24bid/ui';
 import { FormDesigner } from './form-designer';
 import { FlowDesigner } from './flow-designer';
+import { WorkflowAttachmentConfig, type WorkflowAttachmentCategory } from './workflow-attachment-config';
 import { resolveProcessListPrimaryAction } from './process-list-action';
 import {
   type FlowStep,
@@ -77,15 +78,17 @@ export function ProcessEnginePage({
   scopeTitle,
   scopeDescription,
   initialTab = 'form',
+  attachmentCatalog,
 }: {
   fixedBusinessType?: string;
   scopeTitle?: string;
   scopeDescription?: string;
   initialTab?: 'form' | 'flow';
+  attachmentCatalog?: WorkflowAttachmentCategory[];
 } = {}) {
   const [editingId, setEditingId] = useState<string | null>(null);
   if (editingId) {
-    return <ProcessDesigner id={editingId} initialTab={initialTab} onBack={() => setEditingId(null)} />;
+    return <ProcessDesigner id={editingId} initialTab={initialTab} attachmentCatalog={attachmentCatalog} onBack={() => setEditingId(null)} />;
   }
   return (
     <ProcessList
@@ -255,7 +258,7 @@ function ProcessCard({ process: p, onConfigure }: { process: WorkflowProcessDefi
   );
 }
 
-function ProcessDesigner({ id, initialTab, onBack }: { id: string; initialTab: 'form' | 'flow'; onBack: () => void }) {
+function ProcessDesigner({ id, initialTab, attachmentCatalog, onBack }: { id: string; initialTab: 'form' | 'flow'; attachmentCatalog?: WorkflowAttachmentCategory[]; onBack: () => void }) {
   const queryClient = useQueryClient();
   const detail = useWorkflowProcessDefinition(id);
   const versions = useWorkflowProcessDefinitionVersions(id);
@@ -266,6 +269,7 @@ function ProcessDesigner({ id, initialTab, onBack }: { id: string; initialTab: '
   const [tab, setTab] = useState<'form' | 'flow'>(initialTab);
   const [fields, setFields] = useState<FormField[]>([]);
   const [steps, setSteps] = useState<FlowStep[]>([]);
+  const [formSettings, setFormSettings] = useState<Record<string, unknown>>({});
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [identifierRepairNotice, setIdentifierRepairNotice] = useState<string | null>(null);
@@ -279,6 +283,8 @@ function ProcessDesigner({ id, initialTab, onBack }: { id: string; initialTab: '
       const draft = parseWorkflowDraft(p.formSchema, p.flowSchema);
       setFields(draft.fields);
       setSteps(draft.steps);
+      try { const {fields: _fields, ...settings} = JSON.parse(p.formSchema || '{}'); setFormSettings(settings); }
+      catch { setFormSettings({}); }
       setIdentifierRepairNotice(draft.repairedIdentifiers
         ? '已自动修正旧草稿中的字段或节点编码。保存或发布后会按 Flowable 规则持久化。'
         : null);
@@ -286,6 +292,7 @@ function ProcessDesigner({ id, initialTab, onBack }: { id: string; initialTab: '
   }, [p?.id, p?.formSchema, p?.flowSchema]);
 
   const invalidateDefinitions = () => {
+    void queryClient.invalidateQueries({queryKey: ['ludong-poc']});
     void queryClient.invalidateQueries({ queryKey: workflowRuntimeQueryKeys.processDefinitions });
     void queryClient.invalidateQueries({ queryKey: [...workflowRuntimeQueryKeys.processDefinitions, id] });
     void queryClient.invalidateQueries({ queryKey: [...workflowRuntimeQueryKeys.processDefinitions, id, 'versions'] });
@@ -299,7 +306,7 @@ function ProcessDesigner({ id, initialTab, onBack }: { id: string; initialTab: '
     name: p?.name ?? '流程',
     description: p?.description ?? '',
     status: 'draft' as const,
-    formSchema: JSON.stringify({ fields }),
+    formSchema: JSON.stringify({ ...formSettings, fields }),
     flowSchema: JSON.stringify({ steps }),
     businessType: p?.businessType,
   });
@@ -404,6 +411,9 @@ function ProcessDesigner({ id, initialTab, onBack }: { id: string; initialTab: '
         />
       )}
 
+      {attachmentCatalog && <WorkflowAttachmentConfig catalog={attachmentCatalog}
+        value={formSettings.attachmentCategories as WorkflowAttachmentCategory[] | undefined}
+        onChange={(attachmentCategories)=>setFormSettings({...formSettings,attachmentCategories})} />}
       <div className="rounded-xl border border-slate-200 bg-white p-4">
         <div className="flex items-center justify-between gap-3">
           <div>

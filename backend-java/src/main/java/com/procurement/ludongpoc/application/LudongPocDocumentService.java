@@ -99,7 +99,7 @@ public class LudongPocDocumentService {
       add(zip, "01-生成表格/01-采购需求表（货物类）.docx", demand);
       add(zip, "01-生成表格/02-货物类项目采购及招标申请单、受理单.docx", applicationForm);
       for (LudongPocArchiveMaterialCatalog.Category category
-          : LudongPocArchiveMaterialCatalog.CATEGORIES) {
+          : archiveCategories(application)) {
         List<ArchiveMaterial> categoryMaterials = materials.stream()
             .filter(material -> material.category().ownerType().equals(category.ownerType()))
             .toList();
@@ -123,10 +123,15 @@ public class LudongPocDocumentService {
     }
   }
 
+  private List<LudongPocArchiveMaterialCatalog.Category> archiveCategories(LudongPocApplication application) {
+    var categories = applicationService.archiveCategories(application);
+    return categories.isEmpty() ? LudongPocArchiveMaterialCatalog.CATEGORIES : categories;
+  }
+
   private List<ArchiveMaterial> loadArchiveMaterials(LudongPocApplication application) {
     List<ArchiveMaterial> result = new ArrayList<>();
     for (LudongPocArchiveMaterialCatalog.Category category
-        : LudongPocArchiveMaterialCatalog.CATEGORIES) {
+        : archiveCategories(application)) {
       for (Attachment attachment : attachmentService.listCurrentTenantAttachmentEntities(
           category.ownerType(), application.id())) {
         try {
@@ -159,7 +164,7 @@ public class LudongPocDocumentService {
         .append("二、原始材料台账\n");
     int sequence = 1;
     for (LudongPocArchiveMaterialCatalog.Category category
-        : LudongPocArchiveMaterialCatalog.CATEGORIES) {
+        : archiveCategories(application)) {
       List<ArchiveMaterial> categoryMaterials = materials.stream()
           .filter(material -> material.category().ownerType().equals(category.ownerType()))
           .toList();

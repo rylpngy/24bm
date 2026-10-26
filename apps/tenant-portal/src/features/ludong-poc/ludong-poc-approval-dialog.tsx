@@ -12,6 +12,8 @@ import {
   type LudongAiReviewMetrics, type LudongApplication, type WorkflowTask,
 } from './api';
 import { LudongPocApplicationSnapshot } from './ludong-poc-application-snapshot';
+import { LudongPocArchiveMaterials } from './ludong-poc-archive-materials';
+import { LudongCustomApprovalEvidence } from './ludong-custom-approval-evidence';
 import { WorkflowTaskOperations } from '../process/workflow-task-operations';
 import { AdditionalReviewDecision, AdditionalReviewHistory } from '../process/additional-review-panel';
 import { workflowTaskClient } from '../process/workflow-task-client';
@@ -130,9 +132,15 @@ export function taskNodeId(task: WorkflowTask) {
   return task.taskDefinitionKey?.startsWith('task_') ? task.taskDefinitionKey.slice(5) : task.taskDefinitionKey;
 }
 
+function formForTask(task: WorkflowTask) {
+  return nodeForms[taskNodeId(task)] ?? { title: task.taskName || '自定义审批', fields: [
+    { id: 'customNodeOpinion', label: '审批结论', type: 'select' as const, required: true, options: ['同意', '不同意'] },
+    { id: 'customNodeComment', label: '节点补充意见', type: 'textarea' as const },
+  ] };
+}
+
 export function createTaskReviewData(task: WorkflowTask, _app?: LudongApplication): ReviewData {
-  const node = taskNodeId(task);
-  const form = nodeForms[node];
+  const form = formForTask(task);
   const data: ReviewData = {};
   form?.fields.forEach((field) => {
     data[field.id] = '';
@@ -154,13 +162,13 @@ export function LudongPocApprovalDialog({
   onComplete: (action: 'approve' | 'reject') => void;
 }) {
   const node = taskNodeId(task);
-  const form = nodeForms[node];
+  const form = formForTask(task);
   const update = (key: string, value: unknown) => setReviewData({ ...reviewData, [key]: value });
   const [operationBusy, setOperationBusy] = useState(false);
   const timing = useQuery({queryKey: ['workflow-task-timing', task.taskId], queryFn: () => workflowTaskClient.timing(task.taskId)});
   const complete = form?.fields.every((field) => !field.required || String(reviewData[field.id] ?? '').trim());
-  const argumentationRejected = node === 'argumentation_review'
-    && reviewData.argumentationOpinion === '不同意';
+  const argumentationRejected = (node === 'argumentation_review' && reviewData.argumentationOpinion === '不同意')
+    || reviewData.customNodeOpinion === '不同意';
   const aiReview = useMutation({
     mutationFn: () => {
       if (!app) throw new Error('未找到项目申报数据');
@@ -200,6 +208,10 @@ export function LudongPocApprovalDialog({
         <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5">
           <SectionCard title="申报及前序审批信息" icon={FileText} className="shadow-none">
             {app && <LudongPocApplicationSnapshot app={app} />}
+            {app && <div className="mt-5 border-t border-slate-200 pt-4"><h3 className="mb-3 text-sm font-bold text-slate-900">申报附件</h3>
+              <LudongPocArchiveMaterials applicationId={app.id} readOnly />
+              <LudongCustomApprovalEvidence applicationId={app.id} instanceId={task.workflowInstanceId} />
+            </div>}
           </SectionCard>
           <AiReviewPanel
             result={aiReview.data}

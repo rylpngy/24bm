@@ -172,7 +172,16 @@ public class WorkflowSchemaValidator {
       List<WorkflowDefinitionSchema.FlowBranch> branches = "condition".equals(type)
           ? parseBranches(tenantId, node.path("branches"), fieldsById, stepIds, stepLocation)
           : List.of();
-      steps.add(new WorkflowDefinitionSchema.FlowStep(id, type, title.trim(), assignment, branches));
+      Integer deadlineHours = null;
+      if (node.hasNonNull("deadlineHours")) {
+        JsonNode hours = node.get("deadlineHours");
+        if (!"approver".equals(type) || !hours.isIntegralNumber() || !hours.canConvertToInt()
+            || hours.intValue() < 1 || hours.intValue() > 8760) {
+          throw new IllegalArgumentException(stepLocation + ".deadlineHours 须为1至8760之间的整数小时，且仅适用于审批节点");
+        }
+        deadlineHours = hours.intValue();
+      }
+      steps.add(new WorkflowDefinitionSchema.FlowStep(id, type, title.trim(), assignment, branches, deadlineHours));
     }
     return List.copyOf(steps);
   }

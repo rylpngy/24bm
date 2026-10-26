@@ -18,6 +18,8 @@ public interface WorkflowBusinessCompletionHandler {
 
   default boolean supportsTaskRework() { return false; }
 
+  default java.util.List<String> attachmentOwnerTypes() { return java.util.List.of(); }
+
   default void validateTask(WorkflowBusinessInstance instance, boolean approved) {}
 
   void onCompleted(WorkflowBusinessInstance instance, WorkflowCompletion completion);

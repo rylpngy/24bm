@@ -1,4 +1,5 @@
 import type { WorkflowEvent, WorkflowHistory } from './api';
+import { evaluateFlow, parseFlow, type FlowStep } from '../process/types';
 
 export type WorkflowProgressStatus = 'completed' | 'current' | 'pending' | 'skipped' | 'reused' | 'rejected';
 
@@ -55,7 +56,22 @@ export function buildLudongWorkflowProgress(history?: WorkflowHistory | null): W
     }
   });
 
-  return LUDONG_WORKFLOW_STEPS.map((step) => {
+  let definitions = LUDONG_WORKFLOW_STEPS;
+  if (history.flowSchema) {
+    const steps = parseFlow(history.flowSchema).steps;
+    const values = Object.fromEntries(Object.entries(formData).map(([key, value]) => [key, String(value ?? '')]));
+    values.$amount = String(history.amount ?? 0);
+    values.$departmentId = history.departmentId ?? '';
+    const taken = new Set(evaluateFlow(steps, values).path.map((step) => step.id));
+    const flattened: WorkflowStepDefinition[] = [];
+    const walk = (list: FlowStep[]) => list.forEach((step) => {
+      if (step.type === 'approver') flattened.push({id:step.id,title:step.title || '审批',applies:()=>taken.has(step.id)});
+      step.branches?.forEach((branch) => walk(branch.steps));
+    });
+    walk(steps);
+    definitions = flattened;
+  }
+  return definitions.map((step) => {
     const event = decisions.get(step.id);
     if (step.id === currentNodeId) return { ...step, status: 'current', event: arrivals.get(step.id) };
     if (event?.action === 'rejected') return { ...step, status: 'rejected', event };

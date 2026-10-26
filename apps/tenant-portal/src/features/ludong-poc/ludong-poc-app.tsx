@@ -22,6 +22,7 @@ import { WorkflowInstanceReminder } from '../process/workflow-instance-reminder'
 import { WorkflowApplicationWithdrawal } from '../process/workflow-application-withdrawal';
 import { AdditionalReviewHistory } from '../process/additional-review-panel';
 import { LudongWorkflowHistory } from './ludong-workflow-history';
+import { LudongCustomApprovalEvidence } from './ludong-custom-approval-evidence';
 import { ProcessEnginePage } from '../process/process-engine-page';
 import { OrgStructurePage } from '../org/org-structure-page';
 import { TeamPage } from '../team/team-page';
@@ -175,6 +176,12 @@ function LudongWorkflowConfiguration() {
         scopeTitle="货物类采购申报流程"
         scopeDescription="修改草稿不影响已在办实例；发布新版本后，新发起的申报将按新流程执行。"
         initialTab="flow"
+        attachmentCatalog={[
+          {id:'project_attachment',label:'项目附件',required:false},
+          {id:'mall_confirmation',label:'商城确认材料',required:false},
+          {id:'supplementary_evidence',label:'补充证明',required:false},
+          ...Array.from({length:5},(_,index)=>({id:`custom_${index+1}`,label:`自定义材料${index+1}`,required:false})),
+        ]}
       />
     </div>
   );
@@ -406,6 +413,7 @@ function Applications({ screen, setScreen }: { screen: Screen; setScreen: (scree
 
 function ApplicationDetail({ application, onBack }: { application: LudongApplication; onBack: () => void }) {
   const session = useAuthStore((state) => state.session);
+  const { can } = useBuyerPermissions();
   const fresh = useQuery({ queryKey: ['ludong-poc', 'application', application.id], queryFn: () => ludongApi.get(application.id) });
   const history = useQuery({ queryKey: ['ludong-poc', 'history', application.id], queryFn: () => ludongApi.history(application.id) });
   const app = fresh.data ?? application;
@@ -436,8 +444,9 @@ function ApplicationDetail({ application, onBack }: { application: LudongApplica
         </div>
       </div>
       <SectionCard title="统一附件台账" icon={FileArchive} extra={<StatusPill label={app.status === 'archived' ? '已封存' : '持续归集'} />}>
-        <LudongPocArchiveMaterials applicationId={app.id} readOnly={app.status === 'archived'} />
+        <LudongPocArchiveMaterials applicationId={app.id} readOnly={app.status === 'archived' || !can('buyer:ludong-poc:write')} />
       </SectionCard>
+      {history.data && <LudongCustomApprovalEvidence applicationId={app.id} instanceId={history.data.workflowInstanceId} />}
       <LudongWorkflowHistory application={app} renderProgress={(value) => <WorkflowCard history={value} loading={false} />} />
     </div>
   );

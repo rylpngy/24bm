@@ -14,6 +14,18 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class WorkflowSchemaValidatorTests {
+  @Test
+  void validatesOptionalNaturalHourDeadlines() {
+    String flow = """
+        {"steps":[{"id":"review","type":"approver","title":"复核","deadlineHours":48,
+        "assignment":{"type":"initiator_department_manager"}}]}
+        """;
+    assertThat(validator.validate("tenant-1", "{\"fields\":[]}", flow).steps().getFirst().deadlineHours()).isEqualTo(48);
+    for (String invalid : new String[]{"0", "-1", "1.5", "8761", "\"48\""}) {
+      assertThatIllegalArgumentException().isThrownBy(() -> validator.validate("tenant-1", "{\"fields\":[]}",
+          flow.replace("\"deadlineHours\":48", "\"deadlineHours\":" + invalid))).withMessageContaining("deadlineHours");
+    }
+  }
   private final BuyerUserMapper buyerUserMapper = mock(BuyerUserMapper.class);
   private final WorkflowSchemaValidator validator =
       new WorkflowSchemaValidator(new ObjectMapper(), buyerUserMapper);

@@ -34,6 +34,20 @@ function history(overrides: Partial<WorkflowHistory> = {}): WorkflowHistory {
 }
 
 describe('buildLudongWorkflowProgress', () => {
+  it('uses the instance version instead of the fixed school node list', () => {
+    const state = history({amount:170000, flowSchema:JSON.stringify({steps:[
+      {id:'argumentation_review',type:'approver',title:'原始论证'},
+      {id:'route',type:'condition',branches:[
+        {label:'高额',condition:{field:'$amount',op:'>=',value:'100000'},steps:[{id:'custom_review',type:'approver',title:'专项复核'}]},
+        {label:'其他',steps:[{id:'small_review',type:'approver',title:'小额复核'}]},
+      ]},
+    ]}), currentTask:{...history().currentTask!,taskDefinitionKey:'task_custom_review'}});
+    const nodes=buildLudongWorkflowProgress(state);
+    expect(nodes.map((item)=>item.title)).toEqual(['原始论证','专项复核','小额复核']);
+    expect(nodes.find((item)=>item.id==='custom_review')?.status).toBe('current');
+    expect(nodes.find((item)=>item.id==='small_review')?.status).toBe('skipped');
+    expect(workflowProgressCounts(nodes)).toEqual({completed:1,total:2,skipped:1});
+  });
   it('does not count superseded signatures as completed after a return', () => {
     const state = history();
     state.currentTask!.taskDefinitionKey = 'task_argumentation_review';

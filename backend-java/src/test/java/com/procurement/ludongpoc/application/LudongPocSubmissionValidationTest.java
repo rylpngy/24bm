@@ -27,7 +27,8 @@ class LudongPocSubmissionValidationTest {
   private final DepartmentApplicationService departments = mock(DepartmentApplicationService.class);
   private final LudongPocApplicationService service = new LudongPocApplicationService(mapper, definitions, workflows,
       mock(PermissionService.class), mock(AuditLogApplicationService.class), new ObjectMapper(),
-      mock(LudongPocReviewRecordMapper.class), mock(MaterialApplicationService.class), departments);
+      mock(LudongPocReviewRecordMapper.class), mock(MaterialApplicationService.class), departments,
+      mock(com.procurement.attachment.infrastructure.AttachmentMapper.class));
 
   @AfterEach void clear() { TenantContext.clear(); }
 

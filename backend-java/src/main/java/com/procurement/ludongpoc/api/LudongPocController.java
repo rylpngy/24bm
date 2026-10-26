@@ -83,6 +83,11 @@ public class LudongPocController {
     return ApiResponse.ok(applicationService.reviewHistory(id, instanceId));
   }
 
+  @GetMapping("/applications/{id}/attachment-categories")
+  public ApiResponse<List<com.procurement.ludongpoc.application.LudongPocArchiveMaterialCatalog.Category>> attachmentCategories(@PathVariable String id) {
+    return ApiResponse.ok(applicationService.archiveCategories(id));
+  }
+
   @PostMapping("/tasks/{taskId}/complete")
   public ApiResponse<LudongPocTaskCompletionResponse> completeTask(
       @PathVariable String taskId,
