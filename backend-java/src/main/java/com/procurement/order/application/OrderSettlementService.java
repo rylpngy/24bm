@@ -107,10 +107,12 @@ public class OrderSettlementService {
             a.goods(),
             a.paid(),
             a.invoiced(),
-            supplier ? "{}" : a.snapshot(),
+            supplier
+                ? "{}"
+                : policy.write(Map.of("lines", policy.tree(a.snapshot()).path("lines"))),
             supplier ? List.of() : blockers(o, a)),
         mapper.page(o.tenantId(), id, size, (long) (page - 1) * size).stream()
-            .map(e -> supplier ? policy.supplierEntry(e) : e)
+            .map(policy::sanitizedEntry)
             .toList(),
         mapper.count(o.tenantId(), id),
         page,
@@ -125,7 +127,7 @@ public class OrderSettlementService {
     var items = mapper.evidence(o.tenantId(), id);
     var n = policy.net(e, items);
     return new Detail(
-        supplier ? policy.supplierEntry(e) : e,
+        policy.sanitizedEntry(e),
         items,
         n,
         n.subtract(e.finalAmount()).max(BigDecimal.ZERO),
@@ -168,7 +170,7 @@ public class OrderSettlementService {
           || old.compensationAmount().compareTo(r.compensation()) != 0
           || !s.path("proposal").equals(policy.tree(policy.write(r))))
         throw new IllegalStateException("同一提交编号内容不同");
-      return old;
+      return policy.sanitizedEntry(old);
     }
     var a = policy.assess(mapper.baseline(o.tenantId(), id), r.prices());
     allowed(blockers(o, a));
@@ -204,7 +206,7 @@ public class OrderSettlementService {
     mapper.insert(v);
     status(o, "清算协商中");
     event(o, "proposed", r.reason());
-    return mapper.find(o.tenantId(), v.get("id").toString());
+    return policy.sanitizedEntry(mapper.find(o.tenantId(), v.get("id").toString()));
   }
 
   private void status(PurchaseOrder o, String next) {
@@ -300,7 +302,7 @@ public class OrderSettlementService {
     } else throw new IllegalArgumentException("无效操作");
     event(o, a, r.reason());
     var result = mapper.find(o.tenantId(), id);
-    return supplier ? policy.supplierEntry(result) : result;
+    return policy.sanitizedEntry(result);
   }
 
   @Transactional

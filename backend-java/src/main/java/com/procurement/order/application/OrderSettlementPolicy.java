@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class OrderSettlementPolicy {
-  public Entry supplierEntry(Entry entry) {
+  public Entry sanitizedEntry(Entry entry) {
     ObjectNode node = json.valueToTree(entry);
     ObjectNode safe = json.createObjectNode();
     ObjectNode assessment = json.createObjectNode();

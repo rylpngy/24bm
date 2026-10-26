@@ -11,6 +11,22 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class OrderSettlementPolicyTests {
+  @Test
+  void publicSnapshotNeverExposesRawContractOrFinancialRows() {
+    var mapper = new ObjectMapper();
+    var original =
+        mapper.convertValue(
+            java.util.Map.of(
+                "snapshot",
+                "{\"assessment\":{\"baseline\":{\"payments\":[{\"bank\":\"private-bank-reference\"}]},\"lines\":[{\"id\":\"line\",\"retainedQuantity\":1}]}}"),
+            com.procurement.order.api.OrderSettlementContracts.Entry.class);
+    var result = p.sanitizedEntry(original);
+    assertThat(result.snapshot())
+        .contains("retainedQuantity")
+        .doesNotContain("baseline", "private-bank-reference");
+    assertThat(original.snapshot()).contains("private-bank-reference");
+  }
+
   final OrderSettlementPolicy p = new OrderSettlementPolicy(new ObjectMapper());
 
   ObjectNode baseline() {
