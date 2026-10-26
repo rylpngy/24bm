@@ -1669,13 +1669,13 @@ try {
           });
         }
         let invoice;
-        if (kind === 'refund') {
+        if (['refund', 'physical-return', 'physical-exchange'].includes(kind)) {
           invoice = await api(`supplier/orders/${order.id}/invoices`, s, {
             amount: order.amount,
-            invoiceNo: 'REF-' + runId,
+            invoiceNo: 'REF-' + kind + '-' + runId,
             taxRate: 0,
           });
-          const batch = 'SET-BATCH-' + runId;
+          const batch = 'SET-BATCH-' + kind + '-' + runId;
           const pay = await api('buyer/payment-requests', b, {
             invoiceId: invoice.id,
             requestStatus: '付款申请待提交',
@@ -1702,6 +1702,176 @@ try {
             evidenceNo: 'ORIGINAL-' + runId,
           });
         }
+        if (kind.startsWith('physical-')) {
+          const type = kind === 'physical-return' ? '退货' : '换货';
+          await api('buyer/mall/after-sales', b, {
+            orderId: order.id,
+            orderLineId: order.lineItems[0].id,
+            type,
+            quantity: 1,
+            reason: '按实物交接核验退换货',
+          });
+          const a = (await api('buyer/mall/after-sales', b)).find(
+            (x) => x.orderId === order.id,
+          );
+          if (kind === 'physical-ui') {
+            report.records.physicalUi = { ...c, afterSalesId: a.id };
+            return;
+          }
+          await api(
+            'supplier/mall/after-sales/' + a.id,
+            s,
+            { status: '处理中', reply: '受理实物交接' },
+            'PUT',
+          );
+          const payload = (key, k) => ({
+            requestKey: key,
+            kind: k,
+            quantity: 1,
+            referenceNo: 'PHYSICAL-' + key,
+            note: '签收、复验实际凭证',
+            fileName: key + '.txt',
+            fileBase64: Buffer.from(
+              'physical proof ' + runId + ' ' + key,
+            ).toString('base64'),
+          });
+          await api(
+            'supplier/mall/after-sales/' + a.id,
+            s,
+            {
+              status: '已完成',
+              reply: '缺少实物不能完成',
+              evidenceNo: 'INVALID',
+            },
+            'PUT',
+            [400, 409],
+            /退货|复验/,
+          );
+          const first = payload('dispatch', 'return_dispatch');
+          await api('buyer/mall/after-sales/' + a.id + '/physical', b, first);
+          assert.equal(
+            (
+              await api(
+                'buyer/mall/after-sales/' + a.id + '/physical',
+                b,
+                first,
+              )
+            ).events.length,
+            1,
+          );
+          await api(
+            'supplier/mall/after-sales/' + a.id + '/physical',
+            s,
+            payload('receipt', 'return_receipt'),
+          );
+          if (type === '换货') {
+            await api(
+              'supplier/mall/after-sales/' + a.id + '/physical',
+              s,
+              payload('replacement', 'replacement_dispatch'),
+            );
+            await api(
+              'buyer/mall/after-sales/' + a.id + '/physical',
+              b,
+              payload('bad', 'inspection_fail'),
+            );
+            assert.deepEqual(
+              (await api('supplier/mall/after-sales/' + a.id + '/physical', s))
+                .actions,
+              [],
+            );
+            await api(
+              'buyer/mall/after-sales/' + a.id + '/physical',
+              b,
+              payload('dispatch2', 'return_dispatch'),
+            );
+            await api(
+              'supplier/mall/after-sales/' + a.id + '/physical',
+              s,
+              payload('receipt2', 'return_receipt'),
+            );
+            await api(
+              'supplier/mall/after-sales/' + a.id + '/physical',
+              s,
+              payload('replacement2', 'replacement_dispatch'),
+            );
+            await api(
+              'buyer/mall/after-sales/' + a.id + '/physical',
+              b,
+              payload('pass', 'inspection_pass'),
+            );
+          }
+          await api(
+            'supplier/mall/after-sales/' + a.id,
+            s,
+            {
+              status: '已完成',
+              reply: '实物证据齐全',
+              evidenceNo: 'PHYS-' + a.id,
+            },
+            'PUT',
+          );
+          await api('buyer/mall/after-sales/' + a.id + '/confirm', b, {
+            note: '核对全部实物记录',
+          });
+          const physical = await api(
+            'buyer/mall/after-sales/' + a.id + '/physical',
+            b,
+          );
+          for (const e of physical.events) {
+            const downloaded = await fetch(
+              base +
+                '/api/v1/supplier/mall/after-sales/' +
+                a.id +
+                '/physical/' +
+                e.id +
+                '/file',
+              { headers: { Authorization: 'Bearer ' + s } },
+            );
+            assert.equal(downloaded.status, 200);
+            assert.ok((await downloaded.text()).includes(runId));
+          }
+          report.records[kind] = {
+            ...c,
+            afterSalesId: a.id,
+            events: physical.events,
+          };
+          if (type === '换货') {
+            const ep = `buyer/projects/${c.projectId}`,
+              lot = (await api(ep + '/packages', b)).find(
+                (l) => l.info.id === c.packageId,
+              );
+            const trace = await api(`buyer/rfqs/${c.rfqId}/execution`, b);
+            assert.equal(
+              trace.canArchive,
+              true,
+              JSON.stringify(trace.blockers),
+            );
+            assert.equal(trace.orderAmount, 900);
+            await api(ep + '/packages/' + c.packageId + '/close', b, {
+              revision: lot.info.revision,
+              reason: '换货复验完成，原财务记录不变',
+            });
+            const parent = await api(ep, b);
+            await api(ep + '/close', b, {
+              revision: parent.project.revision,
+              reason: '换货完成并归档全部实物原件',
+            });
+            const zip = await fetch(
+              base + '/api/v1/' + ep + '/archive/download',
+              { headers: { Authorization: 'Bearer ' + b } },
+            );
+            assert.equal(zip.status, 200);
+            writeFileSync(
+              report.downloadDirectory + '/physical-exchange.zip',
+              Buffer.from(await zip.arrayBuffer()),
+            );
+            check(
+              'Physical exchange: failed inspection loops through return and replacement, verified original downloads, unchanged order amount, project close and ZIP',
+            );
+            return;
+          }
+        }
         const attachment = await proof(order.id, kind + '-agreement');
         const path = `buyer/orders/${order.id}/settlements`,
           sp = `supplier/orders/${order.id}/settlements`;
@@ -1721,7 +1891,15 @@ try {
         );
         assert.equal(agreement.status, 200);
         assert.ok((await agreement.text()).includes(runId));
-        if(kind==='ui'){report.records.settlementUi={...c,settlementId:entry.id,contractId:contract.id,attachmentId:attachment};return;}
+        if (kind === 'ui') {
+          report.records.settlementUi = {
+            ...c,
+            settlementId: entry.id,
+            contractId: contract.id,
+            attachmentId: attachment,
+          };
+          return;
+        }
         const act = (token, action, e, scope = path) =>
           api(scope + '/' + e.id + '/actions', token, {
             revision: e.revision,
@@ -1814,8 +1992,15 @@ try {
             ': real supplier consent, independent Flowable, actual evidence, frozen originals, net closeout and downloadable ZIP',
         );
       }
-      for (const kind of ['void', 'partial', 'refund','ui'])
+      for (const kind of ['void', 'partial', 'refund', 'ui'])
         await settlementCase(kind);
+      if (process.env.PROJECT_PHYSICAL_AFTER_SALES_ACCEPTANCE === '1')
+        for (const kind of [
+          'physical-return',
+          'physical-exchange',
+          'physical-ui',
+        ])
+          await settlementCase(kind);
     }
     check(
       'Bilateral cancellation validates rejection, withdrawal ownership, pause, idempotent agreement, original amount/quantity, paginated history and 1200 responsibility release only after closeout',

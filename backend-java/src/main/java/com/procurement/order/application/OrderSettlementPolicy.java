@@ -91,6 +91,9 @@ public class OrderSettlementPolicy {
               != 0) errors.add("订单原始数量或金额不一致");
       if (s.compareTo(r) != 0 || r.compareTo(a) != 0 || r.signum() < 0 || r.compareTo(q) > 0)
         errors.add("存在在途、待验收或不合格货物，须先完成实物处理");
+      BigDecimal returned=l.path("verifiedReturned").decimalValue();
+      if(returned.signum()<0 || returned.compareTo(r)>0)errors.add("已核验退货量与原收货量不一致");
+      r=r.subtract(returned);
       if (selected.signum() < 0 || selected.compareTo(p) > 0 || selected.scale() > 2)
         errors.add("清算单价须在零至原单价范围内且最多两位小数");
       if (q.compareTo(r) > 0) {
@@ -106,6 +109,7 @@ public class OrderSettlementPolicy {
       kept.put("settlementUnitPrice", selected);
       kept.put("retainedQuantity", r);
       kept.put("cancelledQuantity", q.subtract(r));
+      kept.put("returnedQuantity", returned);
       lines.add(kept);
     }
     if (!priceMap.isEmpty()) errors.add("清算单价含不属于本订单的行");

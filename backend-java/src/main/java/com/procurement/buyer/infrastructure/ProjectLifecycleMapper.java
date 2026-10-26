@@ -48,7 +48,7 @@ and (paid.amount<0 or paid.amount>i.amount or i.payment_status<>case when paid.a
   @Select(
       """
 select count(*) from mall_after_sales a join purchase_orders o on o.tenant_id=a.tenant_id and o.id=a.order_id
-where a.tenant_id=#{t} and a.status not in ('已拒绝','已撤回') and (a.status<>'已完成' or a.type in ('退货','换货'))
+where a.tenant_id=#{t} and a.status not in ('已拒绝','已撤回') and (a.status<>'已完成' or (a.type in ('退货','换货') and not exists(select 1 from mall_after_sales_physical_checks p where p.tenant_id=a.tenant_id and p.id=a.id and p.verified)) or (a.type='退货' and not exists(select 1 from order_settlements s where s.tenant_id=a.tenant_id and s.order_id=a.order_id and s.status='settled')))
 and exists(select 1 from rfq_demands rd join procurement_project_demands d on d.tenant_id=rd.tenant_id and d.demand_id=rd.demand_id
   where rd.tenant_id=o.tenant_id and rd.rfq_id=o.rfq_id and d.project_id=#{p})
 """)

@@ -31,6 +31,6 @@ public record MallAfterSalesResponse(
   public static MallAfterSalesResponse from(com.procurement.mall.domain.MallAfterSales a) {
     return new MallAfterSalesResponse(a.id(), a.orderId(), a.orderLineId(), a.supplierId(),
         a.supplierName(), a.type(), a.quantity(), a.reason(), a.status(), a.supplierReply(),
-        a.createdAt(), a.updatedAt());
+        a.createdAt(), a.updatedAt(), a.financialStatus() == null ? new MallAfterSalesResponse(a.id(),a.orderId(),a.orderLineId(),a.supplierId(),a.supplierName(),a.type(),a.quantity(),a.reason(),a.status(),a.supplierReply(),a.createdAt(),a.updatedAt()).financialStatus() : a.financialStatus());
   }
 }

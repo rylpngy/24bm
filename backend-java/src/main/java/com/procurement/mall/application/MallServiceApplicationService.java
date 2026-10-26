@@ -33,6 +33,8 @@ public class MallServiceApplicationService {
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
   private final com.procurement.order.application.OrderAccessService access;
+  @org.springframework.beans.factory.annotation.Autowired
+  private PhysicalAfterSalesService physical;
 
   public MallServiceApplicationService(
       MallServiceMapper mallServiceMapper,
@@ -148,6 +150,11 @@ public class MallServiceApplicationService {
     current = mallServiceMapper.lockForSupplier(supplierId, afterSalesId);
     if (current == null) throw new IllegalStateException("售后单已变更，请刷新");
     MallAfterSalesPolicy.requireHandleable(current.status(), request.status(), request.reply());
+    if (java.util.List.of("退货","换货").contains(current.type())) {
+      if ("已拒绝".equals(request.status()) && !physical.view(current.id(),true).events().isEmpty())
+        throw new IllegalStateException("已有实物交接，不能直接拒绝以关闭责任");
+      if ("已完成".equals(request.status())) physical.requireReady(current);
+    }
     boolean completing = MallAfterSalesPolicy.STATUS_DONE.equals(request.status());
     if (completing && (request.evidenceNo() == null || request.evidenceNo().isBlank())) {
       throw new IllegalArgumentException("完成办理必须填写处理凭据编号");
@@ -176,6 +183,7 @@ public class MallServiceApplicationService {
     current = mallServiceMapper.lockForBuyer(current.tenantId(), id);
     if (current == null) throw new IllegalStateException("售后单已变更，请刷新");
     MallAfterSalesPolicy.requireBuyerAction(current.status(), action);
+    if (action.equals("confirm") && java.util.List.of("退货","换货").contains(current.type())) physical.requireReady(current);
     if (note == null || note.isBlank()) throw new IllegalArgumentException("请填写确认或撤回说明");
     String target = action.equals("confirm") ? MallAfterSalesPolicy.STATUS_DONE : MallAfterSalesPolicy.STATUS_WITHDRAWN;
     if (mallServiceMapper.buyerTransition(current.tenantId(), id, current.status(), target) != 1) {

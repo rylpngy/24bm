@@ -97,6 +97,8 @@ public class ProcurementExecutionApplicationService {
   private final OrderAccessService access;
   private final PermissionService permissions;
   private final AttachmentApplicationService attachments;
+  @org.springframework.beans.factory.annotation.Autowired
+  private com.procurement.mall.application.PhysicalAfterSalesService physicalAfterSales;
   private final UnifiedWorkflowApplicationService workflow;
   private final ObjectMapper json;
 
@@ -165,6 +167,12 @@ public class ProcurementExecutionApplicationService {
     long total=0; int count=0;
     for (var entry : saved.path("attachments")) {
       if (++count>MAX_ATTACHMENTS) throw new IllegalStateException("档案附件数量超限");
+      if("after_sales_physical".equals(entry.path("ownerType").asText())) {
+        var proof=physicalAfterSales.file(entry.path("ownerId").asText(),entry.path("id").asText(),false);
+        total+=proof.bytes().length;requireSize(total);
+        if(entry.path("size").asLong()!=proof.bytes().length || !entry.path("sha256").asText().equals(proof.sha256()))throw new IllegalStateException("售后凭证完整性校验失败");
+        expected.put(entry.path("path").asText(),proof.bytes());continue;
+      }
       var currentAttachment=currentAttachments.get(entry.path("id").asText());
       if (currentAttachment==null || !entry.path("ownerType").asText().equals(currentAttachment.ownerType())
           || !entry.path("ownerId").asText().equals(currentAttachment.ownerId())) throw new IllegalStateException("档案附件缺失或归属已变化："+entry.path("fileName").asText());
@@ -246,6 +254,15 @@ public class ProcurementExecutionApplicationService {
         entry.set("size",json.valueToTree(size)); entry.set("sha256",json.valueToTree(sha));
         if (loaded!=null) files.put(path,loaded.data());
       }
+    }
+    for(var event:data.path("physicalAfterSales")) {
+      count++;
+      if(count>MAX_ATTACHMENTS && loadOriginals)throw new IllegalStateException("归档最多允许100个附件");
+      var proof=physicalAfterSales.file(event.path("after_sales_id").asText(),event.path("id").asText(),false);
+      total+=proof.bytes().length;if(loadOriginals)requireSize(total);
+      String path=ProcurementExecutionArchiveWriter.attachmentPath(count,proof.fileName());
+      manifest.addObject().put("id",event.path("id").asText()).put("ownerType","after_sales_physical").put("ownerId",event.path("after_sales_id").asText()).put("fileName",proof.fileName()).put("path",path).put("metadataSize",proof.bytes().length).put("metadataSha256",proof.sha256()).put("size",proof.bytes().length).put("sha256",proof.sha256());
+      if(loadOriginals)files.put(path,proof.bytes());
     }
     if (count>MAX_ATTACHMENTS) attachmentChecks.add("归档最多允许100个附件");
     if (total>MAX_ATTACHMENT_BYTES) attachmentChecks.add("归档附件总大小不得超过100MB");

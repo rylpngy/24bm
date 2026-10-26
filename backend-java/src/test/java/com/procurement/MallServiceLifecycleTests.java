@@ -27,6 +27,7 @@ class MallServiceLifecycleTests {
       mock(AuditLogApplicationService.class), mock(NotificationApplicationService.class), access);
 
   @BeforeEach void setup() {
+    org.springframework.test.util.ReflectionTestUtils.setField(service,"physical",mock(com.procurement.mall.application.PhysicalAfterSalesService.class));
     TenantContext.set("t", "s", "u");
     when(mapper.lockOrder("t", "o")).thenReturn("o");
     when(orders.findLineForTenant("t", "o", "l")).thenReturn(
