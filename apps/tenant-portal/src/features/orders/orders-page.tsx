@@ -111,7 +111,7 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
           </div>
         </div>
 
-        <p className="text-xs font-bold">发货累计 {deliveryBatches.reduce((s, d) => s + (d.shippedQuantity ?? 0), 0)} · 收货累计 {receiptBatches.reduce((s, r) => s + (r.receivedQuantity ?? 0), 0)} · 合格累计 {receiptBatches.reduce((s, r) => s + (r.qualifiedQuantity ?? 0), 0)} · 待收总量 {(o.lineItems ?? []).length ? Math.max(0, (o.lineItems ?? []).reduce((s, l) => s + (l.quantity ?? 0), 0) - receiptBatches.reduce((s, r) => s + (r.receivedQuantity ?? 0), 0)) : '待核对'}</p>
+        <p className="text-xs font-bold">发货累计 {deliveryBatches.reduce((s, d) => s + (d.shippedQuantity ?? 0), 0)} · 收货累计 {receiptBatches.reduce((s, r) => s + (r.receivedQuantity ?? 0), 0)} · 合格累计 {receiptBatches.reduce((s, r) => s + (r.qualifiedQuantity ?? 0), 0)} · 待收总量 {o.status==='已取消'?0:(o.lineItems ?? []).length ? Math.max(0, (o.lineItems ?? []).reduce((s, l) => s + (l.quantity ?? 0), 0) - receiptBatches.reduce((s, r) => s + (r.receivedQuantity ?? 0), 0)) : '待核对'}</p>
 
         {o.id&&<BuyerOrderCancellation orderId={o.id} canManage={can('buyer:order:manage')} refresh={()=>query.refetch()}/>}
         <div className="grid gap-4 xl:grid-cols-[1fr_20rem]">

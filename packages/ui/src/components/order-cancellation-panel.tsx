@@ -94,7 +94,7 @@ export function OrderCancellationPanel({
             <tr>
               {['申请时间 / 发起人', '取消原因', '状态 / 回复', '操作'].map(
                 (t) => (
-                  <th className="whitespace-nowrap px-3 py-2" key={t}>
+                  <th className={'whitespace-nowrap px-3 py-2'+(t==='操作'?' sticky right-0 bg-slate-50':'')} key={t}>
                     {t}
                   </th>
                 ),
@@ -104,9 +104,9 @@ export function OrderCancellationPanel({
           <tbody>
             {s.data?.items.map((e) => (
               <tr key={e.id} className="border-t border-slate-100">
-                <td className="px-3 py-3">
+                <td className="w-44 max-w-44 px-3 py-3">
                   <p>{e.createdAt.slice(0, 19).replace('T', ' ')}</p>
-                  <p className="mt-1 break-all text-slate-500">{e.createdBy}</p>
+                  <p className="mt-1 truncate text-slate-500" title={e.createdBy}>{e.createdBy}</p>
                 </td>
                 <td className="max-w-56 break-words px-3 py-3">{e.reason}</td>
                 <td className="max-w-56 break-words px-3 py-3">
@@ -119,7 +119,7 @@ export function OrderCancellationPanel({
                     </p>
                   )}
                 </td>
-                <td className="px-3 py-3">
+                <td className="sticky right-0 bg-white px-3 py-3">
                   <div className="flex flex-nowrap justify-end gap-2">
                     {canManage &&
                       e.status === 'pending' &&

@@ -69,7 +69,7 @@ export function OrdersPage({ canConfirm = false, canShip = false, canInvoice = f
   const attributable = (o: PurchaseOrderResponse) => !deliveries.isError && !!deliveries.data
     && !!o.lineItems?.length && history(o.id).every(d => !!d.lineItems?.length
       && d.shippedQuantity === d.lineItems.reduce((s, l) => s + (l.shippedQuantity ?? 0), 0));
-  const remaining = (o: PurchaseOrderResponse) => (o.lineItems ?? []).reduce((s, l) => s + Math.max(0, (l.quantity ?? 0) - shippedLine(o.id, l.id)), 0);
+  const remaining = (o: PurchaseOrderResponse) => o.status==='已取消'?0:(o.lineItems ?? []).reduce((s, l) => s + Math.max(0, (l.quantity ?? 0) - shippedLine(o.id, l.id)), 0);
   const statuses = ['全部', ...Array.from(new Set(all.map((o) => o.status).filter(Boolean) as string[]))];
   const kw = keyword.toLowerCase();
   const list = all.filter((o) => {
