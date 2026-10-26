@@ -1,4 +1,5 @@
 import { Fragment, useState } from 'react';
+import {SupplierOrderSettlement} from './order-settlement';
 import { useQueryClient } from '@tanstack/react-query';
 import { ShoppingCart } from 'lucide-react';
 import { OrderCheckoutNote } from './order-checkout-note';
@@ -69,7 +70,7 @@ export function OrdersPage({ canConfirm = false, canShip = false, canInvoice = f
   const attributable = (o: PurchaseOrderResponse) => !deliveries.isError && !!deliveries.data
     && !!o.lineItems?.length && history(o.id).every(d => !!d.lineItems?.length
       && d.shippedQuantity === d.lineItems.reduce((s, l) => s + (l.shippedQuantity ?? 0), 0));
-  const remaining = (o: PurchaseOrderResponse) => o.status==='已取消'?0:(o.lineItems ?? []).reduce((s, l) => s + Math.max(0, (l.quantity ?? 0) - shippedLine(o.id, l.id)), 0);
+  const remaining = (o: PurchaseOrderResponse) => ['已取消','已清算'].includes(o.status??'')?0:(o.lineItems ?? []).reduce((s, l) => s + Math.max(0, (l.quantity ?? 0) - shippedLine(o.id, l.id)), 0);
   const statuses = ['全部', ...Array.from(new Set(all.map((o) => o.status).filter(Boolean) as string[]))];
   const kw = keyword.toLowerCase();
   const list = all.filter((o) => {
@@ -173,6 +174,7 @@ export function OrdersPage({ canConfirm = false, canShip = false, canInvoice = f
       <div className="space-y-3">
         {o.sourceMethod === '商城' && o.id && <OrderCheckoutNote orderId={o.id} />}
         {o.id&&<SupplierOrderCancellation orderId={o.id} canManage={canConfirm} refresh={refresh}/>}
+        {o.id&&<SupplierOrderSettlement orderId={o.id} canManage={canConfirm} refresh={refresh}/>}
         <p className="text-xs font-bold">剩余可发 {attributable(o) ? remaining(o) : '待核对'} · 已发累计 {history(o.id).reduce((s, d) => s + (d.shippedQuantity ?? 0), 0)}</p>
         {!attributable(o) && <FeedbackNotice tone="info" message="订单或历史批次缺少可核对行明细，暂停数量续办。" />}
         {history(o.id).map(d => <p key={d.id} className="break-words text-xs">{d.id} · {d.trackingNo} · 本批 {d.shippedQuantity ?? '待核对'}</p>)}

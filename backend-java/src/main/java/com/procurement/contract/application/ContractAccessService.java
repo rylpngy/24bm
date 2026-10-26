@@ -23,6 +23,7 @@ public class ContractAccessService {
 
   public void requireContract(String id, boolean write) {
     String tenant = requireAccess(id, write);
+    if(write){mapper.lockOrderForContract(tenant,id);if(mapper.settlementLocked(tenant,id))throw new IllegalStateException("合同已进入清算，不能修改原始依据");}
     if (write && mapper.lockById(tenant, id) == null) {
       throw new PermissionDeniedException("合同不存在或无权访问");
     }
@@ -56,6 +57,6 @@ public class ContractAccessService {
     }
     String status=mapper.lockOrderStatus(tenant,id);
     if(status==null)throw new IllegalArgumentException("订单不存在");
-    if(java.util.Set.of("取消协商中","已取消").contains(status))throw new IllegalStateException("订单正在取消或已取消，不能新建合同");
+    if(java.util.Set.of("取消协商中","已取消","清算协商中","待清算","已清算").contains(status))throw new IllegalStateException("订单正在取消、清算或已结束，不能新建合同");
   }
 }

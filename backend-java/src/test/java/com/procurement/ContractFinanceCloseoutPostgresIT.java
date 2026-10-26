@@ -43,6 +43,7 @@ class ContractFinanceCloseoutPostgresIT {
         create table variance_handlings(id text,tenant_id text,order_id text,invoice_id text,status text,result text,updated_at timestamptz);
         create table invoice_payment_entries(id text,tenant_id text,invoice_id text,amount numeric,reversal_of text,evidence_no text,idempotency_key text);
         create table contracts(id text,tenant_id text,related_order_id text,supplier_id text,amount numeric,status text);
+        create table order_settlements(id text,tenant_id text,order_id text,contract_id text,status text);
         create table three_way_matches(id text,tenant_id text,invoice_id text,created_at timestamptz,updated_at timestamptz);
         insert into purchase_orders values ('o','t','s',100,'已收货');
         insert into order_line_items values ('l','t','o',10,10,100);

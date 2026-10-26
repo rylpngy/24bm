@@ -74,7 +74,7 @@ public class ReceiptDispositionReviewApplicationService {
       throw new IllegalStateException("该验收已有不可变复核记录，不得覆盖");
     }
     if (reviews.countFrozenEvidence(tenant, order.id(), order.rfqId()) > 0
-        || Set.of("已归档", "已结算", "已完成").contains(order.status())) {
+        || Set.of("已归档", "已结算", "已完成","清算协商中","待清算","已清算").contains(order.status())) {
       throw new IllegalStateException("已结算或归档，不得复核");
     }
     if (receipt.receivedQuantity() == null || receipt.qualifiedQuantity() == null

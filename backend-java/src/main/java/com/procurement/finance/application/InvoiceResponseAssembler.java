@@ -50,6 +50,10 @@ final class InvoiceResponseAssembler {
         ? toReconciliationStatus(orderAmount, varianceAmount, receiptStatus) : "履约待核验";
     String reconciliationStage = toReconciliationStage(invoice.paymentStatus(), reconciliationStatus);
     String nextReconciliationAction = toNextReconciliationAction(reconciliationStage);
+    boolean settled=order!=null&&"已清算".equals(order.status());
+    boolean settling=order!=null&&java.util.Set.of("清算协商中","待清算").contains(order.status());
+    if(settling){reconciliationStatus="合同清算中";reconciliationStage="合同清算中";nextReconciliationAction="原始发票与付款已冻结，请至订单清算台账办理";}
+    if(settled){overdue=false;overdueDays=0;receiptStatus="按清算结果归档";reconciliationStatus="按清算结果归档";reconciliationStage="已清算";nextReconciliationAction="原始票面额留档，请至订单清算台账查看调账凭证及实际净结算额";}
 
     // 价税合计(amount)与税率推导税额与不含税金额：税额 = 价税合计 × 税率 / (100 + 税率)。
     BigDecimal taxRate = invoice.taxRate() == null ? BigDecimal.ZERO : invoice.taxRate();
@@ -81,7 +85,7 @@ final class InvoiceResponseAssembler {
         invoice.orderId(),
         invoice.amount(),
         invoice.invoiceNo(),
-        invoice.paymentStatus(),
+        settled?"已清算":settling?"合同清算中":invoice.paymentStatus(),
         invoice.reconciliationNote(),
         dueDate,
         overdue,

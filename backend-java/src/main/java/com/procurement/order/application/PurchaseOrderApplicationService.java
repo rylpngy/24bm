@@ -135,7 +135,7 @@ public class PurchaseOrderApplicationService {
     if (order == null) {
       throw new IllegalArgumentException("Purchase order not found: " + orderId);
     }
-    if (java.util.Set.of(PurchaseOrderStatus.RECEIVED,"取消协商中","已取消").contains(order.status())) {
+    if (java.util.Set.of(PurchaseOrderStatus.RECEIVED,"取消协商中","已取消","清算协商中","待清算","已清算").contains(order.status())) {
       throw new IllegalStateException("Received purchase order cannot be updated: " + orderId);
     }
 

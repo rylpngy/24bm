@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import {BuyerOrderSettlement} from './order-settlement';
 import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
 import { ArrowLeft, Info, Truck } from 'lucide-react';
 import {
@@ -111,9 +112,10 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
           </div>
         </div>
 
-        <p className="text-xs font-bold">发货累计 {deliveryBatches.reduce((s, d) => s + (d.shippedQuantity ?? 0), 0)} · 收货累计 {receiptBatches.reduce((s, r) => s + (r.receivedQuantity ?? 0), 0)} · 合格累计 {receiptBatches.reduce((s, r) => s + (r.qualifiedQuantity ?? 0), 0)} · 待收总量 {o.status==='已取消'?0:(o.lineItems ?? []).length ? Math.max(0, (o.lineItems ?? []).reduce((s, l) => s + (l.quantity ?? 0), 0) - receiptBatches.reduce((s, r) => s + (r.receivedQuantity ?? 0), 0)) : '待核对'}</p>
+        <p className="text-xs font-bold">发货累计 {deliveryBatches.reduce((s, d) => s + (d.shippedQuantity ?? 0), 0)} · 收货累计 {receiptBatches.reduce((s, r) => s + (r.receivedQuantity ?? 0), 0)} · 合格累计 {receiptBatches.reduce((s, r) => s + (r.qualifiedQuantity ?? 0), 0)} · 待收总量 {['已取消','已清算'].includes(o.status??'')?0:(o.lineItems ?? []).length ? Math.max(0, (o.lineItems ?? []).reduce((s, l) => s + (l.quantity ?? 0), 0) - receiptBatches.reduce((s, r) => s + (r.receivedQuantity ?? 0), 0)) : '待核对'}</p>
 
         {o.id&&<BuyerOrderCancellation orderId={o.id} canManage={can('buyer:order:manage')} refresh={()=>query.refetch()}/>}
+        {o.id&&<BuyerOrderSettlement orderId={o.id} canManage={can('buyer:order:manage')&&can('buyer:contract:manage')} canFinance={can('buyer:order:manage')&&can('buyer:payment:register')} refresh={()=>query.refetch()}/>}
         <div className="grid gap-4 xl:grid-cols-[1fr_20rem]">
           <div className="min-w-0 space-y-4">
             {/* 抬头信息 */}
@@ -308,7 +310,7 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
                       )}
                     />
                     <p className={cn('text-sm font-black', step.done ? 'text-slate-950' : 'text-slate-400')}>{step.label}</p>
-                    <p className="mt-0.5 pb-3 font-mono text-[11px] font-bold text-slate-400">{step.time ?? (step.done ? '已完成，时间未登记' : o.status==='已取消'?'订单已取消，不再履行':o.status==='取消协商中'?'取消协商中，暂停履约':'待进行')}</p>
+                    <p className="mt-0.5 pb-3 font-mono text-[11px] font-bold text-slate-400">{step.time ?? (step.done ? '已完成，时间未登记' : o.status==='已清算'?'合同已清算，剩余履约已终止':o.status==='已取消'?'订单已取消，不再履行':['清算协商中','待清算'].includes(o.status??'')?'合同清算中，暂停履约':o.status==='取消协商中'?'取消协商中，暂停履约':'待进行')}</p>
                   </div>
                 ))}
               </div>

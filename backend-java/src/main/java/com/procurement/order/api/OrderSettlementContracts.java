@@ -1,0 +1,101 @@
+package com.procurement.order.api;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.*;
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+import java.util.*;
+
+public final class OrderSettlementContracts {
+  @Schema(name = "OrderSettlementProposal")
+  public record Proposal(
+      @NotBlank @Size(max = 100) String requestKey,
+      @NotBlank @Size(max = 1000) String reason,
+      @NotNull @DecimalMin("0") @Digits(integer = 14, fraction = 2) BigDecimal compensation,
+      @NotBlank String agreementId,
+      List<@jakarta.validation.Valid Price> prices) {}
+
+  public record Price(
+      @NotBlank String lineId,
+      @NotNull @DecimalMin("0") @Digits(integer = 14, fraction = 2) BigDecimal unitPrice) {}
+
+  @Schema(name = "OrderSettlementAction")
+  public record Action(
+      @Min(1) int revision,
+      @NotBlank @Pattern(regexp = "accept|reject|withdraw|submit|complete") String action,
+      @NotBlank @Size(max = 1000) String reason,
+      Map<String, Object> formData) {}
+
+  @Schema(name = "OrderSettlementEvidenceRequest")
+  public record EvidenceRequest(
+      @NotBlank @Size(max = 100) String requestKey,
+      @NotBlank @Pattern(regexp = "refund|payment|invoice|compensation_receipt") String kind,
+      @NotNull @DecimalMin("0") @Digits(integer = 14, fraction = 2) BigDecimal amount,
+      @NotBlank @Size(max = 150) String evidenceNo,
+      @NotBlank String attachmentId,
+      @NotBlank @Size(max = 1000) String remark) {}
+
+  @Schema(name = "OrderSettlementRecord")
+  public record Entry(
+      String id,
+      String orderId,
+      String contractId,
+      String kind,
+      String reason,
+      String previousStatus,
+      String snapshot,
+      BigDecimal goodsAmount,
+      BigDecimal compensationAmount,
+      BigDecimal finalAmount,
+      BigDecimal initialPaid,
+      BigDecimal initialInvoiced,
+      String status,
+      int revision,
+      String workflowInstanceId,
+      String createdBy,
+      OffsetDateTime createdAt,
+      String supplierActor,
+      String supplierComment,
+      OffsetDateTime supplierActedAt,
+      String completedBy,
+      OffsetDateTime completedAt,
+      String agreementId,
+      String agreementName,
+      String agreementSha) {}
+
+  @Schema(name = "OrderSettlementEvidence")
+  public record Evidence(
+      String id,
+      String settlementId,
+      String kind,
+      BigDecimal amount,
+      String evidenceNo,
+      String attachmentId,
+      String contentSha,
+      String remark,
+      String createdBy,
+      OffsetDateTime createdAt) {}
+
+  @Schema(name = "OrderSettlementPreview")
+  public record Preview(
+      String contractId,
+      String kind,
+      BigDecimal goodsAmount,
+      BigDecimal paidAmount,
+      BigDecimal invoicedAmount,
+      String baseline,
+      List<String> blockers) {}
+
+  @Schema(name = "OrderSettlementView")
+  public record View(
+      Preview preview, List<Entry> items, long total, int page, int size, String actorId) {}
+
+  @Schema(name = "OrderSettlementDetail")
+  public record Detail(
+      Entry record,
+      List<Evidence> evidence,
+      BigDecimal netPaid,
+      BigDecimal refundDue,
+      BigDecimal paymentDue,
+      List<String> blockers) {}
+}

@@ -150,6 +150,7 @@ try {
     'buyer_supplier_admission',
     'rfq_award',
     'contract_approval',
+    'order_settlement',
     'payment_request',
     'payment_batch',
   ]) {
@@ -1599,6 +1600,223 @@ try {
     report.records.cancellation = c;
     report.records.cancellationUi =
       await makeCancellation('浏览器两端取消办理验证');
+    if (process.env.PROJECT_ORDER_SETTLEMENT_ACCEPTANCE === '1') {
+      async function proof(order, name) {
+        const body = {
+          ownerType: 'order_settlement_document',
+          ownerId: order,
+          fileName: name + '.txt',
+          visibility: 'buyer_internal',
+        };
+        const ticket = await api('buyer/attachments/upload-ticket', b, body);
+        const bytes = Buffer.from('双方清算协议与凭证 ' + runId + ' ' + name);
+        const result = await fetch(base + ticket.uploadUrl, {
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer ' + b,
+            'Content-Type': 'application/octet-stream',
+          },
+          body: bytes,
+        });
+        assert.ok(result.ok);
+        return (
+          await api('buyer/attachments', b, {
+            ...body,
+            storageKey: ticket.storageKey,
+          })
+        ).id;
+      }
+      async function settlementCase(kind) {
+        const c = await makeCancellation('合同清算 ' + kind);
+        const order = (await api('buyer/orders', b)).find(
+          (o) => o.id === c.orderId,
+        );
+        const contract = await api('buyer/contracts', b, {
+          contractNo: 'SET-' + kind + '-' + runId,
+          contractName: '清算合同 ' + kind,
+          relatedOrderId: order.id,
+          amount: order.amount,
+          status: '草案',
+          fulfillmentProgress: '待履约',
+          paymentTerms: '验收后支付',
+        });
+        if (kind !== 'void') {
+          await api(`buyer/contracts/${contract.id}/approval`, b, {
+            formData: {},
+          });
+          await decide(r, 'contract_approval', contract.id);
+          await api(`supplier/orders/${order.id}/confirm`, s, {});
+          const qty = kind === 'partial' ? 1 : 3;
+          await api(`supplier/orders/${order.id}/deliveries`, s, {
+            carrier: '清算物流',
+            trackingNo: 'SET-' + kind + '-' + runId,
+            shippedQuantity: qty,
+            lineItems: [
+              { orderLineId: order.lineItems[0].id, shippedQuantity: qty },
+            ],
+          });
+          await api(`buyer/orders/${order.id}/receipts`, b, {
+            result: '全部验收合格',
+            receivedQuantity: qty,
+            qualifiedQuantity: qty,
+            lineItems: [
+              {
+                orderLineId: order.lineItems[0].id,
+                receivedQuantity: qty,
+                qualifiedQuantity: qty,
+              },
+            ],
+          });
+        }
+        let invoice;
+        if (kind === 'refund') {
+          invoice = await api(`supplier/orders/${order.id}/invoices`, s, {
+            amount: order.amount,
+            invoiceNo: 'REF-' + runId,
+            taxRate: 0,
+          });
+          const batch = 'SET-BATCH-' + runId;
+          const pay = await api('buyer/payment-requests', b, {
+            invoiceId: invoice.id,
+            requestStatus: '付款申请待提交',
+            paymentBatchNo: batch,
+            remark: '隔离清算验收',
+          });
+          await api(
+            `buyer/payment-requests/${pay.id}/status`,
+            b,
+            { requestStatus: '付款申请审批中', formData: {} },
+            'PUT',
+          );
+          await decide(r, 'payment_request', pay.id);
+          await api(
+            `buyer/payment-batches/${batch}/status`,
+            b,
+            { batchStatus: '审批中', formData: {} },
+            'PUT',
+          );
+          await decide(r, 'payment_batch', batch);
+          await api(`buyer/invoices/${invoice.id}/payment-ledger`, b, {
+            idempotencyKey: 'original-' + runId,
+            amount: 900,
+            evidenceNo: 'ORIGINAL-' + runId,
+          });
+        }
+        const attachment = await proof(order.id, kind + '-agreement');
+        const path = `buyer/orders/${order.id}/settlements`,
+          sp = `supplier/orders/${order.id}/settlements`;
+        let entry = await api(path, b, {
+          requestKey: 'settlement-' + kind,
+          reason: '双方核对已履行数量和最终价款',
+          compensation: 0,
+          agreementId: attachment,
+          prices:
+            kind === 'refund'
+              ? [{ lineId: order.lineItems[0].id, unitPrice: 200 }]
+              : [],
+        });
+        const agreement = await fetch(
+          base + '/api/v1/' + sp + '/' + entry.id + '/agreement',
+          { headers: { Authorization: 'Bearer ' + s } },
+        );
+        assert.equal(agreement.status, 200);
+        assert.ok((await agreement.text()).includes(runId));
+        if(kind==='ui'){report.records.settlementUi={...c,settlementId:entry.id,contractId:contract.id,attachmentId:attachment};return;}
+        const act = (token, action, e, scope = path) =>
+          api(scope + '/' + e.id + '/actions', token, {
+            revision: e.revision,
+            action,
+            reason: '核对清算协议及真实原件',
+            formData: {},
+          });
+        entry = await act(s, 'accept', entry, sp);
+        entry = await act(b, 'submit', entry);
+        assert.ok(
+          !(await api('buyer/workflow/tasks', b)).some(
+            (t) => t.businessId === entry.id,
+          ),
+          'initiator must not approve',
+        );
+        await decide(r, 'order_settlement', entry.id);
+        entry = (await api(path + '/' + entry.id, b)).record;
+        if (kind !== 'void') {
+          const evidence = async (k, amount) =>
+            api(path + '/' + entry.id + '/evidence', b, {
+              requestKey: k + '-' + runId,
+              kind: k,
+              amount,
+              evidenceNo: k + '-' + runId,
+              attachmentId: attachment,
+              remark: '已核验清算原件',
+            });
+          await act(b, 'complete', entry, path).then(
+            () => assert.fail('Must require financial evidence'),
+            () => {},
+          );
+          if (kind === 'partial') await evidence('payment', 300);
+          else await evidence('refund', 300);
+          await evidence('invoice', kind === 'partial' ? 300 : 600);
+        }
+        entry = await act(b, 'complete', entry);
+        assert.equal(entry.status, 'settled');
+        const now = (await api('buyer/orders', b)).find(
+          (o) => o.id === order.id,
+        );
+        assert.equal(now.amount, 900);
+        assert.equal(now.lineItems[0].quantity, 3);
+        assert.equal(now.status, '已清算');
+        const detail = await api(path + '/' + entry.id, b);
+        assert.equal(
+          detail.netPaid,
+          kind === 'void' ? 0 : kind === 'partial' ? 300 : 600,
+        );
+        assert.deepEqual(detail.blockers, []);
+        if (invoice) {
+          const original = (await api('buyer/invoices', b)).find(
+            (i) => i.id === invoice.id,
+          );
+          assert.equal(original.amount, 900);
+          assert.equal(original.paymentStatus, '已清算');
+        }
+        const ep = `buyer/projects/${c.projectId}`,
+          lot = (await api(ep + '/packages', b)).find(
+            (l) => l.info.id === c.packageId,
+          );
+        const trace = await api(`buyer/rfqs/${c.rfqId}/execution`, b);
+        assert.equal(trace.canArchive, true, JSON.stringify(trace.blockers));
+        assert.equal(trace.orderAmount, detail.netPaid);
+        await api(ep + '/packages/' + c.packageId + '/close', b, {
+          revision: lot.info.revision,
+          reason: '合同清算凭证完整，归档并释放余额',
+        });
+        const parent = await api(ep, b);
+        await api(ep + '/close', b, {
+          revision: parent.project.revision,
+          reason: '核对原始履约、Flowable、实际收付款和协议原件',
+        });
+        const zip = await fetch(base + '/api/v1/' + ep + '/archive/download', {
+          headers: { Authorization: 'Bearer ' + b },
+        });
+        assert.equal(zip.status, 200);
+        writeFileSync(
+          report.downloadDirectory + '/settlement-' + kind + '.zip',
+          Buffer.from(await zip.arrayBuffer()),
+        );
+        report.records['settlement_' + kind] = {
+          ...c,
+          settlementId: entry.id,
+          contractId: contract.id,
+          netPaid: detail.netPaid,
+        };
+        check(
+          'Contract ' +
+            kind +
+            ': real supplier consent, independent Flowable, actual evidence, frozen originals, net closeout and downloadable ZIP',
+        );
+      }
+      for (const kind of ['void', 'partial', 'refund','ui'])
+        await settlementCase(kind);
+    }
     check(
       'Bilateral cancellation validates rejection, withdrawal ownership, pause, idempotent agreement, original amount/quantity, paginated history and 1200 responsibility release only after closeout',
     );
