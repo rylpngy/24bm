@@ -56,3 +56,4 @@ it('keeps server rejection visible without showing success', async () => {
   expect(await screen.findByText('已结算或归档，不得复核')).toBeTruthy();
   expect(screen.queryByText('复核已登记')).toBeNull();
 });
+vi.mock('./receipt-quality-resolution', () => ({ ReceiptQualityResolution: () => null }));

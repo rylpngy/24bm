@@ -89,7 +89,8 @@ public class OrderSettlementPolicy {
                   .setScale(2, RoundingMode.HALF_UP)
                   .compareTo(l.path("lineAmount").decimalValue())
               != 0) errors.add("订单原始数量或金额不一致");
-      if (s.compareTo(r) != 0 || r.compareTo(a) != 0 || r.signum() < 0 || r.compareTo(q) > 0)
+      BigDecimal resolved=l.path("resolvedUnqualified").decimalValue();
+      if (resolved.signum()<0 || a.signum()<0 || a.compareTo(r)>0 || s.compareTo(r) != 0 || r.compareTo(a.add(resolved)) != 0 || r.signum() < 0 || r.compareTo(q) > 0)
         errors.add("存在在途、待验收或不合格货物，须先完成实物处理");
       BigDecimal returned=l.path("verifiedReturned").decimalValue();
       if(returned.signum()<0 || returned.compareTo(r)>0)errors.add("已核验退货量与原收货量不一致");

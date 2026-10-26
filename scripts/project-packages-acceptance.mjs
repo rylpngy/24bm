@@ -1627,6 +1627,8 @@ try {
         ).id;
       }
       async function settlementCase(kind) {
+        const quality = kind.startsWith('quality-');
+        let qualityReceipt;
         const c = await makeCancellation('合同清算 ' + kind);
         const order = (await api('buyer/orders', b)).find(
           (o) => o.id === c.orderId,
@@ -1655,21 +1657,27 @@ try {
               { orderLineId: order.lineItems[0].id, shippedQuantity: qty },
             ],
           });
-          await api(`buyer/orders/${order.id}/receipts`, b, {
-            result: '全部验收合格',
+          qualityReceipt = await api(`buyer/orders/${order.id}/receipts`, b, {
+            result: quality ? '到货部分不合格，按批次退换' : '全部验收合格',
             receivedQuantity: qty,
-            qualifiedQuantity: qty,
+            qualifiedQuantity: quality ? qty - 1 : qty,
+            ...(quality
+              ? {
+                  disposition: '退货换货',
+                  qualityNote: '到货质量异常，保留原始质检记录',
+                }
+              : {}),
             lineItems: [
               {
                 orderLineId: order.lineItems[0].id,
                 receivedQuantity: qty,
-                qualifiedQuantity: qty,
+                qualifiedQuantity: quality ? qty - 1 : qty,
               },
             ],
           });
         }
         let invoice;
-        if (['refund', 'physical-return', 'physical-exchange'].includes(kind)) {
+        async function invoiceAndPay() {
           invoice = await api(`supplier/orders/${order.id}/invoices`, s, {
             amount: order.amount,
             invoiceNo: 'REF-' + kind + '-' + runId,
@@ -1702,8 +1710,12 @@ try {
             evidenceNo: 'ORIGINAL-' + runId,
           });
         }
-        if (kind.startsWith('physical-')) {
-          const type = kind === 'physical-return' ? '退货' : '换货';
+        if (['refund', 'physical-return', 'physical-exchange'].includes(kind))
+          await invoiceAndPay();
+        if (kind.startsWith('physical-') || quality) {
+          const type = ['physical-return', 'quality-return'].includes(kind)
+            ? '退货'
+            : '换货';
           await api('buyer/mall/after-sales', b, {
             orderId: order.id,
             orderLineId: order.lineItems[0].id,
@@ -1836,6 +1848,49 @@ try {
             afterSalesId: a.id,
             events: physical.events,
           };
+          if (quality) {
+            const path = `buyer/receipts/${qualityReceipt.id}/quality-resolutions`,
+              before = await api(path, b);
+            assert.equal(before.lines[0].unresolvedQuantity, 1);
+            assert.equal(
+              (await api(`buyer/orders/${order.id}/settlements`, b)).preview
+                .blockers.length > 0,
+              true,
+            );
+            if (kind === 'quality-ui') {
+              report.records.qualityUi = {
+                ...c,
+                afterSalesId: a.id,
+                receiptId: qualityReceipt.id,
+                receiptLineId: before.lines[0].receiptLineId,
+              };
+              return;
+            }
+            const request = {
+              receiptLineId: before.lines[0].receiptLineId,
+              afterSalesId: a.id,
+              reason: '核对原始验收与退换货凭证，按批次核销',
+            };
+            const resolved = await api(path, b, request);
+            assert.equal(resolved.lines[0].unresolvedQuantity, 0);
+            assert.equal((await api(path, b, request)).resolutions.length, 1);
+            await api(
+              path,
+              b,
+              { ...request, reason: '禁止覆盖既有核销' },
+              'POST',
+              [400, 409],
+              /不得覆盖/,
+            );
+            const original = (await api('buyer/receipts', b)).find(
+              (x) => x.id === qualityReceipt.id,
+            );
+            assert.equal(original.qualifiedQuantity, 2);
+            assert.equal(original.inspectionConclusion, '部分合格');
+            report.records[kind].receiptId = qualityReceipt.id;
+            report.records[kind].qualityResolution = resolved.resolutions[0];
+            if (type === '换货') await invoiceAndPay();
+          }
           if (type === '换货') {
             const ep = `buyer/projects/${c.projectId}`,
               lot = (await api(ep + '/packages', b)).find(
@@ -1863,7 +1918,7 @@ try {
             );
             assert.equal(zip.status, 200);
             writeFileSync(
-              report.downloadDirectory + '/physical-exchange.zip',
+              report.downloadDirectory + '/' + kind + '.zip',
               Buffer.from(await zip.arrayBuffer()),
             );
             check(
@@ -1931,7 +1986,8 @@ try {
             () => assert.fail('Must require financial evidence'),
             () => {},
           );
-          if (kind === 'partial') await evidence('payment', 300);
+          if (kind === 'quality-return') await evidence('payment', 600);
+          else if (kind === 'partial') await evidence('payment', 300);
           else await evidence('refund', 300);
           await evidence('invoice', kind === 'partial' ? 300 : 600);
         }
@@ -2000,6 +2056,9 @@ try {
           'physical-exchange',
           'physical-ui',
         ])
+          await settlementCase(kind);
+      if (process.env.PROJECT_RECEIPT_QUALITY_ACCEPTANCE === '1')
+        for (const kind of ['quality-return', 'quality-exchange', 'quality-ui'])
           await settlementCase(kind);
     }
     check(

@@ -484,6 +484,8 @@ class HttpSecurityContractTests {
   private com.procurement.mall.application.MallServiceApplicationService mallServiceApplicationService;
   @org.springframework.boot.test.mock.mockito.MockBean
   private com.procurement.mall.application.PhysicalAfterSalesService physicalAfterSalesService;
+  @org.springframework.boot.test.mock.mockito.MockBean
+  private com.procurement.order.application.ReceiptQualityService receiptQualityService;
 
   @MockBean
   private com.procurement.mall.application.MallPurchaseControlApplicationService mallPurchaseControlApplicationService;

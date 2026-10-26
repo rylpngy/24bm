@@ -68,6 +68,7 @@ public class ReceiptDispositionReviewApplicationService {
     }
     reviews.lockInvoices(tenant, order.id());
     reviews.lockContracts(tenant, order.id());
+    if (reviews.qualityResolutions(tenant,receiptId)>0) throw new IllegalStateException("此验收已有退换货质量核销，不得再以让步接收重复处置");
     var prior = reviews.find(tenant, receiptId);
     if (prior != null) {
       if (prior.decision().equals(request.decision()) && prior.reason().equals(reason) && prior.evidenceNo().equals(evidence)) return prior;
