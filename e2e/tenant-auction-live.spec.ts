@@ -15,6 +15,12 @@ async function tokens(request: APIRequestContext) {
 
 // 前置安排:API 造一单「报价中」的邀请竞价(唯一标题),供应商已受邀。
 async function seedLiveAuction(request: APIRequestContext, buyer: string) {
+  const department = await request.post(`${API}/buyer/departments`, {
+    headers: { Authorization: `Bearer ${buyer}` },
+    data: { name: `E2E竞价归口-${Date.now()}` },
+  });
+  expect(department.ok(), await department.text()).toBeTruthy();
+  const departmentId = (await department.json()).data.id as string;
   const materials = (await (await request.get(`${API}/buyer/materials`, {
     headers: { Authorization: `Bearer ${buyer}` },
   })).json()).data as Array<{ id?: string }>;
@@ -26,11 +32,11 @@ async function seedLiveAuction(request: APIRequestContext, buyer: string) {
       deadlineAt: new Date(Date.now() + 6 * 3600_000).toISOString(),
       invitedSupplierIds: ['ent-supplier-sunrise'],
       auctionStartPrice: 200000, auctionMinDecrement: 1000,
-      directDepartmentId: 'dept-purchase', directBudget: 200000,
+      directDepartmentId: departmentId, directBudget: 200000,
       directItems: [{ materialId: materials[0]?.id, quantity: 2 }],
     },
   });
-  expect(created.ok()).toBeTruthy();
+  expect(created.ok(), await created.text()).toBeTruthy();
   return { title, id: (await created.json()).data.id as string };
 }
 
