@@ -22,7 +22,11 @@ public final class ProcurementExecutionPolicy {
       if("approved".equals(text(c,"status"))&&list(data,"workflowHistory").stream().noneMatch(h->text(h.path("instance"),"id").equals(text(c,"workflowInstanceId"))&&"approved".equals(text(h.path("instance"),"status"))))blockers.add("专项资金承接缺少对应独立审批证据");
     }
     for(var c:data.path("fundingChanges")){
-      if("project_plan".equals(text(c,"kind"))&&"submitted".equals(text(c,"status")))blockers.add("项目资金分摊审批中，暂不能归档");
+      if(("project_plan".equals(text(c,"kind"))||"project_reallocation".equals(text(c,"kind")))&&"submitted".equals(text(c,"status")))blockers.add("项目资金分摊或未付额度调整审批中，暂不能归档");
+      if("project_reallocation".equals(text(c,"kind"))&&"approved".equals(text(c,"status"))){
+        var lines=matching(data,"fundingReallocations","changeId",text(c,"id"));
+        if(lines.isEmpty()||sum(lines,"after_amount").compareTo(amount(c,"amount"))!=0||sum(lines,"before_amount").compareTo(sum(lines,"after_amount"))!=0||lines.stream().anyMatch(l->!text(l,"createdBy").equals(text(c,"completed_by"))))blockers.add("未付额度调整缺少完整前后责任及审批人证据");
+      }
       if("approved".equals(text(c,"status"))&&list(data,"workflowHistory").stream().noneMatch(h->text(h.path("instance"),"id").equals(text(c,"workflowInstanceId"))&&"approved".equals(text(h.path("instance"),"status"))))blockers.add("专项资金缺少对应独立审批证据");
     }
     if(!list(data,"fundingPlans").isEmpty())for(var payment:data.path("payments")){

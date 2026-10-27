@@ -46834,7 +46834,7 @@
             "type": "string"
           },
           "kind": {
-            "pattern": "fund_limit|project_plan",
+            "pattern": "fund_limit|project_plan|project_reallocation",
             "type": "string"
           },
           "fundId": {
@@ -47033,6 +47033,9 @@
           },
           "priorPaidAmount": {
             "type": "number"
+          },
+          "reallocationBlocker": {
+            "type": "string"
           }
         }
       },

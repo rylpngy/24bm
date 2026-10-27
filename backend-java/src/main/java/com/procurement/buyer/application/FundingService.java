@@ -32,6 +32,7 @@ public class FundingService {
   private final AuditLogApplicationService audit;
   private final ObjectMapper json;
   @Autowired @Lazy private UnifiedWorkflowApplicationService workflow;
+  @Autowired private FundingReallocationService reallocation;
 
   public FundingService(
       FundingMapper mapper,
@@ -152,7 +153,7 @@ public class FundingService {
             .toList();
     String blocker =
         mapper.paymentHistory(tenant(), id) > 0
-            ? "项目已有付款历史，不支持重新分摊或撤销分摊"
+            ? "项目已有付款历史，原分摊不可覆盖；可通过调整未付额度审批调整剩余责任"
             : mapper.pending(tenant(), null, id) > 0
                 ? "资金分摊审批中"
                 : mapper.conflicts(tenant(), id) > 0 ? "存在立项变更、跨年或清算责任，请先处理" : "";
@@ -164,7 +165,8 @@ public class FundingService {
         mapper.balances(tenant(), id),
         blocker,
         Objects.requireNonNullElse(lifecycle.period(tenant(),p.id()),p.period()),
-        mapper.priorPaid(tenant(),p.id()));
+        mapper.priorPaid(tenant(),p.id()),
+        mapper.pending(tenant(),null,id)>0?"资金审批中":reallocation.blocker(tenant(),id));
   }
 
   private boolean enabled(String t, String p) {
@@ -180,7 +182,7 @@ public class FundingService {
   }
 
   private void lockRequest(Request r) {
-    if ("project_plan".equals(r.kind())) {
+    if ("project_plan".equals(r.kind())||"project_reallocation".equals(r.kind())) {
       guard.lock();
       lifecycle.lockOrders(tenant(), r.projectId());
     }
@@ -212,6 +214,14 @@ public class FundingService {
               f.code(),
               "name",
               f.name()));
+    }
+    if("project_reallocation".equals(r.kind())) {
+      if(r.projectId()==null)throw new IllegalArgumentException("项目必填");
+      if(requireAccess)guard.require(r.projectId(),true);
+      var basis=reallocation.prepare(tenant(),r);
+      if(requireAccess)for(var l:basis.lines()){var f=mapper.fund(tenant(),l.fundId());scopes.requireRecordAccess(f.departmentId(),f.createdBy());}
+      var p=projects.find(tenant(),r.projectId());
+      return new LinkedHashMap<>(Map.of("projectId",p.id(),"departmentId",p.departmentId(),"period",basis.period(),"projectRevision",p.revision(),"reallocation",basis));
     }
     if (!"project_plan".equals(r.kind()) || r.fundId() != null || r.projectId() == null)
       throw new IllegalArgumentException("资金业务类型无效");
@@ -358,6 +368,9 @@ public class FundingService {
         if (mapper.approveFund(
                 i.tenantId(), change.fundId(), change.basedRevision(), change.amount())
             != 1) throw new IllegalStateException("资金版本已变化");
+      } else if("project_reallocation".equals(change.kind())) {
+        try{var basis=json.treeToValue(tree(change.snapshot()).path("reallocation"),FundingReallocationService.Basis.class);reallocation.apply(i.tenantId(),change.id(),change.projectId(),basis,c.actorId());}
+        catch(com.fasterxml.jackson.core.JsonProcessingException e){throw new IllegalStateException("资金调整依据读取失败",e);}
       } else {
         for (var l : shares(r))
           mapper.line(i.tenantId(), change.id(), change.projectId(), l.fundId(), l.amount());

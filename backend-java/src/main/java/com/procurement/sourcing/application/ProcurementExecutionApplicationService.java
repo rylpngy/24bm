@@ -203,6 +203,7 @@ public class ProcurementExecutionApplicationService {
     var data=parse(raw);
     if(data.path("fundingCarryovers").isEmpty())data.remove("fundingCarryovers");
     if(data.path("fundingRestorations").isEmpty())data.remove("fundingRestorations");
+    if(data.path("fundingReallocations").isEmpty())data.remove("fundingReallocations");
     if(projects!=null){var definition=projects.archiveDefinitionForRfq(rfq);if(definition!=null)data.set("procurementProject",json.valueToTree(definition));}
     return data;
   }

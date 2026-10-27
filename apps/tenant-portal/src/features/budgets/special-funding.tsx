@@ -8,6 +8,7 @@ import { useBuyerPermissions } from "../../lib/use-buyer-permissions";
 import { WorkflowSubmitDialog } from "../workflow/workflow-submit-dialog";
 import { WorkflowStatusPanel } from "../workflow/workflow-instance-panel";
 import { FundingCarryoverEvidence } from '../projects/funding-carryover-fields';
+import { FundingUnpaidReallocation, FundingReallocationEvidence } from './funding-unpaid-reallocation';
 import {
   ProjectDialog,
   projectButton as btn,
@@ -202,7 +203,7 @@ export function FundingHistory({
                   {r.createdAt?.slice(0, 19).replace("T", " ")}
                 </td>
                 <td className="px-3 py-3">
-                  {r.kind === "fund_limit" ? "年度额度" : r.kind==='project_carryover'?'专项资金跨年承接':"项目资金分摊"}
+                  {r.kind === "fund_limit" ? "年度额度" : r.kind==='project_carryover'?'专项资金跨年承接':r.kind==='project_reallocation'?'未付额度调整':"项目资金分摊"}
                 </td>
                 <td className="px-3 py-3">{money(r.amount)}</td>
                 <td className="px-3 py-3">{status[r.status] || r.status}</td>
@@ -253,7 +254,8 @@ export function FundingHistory({
               </p>
             )}
             {selected.kind==='project_carryover'&&<FundingCarryoverEvidence snapshot={JSON.stringify({fundingCarryover:snapshot})}/>}
-            {selected.kind!=='project_carryover'&&proposal?.lines?.map((l: { fundId: string; amount: number }) => (
+            {selected.kind==='project_reallocation'&&<FundingReallocationEvidence snapshot={selected.snapshot}/>}
+            {selected.kind!=='project_carryover'&&selected.kind!=='project_reallocation'&&proposal?.lines?.map((l: { fundId: string; amount: number }) => (
               <p key={l.fundId} className="break-words">
                 {snapshot?.sources?.find(
                   (s: { fundId: string }) => s.fundId === l.fundId,
@@ -648,6 +650,7 @@ export function ProjectFundingPanel({
           blocker?: string;
           effectivePeriod?: string;
           priorPaidAmount?: number;
+          reallocationBlocker?: string;
         }>(url),
       enabled: expanded,
     });
@@ -698,6 +701,7 @@ export function ProjectFundingPanel({
               can("buyer:budget:manage") &&
               can("buyer:project:manage") && (
                 <div className="flex gap-2">
+                  {q.data?.enabled&&<FundingUnpaidReallocation project={project} sources={q.data.sources} priorPaidAmount={q.data.priorPaidAmount||0} blocker={q.data.reallocationBlocker??'请刷新资金数据后重试'} onPropose={setProposal}/>}
                   <button
                     type="button"
                     className={btn}
