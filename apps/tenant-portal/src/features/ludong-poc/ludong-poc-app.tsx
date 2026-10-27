@@ -29,7 +29,8 @@ import { TeamPage } from '../team/team-page';
 import { LudongPocLogin } from './ludong-poc-login';
 import { LudongPocForm, type LudongFormPayload } from './ludong-poc-form';
 import { LudongPocArchiveMaterials } from './ludong-poc-archive-materials';
-import { LudongPocApplicationSnapshot } from './ludong-poc-application-snapshot';
+import { LudongPocApplicationSnapshot, type SnapshotView } from './ludong-poc-application-snapshot';
+import { ApplicationTabs } from './ludong-application-tabs';
 import { createTaskReviewData, LudongPocApprovalDialog } from './ludong-poc-approval-dialog';
 import { ludongApi, type LudongApplication, type WorkflowHistory, type WorkflowTask } from './api';
 import { availableReportYears, buildLudongAnalytics, type ReportPeriod } from './ludong-poc-analytics';
@@ -413,6 +414,7 @@ function Applications({ screen, setScreen }: { screen: Screen; setScreen: (scree
 }
 
 function ApplicationDetail({ application, onBack }: { application: LudongApplication; onBack: () => void }) {
+  const [detailTab, setDetailTab] = useState('basic');
   const session = useAuthStore((state) => state.session);
   const { can } = useBuyerPermissions();
   const fresh = useQuery({ queryKey: ['ludong-poc', 'application', application.id], queryFn: () => ludongApi.get(application.id) });
@@ -429,26 +431,37 @@ function ApplicationDetail({ application, onBack }: { application: LudongApplica
       <DetailHeroCard eyebrow="货物类采购项目" title={app.projectName} meta={`${app.applicationNo} · 创建于 ${formatDate(app.createdAt)}`} status={statusLabels[app.status]} amountLabel={currency(app.budgetAmount)} facts={[
         { label: '申报单位', value: app.applicantUnit }, { label: '项目负责人', value: app.formData.projectLeaderName || '—' }, { label: '经费来源', value: app.formData.fundingSource || '—' }, { label: '采购方式', value: app.formData.procurementMethod || '—' },
       ]} />
-      <div className="grid gap-5 xl:grid-cols-[1.5fr_.85fr]">
-        <div className="space-y-5">
-          <SectionCard title="项目申报与审批详情" icon={ClipboardList} extra={<StatusPill label="完整材料" />}>
-            <LudongPocApplicationSnapshot app={app} />
-          </SectionCard>
-        </div>
+      <ApplicationTabs value={detailTab} onChange={setDetailTab} label="项目详情分类" tabs={[
+        { id: 'basic', label: '基本信息' }, { id: 'equipment', label: '设备清单' },
+        { id: 'mall', label: '商城确认' }, { id: 'requirements', label: '采购要求' },
+        { id: 'delivery', label: '交付验收' }, { id: 'approvals', label: '审批记录' },
+        { id: 'files', label: '附件归档' },
+      ]}>
+      {!['approvals', 'files'].includes(detailTab) && <div className="min-w-0 rounded-lg border border-slate-200 bg-white p-4 sm:p-6">
+        <LudongPocApplicationSnapshot app={app} view={detailTab as SnapshotView} includeApprovals={false} />
+      </div>}
+      {detailTab === 'approvals' && <>
+        <div className="grid items-start gap-5 xl:grid-cols-2">
         <div className="space-y-5">
           <WorkflowCard history={history.data} loading={history.isLoading} />
+          {history.isError && <FeedbackNotice tone="error" message="审批记录加载失败，请刷新后重试。" />}
           {history.data && <AdditionalReviewHistory instanceId={history.data.workflowInstanceId} />}
           {app.status === 'in_approval' && history.data && history.data.initiatorId === session?.userId
             && <WorkflowInstanceReminder instanceId={history.data.workflowInstanceId} />}
           <RouteDecisionSummary app={app} />
-          <SectionCard title="系统生成表格" icon={FileArchive}><div className="space-y-2"><DocumentRow name="采购需求表（货物类）" ready={downloadable} /><DocumentRow name="采购及招标申请单、受理单" ready={downloadable} /></div></SectionCard>
         </div>
-      </div>
+        <SectionCard title="各节点审批意见" icon={ClipboardList}><LudongPocApplicationSnapshot app={app} view="approvals" /></SectionCard>
+        </div>
+        {history.data && <LudongCustomApprovalEvidence applicationId={app.id} instanceId={history.data.workflowInstanceId} />}
+        <LudongWorkflowHistory application={app} renderProgress={(value) => <WorkflowCard history={value} loading={false} />} />
+      </>}
+      {detailTab === 'files' && <>
+      <SectionCard title="系统生成表格" icon={FileArchive}><div className="space-y-2"><DocumentRow name="采购需求表（货物类）" ready={downloadable} /><DocumentRow name="采购及招标申请单、受理单" ready={downloadable} /></div></SectionCard>
       <SectionCard title="统一附件台账" icon={FileArchive} extra={<StatusPill label={app.status === 'archived' ? '已封存' : '持续归集'} />}>
         <LudongPocArchiveMaterials applicationId={app.id} readOnly={app.status === 'archived' || !can('buyer:ludong-poc:write')} />
       </SectionCard>
-      {history.data && <LudongCustomApprovalEvidence applicationId={app.id} instanceId={history.data.workflowInstanceId} />}
-      <LudongWorkflowHistory application={app} renderProgress={(value) => <WorkflowCard history={value} loading={false} />} />
+      </>}
+      </ApplicationTabs>
     </div>
   );
 }
