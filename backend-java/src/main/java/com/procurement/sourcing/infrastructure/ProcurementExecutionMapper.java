@@ -95,6 +95,7 @@ public interface ProcurementExecutionMapper {
         'invoices',coalesce((select jsonb_agg(to_jsonb(i) order by id) from i),'[]'::jsonb),
         'invoiceLines',coalesce((select jsonb_agg(to_jsonb(il) order by id) from il),'[]'::jsonb),
         'payments',coalesce((select jsonb_agg(to_jsonb(p) order by id) from p),'[]'::jsonb),
+        'frozenPaymentCorrections',coalesce((select jsonb_agg(to_jsonb(fc) || jsonb_build_object('workflowInstanceId',fc.workflow_instance_id) order by fc.created_at,fc.id) from frozen_payment_corrections fc join i on i.id=fc.invoice_id where fc.tenant_id=#{tenant}),'[]'::jsonb),
         'variances',coalesce((select jsonb_agg(to_jsonb(v) order by id) from v),'[]'::jsonb),
         'reconciliations',coalesce((select jsonb_agg(to_jsonb(recon) order by id) from recon),'[]'::jsonb),
         'quotes',coalesce((select jsonb_agg(to_jsonb(q) order by id) from q),'[]'::jsonb),

@@ -41,6 +41,12 @@ public class ContractInstallmentService {
     }).toList();
   }
 
+  public BigDecimal verifiedOrderPaid(String tenant, String order) {
+    var basis=allocations.orderBasis(tenant,order,null);
+    if(basis==null||!basis.verified())throw new IllegalStateException("整单发票付款状态与流水不一致，请先核对");
+    return basis.previousPaid();
+  }
+
   @Transactional(propagation = Propagation.MANDATORY)
   public void allocate(String tenant, String order, String supplier, BigDecimal invoiceAmount,
       String entry, BigDecimal amount, String selected, BigDecimal previouslyPaid) {

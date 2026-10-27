@@ -16,4 +16,8 @@
 | 专项资金独立核算 | 资金来源仍是项目信息，不是专项资金账 | 独立资金池、多来源分摊和约束审批，不能用文本标签冒称完成 |
 | 客户SSO、财务资金支付、供应链和外部电子交易平台 | 客户环境/接口前置条件尚缺 | 不作为本地功能开发阻塞，不写成已正式联调或生产验收 |
 
-操作及边界见project-lifecycle-guide.md、project-paid-carryover-guide.md、order-cancellation-guide.md、contract-order-settlement-acceptance.md、order-invoice-allocation-guide.md、installment-invoice-guide.md。本批独立验收分次开票业务闭环；后续两项仍待研发：跨年冻结支出更正审批、专项资金独立台账与多来源分摊。当前年度冻结保护不解除，资金来源文本不冒称专项资金账。客户环境接口及生产容量在具备条件后验收。
+操作及边界见project-lifecycle-guide.md、project-paid-carryover-guide.md、order-cancellation-guide.md、contract-order-settlement-acceptance.md、order-invoice-allocation-guide.md、installment-invoice-guide.md。
+
+2026-10-27 增量：新增跨年冻结付款整笔更正申请、独立 Flowable 审批、撤回/驳回、反向流水、合同里程碑及年度责任同步、分页台账和归档证据，见 frozen-payment-correction-guide.md。原直接冲销保护保留；更正后年度口径与原付款/原承接快照区分显示，不将会计账或银行退款视为自动完成。已归档合同、已结项/终止项目、订单清算后的复杂更正重开，以及部分金额更正仍未开放。
+
+下一批核心剩余：专项资金独立台账与多来源分摊。资金来源文本不冒称专项资金账；客户环境接口及生产容量在具备条件后验收。PR #141 的分次开票与本批更正需分别以通过验收、合并和部署状态记录，不将本地开发完成混同原系统已发布。

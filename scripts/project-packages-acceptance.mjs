@@ -144,6 +144,7 @@ try {
     'project_initiation',
     'project_change',
     'project_carryover',
+    ...(process.env.PROJECT_FROZEN_CORRECTION_ACCEPTANCE === '1' ? ['frozen_payment_correction'] : []),
     'project_liquidation',
     'purchase_demand',
     'budget_change',
@@ -1718,8 +1719,18 @@ try {
             evidenceNo: 'ORIGINAL-' + suffix + '-' + runId,
           });
         }
-        if (['refund', 'physical-return', 'physical-exchange'].includes(kind))
+        if (['refund', 'physical-return', 'physical-exchange', 'frozen-correction-ui'].includes(kind))
           await invoiceAndPay();
+        if (kind === 'frozen-correction-ui') {
+          const endpoint='buyer/projects/'+c.projectId;
+          const project=(await api(endpoint,b)).project;
+          const target=String(Number(project.period)+1);
+          const carry=await api(endpoint+'/lifecycle',b,{revision:project.revision,kind:'carryover',targetPeriod:target,reason:'验证冻结付款更正与原始承接证据保留',formData:{}});
+          await decide(r,'project_carryover',carry.id);
+          const ledger=await api('buyer/invoices/'+invoice.id+'/payment-ledger',b);
+          report.records.frozenCorrectionUi={...c,contractId:contract.id,invoiceId:invoice.id,entryId:ledger.entries[0].id,carryId:carry.id,targetPeriod:target,originalPeriod:project.period,before:await api(endpoint+'/lifecycle/preview',b)};
+          return;
+        }
         if (kind === 'allocation-ui') {
           let issued = {};
           if (process.env.PROJECT_INSTALLMENT_INVOICE_ACCEPTANCE === '1') {
@@ -2235,6 +2246,7 @@ try {
       if (process.env.PROJECT_INSTALLMENT_INVOICE_ACCEPTANCE === '1')
         for (const kind of ['installment', 'installment-ui'])
           await settlementCase(kind);
+      if(process.env.PROJECT_FROZEN_CORRECTION_ACCEPTANCE==='1')await settlementCase('frozen-correction-ui');
     }
     check(
       'Bilateral cancellation validates rejection, withdrawal ownership, pause, idempotent agreement, original amount/quantity, paginated history and 1200 responsibility release only after closeout',

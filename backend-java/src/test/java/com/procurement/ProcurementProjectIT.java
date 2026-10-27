@@ -57,6 +57,7 @@ class ProcurementProjectIT {
   @Autowired ProjectChangeAttachmentAccess changeAttachments;
   @Autowired ProjectLifecycleService lifecycle;
   @Autowired com.procurement.finance.application.PaymentLedgerApplicationService paymentLedger;
+  @Autowired com.procurement.finance.application.FrozenPaymentCorrectionService corrections;
   @Autowired com.procurement.finance.infrastructure.InvoiceMapper invoiceMapper;
   @Autowired com.procurement.buyer.infrastructure.BudgetLifecycleMapper budgetMapper;
   String tenant, dept, author, reviewer, role, material;
@@ -75,7 +76,7 @@ class ProcurementProjectIT {
       contractInstallments.allocate(tenant,c.order(),c.supplier(),new BigDecimal("100"),entry,new BigDecimal("100"),milestone,BigDecimal.ZERO);
       jdbc.update("update invoices set payment_status='已付款' where id=?",invoice);
     });
-    pay.accept(a.id(),m1);assertThatThrownBy(()->pay.accept(b.id(),m2)).hasMessageContaining("已达成里程碑");
+    pay.accept(a.id(),m1);assertThat(paymentLedger.summary(a.id()).reconciliationRequired()).isFalse();assertThat(paymentLedger.summary(b.id()).reconciliationRequired()).isFalse();assertThatThrownBy(()->pay.accept(b.id(),m2)).hasMessageContaining("已达成里程碑");
     assertThat(jdbc.queryForObject("select count(*) from invoice_payment_entries where tenant_id=?",Integer.class,tenant)).isEqualTo(1);
     jdbc.update("update contract_payment_milestones set reached=true,reached_at=now() where id=?",m2);pay.accept(b.id(),m2);
     assertThat(contractInstallments.balances(tenant,c.order())).allMatch(x->x.verified()&&x.remaining().signum()==0);
@@ -486,7 +487,7 @@ class ProcurementProjectIT {
         material,
         tenant);
     context(author);
-    for (String type : List.of("project_initiation", "purchase_demand", "project_change", "project_carryover", "project_liquidation", "order_settlement")) {
+    for (String type : List.of("project_initiation", "purchase_demand", "project_change", "project_carryover", "project_liquidation", "order_settlement", "frozen_payment_correction")) {
       var definition =
           definitions.createProcess(
               new CreateProcessDefinitionRequest("Project " + type, "", "file-text", type));
@@ -665,6 +666,45 @@ class ProcurementProjectIT {
   }
 
   String nextYear(int n){return String.valueOf(Integer.parseInt(year)+n);}
+  com.procurement.finance.api.FrozenPaymentCorrectionContracts.Request correction(String[] f,String key){return new com.procurement.finance.api.FrozenPaymentCorrectionContracts.Request(key,f[3],"BANK-CORRECTION-"+key,"原付款登记核实后整笔冲销，保留原始证据",Map.of());}
+  @Test void frozenCorrectionRequiresIndependentApprovalAndRestoresCurrentResponsibility(){
+    var f=paidProject();String carried=carry(f[0],1),snapshot=jdbc.queryForObject("select snapshot::text from procurement_project_lifecycle_requests where id=?",String.class,carried);
+    var original=jdbc.queryForMap("select * from invoice_payment_entries where id=?",f[3]);var r=corrections.submit(f[2],correction(f,"once"));
+    assertThat(corrections.submit(f[2],correction(f,"once")).id()).isEqualTo(r.id());
+    assertThat(workflow.listCurrentUserTasks()).noneMatch(t->r.id().equals(t.businessId()));
+    assertThat(budget.position(tenant,dept,year).paidAmount()).isEqualByComparingTo("50");
+    assertThatThrownBy(()->paymentLedger.reverse(f[2],f[3],new com.procurement.finance.api.ReversePaymentRequest("direct","绕过审批"))).hasMessageContaining("跨年度承接");
+    decide(r.id(),"approve");
+    var saved=corrections.history(f[2],1,10).items().getFirst();assertThat(saved.status()).isEqualTo("approved");assertThat(saved.completedBy()).isEqualTo(reviewer);assertThat(saved.reversalId()).isNotBlank();
+    assertThat(jdbc.queryForMap("select * from invoice_payment_entries where id=?",f[3])).isEqualTo(original);
+    assertThat(jdbc.queryForObject("select snapshot::text from procurement_project_lifecycle_requests where id=?",String.class,carried)).isEqualTo(snapshot);
+    assertThat(paymentLedger.summary(f[2]).paidAmount()).isZero();assertThat(budget.position(tenant,dept,year).paidAmount()).isZero();
+    assertThat(budget.position(tenant,dept,nextYear(1)).committed()).isEqualByComparingTo("246.91");
+    assertThat(corrections.submit(f[2],correction(f,"once")).id()).isEqualTo(r.id());
+    assertThatThrownBy(()->corrections.submit(f[2],correction(f,"twice"))).hasMessageContaining("已冲销");
+    assertThat(lifecycle.preview(f[0]).carryoverBlockers()).isEmpty();carry(f[0],2);assertThat(budget.position(tenant,dept,nextYear(2)).committed()).isEqualByComparingTo("246.91");
+  }
+  @Test void frozenCorrectionRejectionWithdrawalAndNonInitiatorLeaveMoneyUnchanged(){
+    var f=paidProject();carry(f[0],1);var r=corrections.submit(f[2],correction(f,"withdraw"));String withdrawalId=r.id();context(reviewer);
+    assertThatThrownBy(()->corrections.withdraw(f[2],withdrawalId,"不是发起人")).hasMessageContaining("发起人");context(author);
+    corrections.withdraw(f[2],r.id(),"重新核对原始依据");r=corrections.submit(f[2],correction(f,"reject"));decide(r.id(),"reject");
+    assertThat(paymentLedger.summary(f[2]).paidAmount()).isEqualByComparingTo("50");assertThat(budget.position(tenant,dept,year).paidAmount()).isEqualByComparingTo("50");
+    assertThat(corrections.history(f[2],1,1).total()).isEqualTo(2);assertThat(corrections.history(f[2],2,1).items()).hasSize(1);
+  }
+  @Test void frozenCorrectionRejectsChangedPaymentEvidenceAndHardBudgetRollsBack(){
+    var f=paidProject();carry(f[0],1);var r=corrections.submit(f[2],correction(f,"hard"));
+    jdbc.update("insert into budget_policies(tenant_id,mode,reason,updated_by) values (?,'hard','IT',?)",tenant,author);
+    jdbc.update("insert into department_budgets(id,tenant_id,department_id,period,total_amount) values (?,?,?,?,196.91)","correction-pool",tenant,dept,nextYear(1));
+    String id=r.id();assertThatThrownBy(()->decide(id,"approve")).hasMessageContaining("预算不足");context(author);
+    assertThat(corrections.history(f[2],1,10).items().getFirst().status()).isEqualTo("submitted");assertThat(paymentLedger.summary(f[2]).paidAmount()).isEqualByComparingTo("50");
+    jdbc.update("update department_budgets set total_amount=246.91 where tenant_id=?",tenant);decide(id,"approve");assertThat(paymentLedger.summary(f[2]).paidAmount()).isZero();
+  }
+  @Test void frozenCorrectionCannotAcceptAChangedCurrentYearOrOtherTenant(){
+    var f=paidProject();assertThatThrownBy(()->corrections.submit(f[2],correction(f,"early"))).hasMessageContaining("冻结");carry(f[0],1);var r=corrections.submit(f[2],correction(f,"stale"));
+    paidEntry(f[2],"25");assertThatThrownBy(()->decide(r.id(),"approve")).hasMessageContaining("已变化");context(author);
+    TenantContext.set("other",null,author);assertThatThrownBy(()->corrections.history(f[2],1,10)).isInstanceOf(RuntimeException.class);context(author);
+    assertThatThrownBy(()->corrections.history(f[2],0,10)).hasMessageContaining("分页");
+  }
   String carry(String project,int n){var c=lifecycle.submit(project,lifecycleRequest(project,"carryover",nextYear(n)));decide(c.id(),"approve");return c.id();}
 
   @Test

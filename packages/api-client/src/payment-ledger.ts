@@ -17,6 +17,7 @@ export interface PaymentAmountEntry {
 export interface PaymentLedgerSummary {
   invoiceAmount: number; paidAmount: number | null; remainingAmount: number | null;
   reconciliationRequired: boolean; warning: string; entries: PaymentAmountEntry[];
+  frozenEntryIds?: string[];
   milestones: { id: string; name: string; amount: number; paid: number | null; remaining: number | null; reached: boolean; verified: boolean }[];
 }
 export interface RecordPaymentAmount {

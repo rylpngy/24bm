@@ -8,6 +8,18 @@ import com.procurement.sourcing.application.ProcurementExecutionPolicy;
 import org.junit.jupiter.api.Test;
 
 class ProcurementExecutionPolicyTests {
+  @Test void frozenCorrectionCannotBeArchivedWithPendingOrUnprovenReversal() throws Exception {
+    var data=complete();var correction=data.withArray("frozenPaymentCorrections").addObject().put("id","correction").put("status","submitted");
+    assertThat(ProcurementExecutionPolicy.evaluate(data).blockers()).anyMatch(b->b.contains("更正审批"));
+    correction.put("status","approved").put("workflowInstanceId","flow").put("entry_id","old").put("reversal_id","rev").put("amount",50);
+    assertThat(ProcurementExecutionPolicy.evaluate(data).blockers()).anyMatch(b->b.contains("反向资金凭据"));
+    ((ObjectNode)data.path("payments").get(0)).put("amount",50);
+    data.withArray("payments").addObject().put("id","old").put("invoiceId","i").put("amount",50).put("evidenceNo","BANK-OLD");
+    data.withArray("payments").addObject().put("id","rev").put("invoiceId","i").put("reversalOf","old").put("amount",-50).put("evidenceNo","BANK-REV");
+    data.withArray("payments").addObject().put("id","new").put("invoiceId","i").put("amount",50).put("evidenceNo","BANK-REPAY");
+    data.withArray("workflowHistory").addObject().putObject("instance").put("id","flow").put("status","approved");
+    assertThat(ProcurementExecutionPolicy.evaluate(data).blockers()).isEmpty();
+  }
   @Test void cancelledOrderNeedsBilateralEvidenceAndNoRemainingObligations() throws Exception {
     var data=complete();((ObjectNode)data.path("orders").get(0)).put("status","已取消");
     assertThat(ProcurementExecutionPolicy.evaluate(data).blockers()).isNotEmpty();

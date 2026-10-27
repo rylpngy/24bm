@@ -260,6 +260,22 @@ public class UnifiedWorkflowApplicationService {
     auditLogApplicationService.recordTenantAction(tenant,"workflow.cancelled","project_change".equals(instance.businessType())?"procurement_project_change":"procurement_project",instance.businessId(),reason.strip());
   }
 
+  @Transactional
+  public void withdrawFrozenPaymentCorrection(String id,String reason) {
+    String tenant=TenantAccessGuard.requireTenantId("frozen correction withdrawal"),actor=TenantAccessGuard.requireUserId("frozen correction withdrawal");
+    permissionService.require("buyer:payment:reverse");
+    if(reason==null||reason.isBlank()||reason.length()>1000)throw new IllegalArgumentException("撤回原因必填且不超过1000字");
+    var instance=workflowBusinessInstanceMapper.findByTenantAndIdForUpdate(tenant,id);
+    if(instance==null||!"frozen_payment_correction".equals(instance.businessType()))throw new IllegalArgumentException("更正审批不存在");
+    if(!actor.equals(instance.initiatorId())||!isVisible(instance,dataScopeService.currentUserDataScope()))throw new PermissionDeniedException("只有当前数据范围内的发起人可撤回");
+    if(!WorkflowInstanceStatus.PROCESSING.equals(instance.status()))throw new IllegalStateException("审批已经结束");
+    runtimeService.deleteProcessInstance(instance.flowableProcessInstanceId(),reason.strip());
+    if(workflowBusinessInstanceMapper.complete(tenant,id,WorkflowInstanceStatus.CANCELLED,actor)!=1)throw new IllegalStateException("流程已变化");
+    workflowTaskEventMapper.insert("workflow-task-event-"+UUID.randomUUID(),tenant,id,null,null,null,"cancelled",actor,reason.strip());
+    requireCompletionHandler(instance.businessType()).onCancelled(instance,actor,reason.strip());
+    auditLogApplicationService.recordTenantAction(tenant,"workflow.cancelled","frozen_payment_correction",instance.businessId(),reason.strip());
+  }
+
   public List<UnifiedWorkflowTaskResponse> listCurrentUserTasks() {
     String tenantId = TenantAccessGuard.requireTenantId("unified workflow APIs");
     String userId = TenantAccessGuard.requireUserId("unified workflow APIs");
@@ -1051,6 +1067,7 @@ public class UnifiedWorkflowApplicationService {
     owners.put(instance.businessType(), instance.businessId());
     switch (instance.businessType()) {
       case "order_settlement" -> putOwner(owners,"order_settlement_document",snapshot.get("orderId"));
+      case "frozen_payment_correction" -> {putOwner(owners,"invoice",snapshot.get("invoiceId"));putOwner(owners,"procurement_project",snapshot.get("projectId"));}
       case "project_initiation" -> owners.put("procurement_project",instance.businessId());
       case "project_change" -> {owners.put("procurement_project_change",instance.businessId());putOwner(owners,"procurement_project",snapshot.get("projectId"));}
       case "project_carryover", "project_liquidation" -> putOwner(owners,"procurement_project",snapshot.get("projectId"));
@@ -1091,6 +1108,7 @@ public class UnifiedWorkflowApplicationService {
       case "project_initiation" -> "项目立项";
       case "project_change" -> "立项变更";
       case "project_carryover" -> "跨年度承接";
+      case "frozen_payment_correction" -> "跨年冻结付款更正";
       case "project_liquidation" -> "项目终止清算";
       case "purchase_demand" -> "采购需求";
       case "budget_change" -> "预算编制与调整";

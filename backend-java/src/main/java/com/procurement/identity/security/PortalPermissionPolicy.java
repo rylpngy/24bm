@@ -29,6 +29,8 @@ public final class PortalPermissionPolicy {
       return isRead(method) ? scope + ":order:read" : scope + ":*";
     }
     if (scope.equals("buyer")) {
+      if(segments.length>=4&&segments[0].equals("invoices")&&segments[2].equals("payment-ledger")&&segments[3].equals("corrections"))
+        return isRead(method)?"buyer:invoice:read":"buyer:payment:reverse";
       if (segments[0].equals("identity-bindings")) return "buyer:role:manage";
       if (segments[0].equals("ai")) return buyerAiPermission(method, segments);
       if (segments[0].equals("numbering-rules")) {
