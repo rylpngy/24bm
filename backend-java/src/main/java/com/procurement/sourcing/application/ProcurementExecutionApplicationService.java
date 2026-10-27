@@ -204,6 +204,7 @@ public class ProcurementExecutionApplicationService {
     if(data.path("fundingCarryovers").isEmpty())data.remove("fundingCarryovers");
     if(data.path("fundingRestorations").isEmpty())data.remove("fundingRestorations");
     if(data.path("fundingReallocations").isEmpty())data.remove("fundingReallocations");
+    if(data.path("fundingSettlementEntries").isEmpty())data.remove("fundingSettlementEntries");
     if(projects!=null){var definition=projects.archiveDefinitionForRfq(rfq);if(definition!=null)data.set("procurementProject",json.valueToTree(definition));}
     return data;
   }

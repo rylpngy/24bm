@@ -194,6 +194,7 @@ public class FundingService {
       var f = mapper.fund(tenant(), r.fundId());
       if (f == null || r.projectId() != null) throw new IllegalArgumentException("资金来源无效");
       if (requireAccess) scopes.requireRecordAccess(f.departmentId(), f.createdBy());
+      if(mapper.pendingFundSettlement(tenant(),f.id())>0)throw new IllegalStateException("资金来源存在订单清算，请先完成或撤回清算后调整额度");
       if (f.revision() != r.revision()) throw new IllegalStateException("资金额度版本已变化，请重新申请");
       if (r.amount().compareTo(f.reservedAmount()) < 0)
         throw new IllegalStateException("资金额度不能低于已占用责任");
@@ -218,6 +219,7 @@ public class FundingService {
     if("project_reallocation".equals(r.kind())) {
       if(r.projectId()==null)throw new IllegalArgumentException("项目必填");
       if(requireAccess)guard.require(r.projectId(),true);
+      if(mapper.pendingSettlement(tenant(),r.projectId())>0)throw new IllegalStateException("项目存在订单清算，暂不能调整未付来源责任");
       var basis=reallocation.prepare(tenant(),r);
       if(requireAccess)for(var l:basis.lines()){var f=mapper.fund(tenant(),l.fundId());scopes.requireRecordAccess(f.departmentId(),f.createdBy());}
       var p=projects.find(tenant(),r.projectId());
@@ -436,6 +438,8 @@ public class FundingService {
               != 0) blocker = "项目状态或批准金额与资金分摊不一致，请核对";
       if(lifecycle.pending(t,p)>0)blocker="项目跨年或清算审批中，暂不能登记付款或冲销";
       if(mapper.pendingCorrection(t,p)>0)blocker="项目专项资金更正审批中，暂不能登记付款或冲销";
+      if(mapper.pendingSettlement(t,p)>0)blocker="项目存在专项订单清算，普通付款台账暂不可操作";
+      if(mapper.settledInvoice(t,invoice))blocker="订单已完成清算，原付款台账只读，净款见清算台账";
     }
     return new InvoiceView(
         enabled || !blocker.isBlank(), blocker, balances, mapper.attributions(t, invoice));

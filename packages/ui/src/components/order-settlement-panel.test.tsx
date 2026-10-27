@@ -109,6 +109,21 @@ it('keeps detail errors visible and prevents stale detail actions', () => {
   expect(screen.getByRole('alert').textContent).toContain('详情加载失败');
   expect(screen.queryByRole('button', { name: '撤回申请' })).toBeNull();
 });
+it('keeps funded finance read-only when budget source details are not authorized', () => {
+  const s = state();
+  s.detail.record.status = 'approved';
+  render(
+    <OrderSettlementPanel
+      state={{ ...s, detail: { ...s.detail, fundingRequired: true } }}
+      canManage
+      canFinance
+      onAgreement={vi.fn()}
+    />,
+  );
+  expect(screen.getByRole('alert')).toHaveTextContent('专项清算需要预算查看权限');
+  expect(screen.queryByText('登记实际清算凭证')).toBeNull();
+  expect(screen.queryByRole('button', { name: '登记凭证' })).toBeNull();
+});
 it('renders explicit invoice allocation inputs and post-return retained quantities', () => {
   const s = state();
   s.data.preview.baseline = JSON.stringify({
