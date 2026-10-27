@@ -75,9 +75,22 @@ await check('archived-sample-and-downloads', async () => {
 });
 await check('contract-review-history', async () => {
   assert.ok(token);
-  const sample = read('contract-review-acceptance/result.json');
-  await request(`/api/v1/buyer/contract-review/documents/${sample.browserDocumentId}`, token);
-  return 'Saved document available; no new model call';
+  const documentId = 'crdoc-2e669db7-e175-4cc6-b69e-46e7236b686f';
+  const document = await request(`/api/v1/buyer/contract-review/documents/${documentId}`, token);
+  assert.ok(document.decisions.some(d => d.newVersion > d.oldVersion && d.beforeText && d.afterText && d.actorId), 'Missing human revision history');
+  return { documentId, decisions: document.decisions.length, note: 'Saved history only; no new model call' };
+});
+await check('live-quotation-sample', async () => {
+  assert.ok(token);
+  const { rfqId } = read('quotation-acceptance/ui-fixture.json');
+  const rfq = (await request('/api/v1/buyer/rfqs', token)).find(item => item.id === rfqId);
+  assert.ok(rfq, 'Live quotation sample not found');
+  assert.equal(rfq.status, '报价中', 'The live sample is no longer open for quotation');
+  const pack = await request(`/api/v1/buyer/rfqs/${rfqId}/quotation-package`, token);
+  assert.ok(pack.policy.fullQuoteRequired, 'Full quotation mode is not enabled');
+  const hoursRemaining = (Date.parse(pack.deadlineAt) - Date.now()) / 3600000;
+  assert.ok(hoursRemaining >= 24, 'Quotation deadline is less than 24 hours away: use the normal extension process or select another sample; never reset data');
+  return { rfqId, deadline: pack.deadlineAt, hoursRemaining: Math.floor(hoursRemaining) };
 });
 await check('frozen-artifacts', async () => {
   const latest = readdirSync(resolve(runtime, 'backups')).filter(name => /^\d+$/.test(name)).sort((a, b) => Number(b) - Number(a))[0];
