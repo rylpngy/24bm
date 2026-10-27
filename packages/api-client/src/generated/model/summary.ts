@@ -7,6 +7,7 @@
  */
 import type { PaymentEntry } from './paymentEntry';
 import type { Balance } from './balance';
+import type { SpecialFundingInvoice } from './specialFundingInvoice';
 
 export interface Summary {
   invoiceAmount?: number;
@@ -17,4 +18,5 @@ export interface Summary {
   entries?: PaymentEntry[];
   milestones?: Balance[];
   frozenEntryIds?: string[];
+  funding?: SpecialFundingInvoice;
 }

@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PaymentAuthorizationService {
+  @org.springframework.beans.factory.annotation.Autowired private com.procurement.buyer.application.FundingService funding;
   private final PaymentRequestMapper requests;
   private final PaymentBatchMapper batches;
   private final PaymentExecutionRecordMapper executions;
@@ -89,6 +90,7 @@ public class PaymentAuthorizationService {
 
   @Transactional(propagation = Propagation.MANDATORY)
   public void recordPayment(Invoice invoice, PaymentRequest request, String evidence, String remark) {
+    if(funding!=null)funding.requireUnfundedInvoice(invoice.tenantId(),invoice.id());
     String id = "payment-" + UUID.randomUUID();
     var amount = invoice.amount().subtract(entries.balance(invoice.tenantId(), invoice.id()));
     entries.insert(new com.procurement.finance.domain.PaymentEntry(id, invoice.tenantId(), invoice.id(),

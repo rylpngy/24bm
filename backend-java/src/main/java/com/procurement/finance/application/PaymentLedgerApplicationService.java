@@ -21,9 +21,10 @@ import org.springframework.transaction.annotation.Transactional;
 public class PaymentLedgerApplicationService {
   public record Summary(BigDecimal invoiceAmount, BigDecimal paidAmount, BigDecimal remainingAmount,
       boolean reconciliationRequired, String warning, List<PaymentEntry> entries,
-      List<ContractInstallmentService.Balance> milestones, List<String> frozenEntryIds) {
-    public Summary(BigDecimal invoiceAmount,BigDecimal paidAmount,BigDecimal remainingAmount,boolean reconciliationRequired,String warning,List<PaymentEntry> entries,List<ContractInstallmentService.Balance> milestones){this(invoiceAmount,paidAmount,remainingAmount,reconciliationRequired,warning,entries,milestones,List.of());}
+      List<ContractInstallmentService.Balance> milestones, List<String> frozenEntryIds,com.procurement.buyer.application.FundingService.InvoiceView funding) {
+    public Summary(BigDecimal invoiceAmount,BigDecimal paidAmount,BigDecimal remainingAmount,boolean reconciliationRequired,String warning,List<PaymentEntry> entries,List<ContractInstallmentService.Balance> milestones){this(invoiceAmount,paidAmount,remainingAmount,reconciliationRequired,warning,entries,milestones,List.of(),null);}
   }
+  @org.springframework.beans.factory.annotation.Autowired private com.procurement.buyer.application.FundingService funding;
 
   private final InvoiceMapper invoices;
   private final PaymentEntryMapper entries;
@@ -64,7 +65,7 @@ public class PaymentLedgerApplicationService {
     boolean unknown = !warning.isEmpty();
     return new Summary(invoice.amount(), unknown ? null : paid, unknown ? null : invoice.amount().subtract(paid),
         unknown, warning, entries.list(invoice.tenantId(), invoice.id()), schedule,
-        entries.list(invoice.tenantId(),invoice.id()).stream().filter(e->e.amount().signum()>0&&invoices.carriedPayment(invoice.tenantId(),invoice.id(),e.id())).map(PaymentEntry::id).toList());
+        entries.list(invoice.tenantId(),invoice.id()).stream().filter(e->e.amount().signum()>0&&invoices.carriedPayment(invoice.tenantId(),invoice.id(),e.id())).map(PaymentEntry::id).toList(),funding==null?null:funding.invoice(invoice.tenantId(),invoice.id()));
   }
 
   @Transactional
@@ -74,11 +75,12 @@ public class PaymentLedgerApplicationService {
     String milestone = clean(input.milestoneId());
     String evidence = input.evidenceNo().trim();
     String remark = input.remark() == null ? "" : input.remark().trim();
+    var sourceLines=input.fundingLines()==null?null:input.fundingLines().stream().map(l->new com.procurement.buyer.domain.FundingAllocationPolicy.Share(l.fundId(),l.amount())).toList();
     var previous = entries.findKey(invoice.tenantId(), invoiceId, key);
     if (previous != null) {
       if (previous.reversalOf() != null || previous.amount().compareTo(input.amount()) != 0
           || !Objects.equals(previous.milestoneId(), milestone) || !previous.evidenceNo().equals(evidence)
-          || !previous.remark().equals(remark)) throw new IllegalStateException("同一提交编号对应的付款内容不同，请核对后重新提交");
+          || !previous.remark().equals(remark)||funding!=null&&!funding.matches(invoice.tenantId(),previous.id(),sourceLines)) throw new IllegalStateException("同一提交编号对应的付款内容不同，请核对后重新提交");
       return summarize(invoice);
     }
     BigDecimal paid = entries.balance(invoice.tenantId(), invoiceId);
@@ -92,6 +94,7 @@ public class PaymentLedgerApplicationService {
     String id = "payment-" + UUID.randomUUID();
     entries.insert(new PaymentEntry(id, invoice.tenantId(), invoiceId, key, input.amount(), milestone,
         evidence, remark, null, TenantAccessGuard.requireUserId("payment ledger"), null));
+    if(funding!=null)funding.pay(invoice.tenantId(),invoiceId,id,input.amount(),sourceLines);
     installments.allocate(invoice.tenantId(), invoice.orderId(), invoice.supplierId(), invoice.amount(), id, input.amount(), milestone, paid);
     payments.syncAmountPayment(invoice, next, false);
     executions.upsertFromPaymentRequest("payexec-" + UUID.randomUUID(), invoice.tenantId(), approved.id());
@@ -122,6 +125,7 @@ public class PaymentLedgerApplicationService {
     String id = "reversal-" + UUID.randomUUID();
     entries.insert(new PaymentEntry(id, invoice.tenantId(), invoiceId, input.idempotencyKey().trim(), original.amount().negate(),
         original.milestoneId(), original.evidenceNo(), input.reason().trim(), entryId, TenantAccessGuard.requireUserId("payment ledger"), null));
+    if(funding!=null)funding.reverse(invoice.tenantId(),invoiceId,entryId,id);
     installments.reverse(invoice.tenantId(), invoice.orderId(), entryId, id);
     BigDecimal next = paid.subtract(original.amount());
     if (next.signum() < 0) throw new IllegalStateException("冲销后累计金额不能为负数");

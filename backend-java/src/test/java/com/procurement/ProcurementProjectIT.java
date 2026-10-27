@@ -58,6 +58,36 @@ class ProcurementProjectIT {
   @Autowired ProjectLifecycleService lifecycle;
   @Autowired com.procurement.finance.application.PaymentLedgerApplicationService paymentLedger;
   @Autowired com.procurement.finance.application.FrozenPaymentCorrectionService corrections;
+  @Autowired FundingService funding;
+  com.procurement.buyer.api.FundingContracts.Request fundLimit(com.procurement.buyer.api.FundingContracts.Fund fund,String limit,String key){return new com.procurement.buyer.api.FundingContracts.Request(key,"fund_limit",fund.id(),null,fund.revision(),new BigDecimal(limit),null,"年度专项额度独立审批",Map.of());}
+  com.procurement.buyer.api.FundingContracts.Fund approvedFund(String code,String limit){var fund=funding.create(new com.procurement.buyer.api.FundingContracts.Draft(dept,year,code,"专项资金 "+code));var c=funding.submit(fundLimit(fund,limit,"limit-"+code));decide(c.id(),"approve");return funding.funds(1,100).items().stream().filter(f->f.id().equals(fund.id())).findFirst().orElseThrow();}
+  com.procurement.buyer.api.FundingContracts.Request fundPlan(String project,String first,String second,String key){return new com.procurement.buyer.api.FundingContracts.Request(key,"project_plan",null,project,projects.detail(project).project().revision(),new BigDecimal("246.91"),List.of(new com.procurement.buyer.api.FundingContracts.Share(first,new BigDecimal("100")),new com.procurement.buyer.api.FundingContracts.Share(second,new BigDecimal("146.91"))),"项目多来源资金分摊",Map.of());}
+  @Test void specialFundingLimitsAndProjectResponsibilityOnlyChangeAfterIndependentApproval(){
+    var a=approvedFund("A","200");var b=approvedFund("B","200");var c=cancellationCase();var input=fundPlan(c.project(),a.id(),b.id(),"plan");var r=funding.submit(input);
+    assertThat(funding.submit(input).id()).isEqualTo(r.id());assertThat(workflow.listCurrentUserTasks()).noneMatch(t->t.businessId().equals(r.id()));assertThat(funding.project(c.project()).enabled()).isFalse();decide(r.id(),"approve");
+    assertThat(funding.project(c.project()).sources()).hasSize(2);assertThat(funding.funds(1,100).items()).anySatisfy(f->{if(f.id().equals(a.id()))assertThat(f.reservedAmount()).isEqualByComparingTo("100");});
+    assertThatThrownBy(()->carry(c.project(),1)).hasMessageContaining("专项资金");assertThatThrownBy(()->funding.submit(fundLimit(funding.funds(1,100).items().stream().filter(f->f.id().equals(a.id())).findFirst().orElseThrow(),"99","reduce"))).hasMessageContaining("已占用");
+  }
+  @Test void specialFundingCashAndReversalRetainExactSourceAndRejectSilentOrOverAllocation(){
+    var a=approvedFund("A","200");var b=approvedFund("B","200");var c=cancellationCase();var plan=funding.submit(fundPlan(c.project(),a.id(),b.id(),"plan"));decide(plan.id(),"approve");String line=receivedLine(c);invoiceSupplier(c);var invoice=invoiceService.create(c.order(),installmentRequest(line,"funded",2,200));context(author);
+    var tx=new org.springframework.transaction.support.TransactionTemplate(txManager);var split=List.of(new com.procurement.buyer.domain.FundingAllocationPolicy.Share(a.id(),new BigDecimal("20")),new com.procurement.buyer.domain.FundingAllocationPolicy.Share(b.id(),new BigDecimal("30")));
+    assertThatThrownBy(()->tx.executeWithoutResult(s->{String e=paidEntry(invoice.id(),"50");funding.pay(tenant,invoice.id(),e,new BigDecimal("50"),null);})).hasMessageContaining("明确");
+    assertThatThrownBy(()->tx.executeWithoutResult(s->{String e=paidEntry(invoice.id(),"150");funding.pay(tenant,invoice.id(),e,new BigDecimal("150"),List.of(new com.procurement.buyer.domain.FundingAllocationPolicy.Share(a.id(),new BigDecimal("150"))));})).hasMessageContaining("剩余额度");
+    String entry=tx.execute(s->{String e=paidEntry(invoice.id(),"50");funding.pay(tenant,invoice.id(),e,new BigDecimal("50"),split);jdbc.update("update invoices set payment_status='部分付款' where id=?",invoice.id());return e;});
+    assertThat(funding.matches(tenant,entry,split)).isTrue();assertThat(funding.invoice(tenant,invoice.id()).entries()).hasSize(2);assertThat(funding.project(c.project()).sources()).extracting(com.procurement.buyer.api.FundingContracts.Balance::paidAmount).allMatch(p->p.signum()>0);
+    tx.executeWithoutResult(s->{String reverse="funded-reverse-"+UUID.randomUUID();jdbc.update("insert into invoice_payment_entries(id,tenant_id,invoice_id,idempotency_key,amount,evidence_no,reversal_of,created_by) values (?,?,?,?, -50,'REV',?,?)",reverse,tenant,invoice.id(),reverse,entry,author);funding.reverse(tenant,invoice.id(),entry,reverse);jdbc.update("update invoices set payment_status='待付款' where id=?",invoice.id());});
+    assertThat(funding.project(c.project()).sources()).allMatch(x->x.paidAmount().signum()==0);assertThat(funding.invoice(tenant,invoice.id()).entries()).hasSize(4);assertThatThrownBy(()->funding.submit(fundPlan(c.project(),a.id(),b.id(),"replan"))).hasMessageContaining("付款历史");
+  }
+  @Test void specialFundingApprovalRechecksAvailableCapacityAndRetainsRejectedAndWithdrawnHistory(){
+    var a=approvedFund("A","200");var b=approvedFund("B","200");var c=cancellationCase();var r=funding.submit(fundPlan(c.project(),a.id(),b.id(),"withdraw"));funding.withdraw(r.id(),"重新核对来源");r=funding.submit(fundPlan(c.project(),a.id(),b.id(),"reject"));decide(r.id(),"reject");assertThat(funding.project(c.project()).enabled()).isFalse();assertThat(funding.history(null,c.project(),1,1).total()).isEqualTo(2);
+    var pending=funding.submit(fundPlan(c.project(),a.id(),b.id(),"stale"));var other=cancellationCase();var first=funding.submit(fundPlan(other.project(),a.id(),b.id(),"other"));decide(first.id(),"approve");assertThatThrownBy(()->decide(pending.id(),"approve")).hasMessageContaining("额度不足");context(author);
+    assertThat(funding.project(c.project()).enabled()).isFalse();assertThat(funding.project(other.project()).enabled()).isTrue();
+  }
+  @Test void specialFundingHasTenantAndDepartmentScopeAndCannotInventLegacyAttribution(){
+    approvedFund("A","500");assertThat(funding.funds(1,1).total()).isEqualTo(1);assertThatThrownBy(()->funding.funds(0,20)).hasMessageContaining("分页");
+    jdbc.update("update roles set data_scope='department' where id=?",role);String foreign="foreign-dept-"+UUID.randomUUID();jdbc.update("insert into departments(id,tenant_id,name,status) values (?,?,'Other','active')",foreign,tenant);assertThatThrownBy(()->funding.create(new com.procurement.buyer.api.FundingContracts.Draft(foreign,year,"O","Other"))).hasMessageContaining("数据范围");
+    jdbc.update("update roles set data_scope='all' where id=?",role);var paid=paidProject();var fund=funding.funds(1,100).items().getFirst();assertThatThrownBy(()->funding.submit(new com.procurement.buyer.api.FundingContracts.Request("legacy","project_plan",null,paid[0],projects.detail(paid[0]).project().revision(),new BigDecimal("246.91"),List.of(new com.procurement.buyer.api.FundingContracts.Share(fund.id(),new BigDecimal("246.91"))),"不能补造",Map.of()))).hasMessageContaining("付款历史");
+  }
   @Autowired com.procurement.finance.infrastructure.InvoiceMapper invoiceMapper;
   @Autowired com.procurement.buyer.infrastructure.BudgetLifecycleMapper budgetMapper;
   String tenant, dept, author, reviewer, role, material;
@@ -487,7 +517,7 @@ class ProcurementProjectIT {
         material,
         tenant);
     context(author);
-    for (String type : List.of("project_initiation", "purchase_demand", "project_change", "project_carryover", "project_liquidation", "order_settlement", "frozen_payment_correction")) {
+    for (String type : List.of("project_initiation", "purchase_demand", "project_change", "project_carryover", "project_liquidation", "order_settlement", "frozen_payment_correction", "funding_change")) {
       var definition =
           definitions.createProcess(
               new CreateProcessDefinitionRequest("Project " + type, "", "file-text", type));

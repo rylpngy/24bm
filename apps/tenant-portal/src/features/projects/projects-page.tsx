@@ -36,6 +36,7 @@ import { projectAmount } from './project-amount';
 import { ProjectExpansionPanel } from './project-expansion-panel';
 import { ProjectCloseoutPanel } from './project-closeout-panel';
 import { ProjectLifecyclePanel } from './project-lifecycle-panel';
+import { ProjectFundingPanel } from '../budgets/special-funding';
 
 const states: Record<string, string> = {
   draft: '草稿',
@@ -924,6 +925,7 @@ function ProjectWorkspace() {
               {['approved', 'closed', 'terminated'].includes(p.status) && (
                 <ProjectLifecyclePanel key={'lifecycle-'+p.id} project={p} onChanged={refresh}/>
               )}
+              {['approved','closed','terminated'].includes(p.status)&&<ProjectFundingPanel key={'funding-'+p.id} project={p}/>}
               {['approved', 'closed', 'terminated'].includes(p.status) && (
                 <ProjectCloseoutPanel
                   key={'monitor-' + p.id}

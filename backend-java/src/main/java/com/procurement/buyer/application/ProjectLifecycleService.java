@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.*;
 
 @Service
 public class ProjectLifecycleService {
+  @Autowired private FundingService funding;
   private final ProcurementProjectGuard guard;
   private final ProcurementProjectMapper projects;
   private final ProjectExpansionMapper packages;
@@ -193,6 +194,7 @@ public class ProjectLifecycleService {
     guard.lock();
     var p = guard.require(project, true);
     mapper.lockOrders(tenant(), project);
+    funding.requireUnfundedProject(tenant(),project);
     if (p.revision() != r.revision()) throw new IllegalStateException("项目已变化，请刷新");
     if (mapper.pending(tenant(), project) > 0)
       throw new IllegalStateException("已有跨年度承接或清算审批，请勿重复提交");
@@ -276,6 +278,7 @@ public class ProjectLifecycleService {
       throw new IllegalStateException("申请不在对应审批中");
     var p = projects.find(i.tenantId(), r.projectId());
     mapper.lockOrders(i.tenantId(), r.projectId());
+    if(approved)funding.requireUnfundedProject(i.tenantId(),r.projectId());
     if (approved) {
       if (p.revision() != r.projectRevision() || !period(p).equals(r.sourcePeriod()))
         throw new IllegalStateException("项目或承接年度已变化，请驳回后重提");
