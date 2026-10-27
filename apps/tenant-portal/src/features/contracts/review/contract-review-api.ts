@@ -3,7 +3,7 @@ import { axiosInstance } from '@24bid/api-client';
 export type Rule = { id:string; title:string; type:'KEYWORD'|'MISSING'|'SEMANTIC'; perspective:'BUYER'|'SELLER'|'BOTH'; severity:'HIGH'|'MEDIUM'|'LOW'; matchMode:'ANY'|'ALL'; keywords:string[]; sourceName:string; clause:string; basis:string; suggestion:string };
 export type RuleSet = { id:string; name:string; revision:number; rules:Rule[] };
 export type RuleVersion = { id:string; setId:string; name:string; version:number; rules:Rule[]; createdBy:string; createdAt:string };
-export type ReviewDocument = { id:string; fileName:string; currentVersion:number; originalSha256:string; limitations:string[]; createdBy:string; createdAt:string };
+export type ReviewDocument = { id:string; contractId?:string|null; fileName:string; currentVersion:number; originalSha256:string; limitations:string[]; createdBy:string; createdAt:string };
 export type TextVersion = { version:number; textSha256:string; segments:{locator:string;text:string}[]; createdBy:string; createdAt:string };
 export type Finding = { id:string; ruleId:string; title:string; severity:Rule['severity']; origin:'MODEL'|'RULE'; locator:string|null; quote:string; explanation:string; suggestion:string; sourceName:string; clause:string; basis:string };
 export type ReviewRun = { id:string; documentId:string; documentVersion:number; rulesVersionId:string; perspective:'BUYER'|'SELLER'; mode:string; model:string|null; limitation:string; findings:Finding[]; createdBy:string; actorName:string; createdAt:string };

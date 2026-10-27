@@ -16,9 +16,9 @@ public record ContractReviewController(ContractReviewRulesService rules,Contract
   @PutMapping("/rule-sets/{id}") public ApiResponse<RuleSet> save(@PathVariable String id,@Valid @RequestBody SaveRules request){return ApiResponse.ok(rules.save(id,request));}
   @PostMapping("/rule-sets/{id}/publish") public ApiResponse<RuleVersion> publish(@PathVariable String id,@Valid @RequestBody Publish request){return ApiResponse.ok(rules.publish(id,request.expectedRevision()));}
   @GetMapping("/rule-versions") public ApiResponse<List<RuleVersion>> versions(){return ApiResponse.ok(rules.versions());}
-  @GetMapping("/documents") public ApiResponse<Page<Document>> documents(@RequestParam(defaultValue="1")int page,@RequestParam(defaultValue="10")int pageSize){return ApiResponse.ok(service.documents(page,pageSize));}
+  @GetMapping("/documents") public ApiResponse<Page<Document>> documents(@RequestParam(defaultValue="1")int page,@RequestParam(defaultValue="10")int pageSize,@RequestParam(required=false)String contractId){return ApiResponse.ok(service.documents(page,pageSize,contractId));}
   @PostMapping(value="/documents",consumes=MediaType.APPLICATION_OCTET_STREAM_VALUE)
-  public ApiResponse<Document> upload(@RequestParam String fileName,@RequestBody byte[] bytes){return ApiResponse.ok(service.upload(fileName,bytes));}
+  public ApiResponse<Document> upload(@RequestParam String fileName,@RequestParam(required=false)String contractId,@RequestBody byte[] bytes){return ApiResponse.ok(service.upload(fileName,bytes,contractId));}
   @GetMapping("/documents/{id}") public ApiResponse<Workspace> document(@PathVariable String id){return ApiResponse.ok(service.workspace(id));}
   @PostMapping("/documents/{id}/reviews") public ApiResponse<Run> review(@PathVariable String id,@Valid @RequestBody Start request){return ApiResponse.ok(service.review(id,request));}
   @PostMapping("/documents/{id}/reviews/{run}/decisions") public ApiResponse<Decision> decide(@PathVariable String id,@PathVariable String run,@Valid @RequestBody Decide request){return ApiResponse.ok(service.decide(id,run,request));}

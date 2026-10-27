@@ -32,21 +32,32 @@ public class ContractReviewService {
   private final ContractReviewModelGateway model;
   private final AuditLogApplicationService audit;
   private final TransactionTemplate tx;
+  private final ContractAccessService contractAccess;
   public record Download(String name,byte[] bytes) {}
   public ContractReviewService(ContractReviewMapper mapper,ContractReviewCodec codec,PermissionService permissions,
       DataScopeService scopes,ObjectStorageService storage,AttachmentTextExtractor extractor,ContractReviewRulesService rules,
-      ContractReviewEngine engine,ContractReviewModelGateway model,AuditLogApplicationService audit,TransactionTemplate tx){
+      ContractReviewEngine engine,ContractReviewModelGateway model,AuditLogApplicationService audit,TransactionTemplate tx,ContractAccessService contractAccess){
     this.mapper=mapper;this.codec=codec;this.permissions=permissions;this.scopes=scopes;this.storage=storage;
-    this.extractor=extractor;this.rules=rules;this.engine=engine;this.model=model;this.audit=audit;this.tx=tx;
+    this.extractor=extractor;this.rules=rules;this.engine=engine;this.model=model;this.audit=audit;this.tx=tx;this.contractAccess=contractAccess;
   }
   public Page<Document> documents(int page,int size){
+    return documents(page,size,null);
+  }
+  public Page<Document> documents(int page,int size,String contractId){
     permissions.require("buyer:contract:read");int p=Math.max(1,page),s=Math.max(1,Math.min(size,50));
+    if(contractId!=null)contractAccess.requireContract(contractId,false);
     var scope=scopes.currentUserDataScope();if(scope.blocksAll())return new Page<>(List.of(),0,p,s);
+    if(contractId!=null)return new Page<>(mapper.contractDocuments(tenant(),contractId,scope.restricted(),scope.requesterId(),scope.departmentIds(),s,(p-1)*s).stream().map(this::view).toList(),
+        mapper.contractDocumentCount(tenant(),contractId,scope.restricted(),scope.requesterId(),scope.departmentIds()),p,s);
     var items=mapper.documents(tenant(),scope.restricted(),scope.requesterId(),scope.departmentIds(),s,(p-1)*s).stream().map(this::view).toList();
     return new Page<>(items,mapper.documentCount(tenant(),scope.restricted(),scope.requesterId(),scope.departmentIds()),p,s);
   }
   @Transactional public Document upload(String fileName,byte[] bytes){
+    return upload(fileName,bytes,null);
+  }
+  @Transactional public Document upload(String fileName,byte[] bytes,String contractId){
     permissions.require("buyer:contract:manage");scopes.requireCreatorAccess(user());
+    if(contractId!=null)contractAccess.requireContract(contractId,true);
     if(fileName==null||fileName.isBlank()||fileName.length()>180||fileName.chars().anyMatch(c->c<32||c=='/'||c=='\\'))throw new IllegalArgumentException("合同文件名无效");
     if(bytes==null||bytes.length==0||bytes.length>AttachmentTextExtractor.MAX_BYTES)throw new IllegalArgumentException("合同原件须为1字节至2MB的UTF-8文本或DOCX");
     var extraction=extractor.extract(fileName,bytes);
@@ -54,7 +65,7 @@ public class ContractReviewService {
     if(extraction.limitations().stream().anyMatch(value->value.contains("已达到")))throw new IllegalArgumentException("合同正文超过安全解析范围，请拆分后重新上传，避免基于截断正文作缺失判断");
     String id="crdoc-"+UUID.randomUUID(),key="contract-review/"+tenant()+"/"+id+"/original";
     storage.put(key,bytes,"application/octet-stream");
-    var row=new DocumentRow(id,tenant(),null,fileName,key,ContractReviewCodec.hash(bytes),1,codec.write(extraction.limitations()),user(),OffsetDateTime.now());
+    var row=new DocumentRow(id,tenant(),contractId,fileName,key,ContractReviewCodec.hash(bytes),1,codec.write(extraction.limitations()),user(),OffsetDateTime.now());
     mapper.insertDocument(row);saveVersion(row,1,extraction.segments());
     audit.recordCurrentTenantAction("CONTRACT_REVIEW_DOCUMENT_UPLOADED","contract_review_document",id,"上传原件并提取审查正文；原件SHA256="+row.originalSha256());
     return view(row);
@@ -132,7 +143,7 @@ public class ContractReviewService {
   private DocumentRow requireDocument(String id,boolean write){
     permissions.require(write?"buyer:contract:manage":"buyer:contract:read");var row=mapper.document(tenant(),id);
     if(row==null)throw new PermissionDeniedException("审查文档不存在或无权访问");
-    scopes.requireCreatorAccess(row.createdBy());return row;
+    scopes.requireCreatorAccess(row.createdBy());if(row.contractId()!=null)contractAccess.requireContract(row.contractId(),write);return row;
   }
   private void saveVersion(DocumentRow doc,int number,List<Segment> segments){
     mapper.insertDocumentVersion(new DocumentVersionRow("crtext-"+UUID.randomUUID(),tenant(),doc.id(),number,codec.write(segments),codec.hashText(segments),user(),OffsetDateTime.now()));

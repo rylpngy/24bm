@@ -45,6 +45,10 @@ public interface ContractReviewMapper {
       @Param("departments")List<String> departments,@Param("limit")int limit,@Param("offset")int offset);
   @Select("<script>select count(*) from contract_review_documents d where d.tenant_id=#{tenant}"+VISIBLE+"</script>")
   long documentCount(@Param("tenant")String tenant,@Param("restricted")boolean restricted,@Param("requester")String requester,@Param("departments")List<String> departments);
+  @Select("<script>select d.* from contract_review_documents d where d.tenant_id=#{tenant} and d.contract_id=#{contractId}"+VISIBLE+" order by d.created_at desc,d.id limit #{limit} offset #{offset}</script>")
+  List<DocumentRow> contractDocuments(@Param("tenant")String tenant,@Param("contractId")String contractId,@Param("restricted")boolean restricted,@Param("requester")String requester,@Param("departments")List<String> departments,@Param("limit")int limit,@Param("offset")int offset);
+  @Select("<script>select count(*) from contract_review_documents d where d.tenant_id=#{tenant} and d.contract_id=#{contractId}"+VISIBLE+"</script>")
+  long contractDocumentCount(@Param("tenant")String tenant,@Param("contractId")String contractId,@Param("restricted")boolean restricted,@Param("requester")String requester,@Param("departments")List<String> departments);
   @Select("select * from contract_review_documents where tenant_id=#{tenant} and id=#{id}")
   DocumentRow document(@Param("tenant")String tenant,@Param("id")String id);
   @Select("select * from contract_review_documents where tenant_id=#{tenant} and id=#{id} for update")

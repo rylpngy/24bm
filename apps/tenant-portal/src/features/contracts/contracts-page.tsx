@@ -184,7 +184,12 @@ export function ContractsPage() {
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              onClick={() => setSelectedId(null)}
+              onClick={() => {
+                const url = new URL(window.location.href);
+                url.searchParams.delete('recordId');
+                window.history.replaceState(null, '', url);
+                setSelectedId(null);
+              }}
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-50"
               aria-label="返回合同台账"
             >
@@ -201,7 +206,7 @@ export function ContractsPage() {
                 )}
               </div>
               <p className="mt-1 font-mono text-xs font-bold text-slate-500">
-                {c.contractNo} · 关联订单 {c.relatedOrderId ?? '—'}
+                {c.contractNo} · 关联订单 {c.relatedOrderId ? <a className="break-all text-blue-700 hover:underline" href={`?${new URLSearchParams({ ...(new URLSearchParams(window.location.search).get('solution') === 'ludong-poc' ? { solution: 'ludong-poc' } : {}), module: 'orders', recordId: c.relatedOrderId })}`}>{c.relatedOrderId}</a> : '—'}
               </p>
             </div>
             <p className="shrink-0 font-mono text-xl font-black text-slate-950">{currency(c.amount)}</p>
@@ -298,8 +303,8 @@ export function ContractsPage() {
               {c.id && <ContractAmendments key={c.id} contractId={c.id} status={c.status} archiveStatus={c.archiveStatus} />}
             </div>}
             {visitedTabs.includes('review') && <div hidden={detailTab !== 'review'} className="space-y-4">
-              <FeedbackNotice tone="info" message="审查资料为独立台账，请选择本合同对应原件。审查校对稿不自动关联或覆盖当前合同正式记录。" />
-              <ContractReviewWorkspace key={c.id} embedded canManage={canManage} onBack={() => changeDetailTab('info')} />
+              <FeedbackNotice tone="info" message="仅展示本合同关联的审查材料；校对稿与原件分别保留，不自动覆盖正式合同。" />
+              <ContractReviewWorkspace key={c.id} contractId={c.id} embedded canManage={canManage} onBack={() => changeDetailTab('info')} />
             </div>}
             {visitedTabs.includes('approval') && <div hidden={detailTab !== 'approval'}>
               {c.id && <WorkflowStatusPanel key={c.id} businessType="contract_approval" businessId={c.id} />}

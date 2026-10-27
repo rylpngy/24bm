@@ -64,7 +64,7 @@ it('retains unsubmitted fulfillment and review input across category changes', (
   fireEvent.change(screen.getByLabelText('履约登记摘要'), { target: { value: '未提交的收货记录' } });
   fireEvent.click(screen.getByRole('button', { name: '智能审查' }));
   expect(screen.getByText('合同内嵌审查台账')).toBeVisible();
-  expect(screen.getByText(/审查资料为独立台账/)).toBeVisible();
+  expect(screen.getByText(/仅展示本合同关联的审查材料/)).toBeVisible();
   fireEvent.change(screen.getByLabelText('人工审查意见'), { target: { value: '待确认意见' } });
   fireEvent.click(screen.getByRole('button', { name: '基本信息' }));
   fireEvent.click(screen.getByRole('button', { name: '履约记录' }));
@@ -92,4 +92,14 @@ it('resets category and local drafts when opening a different contract', () => {
   expect(screen.queryByLabelText('履约登记摘要')).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: '履约记录' }));
   expect(screen.getByLabelText('履约登记摘要')).toHaveValue('');
+});
+
+it('allows returning to the ledger from a direct contract link and preserves the POC order link', async () => {
+  window.history.replaceState(null, '', '/?solution=ludong-poc&module=contracts&recordId=c1');
+  render(<QueryClientProvider client={new QueryClient()}><ContractsPage /></QueryClientProvider>);
+  expect(await screen.findByText('合同条款')).toBeVisible();
+  expect(screen.getByRole('link', { name: 'o1' })).toHaveAttribute('href', '?solution=ludong-poc&module=orders&recordId=o1');
+  fireEvent.click(screen.getByRole('button', { name: '返回合同台账' }));
+  expect(screen.getByText('合同管理')).toBeVisible();
+  expect(window.location.search).not.toContain('recordId');
 });

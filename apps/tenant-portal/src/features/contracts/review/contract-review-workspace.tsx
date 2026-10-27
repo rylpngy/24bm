@@ -7,7 +7,7 @@ import { ContractRuleEditor } from './contract-rule-editor';
 import { perspectiveName,reviewBase,reviewDownload,reviewError,reviewField,reviewGet,reviewPost,reviewTime,severityName,
   type ReviewDocument,type RuleVersion,type Workspace,type ReviewRun,type Finding,type Decision } from './contract-review-api';
 
-export function ContractReviewWorkspace({canManage,onBack,embedded=false}:{canManage:boolean;onBack:()=>void;embedded?:boolean}){
+export function ContractReviewWorkspace({canManage,onBack,embedded=false,contractId}:{canManage:boolean;onBack:()=>void;embedded?:boolean;contractId?:string}){
   const client=useQueryClient();
   const [tab,setTab]=useState('review'),[page,setPage]=useState(1);
   const [id,setId]=useState<string|null>(()=>embedded?null:new URLSearchParams(location.search).get('reviewDocument'));
@@ -18,7 +18,7 @@ export function ContractReviewWorkspace({canManage,onBack,embedded=false}:{canMa
   const [error,setError]=useState(''),[message,setMessage]=useState('');
   const refs=useRef<Record<string,HTMLDivElement|null>>({});
   const sourcePane=useRef<HTMLDivElement|null>(null);
-  const documents=useQuery({queryKey:['contract-review-documents',page],queryFn:()=>reviewGet<{items:ReviewDocument[];total:number;pageSize:number}>(`/documents?page=${page}&pageSize=10`)});
+  const documents=useQuery({queryKey:['contract-review-documents',contractId,page],queryFn:()=>reviewGet<{items:ReviewDocument[];total:number;pageSize:number}>(`/documents?page=${page}&pageSize=10${contractId?`&contractId=${encodeURIComponent(contractId)}`:''}`)});
   const versions=useQuery({queryKey:['contract-rule-versions'],queryFn:()=>reviewGet<RuleVersion[]>('/rule-versions')});
   const workspace=useQuery({queryKey:['contract-review-workspace',id],enabled:!!id,queryFn:()=>reviewGet<Workspace>(`/documents/${id}`)});
   const data=workspace.data;
@@ -31,7 +31,7 @@ export function ContractReviewWorkspace({canManage,onBack,embedded=false}:{canMa
   const refresh=()=>{void client.invalidateQueries({queryKey:['contract-review-workspace',id]});void client.invalidateQueries({queryKey:['contract-review-documents']});};
   const upload=useMutation({mutationFn:async(file:File)=>{
     if(!/\.(docx|txt)$/i.test(file.name)||!file.size||file.size>2*1024*1024)throw Error('请选择2MB以内的DOCX或UTF-8文本，扫描件及PDF暂不支持。');
-    return (await axiosInstance.post<{data:ReviewDocument}>(`${reviewBase}/documents`,await file.arrayBuffer(),{params:{fileName:file.name},headers:{'Content-Type':'application/octet-stream'}})).data.data;
+    return (await axiosInstance.post<{data:ReviewDocument}>(`${reviewBase}/documents`,await file.arrayBuffer(),{params:{fileName:file.name,...(contractId?{contractId}:{})},headers:{'Content-Type':'application/octet-stream'}})).data.data;
   },onSuccess:value=>{switchDocument(value.id);setTab('review');refresh();},onError:e=>setError(reviewError(e))});
   const start=useMutation({mutationFn:(useModel:boolean)=>{
     if(!data)throw Error('请先上传合同原件。');

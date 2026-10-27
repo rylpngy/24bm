@@ -40,9 +40,12 @@ const ProjectsPage = lazy(() => import('../projects/projects-page').then((value)
 const BudgetsPage = lazy(() => import('../budgets/budgets-page').then((value) => ({ default: value.BudgetsPage })));
 const RfqsPage = lazy(() => import('../rfqs/rfqs-page').then((value) => ({ default: value.RfqsPage })));
 const ContractsPage = lazy(() => import('../contracts/contracts-page').then((value) => ({ default: value.ContractsPage })));
+const OrdersPage = lazy(() => import('../orders/orders-page').then((value) => ({ default: value.OrdersPage })));
+const ReceiptsPage = lazy(() => import('../receipts/receipts-page').then((value) => ({ default: value.ReceiptsPage })));
+const InvoicesPage = lazy(() => import('../finance/invoices-page').then((value) => ({ default: value.InvoicesPage })));
 
 type ModuleId = 'dashboard' | 'applications' | 'approvals' | 'workflow-config' | 'org' | 'team' | 'archive' | 'stats'
-  | 'projects' | 'budgets' | 'rfqs' | 'contracts';
+  | 'projects' | 'budgets' | 'rfqs' | 'contracts' | 'orders' | 'receipts' | 'invoices';
 type Screen = { type: 'list' } | { type: 'form'; application?: LudongApplication } | { type: 'detail'; application: LudongApplication };
 
 const modules: AdminNavigationModule[] = [
@@ -53,6 +56,9 @@ const modules: AdminNavigationModule[] = [
   { id: 'budgets', label: '预算管理', desc: '预算编制与执行', requiredPermission: 'buyer:budget:read' },
   { id: 'rfqs', label: '询价比价', desc: '供应商报价与采购比较', requiredPermission: 'buyer:rfq:read' },
   { id: 'contracts', label: '采购合同', desc: '合同台账与履约', requiredPermission: 'buyer:contract:read' },
+  { id: 'orders', label: '采购订单', desc: '关联订单与供应商履约', requiredPermission: 'buyer:order:read' },
+  { id: 'receipts', label: '收货验收', desc: '到货登记与验收记录', requiredPermission: 'buyer:receipt:read' },
+  { id: 'invoices', label: '发票付款', desc: '发票、付款审批与登记', requiredPermission: 'buyer:invoice:read' },
   { id: 'workflow-config', label: '流程配置', desc: '审批节点、办理岗位与条件规则' },
   { id: 'org', label: '组织架构', desc: '学校部门树、负责人和成员' },
   { id: 'team', label: '用户与权限', desc: '工号账号、角色与数据权限' },
@@ -96,6 +102,7 @@ export function LudongPocApp() {
     const url = new URL(window.location.href);
     url.searchParams.set('solution', 'ludong-poc');
     url.searchParams.set('module', next);
+    for (const key of ['recordId', 'view', 'reviewDocument']) url.searchParams.delete(key);
     window.history.replaceState(null, '', url);
   };
 
@@ -142,6 +149,9 @@ export function LudongPocApp() {
           {moduleId === 'budgets' && <BudgetsPage />}
           {moduleId === 'rfqs' && <RfqsPage />}
           {moduleId === 'contracts' && <ContractsPage />}
+          {moduleId === 'orders' && <OrdersPage onNavigate={(id) => { if (modules.some((item) => item.id === id)) navigate(id as ModuleId); }} />}
+          {moduleId === 'receipts' && <ReceiptsPage />}
+          {moduleId === 'invoices' && <InvoicesPage />}
         </>}
       </Suspense>
     </AppShell>
