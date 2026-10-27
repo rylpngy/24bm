@@ -17,6 +17,10 @@ public final class ProcurementExecutionPolicy {
   public static Evaluation evaluate(JsonNode data) {
     List<String> blockers = new ArrayList<>();
     List<Document> documents = new ArrayList<>();
+    for(var c:data.path("fundingCarryovers")) {
+      if("submitted".equals(text(c,"status")))blockers.add("专项资金跨年承接审批中，暂不能归档");
+      if("approved".equals(text(c,"status"))&&list(data,"workflowHistory").stream().noneMatch(h->text(h.path("instance"),"id").equals(text(c,"workflowInstanceId"))&&"approved".equals(text(h.path("instance"),"status"))))blockers.add("专项资金承接缺少对应独立审批证据");
+    }
     for(var c:data.path("fundingChanges")){
       if("project_plan".equals(text(c,"kind"))&&"submitted".equals(text(c,"status")))blockers.add("项目资金分摊审批中，暂不能归档");
       if("approved".equals(text(c,"status"))&&list(data,"workflowHistory").stream().noneMatch(h->text(h.path("instance"),"id").equals(text(c,"workflowInstanceId"))&&"approved".equals(text(h.path("instance"),"status"))))blockers.add("专项资金缺少对应独立审批证据");

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { FundingCarryoverFields, FundingCarryoverEvidence, type FundingTarget } from './funding-carryover-fields';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, CalendarClock, FileCheck2, RefreshCw } from 'lucide-react';
 import {
@@ -48,6 +49,8 @@ export function ProjectLifecyclePanel({
     [reason, setReason] = useState(''),
     [busy, setBusy] = useState(false);
   const [reviewing, setReviewing] = useState(false);
+  const [fundingSources,setFundingSources]=useState<FundingTarget[]>([]);
+  const [fundingReady,setFundingReady]=useState(false);
   const [notice, setNotice] = useState<{
     tone: 'error' | 'success';
     message: string;
@@ -178,6 +181,7 @@ export function ProjectLifecyclePanel({
                         ),
                       );
                       setKind(k);
+                      setFundingSources([]);setFundingReady(false);
                     }}
                   >
                     {k === 'carryover' ? (
@@ -362,10 +366,11 @@ export function ProjectLifecyclePanel({
                   inputMode="numeric"
                   maxLength={4}
                   value={target}
-                  onChange={(e) => setTarget(e.target.value)}
+                  onChange={(e) => {setTarget(e.target.value);setFundingSources([]);setFundingReady(false);}}
                 />
               </label>
             )}
+            {kind==='carryover'&&preview.data?.fundingEnabled&&<FundingCarryoverFields projectId={p.id} target={target} value={fundingSources} onChange={setFundingSources} onReady={setFundingReady}/>}
             <label className="block text-sm font-medium">
               申请原因 <span className="text-red-600">*</span>
               <textarea
@@ -393,6 +398,7 @@ export function ProjectLifecyclePanel({
                   busy ||
                   !reason.trim() ||
                   (kind === 'carryover' && !/^20\d{2}$/.test(target)) ||
+                  (kind === 'carryover' && !!preview.data?.fundingEnabled && !fundingReady) ||
                   !!(kind === 'carryover'
                     ? preview.data?.carryoverBlockers.length
                     : preview.data?.liquidationBlockers.length)
@@ -425,6 +431,7 @@ export function ProjectLifecyclePanel({
                 targetPeriod: kind === 'carryover' ? target : undefined,
                 reason: reason.trim(),
                 formData,
+                fundingSources:kind==='carryover'&&preview.data?.fundingEnabled?fundingSources:undefined,
               }),
             )
           }
@@ -445,6 +452,7 @@ export function ProjectLifecyclePanel({
             <p className="whitespace-pre-wrap break-words text-sm">
               {selected.reason}
             </p>
+            <FundingCarryoverEvidence snapshot={selected.snapshot}/>
             {can('buyer:workflow:read') && (
               <WorkflowStatusPanel
                 businessType={'project_' + selected.kind}

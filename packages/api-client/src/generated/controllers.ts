@@ -40,6 +40,7 @@ export * from './department-controller/department-controller';
 export * from './dictionary-controller/dictionary-controller';
 export * from './external-identity-controller/external-identity-controller';
 export * from './frozen-payment-correction-controller/frozen-payment-correction-controller';
+export * from './funding-carryover-controller/funding-carryover-controller';
 export * from './funding-controller/funding-controller';
 export * from './health-controller/health-controller';
 export * from './ludong-poc-controller/ludong-poc-controller';

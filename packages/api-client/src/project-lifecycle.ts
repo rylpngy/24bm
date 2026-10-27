@@ -13,6 +13,7 @@ export interface ProjectLifecycleSource {
   paidAmount: number | null;
 }
 export interface ProjectLifecyclePreview {
+  fundingEnabled?: boolean;
   businessPeriod: string;
   effectivePeriod: string;
   amount: number;
@@ -75,6 +76,7 @@ export const projectLifecycleSubmit = async (
     targetPeriod?: string;
     reason: string;
     formData?: Record<string, unknown>;
+    fundingSources?: { sourceFundId: string; targetFundId: string }[];
   },
 ) =>
   (

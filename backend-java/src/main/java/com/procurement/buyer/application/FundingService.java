@@ -142,7 +142,7 @@ public class FundingService {
     var p = guard.require(id, false);
     var s = scopes.currentUserDataScope();
     var choices =
-        mapper.choices(tenant(), p.departmentId(), p.period()).stream()
+        mapper.choices(tenant(), p.departmentId(), Objects.requireNonNullElse(lifecycle.period(tenant(),p.id()),p.period())).stream()
             .filter(
                 f ->
                     !s.restricted()
@@ -162,12 +162,16 @@ public class FundingService {
         mapper.plan(tenant(), id),
         choices,
         mapper.balances(tenant(), id),
-        blocker);
+        blocker,
+        Objects.requireNonNullElse(lifecycle.period(tenant(),p.id()),p.period()),
+        mapper.priorPaid(tenant(),p.id()));
   }
 
   private boolean enabled(String t, String p) {
     return !mapper.balances(t, p).isEmpty();
   }
+
+  public boolean hasFunding(String t,String project) { return enabled(t,project); }
 
   private List<Share> shares(Request r) {
     return r.lines() == null
@@ -233,7 +237,7 @@ public class FundingService {
       if (f == null
           || !"approved".equals(f.status())
           || !p.departmentId().equals(f.departmentId())
-          || !p.period().equals(f.period()))
+          || !Objects.requireNonNullElse(lifecycle.period(tenant(),p.id()),p.period()).equals(f.period()))
         throw new IllegalArgumentException("请选择同部门、同年度的已批准资金来源");
       if (requireAccess) scopes.requireRecordAccess(f.departmentId(), f.createdBy());
       BigDecimal existing =
@@ -247,7 +251,7 @@ public class FundingService {
     var snapshot = new LinkedHashMap<String, Object>();
     snapshot.put("projectId", p.id());
     snapshot.put("departmentId", p.departmentId());
-    snapshot.put("period", p.period());
+    snapshot.put("period", Objects.requireNonNullElse(lifecycle.period(tenant(),p.id()),p.period()));
     snapshot.put("projectRevision", p.revision());
     snapshot.put("plannedAmount", p.plannedAmount());
     snapshot.put("previousPlan", Objects.toString(mapper.plan(tenant(), p.id()), ""));
@@ -373,6 +377,7 @@ public class FundingService {
     permissions.require("buyer:budget:manage");
     var c = mapper.change(tenant(), id);
     if (c == null) throw new IllegalArgumentException("资金申请不存在");
+    if(!"submitted".equals(c.status()))throw new IllegalStateException("只有审批中的资金申请可以撤回");
     scopes.requireRecordAccess(c.departmentId(), c.createdBy());
     lockRequest(request(c));
     workflow.withdrawFundingChange(c.workflowInstanceId(), reason);
@@ -413,8 +418,10 @@ public class FundingService {
           || balances.stream()
                   .map(Balance::allocatedAmount)
                   .reduce(BigDecimal.ZERO, BigDecimal::add)
+                  .add(mapper.priorPaid(t,p))
                   .compareTo(project.plannedAmount())
               != 0) blocker = "项目状态或批准金额与资金分摊不一致，请核对";
+      if(lifecycle.pending(t,p)>0)blocker="项目跨年或清算审批中，暂不能登记付款或冲销";
     }
     return new InvoiceView(
         enabled || !blocker.isBlank(), blocker, balances, mapper.attributions(t, invoice));
@@ -465,12 +472,15 @@ public class FundingService {
   @Transactional(propagation = Propagation.MANDATORY)
   public void reverse(String t, String invoice, String original, String reversal) {
     mapper.lock(t);
+    var view=invoice(t,invoice);
+    if(!view.blocker().isBlank())throw new IllegalStateException(view.blocker());
     var old = mapper.entry(t, original);
     if (old.isEmpty()) {
       if (invoice(t, invoice).enabled()) throw new IllegalStateException("原付款资金归属缺失，不能推算冲销");
       return;
     }
     String p = invoiceProject(t, invoice), plan = mapper.plan(t, p);
+    if(mapper.historicalEntry(t,original,plan))throw new IllegalStateException("专项资金原年度付款已冻结，暂不支持跨年更正");
     for (var l : old)
       mapper.payment(t, reversal, p, l.fundId(), plan, l.amount().negate(), actor());
     audit.recordTenantAction(
@@ -479,7 +489,11 @@ public class FundingService {
 
   public void requireUnfundedProject(String t, String project) {
     if (enabled(t, project) || mapper.pending(t, null, project) > 0)
-      throw new IllegalStateException("项目已启用或正在审批专项资金分摊，请先完成无付款项目的撤销分摊审批；已有付款不得直接跨年、变更或清算");
+      throw new IllegalStateException("项目已启用或正在审批专项资金分摊；跨年请明确选择目标资金来源，立项变更和清算暂不支持直接办理");
+  }
+
+  public void requireUnfundedFrozenCorrection(String t,String invoice) {
+    if(invoice(t,invoice).enabled())throw new IllegalStateException("专项资金原年度付款已冻结，暂不支持跨年更正；原付款和资金来源均保留");
   }
 
   public void requireUnfundedInvoice(String t, String invoice) {

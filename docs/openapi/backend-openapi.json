@@ -29420,6 +29420,64 @@
           }
         }
       }
+    },
+    "/api/v1/buyer/projects/{id}/funding/carryover": {
+      "get": {
+        "tags": [
+          "funding-carryover-controller"
+        ],
+        "operationId": "specialFundingCarryoverOptions",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "targetPeriod",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseFundingCarryoverOptions"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -45150,6 +45208,14 @@
             "additionalProperties": {
               "type": "object"
             }
+          },
+          "fundingSources": {
+            "maxItems": 30,
+            "minItems": 0,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FundingCarryoverMapping"
+            }
           }
         }
       },
@@ -45305,6 +45371,9 @@
             "items": {
               "type": "string"
             }
+          },
+          "fundingEnabled": {
+            "type": "boolean"
           }
         }
       },
@@ -46889,6 +46958,12 @@
           },
           "blocker": {
             "type": "string"
+          },
+          "effectivePeriod": {
+            "type": "string"
+          },
+          "priorPaidAmount": {
+            "type": "number"
           }
         }
       },
@@ -46963,6 +47038,61 @@
           "pageSize": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "FundingCarryoverMapping": {
+        "required": [
+          "sourceFundId",
+          "targetFundId"
+        ],
+        "type": "object",
+        "properties": {
+          "sourceFundId": {
+            "type": "string"
+          },
+          "targetFundId": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseFundingCarryoverOptions": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/FundingCarryoverOptions"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "FundingCarryoverOptions": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "sourcePeriod": {
+            "type": "string"
+          },
+          "priorPaidAmount": {
+            "type": "number"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SpecialFundingBalance"
+            }
+          },
+          "choices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SpecialFund"
+            }
           }
         }
       }

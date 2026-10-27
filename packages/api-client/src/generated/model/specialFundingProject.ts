@@ -15,4 +15,6 @@ export interface SpecialFundingProject {
   choices?: SpecialFund[];
   sources?: SpecialFundingBalance[];
   blocker?: string;
+  effectivePeriod?: string;
+  priorPaidAmount?: number;
 }

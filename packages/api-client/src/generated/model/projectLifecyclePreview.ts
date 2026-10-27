@@ -18,4 +18,5 @@ export interface ProjectLifecyclePreview {
   sources?: ProjectLifecycleSource[];
   carryoverBlockers?: string[];
   liquidationBlockers?: string[];
+  fundingEnabled?: boolean;
 }

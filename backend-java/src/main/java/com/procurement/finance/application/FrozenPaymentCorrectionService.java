@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.*;
 
 @Service
 public class FrozenPaymentCorrectionService {
+  @Autowired private com.procurement.buyer.application.FundingService funding;
   private final FrozenPaymentCorrectionMapper mapper;
   private final InvoiceMapper invoices;
   private final PaymentEntryMapper entries;
@@ -130,6 +131,7 @@ public class FrozenPaymentCorrectionService {
   private Map<String, Object> inspect(String t, String invoiceId, String entry) {
     var invoice = invoices.findByTenantAndId(t, invoiceId);
     if (invoice == null) throw new IllegalStateException("发票不存在");
+    if(funding!=null)funding.requireUnfundedFrozenCorrection(t,invoiceId);
     if (invoices.projectLiquidated(t, invoiceId))
       throw new IllegalStateException("项目已清算，不能更正原付款依据");
     var list = entries.list(t, invoiceId);
