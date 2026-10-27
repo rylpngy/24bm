@@ -1,5 +1,6 @@
 package com.procurement.finance.api;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -9,13 +10,26 @@ import java.util.Map;
 public final class FrozenPaymentCorrectionContracts {
   private FrozenPaymentCorrectionContracts() {}
 
+  @io.swagger.v3.oas.annotations.media.Schema(name = "FrozenCorrectionFundingTarget")
+  public record FundingTarget(@NotBlank String sourceFundId, @NotBlank String targetFundId) {}
+
   @io.swagger.v3.oas.annotations.media.Schema(name = "FrozenPaymentCorrectionRequest")
   public record Request(
       @NotBlank @Size(max = 100) String requestKey,
       @NotBlank String entryId,
       @NotBlank @Size(max = 200) String evidenceNo,
       @NotBlank @Size(max = 1000) String reason,
-      Map<String, Object> formData) {}
+      Map<String, Object> formData,
+      @Size(max = 30) List<@Valid FundingTarget> fundingTargets) {
+    public Request(
+        String requestKey,
+        String entryId,
+        String evidenceNo,
+        String reason,
+        Map<String, Object> formData) {
+      this(requestKey, entryId, evidenceNo, reason, formData, null);
+    }
+  }
 
   @io.swagger.v3.oas.annotations.media.Schema(name = "FrozenPaymentCorrectionCandidate")
   public record Candidate(
@@ -25,7 +39,8 @@ public final class FrozenPaymentCorrectionContracts {
       String projectId,
       String sourcePeriod,
       String targetPeriod,
-      List<String> blockers) {}
+      List<String> blockers,
+      boolean fundingRequired) {}
 
   @io.swagger.v3.oas.annotations.media.Schema(name = "FrozenPaymentCorrection")
   public record Correction(

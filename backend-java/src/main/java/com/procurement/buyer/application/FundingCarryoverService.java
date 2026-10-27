@@ -88,6 +88,7 @@ public class FundingCarryoverService {
     if (access) permissions.require("buyer:budget:manage");
     if (funds.pending(p.tenantId(), null, p.id()) > 0)
       throw new IllegalStateException("专项资金分摊审批中，暂不能承接");
+    if(funds.pendingCorrection(p.tenantId(),p.id())>0)throw new IllegalStateException("专项资金更正审批中，暂不能跨年承接");
     if (target == null || !target.matches("20[0-9]{2}") || target.compareTo(period(p)) <= 0)
       throw new IllegalArgumentException("专项资金承接年度须晚于当前责任年度");
     BigDecimal prior = funds.priorPaid(p.tenantId(), p.id()),

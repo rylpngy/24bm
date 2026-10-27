@@ -202,6 +202,7 @@ public class ProcurementExecutionApplicationService {
     if(raw==null) throw new IllegalArgumentException("采购项目不存在");
     var data=parse(raw);
     if(data.path("fundingCarryovers").isEmpty())data.remove("fundingCarryovers");
+    if(data.path("fundingRestorations").isEmpty())data.remove("fundingRestorations");
     if(projects!=null){var definition=projects.archiveDefinitionForRfq(rfq);if(definition!=null)data.set("procurementProject",json.valueToTree(definition));}
     return data;
   }

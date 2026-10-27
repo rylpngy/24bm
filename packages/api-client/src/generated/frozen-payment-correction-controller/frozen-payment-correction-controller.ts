@@ -24,11 +24,13 @@ import type {
 import type {
   ApiResponseFrozenPaymentCorrection,
   ApiResponseFrozenPaymentCorrectionPage,
+  ApiResponseFundingCorrectionOptions,
   ApiResponseListFrozenPaymentCorrectionCandidate,
   ApiResponseVoid,
   FrozenPaymentCorrectionHistoryParams,
   FrozenPaymentCorrectionRequest,
   FrozenPaymentCorrectionWithdrawRequest,
+  FrozenPaymentFundingOptionsParams
 } from '.././model';
 
 import { customInstance } from '../../http-client';
@@ -559,6 +561,100 @@ export function useFrozenPaymentCorrectionCandidates<
   > & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+
+
+
+export const frozenPaymentFundingOptions = (
+    invoice: string,
+    params: FrozenPaymentFundingOptionsParams,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseFundingCorrectionOptions>(
+      {url: `/api/v1/buyer/invoices/${invoice}/payment-ledger/corrections/funding-options`, method: 'GET',
+        params, signal
+    },
+      );
+    }
+
+
+
+
+export const getFrozenPaymentFundingOptionsQueryKey = (invoice?: string,
+    params?: FrozenPaymentFundingOptionsParams,) => {
+    return [
+    `/api/v1/buyer/invoices/${invoice}/payment-ledger/corrections/funding-options`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+
+export const getFrozenPaymentFundingOptionsQueryOptions = <TData = Awaited<ReturnType<typeof frozenPaymentFundingOptions>>, TError = ErrorType<ApiResponseVoid>>(invoice: string,
+    params: FrozenPaymentFundingOptionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof frozenPaymentFundingOptions>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getFrozenPaymentFundingOptionsQueryKey(invoice,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof frozenPaymentFundingOptions>>> = ({ signal }) => frozenPaymentFundingOptions(invoice,params, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(invoice), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof frozenPaymentFundingOptions>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type FrozenPaymentFundingOptionsQueryResult = NonNullable<Awaited<ReturnType<typeof frozenPaymentFundingOptions>>>
+export type FrozenPaymentFundingOptionsQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useFrozenPaymentFundingOptions<TData = Awaited<ReturnType<typeof frozenPaymentFundingOptions>>, TError = ErrorType<ApiResponseVoid>>(
+ invoice: string,
+    params: FrozenPaymentFundingOptionsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof frozenPaymentFundingOptions>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof frozenPaymentFundingOptions>>,
+          TError,
+          Awaited<ReturnType<typeof frozenPaymentFundingOptions>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useFrozenPaymentFundingOptions<TData = Awaited<ReturnType<typeof frozenPaymentFundingOptions>>, TError = ErrorType<ApiResponseVoid>>(
+ invoice: string,
+    params: FrozenPaymentFundingOptionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof frozenPaymentFundingOptions>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof frozenPaymentFundingOptions>>,
+          TError,
+          Awaited<ReturnType<typeof frozenPaymentFundingOptions>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useFrozenPaymentFundingOptions<TData = Awaited<ReturnType<typeof frozenPaymentFundingOptions>>, TError = ErrorType<ApiResponseVoid>>(
+ invoice: string,
+    params: FrozenPaymentFundingOptionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof frozenPaymentFundingOptions>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useFrozenPaymentFundingOptions<TData = Awaited<ReturnType<typeof frozenPaymentFundingOptions>>, TError = ErrorType<ApiResponseVoid>>(
+ invoice: string,
+    params: FrozenPaymentFundingOptionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof frozenPaymentFundingOptions>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getFrozenPaymentFundingOptionsQueryOptions(invoice,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
 
   return query;
 }

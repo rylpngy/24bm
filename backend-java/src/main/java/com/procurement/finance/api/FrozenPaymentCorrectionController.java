@@ -11,6 +11,11 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/buyer/invoices/{invoice}/payment-ledger/corrections")
 public record FrozenPaymentCorrectionController(FrozenPaymentCorrectionService service) {
+  @GetMapping("/funding-options")
+  @io.swagger.v3.oas.annotations.Operation(operationId="frozenPaymentFundingOptions")
+  public ApiResponse<com.procurement.buyer.application.FundingCorrectionService.Options> fundingOptions(@PathVariable String invoice,@RequestParam String entryId) {
+    return ApiResponse.ok(service.fundingOptions(invoice,entryId));
+  }
   @GetMapping("/candidates")
   @io.swagger.v3.oas.annotations.Operation(operationId="frozenPaymentCorrectionCandidates")
   public ApiResponse<List<Candidate>> candidates(@PathVariable String invoice) {

@@ -422,6 +422,7 @@ public class FundingService {
                   .compareTo(project.plannedAmount())
               != 0) blocker = "项目状态或批准金额与资金分摊不一致，请核对";
       if(lifecycle.pending(t,p)>0)blocker="项目跨年或清算审批中，暂不能登记付款或冲销";
+      if(mapper.pendingCorrection(t,p)>0)blocker="项目专项资金更正审批中，暂不能登记付款或冲销";
     }
     return new InvoiceView(
         enabled || !blocker.isBlank(), blocker, balances, mapper.attributions(t, invoice));
@@ -490,10 +491,6 @@ public class FundingService {
   public void requireUnfundedProject(String t, String project) {
     if (enabled(t, project) || mapper.pending(t, null, project) > 0)
       throw new IllegalStateException("项目已启用或正在审批专项资金分摊；跨年请明确选择目标资金来源，立项变更和清算暂不支持直接办理");
-  }
-
-  public void requireUnfundedFrozenCorrection(String t,String invoice) {
-    if(invoice(t,invoice).enabled())throw new IllegalStateException("专项资金原年度付款已冻结，暂不支持跨年更正；原付款和资金来源均保留");
   }
 
   public void requireUnfundedInvoice(String t, String invoice) {

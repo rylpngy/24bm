@@ -19,7 +19,7 @@ import org.springframework.transaction.annotation.*;
 
 @Service
 public class FrozenPaymentCorrectionService {
-  @Autowired private com.procurement.buyer.application.FundingService funding;
+  @Autowired private com.procurement.buyer.application.FundingCorrectionService funding;
   private final FrozenPaymentCorrectionMapper mapper;
   private final InvoiceMapper invoices;
   private final PaymentEntryMapper entries;
@@ -90,12 +90,15 @@ public class FrozenPaymentCorrectionService {
       if (e.amount().signum() <= 0 || !invoices.carriedPayment(tenant(), invoice, e.id())) continue;
       var basis = mapper.basis(tenant(), invoice, e.id());
       var problems = new ArrayList<String>();
+      boolean fundingRequired=false;
       try {
         inspect(tenant(), invoice, e.id());
+        fundingRequired=funding!=null&&funding.options(tenant(),invoice,e.id()).enabled();
       } catch (IllegalStateException ex) {
         problems.add(ex.getMessage());
       }
       if (mapper.active(tenant(), e.id())) problems.add("该流水已有在审或已批准更正，请查看台账");
+      if(funding!=null&&funding.pending(tenant(),invoice,e.id()))problems.add("项目已有专项资金更正审批，请先完成或撤回");
       result.add(
           new Candidate(
               e.id(),
@@ -104,7 +107,7 @@ public class FrozenPaymentCorrectionService {
               basis.size() == 1 ? basis.getFirst().projectId() : null,
               basis.size() == 1 ? basis.getFirst().sourcePeriod() : null,
               basis.size() == 1 ? basis.getFirst().targetPeriod() : null,
-              List.copyOf(problems)));
+              List.copyOf(problems),fundingRequired));
     }
     return result;
   }
@@ -129,9 +132,26 @@ public class FrozenPaymentCorrectionService {
   }
 
   private Map<String, Object> inspect(String t, String invoiceId, String entry) {
+    return inspect(t,invoiceId,entry,List.of(),null,false);
+  }
+
+  @Transactional(readOnly=true,isolation=Isolation.REPEATABLE_READ)
+  public com.procurement.buyer.application.FundingCorrectionService.Options fundingOptions(String invoice,String entry) {
+    access.requireInvoice(invoice,"buyer:invoice:read");
+    inspect(tenant(),invoice,entry);
+    return funding.options(tenant(),invoice,entry);
+  }
+
+  private List<com.procurement.buyer.application.FundingCorrectionService.Target> targets(List<FundingTarget> input) {
+    if(input!=null&&input.stream().anyMatch(x->x==null||x.sourceFundId()==null||x.targetFundId()==null))throw new IllegalArgumentException("原来源及回补来源不能为空");
+    return input==null?List.of():input.stream().map(x->new com.procurement.buyer.application.FundingCorrectionService.Target(x.sourceFundId(),x.targetFundId()))
+      .sorted(Comparator.comparing(com.procurement.buyer.application.FundingCorrectionService.Target::sourceFundId)).toList();
+  }
+
+  private Map<String,Object> inspect(String t,String invoiceId,String entry,
+      List<com.procurement.buyer.application.FundingCorrectionService.Target> targets,String ignore,boolean required) {
     var invoice = invoices.findByTenantAndId(t, invoiceId);
     if (invoice == null) throw new IllegalStateException("发票不存在");
-    if(funding!=null)funding.requireUnfundedFrozenCorrection(t,invoiceId);
     if (invoices.projectLiquidated(t, invoiceId))
       throw new IllegalStateException("项目已清算，不能更正原付款依据");
     var list = entries.list(t, invoiceId);
@@ -167,6 +187,10 @@ public class FrozenPaymentCorrectionService {
     snapshot.put("entries", list);
     snapshot.put("frozenAmount", frozen);
     snapshot.put("milestones", milestones);
+    if(funding!=null) {
+      funding.options(t,invoiceId,entry);
+      if(required){var allocation=funding.prepare(t,invoiceId,entry,targets,ignore);if(allocation!=null)snapshot.put("fundingCorrection",allocation);}
+    }
     return snapshot;
   }
 
@@ -188,16 +212,19 @@ public class FrozenPaymentCorrectionService {
           || !old.evidenceNo().equals(r.evidenceNo().strip())
           || !tree(old.snapshot())
               .path("submittedFormData")
-              .equals(json.valueToTree(r.formData() == null ? Map.of() : r.formData())))
+              .equals(json.valueToTree(r.formData() == null ? Map.of() : r.formData()))
+          || ((r.fundingTargets()!=null&&!r.fundingTargets().isEmpty()||tree(old.snapshot()).has("submittedFundingTargets"))
+            && !tree(old.snapshot()).path("submittedFundingTargets").equals(json.valueToTree(targets(r.fundingTargets())))))
         throw new IllegalStateException("同一提交编号对应不同更正内容");
       return old;
     }
-    var snapshot = inspect(tenant(), invoice, r.entryId());
+    var snapshot = inspect(tenant(), invoice, r.entryId(),targets(r.fundingTargets()),null,true);
     if (mapper.active(tenant(), r.entryId())) throw new IllegalStateException("该流水已有在审或已批准更正");
     var b = (FrozenPaymentCorrectionMapper.Basis) snapshot.get("basis");
     var original = (PaymentEntry) snapshot.get("original");
     String id = "frozen-correction-" + UUID.randomUUID();
     snapshot.put("submittedFormData", r.formData() == null ? Map.of() : r.formData());
+    if(snapshot.containsKey("fundingCorrection"))snapshot.put("submittedFundingTargets",targets(r.fundingTargets()));
     mapper.insert(
         new Correction(
             id,
@@ -249,8 +276,11 @@ public class FrozenPaymentCorrectionService {
     lock(i.tenantId(), r.invoiceId());
     var baseline = (com.fasterxml.jackson.databind.node.ObjectNode) tree(r.snapshot());
     baseline.remove("submittedFormData");
+    var fundingTargets=new ArrayList<com.procurement.buyer.application.FundingCorrectionService.Target>();
+    for(var v:baseline.path("submittedFundingTargets"))fundingTargets.add(new com.procurement.buyer.application.FundingCorrectionService.Target(v.path("sourceFundId").asText(),v.path("targetFundId").asText()));
+    baseline.remove("submittedFundingTargets");
     if (approved
-        && !baseline.equals(tree(write(inspect(i.tenantId(), r.invoiceId(), r.entryId())))))
+        && !baseline.equals(tree(write(inspect(i.tenantId(), r.invoiceId(), r.entryId(),fundingTargets,r.id(),true)))))
       throw new IllegalStateException("付款、项目年度或里程碑依据已变化，请驳回后重新申请");
     return r;
   }
@@ -279,6 +309,12 @@ public class FrozenPaymentCorrectionService {
               r.entryId(),
               c.actorId(),
               null));
+      if(funding!=null&&tree(r.snapshot()).has("fundingCorrection")) {
+        try {
+          var snapshot=json.treeToValue(tree(r.snapshot()).path("fundingCorrection"),com.procurement.buyer.application.FundingCorrectionService.Snapshot.class);
+          funding.apply(i.tenantId(),r.invoiceId(),r.entryId(),reversal,r.id(),snapshot,c.actorId());
+        }catch(com.fasterxml.jackson.core.JsonProcessingException e){throw new IllegalStateException("专项资金更正依据读取失败",e);}
+      }
       installments.reverse(i.tenantId(), invoice.orderId(), r.entryId(), reversal);
       payments.syncAmountPayment(invoice, entries.balance(i.tenantId(), r.invoiceId()), true);
       for (String request : mapper.paymentRequests(i.tenantId(), r.invoiceId()))
