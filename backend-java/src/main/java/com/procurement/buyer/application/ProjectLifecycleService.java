@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.*;
 public class ProjectLifecycleService {
   @Autowired private FundingService funding;
   @Autowired private FundingCarryoverService fundingCarryover;
+  @Autowired private FundingLiquidationService fundingLiquidation;
   private final ProcurementProjectGuard guard;
   private final ProcurementProjectMapper projects;
   private final ProjectExpansionMapper packages;
@@ -78,7 +79,6 @@ public class ProjectLifecycleService {
     var frozenYears = mapper.frozenYears(p.tenantId(), p.id());
     var carry = new ArrayList<String>();
     var clear = new ArrayList<String>();
-    if(funding.hasFunding(p.tenantId(),p.id()))clear.add("专项资金项目终止清算暂未开放，请保留原资金责任，不直接抹去来源归属");
     if(mapper.orderSettlements(p.tenantId(),p.id())>0)carry.add("项目存在合同清算责任或退款调整，请先完成当前年度清算；不自动重写跨年度历史支出");
     var paidEntries = mapper.paidEntries(p.tenantId(), p.id());
     boolean known = sources.stream().allMatch(s -> s.paidAmount() != null);
@@ -100,6 +100,7 @@ public class ProjectLifecycleService {
     }
     if (mapper.unresolvedAfterSales(p.tenantId(), p.id()) > 0)
       clear.add("存在未结售后或退换货责任：售后单完成不等于实物退回/退款已核验，请先处理，不能直接终止清算");
+    try {fundingLiquidation.inspect(p,paid);}catch(IllegalStateException e){clear.add(e.getMessage());}
     if (!"approved".equals(p.status())) {
       carry.add("项目必须处于已批准状态");
       clear.add("项目必须处于已批准状态");
@@ -207,7 +208,6 @@ public class ProjectLifecycleService {
       throw new IllegalStateException("已有跨年度承接或清算审批，请勿重复提交");
     if (!List.of("carryover", "liquidation").contains(r.kind()))
       throw new IllegalArgumentException("业务类型无效");
-    if("liquidation".equals(r.kind()))funding.requireUnfundedProject(tenant(),project);
     var v = inspect(p);
     acceptable(v, r.kind());
     String target = period(p);
@@ -231,7 +231,7 @@ public class ProjectLifecycleService {
     snapshot.put("packages", expansion.packages(project));
     if("carryover".equals(r.kind()))snapshot.put("fundingCarryover",fundingCarryover.prepare(p,target,r.fundingSources(),v.paidAmount(),true));
     else if(r.fundingSources()!=null&&!r.fundingSources().isEmpty())throw new IllegalArgumentException("清算不能提交资金承接映射");
-    if ("liquidation".equals(r.kind())) snapshot.put("execution", expansion.summary(project));
+    if ("liquidation".equals(r.kind())) {snapshot.put("execution", expansion.summary(project));var basis=fundingLiquidation.prepare(p,v.paidAmount());if(basis!=null)snapshot.put("fundingLiquidation",basis);}
     String id = "project-lifecycle-" + UUID.randomUUID();
     mapper.insert(
         id,
@@ -288,7 +288,6 @@ public class ProjectLifecycleService {
       throw new IllegalStateException("申请不在对应审批中");
     var p = projects.find(i.tenantId(), r.projectId());
     mapper.lockOrders(i.tenantId(), r.projectId());
-    if(approved&&"liquidation".equals(r.kind()))funding.requireUnfundedProject(i.tenantId(),r.projectId());
     if (approved) {
       if (p.revision() != r.projectRevision() || !period(p).equals(r.sourcePeriod()))
         throw new IllegalStateException("项目或承接年度已变化，请驳回后重提");
@@ -301,6 +300,7 @@ public class ProjectLifecycleService {
       if (!old.equals(current))
         throw new IllegalStateException("履约或资金数据已变化，请驳回后重新核对清算/承接依据");
       if("carryover".equals(r.kind()))fundingCarryover.validate(p,r,now.paidAmount());
+      if("liquidation".equals(r.kind()))fundingLiquidation.validate(p,r,now.paidAmount());
       if ("liquidation".equals(r.kind())
           && !policy
               .tree(r.snapshot())
@@ -322,6 +322,7 @@ public class ProjectLifecycleService {
         budget.checkProjectCarryover(i.tenantId(), p.departmentId(), r.targetPeriod(), r.id());
         fundingCarryover.publish(i,c,r);
       } else {
+        fundingLiquidation.publish(i,c,r);
         for (var run : expansion.activeRuns(p)) {
           var rfq = expansion.rfq(run);
           if (rfq != null) execution.archiveProject(rfq, "终止清算:" + r.reason());

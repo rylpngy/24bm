@@ -9,6 +9,7 @@ import { WorkflowSubmitDialog } from "../workflow/workflow-submit-dialog";
 import { WorkflowStatusPanel } from "../workflow/workflow-instance-panel";
 import { FundingCarryoverEvidence } from '../projects/funding-carryover-fields';
 import { FundingUnpaidReallocation, FundingReallocationEvidence } from './funding-unpaid-reallocation';
+import { FundingLiquidationEvidence } from '../projects/funding-liquidation-evidence';
 import {
   ProjectDialog,
   projectButton as btn,
@@ -203,7 +204,7 @@ export function FundingHistory({
                   {r.createdAt?.slice(0, 19).replace("T", " ")}
                 </td>
                 <td className="px-3 py-3">
-                  {r.kind === "fund_limit" ? "年度额度" : r.kind==='project_carryover'?'专项资金跨年承接':r.kind==='project_reallocation'?'未付额度调整':"项目资金分摊"}
+                  {r.kind === "fund_limit" ? "年度额度" : r.kind==='project_carryover'?'专项资金跨年承接':r.kind==='project_liquidation'?'专项项目终止清算':r.kind==='project_reallocation'?'未付额度调整':"项目资金分摊"}
                 </td>
                 <td className="px-3 py-3">{money(r.amount)}</td>
                 <td className="px-3 py-3">{status[r.status] || r.status}</td>
@@ -254,8 +255,9 @@ export function FundingHistory({
               </p>
             )}
             {selected.kind==='project_carryover'&&<FundingCarryoverEvidence snapshot={JSON.stringify({fundingCarryover:snapshot})}/>}
+            {selected.kind==='project_liquidation'&&<FundingLiquidationEvidence snapshot={JSON.stringify({fundingLiquidation:snapshot})}/>}
             {selected.kind==='project_reallocation'&&<FundingReallocationEvidence snapshot={selected.snapshot}/>}
-            {selected.kind!=='project_carryover'&&selected.kind!=='project_reallocation'&&proposal?.lines?.map((l: { fundId: string; amount: number }) => (
+            {selected.kind!=='project_carryover'&&selected.kind!=='project_liquidation'&&selected.kind!=='project_reallocation'&&proposal?.lines?.map((l: { fundId: string; amount: number }) => (
               <p key={l.fundId} className="break-words">
                 {snapshot?.sources?.find(
                   (s: { fundId: string }) => s.fundId === l.fundId,
@@ -265,7 +267,7 @@ export function FundingHistory({
             ))}
             {can("buyer:workflow:read") && (
               <WorkflowStatusPanel
-                businessType={selected.kind==='project_carryover'?'project_carryover':'funding_change'}
+                businessType={selected.kind==='project_carryover'||selected.kind==='project_liquidation'?selected.kind:'funding_change'}
                 businessId={selected.id}
               />
             )}
