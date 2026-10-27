@@ -22,3 +22,22 @@ it('opens a stored version rather than editing its original response',async()=>{
   mount();fireEvent.click(await screen.findByRole('button',{name:'甲公司 · 轮1/V1'}));
   expect(screen.getByText(/提交人：历史未留存/)).toBeVisible();expect(screen.getByText('甲公司 · 第1轮 · V1')).toBeVisible();
 });
+
+it('separates versions from the technical matrix and retains unsaved rule inputs', async()=>{
+  api.get.mockResolvedValue({data:{data:fixture()}});
+  const client=new QueryClient({defaultOptions:{queries:{retry:false}}});
+  const show=(view:'rules'|'versions'|'comparison')=><QueryClientProvider client={client}><RfqQuotationPackage rfqId="r" status="报价中" supplierNames={{s1:'甲公司',s2:'乙公司',s3:'丙公司'}} items={[{demandItemId:'item',specification:'须支持开放接口'}]} view={view}/></QueryClientProvider>;
+  const page=render(show('rules'));
+  fireEvent.change(await screen.findByLabelText('延期原因'),{target:{value:'待供应商补齐材料'}});
+  expect(screen.queryByText('价格与技术比价')).not.toBeInTheDocument();
+  page.rerender(show('versions'));
+  expect(await screen.findByText('供应商报价与历史版本')).toBeVisible();
+  expect(screen.queryByText('须支持开放接口')).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button',{name:'甲公司 · 轮1/V1'}));
+  expect(screen.getByText('甲公司 · 第1轮 · V1')).toBeVisible();
+  page.rerender(show('comparison'));
+  expect(screen.getByText('须支持开放接口')).toBeVisible();
+  expect(screen.queryByRole('button',{name:'甲公司 · 轮1/V1'})).not.toBeInTheDocument();
+  page.rerender(show('rules'));
+  expect(screen.getByLabelText('延期原因')).toHaveValue('待供应商补齐材料');
+});

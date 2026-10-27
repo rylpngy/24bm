@@ -9,7 +9,7 @@ import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
 const input='h-9 min-w-0 rounded-md border border-slate-200 bg-white px-3 text-sm';
 const money=(v:number)=>v.toLocaleString('zh-CN',{style:'currency',currency:'CNY'});
 async function download(url:string,name:string){const response=await axiosInstance.get(url,{responseType:'blob'});const link=document.createElement('a');link.href=URL.createObjectURL(response.data);link.download=name;link.click();URL.revokeObjectURL(link.href);}
-export function RfqQuotationPackage({rfqId,status,supplierNames,items=[]}:{rfqId:string;status?:string;supplierNames:Record<string,string>;items?:RfqItemResponse[]}){
+export function RfqQuotationPackage({rfqId,status,supplierNames,items=[],view='all'}:{rfqId:string;status?:string;supplierNames:Record<string,string>;items?:RfqItemResponse[];view?:'all'|'rules'|'versions'|'comparison'}){
   const {can}=useBuyerPermissions();const client=useQueryClient();const path=`/api/v1/buyer/rfqs/${rfqId}`;
   const query=useQuery({queryKey:['quotation-package',rfqId],queryFn:async()=>(await axiosInstance.get<{data:QuotationPackage}>(path+'/quotation-package')).data.data,refetchInterval:10000});
   const [policy,setPolicy]=useState<QuotationPolicy>({fullQuoteRequired:false,autoExtend:false,extensionHours:24,maxAutoExtensions:2});
@@ -27,7 +27,7 @@ export function RfqQuotationPackage({rfqId,status,supplierNames,items=[]}:{rfqId
   if(!pack)return null;
   const current=latestQuotationVersions(pack);
   return <div className="space-y-4">
-    <SectionCard title="分项报价与截止规则" extra={<StatusPill label={`本轮有效报价 ${pack.validQuoteCount}/3 家`} />}>
+    <div hidden={!['all','rules'].includes(view)}><SectionCard title="分项报价与截止规则" extra={<StatusPill label={`本轮有效报价 ${pack.validQuoteCount}/3 家`} />}>
       {can('buyer:rfq:manage')&&['草稿','报价中'].includes(status||'')&&<>
         <div className="flex flex-wrap items-center gap-4 text-sm text-slate-700">
           <label className="flex items-center gap-2"><input type="checkbox" checked={policy.fullQuoteRequired} onChange={e=>setPolicy({...policy,fullQuoteRequired:e.target.checked})} />完整分项报价</label>
@@ -48,18 +48,20 @@ export function RfqQuotationPackage({rfqId,status,supplierNames,items=[]}:{rfqId
         <strong>{e.mode==='automatic'?'自动延期':'人工延期'} · 第{e.round}轮 · 有效报价{e.validQuoteCount}家</strong>
         <p className="mt-1">{new Date(e.oldDeadline).toLocaleString('zh-CN')} → {new Date(e.newDeadline).toLocaleString('zh-CN')}</p><p className="mt-1 break-words">{e.reason}</p>
       </div>)}</div>}
-    </SectionCard>
-    {pack.policy.fullQuoteRequired&&<SectionCard title="价格与技术比价" extra={<ActionButton icon={Download} disabled={pack.sealed||!current.length} onClick={()=>download(path+'/technical-comparison.xlsx','技术比价及报价版本.xlsx').catch(()=>setError('比价表下载失败，请刷新后重试。'))}>导出比价表</ActionButton>}>
+    </SectionCard></div>
+    {pack.policy.fullQuoteRequired&&['all','versions','comparison'].includes(view)&&<SectionCard title={view==='versions'?'供应商报价与历史版本':'价格与技术比价'} extra={<ActionButton icon={Download} disabled={pack.sealed||!current.length} onClick={()=>download(path+'/technical-comparison.xlsx','技术比价及报价版本.xlsx').catch(()=>setError('比价表下载失败，请刷新后重试。'))}>导出比价表</ActionButton>}>
+      {!['all','rules'].includes(view)&&error&&<FeedbackNotice tone="error" message={error} />}
       {pack.sealed?<FeedbackNotice tone="info" message="报价封存中，开标后可查看逐项技术响应及历史版本。" />:<>
-        <div className="overflow-x-auto"><table className="w-full min-w-[760px] text-left text-sm"><thead className="bg-slate-50 text-slate-500"><tr>{['供应商','版本','含税总额','交期','发票类型','操作'].map(x=><th key={x} className="whitespace-nowrap p-3">{x}</th>)}</tr></thead><tbody>{current.map(v=><tr key={v.quoteId} className="border-b border-slate-100">
+        {view!=='comparison'&&<div className="overflow-x-auto"><table className="w-full min-w-[760px] text-left text-sm"><thead className="bg-slate-50 text-slate-500"><tr>{['供应商','版本','含税总额','交期','发票类型','操作'].map(x=><th key={x} className="whitespace-nowrap p-3">{x}</th>)}</tr></thead><tbody>{current.map(v=><tr key={v.quoteId} className="border-b border-slate-100">
           <td className="p-3 font-bold">{supplierNames[v.snapshot.quote.supplierId]||v.snapshot.quote.supplierId}</td><td className="p-3">V{v.versionNo}</td><td className="p-3 font-mono">{money(v.snapshot.quote.amount)}</td><td className="p-3">{v.snapshot.quote.deliveryDays}天</td><td className="p-3">{v.snapshot.details?.invoiceType}</td><td className="p-3"><ActionButton onClick={()=>setSelected(v)}>详情</ActionButton></td>
-        </tr>)}</tbody></table></div>
-        {!!current.length&&<div className="mt-4 overflow-x-auto"><table className="w-full min-w-[1100px] table-fixed text-left text-sm"><thead className="bg-slate-50"><tr><th className="w-64 p-3">采购清单与要求</th>{current.map(v=><th key={v.quoteId} className="w-72 p-3">{supplierNames[v.snapshot.quote.supplierId]||v.snapshot.quote.supplierId} · V{v.versionNo}</th>)}</tr></thead>
+        </tr>)}</tbody></table></div>}
+        {!!current.length&&view!=='versions'&&<div className="mt-4 overflow-x-auto"><table className="w-full min-w-[1100px] table-fixed text-left text-sm"><thead className="bg-slate-50"><tr><th className="w-64 p-3">采购清单与要求</th>{current.map(v=><th key={v.quoteId} className="w-72 p-3">{supplierNames[v.snapshot.quote.supplierId]||v.snapshot.quote.supplierId} · V{v.versionNo}</th>)}</tr></thead>
           <tbody>{current[0].snapshot.quote.lineItems.map(line=><tr key={line.demandItemId} className="border-b border-slate-100 align-top"><td className="p-3"><strong>{line.description}</strong><p className="mt-1">{line.quantity}{line.unit}</p><p className="mt-2 whitespace-pre-wrap break-words text-xs text-slate-500">{items.find(item=>item.demandItemId===line.demandItemId)?.specification}</p></td>
             {current.map(v=>{const q=v.snapshot.quote.lineItems.find(item=>item.demandItemId===line.demandItemId),t=v.snapshot.details?.lines.find(item=>item.demandItemId===line.demandItemId);return <td key={v.quoteId} className="p-3"><strong className="font-mono">{q?money(q.unitPrice):'未报价'}</strong><p className="mt-2">{t?.brand} / {t?.model}</p><p className="mt-2 whitespace-pre-wrap break-words text-xs text-slate-600">{t?.technicalParameters}</p><p className="mt-2 whitespace-pre-wrap break-words text-xs font-semibold">{t?.technicalResponse}</p></td>;})}
           </tr>)}</tbody></table></div>}
-        <div className="mt-4 flex flex-wrap gap-2">{pack.versions.map(v=><ActionButton key={`${v.quoteId}-${v.versionNo}`} onClick={()=>setSelected(v)}>{supplierNames[v.snapshot.quote.supplierId]||v.snapshot.quote.supplierId} · 轮{v.round}/V{v.versionNo}</ActionButton>)}</div>
-        {selected&&<div className="mt-4 border-t border-slate-200 pt-4">
+        {!current.length&&<p className="py-4 text-sm text-slate-500">暂无可查看的报价记录。</p>}
+        {view!=='comparison'&&<div className="mt-4 flex flex-wrap gap-2">{pack.versions.map(v=><ActionButton key={`${v.quoteId}-${v.versionNo}`} onClick={()=>setSelected(v)}>{supplierNames[v.snapshot.quote.supplierId]||v.snapshot.quote.supplierId} · 轮{v.round}/V{v.versionNo}</ActionButton>)}</div>}
+        {selected&&view!=='comparison'&&<div className="mt-4 border-t border-slate-200 pt-4">
           <h4 className="font-bold text-slate-900">{supplierNames[selected.snapshot.quote.supplierId]} · 第{selected.round}轮 · V{selected.versionNo}</h4>
           <p className="mt-1 text-xs text-slate-500">{new Date(selected.createdAt).toLocaleString('zh-CN')} · 提交人：{selected.actorId||'历史未留存'} · {selected.snapshot.details?.remark}</p>
           <div className="mt-3 overflow-x-auto"><table className="w-full min-w-[1000px] text-left text-sm"><thead className="bg-slate-50"><tr>{['采购品名','数量/单位','含税单价','品牌/型号','技术参数','技术响应及偏离','行备注'].map(x=><th key={x} className="p-3">{x}</th>)}</tr></thead><tbody>{selected.snapshot.quote.lineItems.map(line=>{const tech=selected.snapshot.details?.lines.find(l=>l.demandItemId===line.demandItemId);return <tr key={line.demandItemId} className="border-b border-slate-100 align-top"><td className="p-3">{line.description}</td><td className="p-3">{line.quantity}{line.unit}</td><td className="p-3">{money(line.unitPrice)}</td><td className="p-3">{tech?.brand}<br/>{tech?.model}</td><td className="max-w-xs whitespace-pre-wrap break-words p-3">{tech?.technicalParameters}</td><td className="max-w-xs whitespace-pre-wrap break-words p-3">{tech?.technicalResponse}</td><td className="p-3">{tech?.remark}</td></tr>;})}</tbody></table></div>

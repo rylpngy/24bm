@@ -5,6 +5,7 @@ import { RfqProjectDetail } from './rfq-project-detail';
 
 const api = vi.hoisted(() => ({ abort: vi.fn(), update: vi.fn() }));
 vi.mock('@24bid/api-client', () => ({
+  axiosInstance: { get: vi.fn().mockResolvedValue({ data: { data: null } }) },
   useRfqAbort: () => ({ mutate: api.abort }), useRfqUpdate: () => ({ mutate: api.update }),
   useRfqAnnounceResult: () => ({}), useRfqOpen: () => ({}), useRfqRemind: () => ({}),
   useRfqStartNewRound: () => ({}), useRfqAcceptEnrollment: () => ({}), useRfqDismissEnrollment: () => ({}),
@@ -16,6 +17,7 @@ vi.mock('../workflow/workflow-submit-dialog', () => ({ WorkflowSubmitDialog: () 
 vi.mock('./rfq-clarifications', () => ({ RfqClarificationsBuyer: () => null }));
 vi.mock('./rfq-result', () => ({ RfqResultBuyer: () => null }));
 vi.mock('./rfq-supplier-performance', () => ({ RfqSupplierPerformance: () => null }));
+vi.mock('./rfq-quotation-package', () => ({ RfqQuotationPackage: () => null }));
 
 function show() {
   render(<QueryClientProvider client={new QueryClient()}><RfqProjectDetail
