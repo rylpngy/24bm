@@ -131,6 +131,14 @@ class ProcurementProjectIT {
     var carry=lifecycle.submit(f.order().project(),fundedCarry(f.order().project(),1,f.a(),f.b(),target.id(),target.id()));decide(carry.id(),"approve");
     assertThat(funding.project(f.order().project()).sources()).singleElement().satisfies(x->assertThat(x.allocatedAmount()).isEqualByComparingTo("196.91"));
   }
+  @Test void originalPendingCarryoverWithoutNewUiAvailabilityStillApprovesWithoutRewritingEvidence(){
+    var f=paidProject();var request=lifecycle.submit(f[0],lifecycleRequest(f[0],"carryover",nextYear(1)));
+    jdbc.update("update procurement_project_lifecycle_requests set snapshot=jsonb_set(snapshot-'fundingCarryover','{preview}',(snapshot->'preview')-'fundingEnabled') where id=?",request.id());
+    var original=jdbc.queryForObject("select snapshot::text from procurement_project_lifecycle_requests where id=?",String.class,request.id());
+    decide(request.id(),"approve");
+    assertThat(lifecycle.preview(f[0]).effectivePeriod()).isEqualTo(nextYear(1));
+    assertThat(jdbc.queryForObject("select snapshot::text from procurement_project_lifecycle_requests where id=?",String.class,request.id())).isEqualTo(original);
+  }
   com.procurement.buyer.api.FundingContracts.Request fundLimit(com.procurement.buyer.api.FundingContracts.Fund fund,String limit,String key){return new com.procurement.buyer.api.FundingContracts.Request(key,"fund_limit",fund.id(),null,fund.revision(),new BigDecimal(limit),null,"年度专项额度独立审批",Map.of());}
   com.procurement.buyer.api.FundingContracts.Fund approvedFund(String code,String limit){var fund=funding.create(new com.procurement.buyer.api.FundingContracts.Draft(dept,year,code,"专项资金 "+code));var c=funding.submit(fundLimit(fund,limit,"limit-"+code));decide(c.id(),"approve");return funding.funds(1,100).items().stream().filter(f->f.id().equals(fund.id())).findFirst().orElseThrow();}
   com.procurement.buyer.api.FundingContracts.Request fundPlan(String project,String first,String second,String key){return new com.procurement.buyer.api.FundingContracts.Request(key,"project_plan",null,project,projects.detail(project).project().revision(),new BigDecimal("246.91"),List.of(new com.procurement.buyer.api.FundingContracts.Share(first,new BigDecimal("100")),new com.procurement.buyer.api.FundingContracts.Share(second,new BigDecimal("146.91"))),"项目多来源资金分摊",Map.of());}

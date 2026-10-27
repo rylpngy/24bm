@@ -294,8 +294,11 @@ public class ProjectLifecycleService {
         throw new IllegalStateException("项目或承接年度已变化，请驳回后重提");
       var now = inspect(p,i.id());
       acceptable(now, r.kind());
-      var old = policy.tree(r.snapshot()).path("preview");
-      if (!old.equals(policy.tree(policy.write(now))))
+      var old = (com.fasterxml.jackson.databind.node.ObjectNode)policy.tree(r.snapshot()).path("preview").deepCopy();
+      var current=(com.fasterxml.jackson.databind.node.ObjectNode)policy.tree(policy.write(now));
+      // UI availability was absent in older pending requests; cash and source evidence remain strict.
+      old.remove("fundingEnabled");current.remove("fundingEnabled");
+      if (!old.equals(current))
         throw new IllegalStateException("履约或资金数据已变化，请驳回后重新核对清算/承接依据");
       if("carryover".equals(r.kind()))fundingCarryover.validate(p,r,now.paidAmount());
       if ("liquidation".equals(r.kind())
