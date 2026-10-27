@@ -7,10 +7,10 @@ import { ContractRuleEditor } from './contract-rule-editor';
 import { perspectiveName,reviewBase,reviewDownload,reviewError,reviewField,reviewGet,reviewPost,reviewTime,severityName,
   type ReviewDocument,type RuleVersion,type Workspace,type ReviewRun,type Finding,type Decision } from './contract-review-api';
 
-export function ContractReviewWorkspace({canManage,onBack}:{canManage:boolean;onBack:()=>void}){
+export function ContractReviewWorkspace({canManage,onBack,embedded=false}:{canManage:boolean;onBack:()=>void;embedded?:boolean}){
   const client=useQueryClient();
   const [tab,setTab]=useState('review'),[page,setPage]=useState(1);
-  const [id,setId]=useState<string|null>(()=>new URLSearchParams(location.search).get('reviewDocument'));
+  const [id,setId]=useState<string|null>(()=>embedded?null:new URLSearchParams(location.search).get('reviewDocument'));
   const [runId,setRunId]=useState(''),[textVersion,setTextVersion]=useState<number|null>(null);
   const [ruleVersion,setRuleVersion]=useState(''),[perspective,setPerspective]=useState('BUYER');
   const [resultTab,setResultTab]=useState('findings'),[activeLocator,setActiveLocator]=useState<string|null>(null);
@@ -27,7 +27,7 @@ export function ContractReviewWorkspace({canManage,onBack}:{canManage:boolean;on
   const published=versions.data?.find(v=>v.id===(run?.rulesVersionId));
   const stale=!!run&&run.documentVersion!==data?.document.currentVersion;
   const switchDocument=(value:string|null)=>{setId(value);setRunId('');setTextVersion(null);setActiveLocator(null);setError('');setMessage('');setResultTab('findings');};
-  useEffect(()=>{const url=new URL(location.href);url.searchParams.set('view','review');if(id)url.searchParams.set('reviewDocument',id);else url.searchParams.delete('reviewDocument');history.replaceState(null,'',url);},[id]);
+  useEffect(()=>{if(embedded)return;const url=new URL(location.href);url.searchParams.set('view','review');if(id)url.searchParams.set('reviewDocument',id);else url.searchParams.delete('reviewDocument');history.replaceState(null,'',url);},[id,embedded]);
   const refresh=()=>{void client.invalidateQueries({queryKey:['contract-review-workspace',id]});void client.invalidateQueries({queryKey:['contract-review-documents']});};
   const upload=useMutation({mutationFn:async(file:File)=>{
     if(!/\.(docx|txt)$/i.test(file.name)||!file.size||file.size>2*1024*1024)throw Error('请选择2MB以内的DOCX或UTF-8文本，扫描件及PDF暂不支持。');
@@ -52,7 +52,7 @@ export function ContractReviewWorkspace({canManage,onBack}:{canManage:boolean;on
   const openDecision=(finding:Finding,action:'adopt'|'dismiss')=>{setDecision({finding,action});setReplacement(finding.suggestion);setComment('');setError('');};
   return <div className="min-w-0 space-y-4">
     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4">
-      <div className="flex min-w-0 items-center gap-3"><button type="button" aria-label="返回合同台账" className="h-9 w-9 shrink-0 rounded-md border border-slate-200 bg-white text-slate-500" onClick={onBack}><ArrowLeft size={17} className="mx-auto"/></button><div className="min-w-0"><h2 className="text-xl font-bold text-slate-950">合同智能审查</h2><p className="mt-1 text-xs text-slate-500">{data?.document.fileName||'采购合同审查台账'}</p></div></div>
+      <div className="flex min-w-0 items-center gap-3">{!embedded&&<button type="button" aria-label="返回合同台账" className="h-9 w-9 shrink-0 rounded-md border border-slate-200 bg-white text-slate-500" onClick={onBack}><ArrowLeft size={17} className="mx-auto"/></button>}<div className="min-w-0"><h2 className="text-xl font-bold text-slate-950">合同智能审查</h2><p className="mt-1 text-xs text-slate-500">{data?.document.fileName||'采购合同审查台账'}</p></div></div>
       {canManage&&<label className="inline-flex h-9 cursor-pointer items-center gap-2 whitespace-nowrap rounded-md bg-blue-600 px-4 text-sm font-bold text-white"><Upload size={15}/>{upload.isPending?'上传中':'上传合同'}<input aria-label="上传审查合同" type="file" accept=".txt,.docx" className="hidden" disabled={upload.isPending||start.isPending} onChange={e=>{const file=e.target.files?.[0];if(file)upload.mutate(file);e.target.value='';}}/></label>}
     </div>
     <Tabs items={[{id:'review',label:'审查工作台',icon:ScanText},{id:'rules',label:'规则配置与版本',icon:Settings2}]} value={tab} onChange={setTab}/>

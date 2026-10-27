@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Banknote, CalendarClock, FileDiff, FileSignature, FileText, Info, Plus, ScanText } from 'lucide-react';
+import { ArrowLeft, Banknote, CalendarClock, FileDiff, FileSignature, FileText, History, Info, Paperclip, Plus, ScanText } from 'lucide-react';
 import {
   useBuyerContractCreate,
   useBuyerContractList,
@@ -151,9 +151,15 @@ export function ContractsPage() {
   };
 
   const [detailTab, setDetailTab] = useState('info');
+  const [visitedTabs, setVisitedTabs] = useState<string[]>(['info']);
+  const changeDetailTab = (tab: string) => {
+    setDetailTab(tab);
+    setVisitedTabs((visited) => visited.includes(tab) ? visited : [...visited, tab]);
+  };
   const openDetail = (id?: string) => {
     if (!id) return;
     setDetailTab('info');
+    setVisitedTabs(['info']);
     setSelectedId(id);
   };
 
@@ -205,24 +211,23 @@ export function ContractsPage() {
         {feedback && <FeedbackNotice tone="success" message={feedback} />}
         {failedAction && <FeedbackNotice tone="error" message={financeErrorMessage(failedAction.error, '合同操作失败')} />}
 
-        {c.id && <WorkflowStatusPanel businessType="contract_approval" businessId={c.id} />}
-
-        <div className="grid gap-4 xl:grid-cols-[1fr_20rem]">
-          <div className="min-w-0 space-y-4">
-            {/* 详情分区按业务操作类型拆分为 TAB:信息/付款对账/履约/变更 */}
+        <div className="min-w-0 space-y-4">
             <Tabs
               items={[
-                { id: 'info', label: '合同信息', icon: FileText },
+                { id: 'info', label: '基本信息', icon: FileText },
+                { id: 'fulfillment', label: '履约记录', icon: CalendarClock },
                 { id: 'reconciliation', label: '付款对账', icon: Banknote },
-                { id: 'fulfillment', label: '履约时间轴', icon: CalendarClock },
                 { id: 'amendments', label: '合同变更', icon: FileDiff },
+                { id: 'review', label: '智能审查', icon: ScanText },
+                { id: 'approval', label: '审批记录', icon: History },
+                { id: 'files', label: '附件与签署', icon: Paperclip },
               ]}
               value={detailTab}
-              onChange={setDetailTab}
+              onChange={changeDetailTab}
             />
 
-            {detailTab === 'info' && (
-              <>
+            <div hidden={detailTab !== 'info'} className="space-y-4">
+            <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_18rem]">
             {/* 合同条款 */}
             <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
               <h3 className="text-base font-black text-slate-950">合同条款</h3>
@@ -247,33 +252,7 @@ export function ContractsPage() {
                 </div>
               </div>
             </section>
-                {c.id && <ContractEsignPanel contractId={c.id} />}
-                {c.id && (
-                  <OwnerAttachments
-                    ownerType="contract"
-                    ownerId={c.id}
-                    title="合同附件"
-                    emptyHint="暂无附件,点击右上角上传合同正本、补充协议等。"
-                  />
-                )}
-              </>
-            )}
-
-            {detailTab === 'reconciliation' && (
-              <>
-                {/* 合同-付款对账 + 行项与付款计划:同属资金口径 */}
-                <ContractReconciliationDetail contract={c} />
-                {c.id && <ContractScheduleSection contractId={c.id} />}
-              </>
-            )}
-
-            {detailTab === 'fulfillment' && c.id && <ContractFulfillmentEvents contractId={c.id} />}
-
-            {detailTab === 'amendments' && c.id && <ContractAmendments contractId={c.id} status={c.status} archiveStatus={c.archiveStatus} />}
-          </div>
-
-          {/* 右栏:关键信息 */}
-          <div className="space-y-4">
+          <div className="min-w-0 space-y-4">
             <section className="rounded-lg bg-slate-900 p-5 text-white shadow-sm">
               <p className="flex items-center gap-2 text-sm font-black">
                 <Info size={15} className="text-blue-400" /> 关键信息
@@ -304,6 +283,32 @@ export function ContractsPage() {
               </section>
             )}
           </div>
+            </div>
+            </div>
+
+            {/* 仅首次访问时加载，之后隐藏而不卸载，保留未保存的输入。 */}
+            {visitedTabs.includes('fulfillment') && <div hidden={detailTab !== 'fulfillment'}>
+              {c.id && <ContractFulfillmentEvents key={c.id} contractId={c.id} />}
+            </div>}
+            {visitedTabs.includes('reconciliation') && <div hidden={detailTab !== 'reconciliation'} className="space-y-4">
+              <ContractReconciliationDetail contract={c} />
+              {c.id && <ContractScheduleSection key={c.id} contractId={c.id} />}
+            </div>}
+            {visitedTabs.includes('amendments') && <div hidden={detailTab !== 'amendments'}>
+              {c.id && <ContractAmendments key={c.id} contractId={c.id} status={c.status} archiveStatus={c.archiveStatus} />}
+            </div>}
+            {visitedTabs.includes('review') && <div hidden={detailTab !== 'review'} className="space-y-4">
+              <FeedbackNotice tone="info" message="审查资料为独立台账，请选择本合同对应原件。审查校对稿不自动关联或覆盖当前合同正式记录。" />
+              <ContractReviewWorkspace key={c.id} embedded canManage={canManage} onBack={() => changeDetailTab('info')} />
+            </div>}
+            {visitedTabs.includes('approval') && <div hidden={detailTab !== 'approval'}>
+              {c.id && <WorkflowStatusPanel key={c.id} businessType="contract_approval" businessId={c.id} />}
+            </div>}
+            {visitedTabs.includes('files') && <div hidden={detailTab !== 'files'} className="space-y-4">
+              {c.id && <ContractEsignPanel key={`esign-${c.id}`} contractId={c.id} />}
+              {c.id && <OwnerAttachments key={`attachments-${c.id}`} ownerType="contract" ownerId={c.id} title="合同附件"
+                emptyHint="暂无附件,点击右上角上传合同正本、补充协议等。" />}
+            </div>}
         </div>
 
         {/* 底部悬浮操作条:阶段化动作常驻可见 */}

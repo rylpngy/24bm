@@ -39,3 +39,14 @@ it('displays immutable human history including before and after text',async()=>{
   fireEvent.click(await screen.findByRole('button',{name:/人工确认历史/}));fireEvent.click(screen.getByText(/已采纳修订 · V1→V2/));
   expect(screen.getByText('处理说明：已核实条件')).toBeVisible();expect(screen.getByText('分阶段支付。')).toBeVisible();
 });
+
+it('embedded review keeps the contract URL and does not silently select an unrelated document',async()=>{
+  window.history.replaceState(null,'','/?solution=ludong-poc&module=contracts&recordId=c1');
+  render(<QueryClientProvider client={new QueryClient({defaultOptions:{queries:{retry:false}}})}><ContractReviewWorkspace embedded canManage onBack={vi.fn()}/></QueryClientProvider>);
+  expect(await screen.findByText('合同.docx')).toBeVisible();
+  expect(screen.queryByRole('button',{name:'返回合同台账'})).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button',{name:'详情'}));
+  expect(await screen.findByText('预付款风险')).toBeVisible();
+  expect(window.location.search).toBe('?solution=ludong-poc&module=contracts&recordId=c1');
+  expect(screen.getByRole('button',{name:'规则 + AI审查'})).toBeEnabled();
+});
