@@ -365,7 +365,17 @@ function Applications({ screen, setScreen }: { screen: Screen; setScreen: (scree
     onError: (reason) => setError(apiError(reason)),
   });
 
-  if (screen.type === 'form') return canWrite ? <LudongPocForm initial={screen.application} busy={save.isPending} error={error} onBack={() => setScreen({ type: 'list' })} onSave={(payload) => save.mutate({ payload, id: screen.application?.id })} /> : <FeedbackNotice tone="error" message="当前岗位无申报编辑权限。" />;
+  const draft = useMutation({
+    mutationFn: ({ payload, id }: { payload: LudongFormPayload; id?: string }) => ludongApi.saveDraft(payload, id),
+    onSuccess: (application) => {
+      queryClient.invalidateQueries({ queryKey: ['ludong-poc'] });
+      setScreen({ type: 'form', application });
+      setError('');
+    },
+    onError: (reason) => setError(apiError(reason)),
+  });
+
+  if (screen.type === 'form') return canWrite ? <LudongPocForm initial={screen.application} busy={save.isPending || draft.isPending} error={error} onBack={() => setScreen({ type: 'list' })} onSaveDraft={(payload) => draft.mutateAsync({ payload, id: screen.application?.id })} onSave={(payload) => save.mutate({ payload, id: screen.application?.id })} /> : <FeedbackNotice tone="error" message="当前岗位无申报编辑权限。" />;
   if (screen.type === 'detail') return <ApplicationDetail application={screen.application} onBack={() => setScreen({ type: 'list' })} />;
 
   const filtered = (applications.data ?? []).filter((item) => !keyword || `${item.projectName}${item.applicationNo}${item.applicantUnit}`.toLowerCase().includes(keyword.toLowerCase()));

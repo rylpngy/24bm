@@ -277,6 +277,10 @@ export const ludongApi = {
   update: (id: string, data: Pick<LudongApplication, 'projectName' | 'applicantUnit' | 'departmentId' | 'budgetAmount' | 'formData' | 'items'>) =>
     unwrap<LudongApplication>(axiosInstance.put(`/api/v1/buyer/ludong-poc/applications/${id}`, data)),
   submit: (id: string) => unwrap<LudongApplication>(axiosInstance.post(`/api/v1/buyer/ludong-poc/applications/${id}/submit`)),
+  saveDraft: (data: Pick<LudongApplication, 'projectName' | 'applicantUnit' | 'departmentId' | 'budgetAmount' | 'formData' | 'items'>, id?: string) =>
+    unwrap<LudongApplication>(id
+      ? axiosInstance.put(`/api/v1/buyer/ludong-poc/applications/${id}/draft`, data)
+      : axiosInstance.post('/api/v1/buyer/ludong-poc/applications/drafts', data)),
   tasks: () => unwrap<WorkflowTask[]>(axiosInstance.get('/api/v1/buyer/workflow/tasks')),
   processed: () => unwrap<WorkflowLedgerItem[]>(axiosInstance.get('/api/v1/buyer/workflow/instances', {
     params: { view: 'processed', limit: 100 },

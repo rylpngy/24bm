@@ -144,11 +144,29 @@ public class LudongPocApplicationService {
 
   @Transactional
   public LudongPocApplicationResponse create(LudongPocApplicationRequest request) {
+    return create(request, false);
+  }
+
+  @Transactional
+  public LudongPocApplicationResponse saveDraft(String id, LudongPocApplicationRequest request) {
     permissionService.require("buyer:ludong-poc:write");
-    List<Map<String, Object>> normalizedItems = prepareApplicationItems(request.items());
+    if (request.formData() == null || request.items() == null
+        || request.projectName() == null || request.applicantUnit() == null) {
+      throw new IllegalArgumentException("草稿必须包含表单和设备清单，未填写的内容可留空");
+    }
+    if (request.departmentId() != null && !request.departmentId().isBlank()
+        && departmentApplicationService.findCurrentTenantActiveDepartment(request.departmentId()) == null) {
+      throw new IllegalArgumentException("申报单位不存在或不属于当前租户");
+    }
+    return id == null ? create(request, true) : update(id, request, true);
+  }
+
+  private LudongPocApplicationResponse create(LudongPocApplicationRequest request, boolean draft) {
+    permissionService.require("buyer:ludong-poc:write");
+    List<Map<String, Object>> normalizedItems = prepareApplicationItems(request.items(), draft);
     Map<String, Object> normalizedForm = prepareApplicationForm(request.formData(), normalizedItems);
-    validate(request, normalizedForm, normalizedItems);
-    BigDecimal budgetAmount = calculateBudget(normalizedItems);
+    if (!draft) validate(request, normalizedForm, normalizedItems);
+    BigDecimal budgetAmount = calculateBudget(normalizedItems, draft);
     String tenantId = tenant();
     String userId = user();
     String id = "ldu-poc-" + UUID.randomUUID();
@@ -165,11 +183,15 @@ public class LudongPocApplicationService {
 
   @Transactional
   public LudongPocApplicationResponse update(String id, LudongPocApplicationRequest request) {
+    return update(id, request, false);
+  }
+
+  private LudongPocApplicationResponse update(String id, LudongPocApplicationRequest request, boolean draft) {
     permissionService.require("buyer:ludong-poc:write");
-    List<Map<String, Object>> normalizedItems = prepareApplicationItems(request.items());
+    List<Map<String, Object>> normalizedItems = prepareApplicationItems(request.items(), draft);
     Map<String, Object> normalizedForm = prepareApplicationForm(request.formData(), normalizedItems);
-    validate(request, normalizedForm, normalizedItems);
-    BigDecimal budgetAmount = calculateBudget(normalizedItems);
+    if (!draft) validate(request, normalizedForm, normalizedItems);
+    BigDecimal budgetAmount = calculateBudget(normalizedItems, draft);
     requireApplication(tenant(), id);
     int changed = mapper.updateDraft(
         tenant(), id, request.projectName().trim(), request.applicantUnit().trim(),
@@ -606,6 +628,10 @@ public class LudongPocApplicationService {
   }
 
   private List<Map<String, Object>> prepareApplicationItems(List<Map<String, Object>> items) {
+    return prepareApplicationItems(items, false);
+  }
+
+  private List<Map<String, Object>> prepareApplicationItems(List<Map<String, Object>> items, boolean draft) {
     List<String> materialIds = items.stream()
         .map(item -> item.get("materialId") == null ? "" : String.valueOf(item.get("materialId")).trim())
         .filter(id -> !id.isBlank())
@@ -628,20 +654,25 @@ public class LudongPocApplicationService {
       }
       BigDecimal quantity;
       try {
-        quantity = new BigDecimal(String.valueOf(item.get("quantity")));
+        String raw = String.valueOf(item.getOrDefault("quantity", ""));
+        quantity = new BigDecimal(draft && raw.isBlank() ? "0" : raw);
       } catch (NumberFormatException exception) {
         throw new IllegalArgumentException("设备数量必须为有效数字: " + item.get("name"), exception);
       }
-      if (quantity.signum() <= 0) {
+      if (quantity.signum() < 0 || (!draft && quantity.signum() == 0)) {
         throw new IllegalArgumentException("设备数量必须大于 0: " + item.get("name"));
       }
       BigDecimal researchedPrice;
       try {
-        researchedPrice = new BigDecimal(String.valueOf(item.get("unitPrice")));
+        String raw = String.valueOf(item.getOrDefault("unitPrice", ""));
+        researchedPrice = new BigDecimal(draft && raw.isBlank() ? "0" : raw);
       } catch (NumberFormatException exception) {
         throw new IllegalArgumentException("市场调研单价必须为有效数字: " + item.get("name"), exception);
       }
       Map<String, Object> normalized = new LinkedHashMap<>(item);
+      if (researchedPrice.signum() < 0) throw new IllegalArgumentException("市场调研单价不能为负数");
+      normalized.put("quantity", quantity.toPlainString());
+      normalized.put("unitPrice", researchedPrice.toPlainString());
       normalized.entrySet().removeIf(entry -> entry.getValue() == null);
       if ("行政".equals(String.valueOf(normalized.get("usageDirection")))) {
         normalized.put("usageDirection", "行政办公");
@@ -675,7 +706,7 @@ public class LudongPocApplicationService {
       normalized.remove("configurationLimit");
       return Map.copyOf(normalized);
     }).toList();
-    for (int index = 0; index < normalizedItems.size(); index++) {
+    for (int index = 0; !draft && index < normalizedItems.size(); index++) {
       Map<String, Object> item = normalizedItems.get(index);
       if ("是".equals(String.valueOf(item.get("governmentMallCatalog")))) {
         requireItemText(item, index, "selectedBrand", "商城最终品牌");
@@ -723,10 +754,14 @@ public class LudongPocApplicationService {
   }
 
   private static BigDecimal calculateBudget(List<Map<String, Object>> items) {
+    return calculateBudget(items, false);
+  }
+
+  private static BigDecimal calculateBudget(List<Map<String, Object>> items, boolean draft) {
     BigDecimal total = items.stream()
         .map(item -> new BigDecimal(String.valueOf(item.get("totalPrice"))))
         .reduce(BigDecimal.ZERO, BigDecimal::add);
-    if (total.signum() <= 0) {
+    if (!draft && total.signum() <= 0) {
       throw new IllegalArgumentException("根据设备清单计算的预算金额必须大于 0");
     }
     return total;

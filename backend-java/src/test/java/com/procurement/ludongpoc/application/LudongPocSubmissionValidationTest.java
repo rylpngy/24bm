@@ -17,6 +17,9 @@ import com.procurement.organization.domain.Department;
 import com.procurement.workflow.application.UnifiedWorkflowApplicationService;
 import com.procurement.workflow.application.WorkflowDefinitionPublicationService;
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
+import com.procurement.ludongpoc.api.LudongPocApplicationRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -31,6 +34,42 @@ class LudongPocSubmissionValidationTest {
       mock(com.procurement.attachment.infrastructure.AttachmentMapper.class));
 
   @AfterEach void clear() { TenantContext.clear(); }
+
+  private LudongPocApplication draftApplication(String status) {
+    return new LudongPocApplication("app", "t", "NO", "部分填写", "", null, BigDecimal.ZERO,
+        status, "{}", "[]", "applicant", null, null, null, null, null, null);
+  }
+
+  @Test void partialDraftCanBeCreatedWithZeroBudgetAndNoWorkflow() {
+    TenantContext.set("t", null, "applicant");
+    when(mapper.findByTenantAndId(eq("t"), anyString())).thenReturn(draftApplication("draft"));
+    service.saveDraft(null, new LudongPocApplicationRequest("部分填写", "", null, BigDecimal.ZERO,
+        Map.of("_draftTab", "basic"), List.of()));
+    verify(mapper).insert(anyString(), eq("t"), anyString(), eq("部分填写"), eq(""), isNull(),
+        eq(BigDecimal.ZERO), contains("_draftTab"), eq("[]"), eq("applicant"));
+    verifyNoInteractions(workflows, definitions);
+  }
+
+  @Test void partialMallItemsCanBeSavedButCannotBeSubmitted() {
+    TenantContext.set("t", null, "applicant");
+    when(mapper.findByTenantAndId("t", "app")).thenReturn(draftApplication("draft"));
+    when(mapper.updateDraft(eq("t"), eq("app"), anyString(), anyString(), isNull(), any(), anyString(), anyString())).thenReturn(1);
+    service.saveDraft("app", new LudongPocApplicationRequest("部分填写", "", null, BigDecimal.ZERO,
+        Map.of("purchaseReason", "待补充"), List.of(Map.of("name", "台式计算机", "quantity", "", "unitPrice", ""))));
+    verify(mapper).updateDraft(eq("t"), eq("app"), eq("部分填写"), eq(""), isNull(),
+        eq(BigDecimal.ZERO), contains("待补充"), contains("台式计算机"));
+    when(mapper.findByTenantAndIdForUpdate("t", "app")).thenReturn(draftApplication("draft"));
+    assertThrows(IllegalArgumentException.class, () -> service.submit("app"));
+    verifyNoInteractions(workflows, definitions);
+  }
+
+  @Test void draftCannotOverwriteAnInApprovalApplication() {
+    TenantContext.set("t", null, "applicant");
+    when(mapper.findByTenantAndId("t", "app")).thenReturn(draftApplication("in_approval"));
+    assertThrows(IllegalStateException.class, () -> service.saveDraft("app",
+        new LudongPocApplicationRequest("部分填写", "", null, BigDecimal.ZERO, Map.of(), List.of())));
+    verifyNoInteractions(workflows, definitions);
+  }
 
   @Test void rejectsIncompleteHistoricalDraftBeforeCreatingFlowableInstance() {
     TenantContext.set("t", null, "applicant");

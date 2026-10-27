@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { type DepartmentResponse, useDepartmentList } from '@24bid/api-client';
 import { ActionButton, FeedbackNotice, PageHeader, PrimaryActionButton, SectionCard, cn } from '@24bid/ui';
 import { ArrowLeft, ArrowRight, ClipboardList, GitBranch, ListChecks, RotateCcw, Save, WalletCards } from 'lucide-react';
@@ -31,19 +31,23 @@ export function LudongPocForm({
   error,
   onBack,
   onSave,
+  onSaveDraft,
 }: {
   initial?: LudongApplication;
   busy: boolean;
   error?: string;
   onBack: () => void;
   onSave: (payload: LudongFormPayload) => void;
+  onSaveDraft?: (payload: LudongFormPayload) => Promise<LudongApplication>;
 }) {
   const departmentsQuery = useDepartmentList();
   const [projectName, setProjectName] = useState(initial?.projectName ?? '');
   const [applicantUnit, setApplicantUnit] = useState(initial?.applicantUnit ?? '');
   const [departmentId, setDepartmentId] = useState(initial?.departmentId ?? '');
   const [showValidation, setShowValidation] = useState(false);
-  const [activeTab, setActiveTab] = useState('basic');
+  const [activeTab, setActiveTab] = useState(() => applicationFormTabs.some((tab) => tab.id === initial?.formData._draftTab) ? initial!.formData._draftTab : 'basic');
+  const [savedMessage, setSavedMessage] = useState('');
+  const [savedFingerprint, setSavedFingerprint] = useState('');
   const [formData, setFormData] = useState<Record<string, string>>(() => {
     const data = { ...defaultFormData, ...initial?.formData };
     data.acceptanceStandard = requirementSupplement(acceptanceStandardTemplate, data.acceptanceStandard);
@@ -130,9 +134,19 @@ export function LudongPocForm({
   const valid = missingRequired.length === 0;
   const tabIndex = applicationFormTabs.findIndex((tab) => tab.id === activeTab);
   const currentMissing = missingRequired.filter((field) => requiredFieldTab(field) === activeTab);
+  const fingerprint = JSON.stringify({ projectName, applicantUnit, departmentId, formData, items });
+  const [initialFingerprint] = useState(fingerprint);
+  const dirty = fingerprint !== (savedFingerprint || initialFingerprint);
+  useEffect(() => {
+    const warn = (event: BeforeUnloadEvent) => {
+      if (dirty) { event.preventDefault(); event.returnValue = ''; }
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [dirty]);
 
-  const save = () => {
-    if (!valid) {
+  const save = async (draft = false) => {
+    if (!draft && !valid) {
       setShowValidation(true);
       setActiveTab(requiredFieldTab(missingRequired[0]));
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -146,13 +160,14 @@ export function LudongPocForm({
       [`${decision.key}Reason`, decision.evidence.join('；')],
     ]));
     const hasGovernmentMallItems = items.some((item) => item.governmentMallCatalog === '是');
-    onSave({
+    const payload = {
       projectName,
       applicantUnit,
       departmentId,
       budgetAmount,
       formData: {
         ...formData,
+        _draftTab: activeTab,
         ...routeSnapshot,
         coreProduct: coreProductName,
         mallSelectionApplicable: hasGovernmentMallItems ? '是' : '否',
@@ -161,7 +176,14 @@ export function LudongPocForm({
           : '设备清单中没有属于山东省政府采购网上商城目录的项目',
       },
       items,
-    });
+    };
+    if (draft && onSaveDraft) {
+      try {
+        await onSaveDraft(payload);
+        setSavedFingerprint(fingerprint);
+        setSavedMessage(`草稿已保存 · ${new Date().toLocaleTimeString('zh-CN')}`);
+      } catch { /* API error is displayed by the parent. */ }
+    } else onSave(payload);
   };
 
   return (
@@ -184,6 +206,7 @@ export function LudongPocForm({
       {showValidation && !valid && (
         <FeedbackNotice tone="error" message={`本页待完成：${currentMissing.join('、') || '本页已完整，请继续检查其他带数字的分类'}`} />
       )}
+      {savedMessage && <FeedbackNotice tone="success" message={dirty ? '有未保存修改，请保存草稿后再离开。' : savedMessage} />}
       <ApplicationTabs tabs={applicationFormTabs.map((tab) => ({ ...tab, badge: missingRequired.filter((field) => requiredFieldTab(field) === tab.id).length }))} value={activeTab} onChange={setActiveTab}>
       {activeTab === 'basic' && <>
       <SectionCard title="项目申报信息" icon={ClipboardList}>
@@ -342,13 +365,14 @@ export function LudongPocForm({
 
       <div className={cn('sticky bottom-0 z-10 flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-white px-5 py-4 shadow-sm', showValidation && !valid ? 'border-red-200' : 'border-slate-200')}>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-bold text-slate-500">保存后返回项目列表，再提交进入“购置必要性论证”节点。</p>
+          <p className="text-xs font-bold text-slate-500">{dirty ? '有未保存修改。' : ''}草稿可随时保存；全部完成后返回列表提交审批。</p>
           <p className="mt-1 text-xs text-slate-500">{tabIndex + 1} / {applicationFormTabs.length} · {applicationFormTabs[tabIndex].label}{currentMissing.length ? ` · 待完成 ${currentMissing.length} 项` : ''}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
         <ActionButton icon={ArrowLeft} disabled={tabIndex === 0 || busy} onClick={() => { setActiveTab(applicationFormTabs[tabIndex - 1].id); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>上一步</ActionButton>
         {tabIndex < applicationFormTabs.length - 1 && <ActionButton icon={ArrowRight} disabled={busy} onClick={() => { setActiveTab(applicationFormTabs[tabIndex + 1].id); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>下一步</ActionButton>}
-        <PrimaryActionButton icon={Save} size="md" flushTop busy={busy} pendingLabel="保存中" onClick={save}>{valid ? '保存申报' : '检查并保存'}</PrimaryActionButton>
+        {onSaveDraft && <ActionButton icon={Save} disabled={busy} onClick={() => void save(true)}>保存草稿</ActionButton>}
+        <PrimaryActionButton icon={Save} size="md" flushTop busy={busy} pendingLabel="保存中" onClick={() => void save()}>{valid ? '保存申报' : '检查并保存'}</PrimaryActionButton>
         </div>
       </div>
     </div>

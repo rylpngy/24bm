@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { LudongPocForm } from './ludong-poc-form';
 import { ApplicationTabs, applicationFormTabs, requiredFieldTab } from './ludong-application-tabs';
@@ -50,6 +50,33 @@ it('routes save validation to a missing field on another tab without losing data
   expect(screen.getByRole('tab', { name: /采购要求/ })).toHaveAttribute('aria-selected', 'true');
   expect(screen.getByText('本页待完成：购置理由及必要性')).toBeVisible();
   expect(save).not.toHaveBeenCalled();
+});
+
+it('saves incomplete drafts without final validation and restores the saved tab on re-entry', async () => {
+  const draft = vi.fn().mockResolvedValue(initial);
+  const save = vi.fn();
+  const view = render(<LudongPocForm busy={false} onBack={vi.fn()} onSave={save} onSaveDraft={draft} />);
+  fireEvent.change(screen.getByLabelText(/采购项目名称/), { target: { value: '未完成的申报' } });
+  fireEvent.click(screen.getByRole('tab', { name: /采购要求/ }));
+  fireEvent.change(screen.getByLabelText(/购置理由及必要性/), { target: { value: '分步填写的理由' } });
+  fireEvent.click(screen.getByRole('button', { name: '保存草稿' }));
+  await waitFor(() => expect(screen.getByText(/草稿已保存/)).toBeVisible());
+  const payload = draft.mock.calls[0][0];
+  expect(payload).toMatchObject({ projectName: '未完成的申报', applicantUnit: '', items: [],
+    formData: { _draftTab: 'requirements', purchaseReason: '分步填写的理由' } });
+  expect(save).not.toHaveBeenCalled();
+  view.unmount();
+  render(<LudongPocForm initial={{ ...initial, ...payload }} busy={false} onBack={vi.fn()} onSave={save} onSaveDraft={draft} />);
+  expect(screen.getByRole('tab', { name: /采购要求/ })).toHaveAttribute('aria-selected', 'true');
+  expect(screen.getByLabelText(/购置理由及必要性/)).toHaveValue('分步填写的理由');
+});
+
+it('does not announce a successful draft save when the server fails', async () => {
+  const draft = vi.fn().mockRejectedValue(new Error('保存失败'));
+  render(<LudongPocForm busy={false} onBack={vi.fn()} onSave={vi.fn()} onSaveDraft={draft} />);
+  fireEvent.click(screen.getByRole('button', { name: '保存草稿' }));
+  await waitFor(() => expect(draft).toHaveBeenCalledOnce());
+  expect(screen.queryByText(/草稿已保存/)).not.toBeInTheDocument();
 });
 
 it('groups mall and equipment validation separately and supports keyboard tab navigation', () => {
