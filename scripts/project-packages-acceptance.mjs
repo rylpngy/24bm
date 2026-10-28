@@ -150,6 +150,7 @@ try {
     'buyer_supplier_admission',
     'rfq_award',
     'contract_approval',
+    'order_settlement',
     'payment_request',
     'payment_batch',
   ]) {
@@ -1599,6 +1600,483 @@ try {
     report.records.cancellation = c;
     report.records.cancellationUi =
       await makeCancellation('浏览器两端取消办理验证');
+    if (process.env.PROJECT_ORDER_SETTLEMENT_ACCEPTANCE === '1') {
+      async function proof(order, name) {
+        const body = {
+          ownerType: 'order_settlement_document',
+          ownerId: order,
+          fileName: name + '.txt',
+          visibility: 'buyer_internal',
+        };
+        const ticket = await api('buyer/attachments/upload-ticket', b, body);
+        const bytes = Buffer.from('双方清算协议与凭证 ' + runId + ' ' + name);
+        const result = await fetch(base + ticket.uploadUrl, {
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer ' + b,
+            'Content-Type': 'application/octet-stream',
+          },
+          body: bytes,
+        });
+        assert.ok(result.ok);
+        return (
+          await api('buyer/attachments', b, {
+            ...body,
+            storageKey: ticket.storageKey,
+          })
+        ).id;
+      }
+      async function settlementCase(kind) {
+        const quality = kind.startsWith('quality-');
+        let qualityReceipt;
+        const c = await makeCancellation('合同清算 ' + kind);
+        const order = (await api('buyer/orders', b)).find(
+          (o) => o.id === c.orderId,
+        );
+        const contract =
+          kind === 'no-contract'
+            ? null
+            : await api('buyer/contracts', b, {
+                contractNo: 'SET-' + kind + '-' + runId,
+                contractName: '清算合同 ' + kind,
+                relatedOrderId: order.id,
+                amount: order.amount,
+                status: '草案',
+                fulfillmentProgress: '待履约',
+                paymentTerms: '验收后支付',
+              });
+        if (kind !== 'void') {
+          if (contract) {
+            await api(`buyer/contracts/${contract.id}/approval`, b, {
+              formData: {},
+            });
+            await decide(r, 'contract_approval', contract.id);
+          }
+          await api(`supplier/orders/${order.id}/confirm`, s, {});
+          const qty = kind === 'partial' ? 1 : 3;
+          await api(`supplier/orders/${order.id}/deliveries`, s, {
+            carrier: '清算物流',
+            trackingNo: 'SET-' + kind + '-' + runId,
+            shippedQuantity: qty,
+            lineItems: [
+              { orderLineId: order.lineItems[0].id, shippedQuantity: qty },
+            ],
+          });
+          qualityReceipt = await api(`buyer/orders/${order.id}/receipts`, b, {
+            result: quality ? '到货部分不合格，按批次退换' : '全部验收合格',
+            receivedQuantity: qty,
+            qualifiedQuantity: quality ? qty - 1 : qty,
+            ...(quality
+              ? {
+                  disposition: '退货换货',
+                  qualityNote: '到货质量异常，保留原始质检记录',
+                }
+              : {}),
+            lineItems: [
+              {
+                orderLineId: order.lineItems[0].id,
+                receivedQuantity: qty,
+                qualifiedQuantity: quality ? qty - 1 : qty,
+              },
+            ],
+          });
+        }
+        let invoice;
+        async function invoiceAndPay() {
+          invoice = await api(`supplier/orders/${order.id}/invoices`, s, {
+            amount: order.amount,
+            invoiceNo: 'REF-' + kind + '-' + runId,
+            taxRate: 0,
+          });
+          const batch = 'SET-BATCH-' + kind + '-' + runId;
+          const pay = await api('buyer/payment-requests', b, {
+            invoiceId: invoice.id,
+            requestStatus: '付款申请待提交',
+            paymentBatchNo: batch,
+            remark: '隔离清算验收',
+          });
+          await api(
+            `buyer/payment-requests/${pay.id}/status`,
+            b,
+            { requestStatus: '付款申请审批中', formData: {} },
+            'PUT',
+          );
+          await decide(r, 'payment_request', pay.id);
+          await api(
+            `buyer/payment-batches/${batch}/status`,
+            b,
+            { batchStatus: '审批中', formData: {} },
+            'PUT',
+          );
+          await decide(r, 'payment_batch', batch);
+          await api(`buyer/invoices/${invoice.id}/payment-ledger`, b, {
+            idempotencyKey: 'original-' + runId,
+            amount: 900,
+            evidenceNo: 'ORIGINAL-' + runId,
+          });
+        }
+        if (['refund', 'physical-return', 'physical-exchange'].includes(kind))
+          await invoiceAndPay();
+        if (kind === 'allocation-ui') {
+          report.records.allocationUi = {
+            ...c,
+            contractId: contract.id,
+            lineId: order.lineItems[0].id,
+          };
+          return;
+        }
+        if (kind.startsWith('physical-') || quality) {
+          const type = ['physical-return', 'quality-return'].includes(kind)
+            ? '退货'
+            : '换货';
+          await api('buyer/mall/after-sales', b, {
+            orderId: order.id,
+            orderLineId: order.lineItems[0].id,
+            type,
+            quantity: 1,
+            reason: '按实物交接核验退换货',
+          });
+          const a = (await api('buyer/mall/after-sales', b)).find(
+            (x) => x.orderId === order.id,
+          );
+          if (kind === 'physical-ui') {
+            report.records.physicalUi = { ...c, afterSalesId: a.id };
+            return;
+          }
+          await api(
+            'supplier/mall/after-sales/' + a.id,
+            s,
+            { status: '处理中', reply: '受理实物交接' },
+            'PUT',
+          );
+          const payload = (key, k) => ({
+            requestKey: key,
+            kind: k,
+            quantity: 1,
+            referenceNo: 'PHYSICAL-' + key,
+            note: '签收、复验实际凭证',
+            fileName: key + '.txt',
+            fileBase64: Buffer.from(
+              'physical proof ' + runId + ' ' + key,
+            ).toString('base64'),
+          });
+          await api(
+            'supplier/mall/after-sales/' + a.id,
+            s,
+            {
+              status: '已完成',
+              reply: '缺少实物不能完成',
+              evidenceNo: 'INVALID',
+            },
+            'PUT',
+            [400, 409],
+            /退货|复验/,
+          );
+          const first = payload('dispatch', 'return_dispatch');
+          await api('buyer/mall/after-sales/' + a.id + '/physical', b, first);
+          assert.equal(
+            (
+              await api(
+                'buyer/mall/after-sales/' + a.id + '/physical',
+                b,
+                first,
+              )
+            ).events.length,
+            1,
+          );
+          await api(
+            'supplier/mall/after-sales/' + a.id + '/physical',
+            s,
+            payload('receipt', 'return_receipt'),
+          );
+          if (type === '换货') {
+            await api(
+              'supplier/mall/after-sales/' + a.id + '/physical',
+              s,
+              payload('replacement', 'replacement_dispatch'),
+            );
+            await api(
+              'buyer/mall/after-sales/' + a.id + '/physical',
+              b,
+              payload('bad', 'inspection_fail'),
+            );
+            assert.deepEqual(
+              (await api('supplier/mall/after-sales/' + a.id + '/physical', s))
+                .actions,
+              [],
+            );
+            await api(
+              'buyer/mall/after-sales/' + a.id + '/physical',
+              b,
+              payload('dispatch2', 'return_dispatch'),
+            );
+            await api(
+              'supplier/mall/after-sales/' + a.id + '/physical',
+              s,
+              payload('receipt2', 'return_receipt'),
+            );
+            await api(
+              'supplier/mall/after-sales/' + a.id + '/physical',
+              s,
+              payload('replacement2', 'replacement_dispatch'),
+            );
+            await api(
+              'buyer/mall/after-sales/' + a.id + '/physical',
+              b,
+              payload('pass', 'inspection_pass'),
+            );
+          }
+          await api(
+            'supplier/mall/after-sales/' + a.id,
+            s,
+            {
+              status: '已完成',
+              reply: '实物证据齐全',
+              evidenceNo: 'PHYS-' + a.id,
+            },
+            'PUT',
+          );
+          await api('buyer/mall/after-sales/' + a.id + '/confirm', b, {
+            note: '核对全部实物记录',
+          });
+          const physical = await api(
+            'buyer/mall/after-sales/' + a.id + '/physical',
+            b,
+          );
+          for (const e of physical.events) {
+            const downloaded = await fetch(
+              base +
+                '/api/v1/supplier/mall/after-sales/' +
+                a.id +
+                '/physical/' +
+                e.id +
+                '/file',
+              { headers: { Authorization: 'Bearer ' + s } },
+            );
+            assert.equal(downloaded.status, 200);
+            assert.ok((await downloaded.text()).includes(runId));
+          }
+          report.records[kind] = {
+            ...c,
+            afterSalesId: a.id,
+            events: physical.events,
+          };
+          if (quality) {
+            const path = `buyer/receipts/${qualityReceipt.id}/quality-resolutions`,
+              before = await api(path, b);
+            assert.equal(before.lines[0].unresolvedQuantity, 1);
+            assert.equal(
+              (await api(`buyer/orders/${order.id}/settlements`, b)).preview
+                .blockers.length > 0,
+              true,
+            );
+            if (kind === 'quality-ui') {
+              report.records.qualityUi = {
+                ...c,
+                afterSalesId: a.id,
+                receiptId: qualityReceipt.id,
+                receiptLineId: before.lines[0].receiptLineId,
+              };
+              return;
+            }
+            const request = {
+              receiptLineId: before.lines[0].receiptLineId,
+              afterSalesId: a.id,
+              reason: '核对原始验收与退换货凭证，按批次核销',
+            };
+            const resolved = await api(path, b, request);
+            assert.equal(resolved.lines[0].unresolvedQuantity, 0);
+            assert.equal((await api(path, b, request)).resolutions.length, 1);
+            await api(
+              path,
+              b,
+              { ...request, reason: '禁止覆盖既有核销' },
+              'POST',
+              [400, 409],
+              /不得覆盖/,
+            );
+            const original = (await api('buyer/receipts', b)).find(
+              (x) => x.id === qualityReceipt.id,
+            );
+            assert.equal(original.qualifiedQuantity, 2);
+            assert.equal(original.inspectionConclusion, '部分合格');
+            report.records[kind].receiptId = qualityReceipt.id;
+            report.records[kind].qualityResolution = resolved.resolutions[0];
+            if (type === '换货') await invoiceAndPay();
+          }
+          if (type === '换货') {
+            const ep = `buyer/projects/${c.projectId}`,
+              lot = (await api(ep + '/packages', b)).find(
+                (l) => l.info.id === c.packageId,
+              );
+            const trace = await api(`buyer/rfqs/${c.rfqId}/execution`, b);
+            assert.equal(
+              trace.canArchive,
+              true,
+              JSON.stringify(trace.blockers),
+            );
+            assert.equal(trace.orderAmount, 900);
+            await api(ep + '/packages/' + c.packageId + '/close', b, {
+              revision: lot.info.revision,
+              reason: '换货复验完成，原财务记录不变',
+            });
+            const parent = await api(ep, b);
+            await api(ep + '/close', b, {
+              revision: parent.project.revision,
+              reason: '换货完成并归档全部实物原件',
+            });
+            const zip = await fetch(
+              base + '/api/v1/' + ep + '/archive/download',
+              { headers: { Authorization: 'Bearer ' + b } },
+            );
+            assert.equal(zip.status, 200);
+            writeFileSync(
+              report.downloadDirectory + '/' + kind + '.zip',
+              Buffer.from(await zip.arrayBuffer()),
+            );
+            check(
+              'Physical exchange: failed inspection loops through return and replacement, verified original downloads, unchanged order amount, project close and ZIP',
+            );
+            return;
+          }
+        }
+        const attachment = await proof(order.id, kind + '-agreement');
+        const path = `buyer/orders/${order.id}/settlements`,
+          sp = `supplier/orders/${order.id}/settlements`;
+        let entry = await api(path, b, {
+          requestKey: 'settlement-' + kind,
+          reason: '双方核对已履行数量和最终价款',
+          compensation: 0,
+          agreementId: attachment,
+          prices: ['refund', 'no-contract'].includes(kind)
+            ? [{ lineId: order.lineItems[0].id, unitPrice: 200 }]
+            : [],
+        });
+        const agreement = await fetch(
+          base + '/api/v1/' + sp + '/' + entry.id + '/agreement',
+          { headers: { Authorization: 'Bearer ' + s } },
+        );
+        assert.equal(agreement.status, 200);
+        assert.ok((await agreement.text()).includes(runId));
+        if (kind === 'ui') {
+          report.records.settlementUi = {
+            ...c,
+            settlementId: entry.id,
+            contractId: contract.id,
+            attachmentId: attachment,
+          };
+          return;
+        }
+        const act = (token, action, e, scope = path) =>
+          api(scope + '/' + e.id + '/actions', token, {
+            revision: e.revision,
+            action,
+            reason: '核对清算协议及真实原件',
+            formData: {},
+          });
+        entry = await act(s, 'accept', entry, sp);
+        entry = await act(b, 'submit', entry);
+        assert.ok(
+          !(await api('buyer/workflow/tasks', b)).some(
+            (t) => t.businessId === entry.id,
+          ),
+          'initiator must not approve',
+        );
+        await decide(r, 'order_settlement', entry.id);
+        entry = (await api(path + '/' + entry.id, b)).record;
+        if (kind !== 'void') {
+          const evidence = async (k, amount) =>
+            api(path + '/' + entry.id + '/evidence', b, {
+              requestKey: k + '-' + runId,
+              kind: k,
+              amount,
+              evidenceNo: k + '-' + kind + '-' + runId,
+              attachmentId: attachment,
+              remark: '已核验清算原件',
+            });
+          await act(b, 'complete', entry, path).then(
+            () => assert.fail('Must require financial evidence'),
+            () => {},
+          );
+          if (['quality-return', 'no-contract'].includes(kind))
+            await evidence('payment', 600);
+          else if (kind === 'partial') await evidence('payment', 300);
+          else await evidence('refund', 300);
+          await evidence('invoice', kind === 'partial' ? 300 : 600);
+        }
+        entry = await act(b, 'complete', entry);
+        assert.equal(entry.status, 'settled');
+        const now = (await api('buyer/orders', b)).find(
+          (o) => o.id === order.id,
+        );
+        assert.equal(now.amount, 900);
+        assert.equal(now.lineItems[0].quantity, 3);
+        assert.equal(now.status, '已清算');
+        const detail = await api(path + '/' + entry.id, b);
+        assert.equal(
+          detail.netPaid,
+          kind === 'void' ? 0 : kind === 'partial' ? 300 : 600,
+        );
+        assert.deepEqual(detail.blockers, []);
+        if (invoice) {
+          const original = (await api('buyer/invoices', b)).find(
+            (i) => i.id === invoice.id,
+          );
+          assert.equal(original.amount, 900);
+          assert.equal(original.paymentStatus, '已清算');
+        }
+        const ep = `buyer/projects/${c.projectId}`,
+          lot = (await api(ep + '/packages', b)).find(
+            (l) => l.info.id === c.packageId,
+          );
+        const trace = await api(`buyer/rfqs/${c.rfqId}/execution`, b);
+        assert.equal(trace.canArchive, true, JSON.stringify(trace.blockers));
+        assert.equal(trace.orderAmount, detail.netPaid);
+        await api(ep + '/packages/' + c.packageId + '/close', b, {
+          revision: lot.info.revision,
+          reason: '合同清算凭证完整，归档并释放余额',
+        });
+        const parent = await api(ep, b);
+        await api(ep + '/close', b, {
+          revision: parent.project.revision,
+          reason: '核对原始履约、Flowable、实际收付款和协议原件',
+        });
+        const zip = await fetch(base + '/api/v1/' + ep + '/archive/download', {
+          headers: { Authorization: 'Bearer ' + b },
+        });
+        assert.equal(zip.status, 200);
+        writeFileSync(
+          report.downloadDirectory + '/settlement-' + kind + '.zip',
+          Buffer.from(await zip.arrayBuffer()),
+        );
+        report.records['settlement_' + kind] = {
+          ...c,
+          settlementId: entry.id,
+          contractId: contract?.id ?? null,
+          netPaid: detail.netPaid,
+        };
+        check(
+          'Contract ' +
+            kind +
+            ': real supplier consent, independent Flowable, actual evidence, frozen originals, net closeout and downloadable ZIP',
+        );
+      }
+      for (const kind of ['void', 'partial', 'refund', 'ui'])
+        await settlementCase(kind);
+      if (process.env.PROJECT_PHYSICAL_AFTER_SALES_ACCEPTANCE === '1')
+        for (const kind of [
+          'physical-return',
+          'physical-exchange',
+          'physical-ui',
+        ])
+          await settlementCase(kind);
+      if (process.env.PROJECT_RECEIPT_QUALITY_ACCEPTANCE === '1')
+        for (const kind of ['quality-return', 'quality-exchange', 'quality-ui'])
+          await settlementCase(kind);
+      if (process.env.PROJECT_ALLOCATION_SETTLEMENT_ACCEPTANCE === '1')
+        for (const kind of ['no-contract', 'allocation-ui'])
+          await settlementCase(kind);
+    }
     check(
       'Bilateral cancellation validates rejection, withdrawal ownership, pause, idempotent agreement, original amount/quantity, paginated history and 1200 responsibility release only after closeout',
     );

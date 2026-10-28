@@ -28,6 +28,7 @@ const businessLabel: Record<string, string> = {
   project_change: '立项变更',
   project_carryover: '跨年度承接',
   project_liquidation: '项目终止清算',
+  order_settlement: '合同解除与订单清算',
   supplier_qualification_change: '供应商资质变更',
   purchase_demand: '采购需求', buyer_supplier_admission: '供应商准入', buyer_supplier_exit: '供应商退出', rfq_award: '询价定标',
   contract_approval: '合同审批', payment_request: '付款申请', payment_batch: '付款批次',

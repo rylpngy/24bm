@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+import {BuyerOrderSettlement} from './order-settlement';
+import { OrderAfterSales } from './order-after-sales';
 import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
 import { ArrowLeft, Info, Truck } from 'lucide-react';
 import {
@@ -45,7 +47,8 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
   const [selectedId, setSelectedId] = useState<string | null>(() => new URLSearchParams(window.location.search).get('recordId'));
   const [detailTab, setDetailTab] = useState('info');
   const [cancellationVisited, setCancellationVisited] = useState(false);
-  const openOrder = (id: string) => { setSelectedId(id); setDetailTab('info'); setCancellationVisited(false); };
+  const [afterSalesVisited, setAfterSalesVisited] = useState(false);
+  const openOrder = (id: string) => { setSelectedId(id); setDetailTab('info'); setCancellationVisited(false); setAfterSalesVisited(false); };
 
   const query = usePurchaseOrderList();
   const suppliersQuery = useBuyerSupplierList({ status: '已准入' }, { query: { enabled: can('buyer:supplier:read') } });
@@ -115,11 +118,17 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
           </div>
         </div>
 
-        <p className="text-xs font-bold">发货累计 {deliveryBatches.reduce((s, d) => s + (d.shippedQuantity ?? 0), 0)} · 收货累计 {receiptBatches.reduce((s, r) => s + (r.receivedQuantity ?? 0), 0)} · 合格累计 {receiptBatches.reduce((s, r) => s + (r.qualifiedQuantity ?? 0), 0)} · 待收总量 {o.status==='已取消'?0:(o.lineItems ?? []).length ? Math.max(0, (o.lineItems ?? []).reduce((s, l) => s + (l.quantity ?? 0), 0) - receiptBatches.reduce((s, r) => s + (r.receivedQuantity ?? 0), 0)) : '待核对'}</p>
+        <p className="text-xs font-bold">发货累计 {deliveryBatches.reduce((s, d) => s + (d.shippedQuantity ?? 0), 0)} · 收货累计 {receiptBatches.reduce((s, r) => s + (r.receivedQuantity ?? 0), 0)} · 合格累计 {receiptBatches.reduce((s, r) => s + (r.qualifiedQuantity ?? 0), 0)} · 待收总量 {['已取消','已清算'].includes(o.status??'')?0:(o.lineItems ?? []).length ? Math.max(0, (o.lineItems ?? []).reduce((s, l) => s + (l.quantity ?? 0), 0) - receiptBatches.reduce((s, r) => s + (r.receivedQuantity ?? 0), 0)) : '待核对'}</p>
 
-        <Tabs items={[{id:'info',label:'基本信息'},{id:'items',label:'采购明细'},{id:'delivery',label:'发货物流'},{id:'receipts',label:'收货验收'},{id:'cancellation',label:'取消与清算'}]} value={detailTab}
-          onChange={(id) => { setDetailTab(id); if (id === 'cancellation') setCancellationVisited(true); }} />
-        {cancellationVisited && <div hidden={detailTab !== 'cancellation'}>{o.id&&<BuyerOrderCancellation key={o.id} orderId={o.id} canManage={can('buyer:order:manage')} refresh={()=>query.refetch()}/>}</div>}
+        <Tabs items={[{id:'info',label:'基本信息'},{id:'items',label:'采购明细'},{id:'delivery',label:'发货物流'},{id:'receipts',label:'收货验收'},{id:'cancellation',label:'取消与清算'},{id:'afterSales',label:'退换与售后'}]} value={detailTab}
+          onChange={(id) => { setDetailTab(id); if (id === 'cancellation') setCancellationVisited(true); if (id === 'afterSales') setAfterSalesVisited(true); }} />
+        {cancellationVisited && <div hidden={detailTab !== 'cancellation'} className="space-y-4">
+          {o.id && <BuyerOrderCancellation key={o.id} orderId={o.id} canManage={can('buyer:order:manage')} refresh={()=>query.refetch()}/>}
+          {o.id && <BuyerOrderSettlement key={`settlement-${o.id}`} orderId={o.id} canManage={can('buyer:order:manage')} canContractManage={can('buyer:contract:manage')} canFinance={can('buyer:order:manage')&&can('buyer:payment:register')} refresh={()=>query.refetch()}/>}
+        </div>}
+        {afterSalesVisited && <div hidden={detailTab !== 'afterSales'}>
+          {o.id && <OrderAfterSales key={o.id} orderId={o.id} status={o.status ?? ''} canPurchase={can('buyer:mall:purchase')} lines={(o.lineItems ?? []).filter(l => Boolean(l.id) && (l.quantity ?? 0) > 0).map(l => ({ id: l.id!, quantity: l.quantity!, description: l.description }))} />}
+        </div>}
         <div className="min-w-0 space-y-4">
           <div className="min-w-0 space-y-4">
             {/* 抬头信息 */}
@@ -323,7 +332,7 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
                       )}
                     />
                     <p className={cn('text-sm font-black', step.done ? 'text-slate-950' : 'text-slate-400')}>{step.label}</p>
-                    <p className="mt-0.5 pb-3 font-mono text-[11px] font-bold text-slate-400">{step.time ?? (step.done ? '已完成，时间未登记' : o.status==='已取消'?'订单已取消，不再履行':o.status==='取消协商中'?'取消协商中，暂停履约':'待进行')}</p>
+                    <p className="mt-0.5 pb-3 font-mono text-[11px] font-bold text-slate-400">{step.time ?? (step.done ? '已完成，时间未登记' : o.status==='已清算'?'合同已清算，剩余履约已终止':o.status==='已取消'?'订单已取消，不再履行':['清算协商中','待清算'].includes(o.status??'')?'合同清算中，暂停履约':o.status==='取消协商中'?'取消协商中，暂停履约':'待进行')}</p>
                   </div>
                 ))}
               </div>

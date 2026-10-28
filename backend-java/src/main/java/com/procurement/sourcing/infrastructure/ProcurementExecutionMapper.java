@@ -80,6 +80,13 @@ public interface ProcurementExecutionMapper {
         'demandItems',coalesce((select jsonb_agg(to_jsonb(di) order by id) from di),'[]'::jsonb),
         'orders',coalesce((select jsonb_agg(to_jsonb(o) order by id) from o),'[]'::jsonb),
         'orderCancellations',coalesce((select jsonb_agg(jsonb_build_object('id',x.id,'orderId',x.order_id,'status',x.status,'reason',x.reason,'createdBy',x.created_by,'createdAt',x.created_at,'completedBy',x.completed_by,'completedAt',x.completed_at,'response',x.response) order by x.created_at,x.id) from order_cancellation_requests x join o on o.id=x.order_id where x.tenant_id=#{tenant}),'[]'::jsonb),
+        'afterSales',coalesce((select jsonb_agg(to_jsonb(a) order by a.id) from mall_after_sales a join o on o.id=a.order_id where a.tenant_id=#{tenant}),'[]'::jsonb),
+        'qualityResolutions',coalesce((select jsonb_agg(to_jsonb(q) order by q.reviewed_at,q.id) from receipt_after_sales_resolutions q join receipts r on r.tenant_id=q.tenant_id and r.id=q.receipt_id join o on o.id=r.order_id where q.tenant_id=#{tenant}),'[]'::jsonb),
+        'receiptQualityClearance',coalesce((select jsonb_agg(to_jsonb(c) || jsonb_build_object('receiptLineId',c.receipt_line_id,'returnedQuantity',c.returned_quantity,'exchangedQuantity',c.exchanged_quantity) order by c.receipt_line_id) from receipt_after_sales_line_clearance c join o on o.id=c.order_id where c.tenant_id=#{tenant}),'[]'::jsonb),
+        'afterSalesHistory',coalesce((select jsonb_agg(to_jsonb(e) order by e.created_at,e.id) from mall_after_sales_events e join mall_after_sales a on a.id=e.after_sales_id join o on o.id=a.order_id where a.tenant_id=#{tenant}),'[]'::jsonb),
+        'physicalAfterSales',coalesce((select jsonb_agg(to_jsonb(e)-'file_bytes' order by e.created_at,e.id) from mall_after_sales_physical_events e join mall_after_sales a on a.tenant_id=e.tenant_id and a.id=e.after_sales_id join o on o.id=a.order_id where e.tenant_id=#{tenant}),'[]'::jsonb),
+        'orderSettlements',coalesce((select jsonb_agg(to_jsonb(x)-'agreement_bytes' || jsonb_build_object('orderId',x.order_id,'finalAmount',x.final_amount,'goodsAmount',x.goods_amount,'initialPaid',x.initial_paid,'compensationAmount',x.compensation_amount,'workflowInstanceId',x.workflow_instance_id,'supplierActor',x.supplier_actor,'completedBy',x.completed_by,'completedAt',x.completed_at)) from order_settlements x join o on o.id=x.order_id where x.tenant_id=#{tenant}),'[]'::jsonb),
+        'settlementEvidence',coalesce((select jsonb_agg(to_jsonb(e)||jsonb_build_object('settlementId',e.settlement_id,'attachmentId',e.attachment_id,'createdBy',e.created_by,'evidenceNo',e.evidence_no)) from order_settlement_evidence e join order_settlements x on x.tenant_id=e.tenant_id and x.id=e.settlement_id join o on o.id=x.order_id where e.tenant_id=#{tenant}),'[]'::jsonb),
         'orderLines',coalesce((select jsonb_agg(to_jsonb(ol) order by id) from ol),'[]'::jsonb),
         'receipts',coalesce((select jsonb_agg(to_jsonb(rec) order by id) from rec),'[]'::jsonb),
         'receiptLines',coalesce((select jsonb_agg(to_jsonb(rl) order by id) from rl),'[]'::jsonb),
@@ -103,18 +110,18 @@ public interface ProcurementExecutionMapper {
       select distinct reason from (
         select '订单 ' || o.id || '：' || f.blocking_reason as reason
         from purchase_orders o join finance_fulfillment_checks f on f.tenant_id=o.tenant_id and f.order_id=o.id
-        where o.tenant_id=#{tenant} and o.rfq_id=#{rfq} and f.blocking_reason is not null
+        where o.tenant_id=#{tenant} and o.rfq_id=#{rfq} and f.blocking_reason is not null and not exists(select 1 from order_settlements s where s.tenant_id=o.tenant_id and s.order_id=o.id and s.status='settled')
         and not (o.status='已取消' and exists(select 1 from order_cancellation_requests c where c.tenant_id=o.tenant_id and c.order_id=o.id and c.status='accepted'))
         union all
         select '发票 ' || i.id || '：' || f.blocking_reason
         from purchase_orders o join invoices i on i.tenant_id=o.tenant_id and i.order_id=o.id
         join finance_invoice_closeout_checks f on f.tenant_id=i.tenant_id and f.invoice_id=i.id
-        where o.tenant_id=#{tenant} and o.rfq_id=#{rfq} and f.blocking_reason is not null
+        where o.tenant_id=#{tenant} and o.rfq_id=#{rfq} and f.blocking_reason is not null and not exists(select 1 from order_settlements s where s.tenant_id=o.tenant_id and s.order_id=o.id and s.status='settled')
         union all
         select '合同 ' || c.id || '：' || f.blocking_reason
         from purchase_orders o join contracts c on c.tenant_id=o.tenant_id and c.related_order_id=o.id
         join contract_closeout_checks f on f.tenant_id=c.tenant_id and f.contract_id=c.id
-        where o.tenant_id=#{tenant} and o.rfq_id=#{rfq} and f.blocking_reason is not null
+        where o.tenant_id=#{tenant} and o.rfq_id=#{rfq} and f.blocking_reason is not null and not exists(select 1 from order_settlements s where s.tenant_id=o.tenant_id and s.order_id=o.id and s.status='settled')
       ) checks order by reason
       """)
   List<String> closeoutBlockers(@Param("tenant") String tenant, @Param("rfq") String rfq);

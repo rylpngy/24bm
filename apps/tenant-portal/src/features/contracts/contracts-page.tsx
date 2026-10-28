@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { portalHref } from '../../lib/portal-href';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Banknote, CalendarClock, FileDiff, FileSignature, FileText, History, Info, Paperclip, Plus, ScanText } from 'lucide-react';
 import {
@@ -232,6 +233,7 @@ export function ContractsPage() {
             />
 
             <div hidden={detailTab !== 'info'} className="space-y-4">
+            {c.relatedOrderId && <a href={portalHref({ module: 'orders', recordId: c.relatedOrderId })} className="inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">关联订单与合同清算</a>}
             <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_18rem]">
             {/* 合同条款 */}
             <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
@@ -317,7 +319,7 @@ export function ContractsPage() {
         </div>
 
         {/* 底部悬浮操作条:阶段化动作常驻可见 */}
-        <div className="sticky bottom-4 z-30 rounded-lg border border-slate-200 bg-white/95 px-5 py-4 shadow-lg shadow-slate-300/40 backdrop-blur">
+        <div className="rounded-lg border border-slate-200 bg-white px-5 py-4 shadow-sm shadow-slate-200/40">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
               <FileSignature size={14} className="shrink-0 text-blue-600" />

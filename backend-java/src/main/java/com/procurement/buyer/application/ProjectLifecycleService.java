@@ -72,6 +72,7 @@ public class ProjectLifecycleService {
     var frozenYears = mapper.frozenYears(p.tenantId(), p.id());
     var carry = new ArrayList<String>();
     var clear = new ArrayList<String>();
+    if(mapper.orderSettlements(p.tenantId(),p.id())>0)carry.add("项目存在合同清算责任或退款调整，请先完成当前年度清算；不自动重写跨年度历史支出");
     var paidEntries = mapper.paidEntries(p.tenantId(), p.id());
     boolean known = sources.stream().allMatch(s -> s.paidAmount() != null);
     var paid =

@@ -157,7 +157,7 @@ public interface PurchaseOrderMapper {
           updated_at = now()
       where tenant_id = #{tenantId}
         and id = #{id}
-        and status not in ('已收货','取消协商中','已取消')
+        and status not in ('已收货','取消协商中','已取消','清算协商中','待清算','已清算')
       """)
   int updateExpectedReceiptDate(
       @Param("tenantId") String tenantId,
@@ -173,7 +173,7 @@ public interface PurchaseOrderMapper {
           updated_at = now()
       where tenant_id = #{tenantId}
         and id = #{id}
-        and status not in ('已收货','取消协商中','已取消')
+        and status not in ('已收货','取消协商中','已取消','清算协商中','待清算','已清算')
       """)
   int updateOrderDetails(
       @Param("tenantId") String tenantId,

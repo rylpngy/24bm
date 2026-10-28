@@ -121,8 +121,10 @@ public class InvoiceApplicationService {
     if (order == null) {
       throw new IllegalArgumentException("Purchase order not found for supplier scope: " + orderId);
     }
+    // Serialize the legacy full-order invoice path with imported split invoices and settlement.
     InvoiceCreationStatusPolicy.requireReceivedOrder(order.status(), orderId);
     tenantFeatureApplicationService.requireEnabled(order.tenantId(), TenantFeatureKey.FINANCE);
+    InvoiceCreationStatusPolicy.requireReceivedOrder(invoiceMapper.lockOrder(order.tenantId(), orderId), orderId);
     InvoiceAmountPolicy.requireInvoiceCreationAmountMatchesOrder(request.amount(), order.amount(), orderId);
     PurchaseOrderDocumentUniquenessPolicy.requireNoInvoice(
         invoiceMapper.countByTenantAndOrder(order.tenantId(), order.id()),

@@ -22,7 +22,7 @@ public final class ApprovalTemplateCode {
       case ApprovalBusinessType.PAYMENT_REQUEST -> PAYMENT_REQUEST;
       case ApprovalBusinessType.PAYMENT_BATCH -> PAYMENT_BATCH;
       case ApprovalBusinessType.PAYMENT_ARCHIVE_EXCEPTION -> PAYMENT_ARCHIVE_EXCEPTION;
-      case ApprovalBusinessType.CONTRACT_APPROVAL -> CONTRACT_APPROVAL;
+      case ApprovalBusinessType.CONTRACT_APPROVAL, "order_settlement" -> CONTRACT_APPROVAL;
       default -> throw new IllegalArgumentException("Unsupported approval biz type: " + businessType);
     };
   }

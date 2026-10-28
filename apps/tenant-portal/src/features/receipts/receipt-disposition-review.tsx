@@ -4,6 +4,7 @@ import { axiosInstance } from '@24bid/api-client';
 import { FeedbackNotice, PrimaryActionButton } from '@24bid/ui';
 import { X } from 'lucide-react';
 import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
+import { ReceiptQualityResolution } from './receipt-quality-resolution';
 
 interface Review {
   id: string;
@@ -31,6 +32,7 @@ export function ReceiptDispositionReview({ receiptId, onClose }: { receiptId: st
   const [decision, setDecision] = useState('');
   const [reason, setReason] = useState('');
   const [evidenceNo, setEvidenceNo] = useState('');
+  const [hasQualityResolution, setHasQualityResolution] = useState(false);
   const headingId = useId();
   const root = useRef<HTMLElement>(null);
   const save = useMutation({
@@ -39,6 +41,7 @@ export function ReceiptDispositionReview({ receiptId, onClose }: { receiptId: st
     })).data.data,
     onSuccess: data => {
       client.setQueryData(queryKey, data);
+      client.invalidateQueries({ queryKey: ['receipt-quality', receiptId] });
       client.invalidateQueries({ predicate: q => typeof q.queryKey[0] === 'string'
         && /\/buyer\/(receipts|invoices|three-way-matches)/.test(q.queryKey[0]) });
     },
@@ -63,7 +66,7 @@ export function ReceiptDispositionReview({ receiptId, onClose }: { receiptId: st
       onKeyDown={event => {
         if (event.key === 'Escape' && !save.isPending) { event.stopPropagation(); onClose(); }
         if (event.key === 'Tab') {
-          const targets = Array.from(root.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), textarea:not(:disabled)') ?? []);
+          const targets = Array.from(root.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled)') ?? []);
           const first = targets[0]; const last = targets[targets.length - 1];
           if (event.shiftKey && (document.activeElement === first || document.activeElement === root.current)) { event.preventDefault(); last?.focus(); }
           else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
@@ -84,7 +87,7 @@ export function ReceiptDispositionReview({ receiptId, onClose }: { receiptId: st
             ['复核人', record.reviewedBy], ['复核时间', record.reviewedAt],
           ].map(([label, value]) => <div key={label}><dt className="text-xs text-slate-500">{label}</dt><dd className="mt-1 whitespace-pre-wrap font-medium">{value}</dd></div>)}
         </dl>
-          : canReview ? <form className="space-y-4" onSubmit={event => {
+          : hasQualityResolution ? <FeedbackNotice tone="info" message="已登记退换货质量核销，原始验收保留，不再以让步接收重复处置。" /> : canReview ? <form className="space-y-4" onSubmit={event => {
             event.preventDefault();
             submit();
           }}>
@@ -98,6 +101,7 @@ export function ReceiptDispositionReview({ receiptId, onClose }: { receiptId: st
             {save.isError && <FeedbackNotice tone="error" message={failureMessage(save.error)} />}
             <PrimaryActionButton onClick={submit} busy={save.isPending} pendingLabel="登记中" disabled={save.isPending || !decision || !reason.trim() || !evidenceNo.trim()}>登记复核</PrimaryActionButton>
           </form> : <FeedbackNotice tone="info" message="当前账号仅可查看复核记录。" />}
+      <ReceiptQualityResolution receiptId={receiptId} onRecorded={setHasQualityResolution} />
     </section>
   </div>;
 }

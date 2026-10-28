@@ -24,7 +24,8 @@ public interface BuyerSupplierRelationMapper {
           coalesce(sum(amount) filter (where payment_status <> '已付款' or verification or paid < amount), 0) as unpaid_invoice_face_amount,
           (select count(*) from scoped_contracts where archive_status is distinct from '已归档') as unarchived_contract_count,
           (select count(*) from mall_after_sales where tenant_id = #{tenantId} and supplier_id = #{supplierId}
-            and (status is null or status not in ('已完成', '已拒绝'))) as open_after_sales_count,
+            and (status is null or status not in ('已完成', '已拒绝','已撤回') or exists(select 1 from mall_after_sales_finance_checks f where f.tenant_id=mall_after_sales.tenant_id and f.order_id=mall_after_sales.order_id and f.blocking_reason is not null)))
+          + (select count(*) from mall_after_sales_finance_checks f join purchase_orders o on o.tenant_id=f.tenant_id and o.id=f.order_id where f.tenant_id=#{tenantId} and o.supplier_id=#{supplierId} and f.blocking_reason is not null and not exists(select 1 from mall_after_sales a where a.tenant_id=f.tenant_id and a.order_id=f.order_id)) as open_after_sales_count,
           (select count(*) from uninvoiced) as uninvoiced_order_count,
           count(*) filter (where verification) as payment_verification_required_count,
           case when count(*) filter (where verification) > 0 then null

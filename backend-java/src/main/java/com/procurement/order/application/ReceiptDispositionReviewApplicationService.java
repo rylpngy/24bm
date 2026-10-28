@@ -68,13 +68,14 @@ public class ReceiptDispositionReviewApplicationService {
     }
     reviews.lockInvoices(tenant, order.id());
     reviews.lockContracts(tenant, order.id());
+    if (reviews.qualityResolutions(tenant,receiptId)>0) throw new IllegalStateException("此验收已有退换货质量核销，不得再以让步接收重复处置");
     var prior = reviews.find(tenant, receiptId);
     if (prior != null) {
       if (prior.decision().equals(request.decision()) && prior.reason().equals(reason) && prior.evidenceNo().equals(evidence)) return prior;
       throw new IllegalStateException("该验收已有不可变复核记录，不得覆盖");
     }
     if (reviews.countFrozenEvidence(tenant, order.id(), order.rfqId()) > 0
-        || Set.of("已归档", "已结算", "已完成").contains(order.status())) {
+        || Set.of("已归档", "已结算", "已完成","清算协商中","待清算","已清算").contains(order.status())) {
       throw new IllegalStateException("已结算或归档，不得复核");
     }
     if (receipt.receivedQuantity() == null || receipt.qualifiedQuantity() == null

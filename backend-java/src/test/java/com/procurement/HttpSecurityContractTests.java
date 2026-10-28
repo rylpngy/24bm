@@ -263,6 +263,8 @@ import org.springframework.test.web.servlet.MvcResult;
     BuyerContractController.class,
     ContractScheduleController.class,
     SupplierOrderController.class,
+    com.procurement.order.api.OrderSettlementController.class,
+    com.procurement.order.api.SupplierOrderSettlementController.class,
     BuyerReceiptController.class,
     com.procurement.order.api.BuyerReceiptDispositionReviewController.class,
     SupplierDeliveryController.class,
@@ -327,6 +329,7 @@ import org.springframework.test.web.servlet.MvcResult;
 })
 class HttpSecurityContractTests {
   @MockBean private com.procurement.order.application.OrderCancellationService orderCancellation;
+  @MockBean private com.procurement.order.application.OrderSettlementService orderSettlement;
   @MockBean private com.procurement.buyer.application.ProcurementProjectService procurementProjects;
   @MockBean private com.procurement.buyer.application.ProjectExpansionService projectExpansion;
   @MockBean private com.procurement.buyer.application.ProjectCloseoutService projectCloseout;
@@ -479,6 +482,10 @@ class HttpSecurityContractTests {
 
   @MockBean
   private com.procurement.mall.application.MallServiceApplicationService mallServiceApplicationService;
+  @org.springframework.boot.test.mock.mockito.MockBean
+  private com.procurement.mall.application.PhysicalAfterSalesService physicalAfterSalesService;
+  @org.springframework.boot.test.mock.mockito.MockBean
+  private com.procurement.order.application.ReceiptQualityService receiptQualityService;
 
   @MockBean
   private com.procurement.mall.application.MallPurchaseControlApplicationService mallPurchaseControlApplicationService;

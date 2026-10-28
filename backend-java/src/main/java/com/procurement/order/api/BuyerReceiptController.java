@@ -18,6 +18,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/buyer")
 public class BuyerReceiptController {
   private final ReceiptApplicationService receiptApplicationService;
+  @org.springframework.beans.factory.annotation.Autowired
+  private com.procurement.order.application.ReceiptQualityService quality;
+
+  @GetMapping("/receipts/{id}/quality-resolutions")
+  public ApiResponse<ReceiptQualityContracts.View> quality(@PathVariable String id) { return ApiResponse.ok(quality.view(id)); }
+  @PostMapping("/receipts/{id}/quality-resolutions")
+  public ApiResponse<ReceiptQualityContracts.View> resolve(@PathVariable String id,@Valid @RequestBody ReceiptQualityContracts.Request request) { return ApiResponse.ok(quality.resolve(id,request)); }
 
   public BuyerReceiptController(ReceiptApplicationService receiptApplicationService) {
     this.receiptApplicationService = receiptApplicationService;

@@ -12,6 +12,8 @@ import org.apache.ibatis.annotations.Update;
 
 @Mapper
 public interface InvoiceMapper {
+  @Select("select status from purchase_orders where tenant_id=#{tenantId} and id=#{orderId} for update")
+  String lockOrder(@Param("tenantId") String tenantId, @Param("orderId") String orderId);
   @Select("""
       select exists(select 1 from invoices i join purchase_orders o on o.tenant_id=i.tenant_id and o.id=i.order_id
       join rfq_demands rd on rd.tenant_id=o.tenant_id and rd.rfq_id=o.rfq_id

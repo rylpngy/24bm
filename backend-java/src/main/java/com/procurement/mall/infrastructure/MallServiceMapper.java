@@ -80,7 +80,8 @@ public interface MallServiceMapper {
 
   String AFTER_SALES_COLUMNS = """
       a.id, a.tenant_id, a.order_id, a.order_line_id, a.supplier_id, e.name as supplier_name,
-      a.type, a.quantity, a.reason, a.status, a.supplier_reply, a.created_at, a.updated_at
+      a.type, a.quantity, a.reason, a.status, a.supplier_reply, a.created_at, a.updated_at,
+      coalesce((select f.blocking_reason from mall_after_sales_finance_checks f where f.tenant_id=a.tenant_id and f.order_id=a.order_id),'无售后阻塞') as financial_status
       """;
 
   @Select("select " + AFTER_SALES_COLUMNS + """

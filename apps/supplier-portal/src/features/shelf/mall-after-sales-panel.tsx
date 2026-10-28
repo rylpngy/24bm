@@ -2,6 +2,10 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { axiosInstance } from '@24bid/api-client';
 import { Check, History, Play, RefreshCw, X } from 'lucide-react';
+import { PhysicalAfterSalesPanel } from '@24bid/ui';
+
+async function physicalRequest(path: string, body?: unknown) { return (body === undefined ? await axiosInstance.get(path) : await axiosInstance.post(path, body)).data.data; }
+async function physicalDownload(path: string, filename: string) { const response = await axiosInstance.get(path, { responseType: 'blob' }); const url = URL.createObjectURL(response.data as Blob); const a = document.createElement('a'); a.href = url; a.download = filename; a.click(); URL.revokeObjectURL(url); }
 
 interface AfterSales {
   id: string; orderId: string; orderLineId: string; type: string; quantity: number;
@@ -24,6 +28,7 @@ export function SupplierMallAfterSalesPanel({ canManage = false }: { canManage?:
   const query = useQuery({ queryKey: ['supplier-mall-after-sales-lifecycle'],
     queryFn: async () => (await axiosInstance.get<{ data: AfterSales[] }>(root)).data.data });
   const [selected, setSelected] = useState<string | null>(null);
+  const [physicalOpen, setPhysicalOpen] = useState<Record<string, boolean>>({});
   const history = useQuery({ queryKey: ['supplier-after-sales-history', selected], enabled: selected !== null,
     queryFn: async () => (await axiosInstance.get<{ data: ServiceEvent[] }>(`${root}/${encodeURIComponent(selected!)}/history`)).data.data });
   const [replies, setReplies] = useState<Record<string, string>>({});
@@ -53,6 +58,7 @@ export function SupplierMallAfterSalesPanel({ canManage = false }: { canManage?:
         <div className="flex flex-wrap justify-between gap-2"><strong>{row.type} · {row.quantity}</strong><span>{row.status}</span></div>
         <p className="break-all text-xs text-slate-500">订单 {row.orderId} / {row.orderLineId}</p>
         <p className="break-words text-sm">{row.reason}</p>
+        {['退货', '换货'].includes(row.type) && <details onToggle={e => { const open=e.currentTarget.open; setPhysicalOpen(previous => ({ ...previous, [row.id]: open })); }}><summary className="cursor-pointer py-2 text-sm font-medium text-blue-700">实物交接与凭证</summary>{physicalOpen[row.id] && <PhysicalAfterSalesPanel root={root} id={row.id} quantity={row.quantity} canManage={canManage} request={physicalRequest} download={physicalDownload} />}</details>}
         {row.supplierReply && <p className="break-words text-sm">处理回复：{row.supplierReply}</p>}
         <p className="text-sm text-amber-800">{row.financialStatus ?? (row.type === '退货' && row.status === '已完成' ? '退货财务待核对' : '')}</p>
         {canManage && ['待处理', '处理中'].includes(row.status) && <div className="space-y-2">

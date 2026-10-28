@@ -8,6 +8,8 @@ import org.apache.ibatis.annotations.*;
 
 @Mapper
 public interface ProjectLifecycleMapper {
+  @Select("select count(*) from order_settlements s join purchase_orders o on o.tenant_id=s.tenant_id and o.id=s.order_id where s.tenant_id=#{t} and s.status not in ('rejected','withdrawn') and exists(select 1 from rfq_demands rd join procurement_project_demands d on d.tenant_id=rd.tenant_id and d.demand_id=rd.demand_id where rd.tenant_id=o.tenant_id and rd.rfq_id=o.rfq_id and d.project_id=#{p})")
+  int orderSettlements(@Param("t")String t,@Param("p")String p);
   @Select(
       "select distinct source_period from procurement_project_lifecycle_requests where"
           + " tenant_id=#{t} and project_id=#{p} and kind='carryover' and status='approved'")
@@ -22,7 +24,14 @@ where e.tenant_id=#{t} and e.amount>0
 and exists(select 1 from rfq_demands rd join procurement_project_demands d on d.tenant_id=rd.tenant_id and d.demand_id=rd.demand_id
   where rd.tenant_id=o.tenant_id and rd.rfq_id=o.rfq_id and d.project_id=#{p})
 and not exists(select 1 from invoice_payment_entries rev where rev.tenant_id=e.tenant_id and rev.invoice_id=e.invoice_id and rev.reversal_of=e.id)
-order by e.id
+union all
+select e.id,null::text,o.id,o.rfq_id,case when e.kind='refund' then -e.amount else e.amount end,e.evidence_no
+from order_settlement_evidence e join order_settlements s on s.tenant_id=e.tenant_id and s.id=e.settlement_id
+join purchase_orders o on o.tenant_id=s.tenant_id and o.id=s.order_id
+where e.tenant_id=#{t} and e.kind in ('payment','refund') and s.status in ('approved','settled')
+and exists(select 1 from rfq_demands rd join procurement_project_demands d on d.tenant_id=rd.tenant_id and d.demand_id=rd.demand_id
+  where rd.tenant_id=o.tenant_id and rd.rfq_id=o.rfq_id and d.project_id=#{p})
+order by id
 """)
   List<PaymentBasis> paidEntries(@Param("t") String t, @Param("p") String p);
 
@@ -38,10 +47,17 @@ and (paid.amount<0 or paid.amount>i.amount or i.payment_status<>case when paid.a
 
   @Select(
       """
-select count(*) from mall_after_sales a join purchase_orders o on o.tenant_id=a.tenant_id and o.id=a.order_id
-where a.tenant_id=#{t} and a.status not in ('已拒绝','已撤回') and (a.status<>'已完成' or a.type in ('退货','换货'))
+select count(*) from (
+select a.id from mall_after_sales a join purchase_orders o on o.tenant_id=a.tenant_id and o.id=a.order_id
+where a.tenant_id=#{t} and a.status not in ('已拒绝','已撤回') and (a.status<>'已完成' or (a.type in ('退货','换货') and not exists(select 1 from mall_after_sales_physical_checks p where p.tenant_id=a.tenant_id and p.id=a.id and p.verified)) or (a.type='退货' and not exists(select 1 from order_settlements s where s.tenant_id=a.tenant_id and s.order_id=a.order_id and s.status='settled')))
 and exists(select 1 from rfq_demands rd join procurement_project_demands d on d.tenant_id=rd.tenant_id and d.demand_id=rd.demand_id
   where rd.tenant_id=o.tenant_id and rd.rfq_id=o.rfq_id and d.project_id=#{p})
+union all
+select c.receipt_line_id from receipt_after_sales_line_clearance c join purchase_orders o on o.tenant_id=c.tenant_id and o.id=c.order_id
+join finance_receipt_acceptance r on r.tenant_id=c.tenant_id and r.id=c.receipt_id
+where c.tenant_id=#{t} and not r.disposition_approved and (not c.valid or c.unresolved_quantity>0)
+and exists(select 1 from rfq_demands rd join procurement_project_demands d on d.tenant_id=rd.tenant_id and d.demand_id=rd.demand_id where rd.tenant_id=o.tenant_id and rd.rfq_id=o.rfq_id and d.project_id=#{p})
+) unresolved
 """)
   int unresolvedAfterSales(@Param("t") String t, @Param("p") String p);
 

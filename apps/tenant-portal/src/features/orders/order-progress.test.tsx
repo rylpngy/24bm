@@ -3,6 +3,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { OrdersPage } from './orders-page';
 
 const fixture = vi.hoisted(() => ({ delivered: true,status:'已收货' }));
+vi.mock('./order-settlement',()=>({BuyerOrderSettlement:()=> <p>订单清算操作样本</p>}));
+vi.mock('./order-after-sales',()=>({OrderAfterSales:()=> <p>订单售后操作样本</p>}));
 vi.mock('../../lib/use-buyer-permissions', () => ({ useBuyerPermissions: () => ({ can: () => true }) }));
 vi.mock('@24bid/api-client', () => ({
   useOrderCancellation: () => ({data:{blockers:['已完成订单不能取消'],items:[],total:0,actorId:'viewer'},loading:false,loadError:false,error:'',busy:false,page:1,setPage:vi.fn(),refresh:vi.fn(),act:vi.fn()}),
@@ -17,6 +19,16 @@ const open = () => {
   fireEvent.click(screen.getAllByRole('button', { name: '详情' })[0]);
 };
 describe('order fulfillment progress', () => {
+  it('retains mainline settlement and after-sales in their respective tabs', () => {
+    fixture.status='已收货'; open();
+    expect(screen.queryByText('订单清算操作样本')).not.toBeInTheDocument();
+    expect(screen.queryByText('订单售后操作样本')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '取消与清算' }));
+    expect(screen.getByText('订单清算操作样本')).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: '退换与售后' }));
+    expect(screen.getByText('订单售后操作样本')).toBeVisible();
+    expect(screen.getByText('订单清算操作样本')).not.toBeVisible();
+  });
   it('separates logistics, receipt and cancellation information from the basic page', () => {
     fixture.status='已收货'; fixture.delivered=true; open();
     expect(screen.getByText('订单信息')).toBeVisible();

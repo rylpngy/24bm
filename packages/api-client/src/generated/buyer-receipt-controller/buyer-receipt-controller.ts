@@ -26,10 +26,12 @@ import type {
 
 import type {
   ApiResponseListReceiptResponse,
+  ApiResponseReceiptQualityView,
   ApiResponseReceiptResponse,
   ApiResponseVoid,
   BuyerReceiptListParams,
-  CreateReceiptRequest
+  CreateReceiptRequest,
+  ReceiptQualityRequest
 } from '.././model';
 
 import { customInstance } from '../../http-client';
@@ -180,3 +182,152 @@ export function useBuyerReceiptList<TData = Awaited<ReturnType<typeof buyerRecei
 
   return query;
 }
+
+
+
+
+export const buyerReceiptQuality = (
+    id: string,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseReceiptQualityView>(
+      {url: `/api/v1/buyer/receipts/${id}/quality-resolutions`, method: 'GET', signal
+    },
+      );
+    }
+
+
+
+
+export const getBuyerReceiptQualityQueryKey = (id?: string,) => {
+    return [
+    `/api/v1/buyer/receipts/${id}/quality-resolutions`
+    ] as const;
+    }
+
+
+export const getBuyerReceiptQualityQueryOptions = <TData = Awaited<ReturnType<typeof buyerReceiptQuality>>, TError = ErrorType<ApiResponseVoid>>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerReceiptQuality>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getBuyerReceiptQualityQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof buyerReceiptQuality>>> = ({ signal }) => buyerReceiptQuality(id, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof buyerReceiptQuality>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type BuyerReceiptQualityQueryResult = NonNullable<Awaited<ReturnType<typeof buyerReceiptQuality>>>
+export type BuyerReceiptQualityQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useBuyerReceiptQuality<TData = Awaited<ReturnType<typeof buyerReceiptQuality>>, TError = ErrorType<ApiResponseVoid>>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerReceiptQuality>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerReceiptQuality>>,
+          TError,
+          Awaited<ReturnType<typeof buyerReceiptQuality>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerReceiptQuality<TData = Awaited<ReturnType<typeof buyerReceiptQuality>>, TError = ErrorType<ApiResponseVoid>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerReceiptQuality>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof buyerReceiptQuality>>,
+          TError,
+          Awaited<ReturnType<typeof buyerReceiptQuality>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useBuyerReceiptQuality<TData = Awaited<ReturnType<typeof buyerReceiptQuality>>, TError = ErrorType<ApiResponseVoid>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerReceiptQuality>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useBuyerReceiptQuality<TData = Awaited<ReturnType<typeof buyerReceiptQuality>>, TError = ErrorType<ApiResponseVoid>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof buyerReceiptQuality>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getBuyerReceiptQualityQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const buyerReceiptResolve = (
+    id: string,
+    receiptQualityRequest: BodyType<ReceiptQualityRequest>,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseReceiptQualityView>(
+      {url: `/api/v1/buyer/receipts/${id}/quality-resolutions`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: receiptQualityRequest, signal
+    },
+      );
+    }
+
+
+
+export const getBuyerReceiptResolveMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerReceiptResolve>>, TError,{id: string;data: BodyType<ReceiptQualityRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof buyerReceiptResolve>>, TError,{id: string;data: BodyType<ReceiptQualityRequest>}, TContext> => {
+
+const mutationKey = ['buyerReceiptResolve'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof buyerReceiptResolve>>, {id: string;data: BodyType<ReceiptQualityRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  buyerReceiptResolve(id,data,)
+        }
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BuyerReceiptResolveMutationResult = NonNullable<Awaited<ReturnType<typeof buyerReceiptResolve>>>
+    export type BuyerReceiptResolveMutationBody = BodyType<ReceiptQualityRequest>
+    export type BuyerReceiptResolveMutationError = ErrorType<ApiResponseVoid>
+
+    export const useBuyerReceiptResolve = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof buyerReceiptResolve>>, TError,{id: string;data: BodyType<ReceiptQualityRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof buyerReceiptResolve>>,
+        TError,
+        {id: string;data: BodyType<ReceiptQualityRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getBuyerReceiptResolveMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }

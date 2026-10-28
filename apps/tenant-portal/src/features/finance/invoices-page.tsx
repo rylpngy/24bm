@@ -418,7 +418,7 @@ export function InvoicesPage() {
               <span>
                 当前状态 <StatusPill label={inv.paymentStatus ?? '—'} />
                 <span className="ml-2">
-                  {!payable
+                  {inv.paymentStatus==='已清算'||inv.paymentStatus==='合同清算中'?'原始发票留档，以订单清算台账中的实际净结算结果为准。':!payable
                     ? '本发票已完成付款登记。'
                     : matched
                       ? '付款申请及批次审批通过后，按实际金额登记。'
