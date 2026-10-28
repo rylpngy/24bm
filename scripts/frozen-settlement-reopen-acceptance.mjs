@@ -379,10 +379,39 @@ try {
     return bytes;
   };
   const oldZip = await download(oldArchive.id, 'first-clearance.zip');
+  const supplementalBody = {
+    ...attachmentBody,
+    fileName: '补充协议与补付款凭证-' + f.runId + '.txt',
+  };
+  const supplementalTicket = await api(
+    'buyer/attachments/upload-ticket',
+    b,
+    supplementalBody,
+  );
+  assert.ok(
+    (
+      await fetch(apiBase + supplementalTicket.uploadUrl, {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer ' + b,
+          'Content-Type': 'application/octet-stream',
+        },
+        body: Buffer.from(
+          '上一版清算600元，双方补充协议增加150元，最终结算750元，当前年度来源A100/B50。' +
+            f.runId,
+        ),
+      })
+    ).ok,
+  );
+  const supplementalAttachment = await api('buyer/attachments', b, {
+    ...supplementalBody,
+    storageKey: supplementalTicket.storageKey,
+  });
   const supplement = {
     ...proposal,
     requestKey: 'WITHDRAW-' + f.runId,
     previousSettlementId: originalSettlement.id,
+    agreementId: supplementalAttachment.id,
     prices: [{ lineId: order.lineItems[0].id, unitPrice: 250 }],
     allocations: [{ source: c.invoiceId, goodsAmount: 750 }],
   };
@@ -428,7 +457,7 @@ try {
     .fill('新补充协议，最终货款750元，补付150元');
   await panel
     .getByRole('combobox', { name: /^共享给供应商的清算协议/ })
-    .selectOption(attachment.id);
+    .selectOption(supplementalAttachment.id);
   await panel
     .getByRole('button', { name: '提交供应商确认', exact: true })
     .click();
@@ -466,7 +495,7 @@ try {
   await panel.getByLabel('凭证编号', { exact: true }).fill('TOPUP-' + f.runId);
   await panel
     .getByRole('combobox', { name: /^原件/ })
-    .selectOption(attachment.id);
+    .selectOption(supplementalAttachment.id);
   await panel
     .getByLabel('核对说明', { exact: true })
     .fill('当前年度来源按补充协议补付款');
