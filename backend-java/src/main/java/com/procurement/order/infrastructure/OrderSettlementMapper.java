@@ -40,6 +40,13 @@ public interface OrderSettlementMapper {
   @Select(ROW+"where tenant_id=#{t} and order_id=#{o} and status='settled' order by created_at desc,id desc limit 1")
   Entry latest(@Param("t")String t,@Param("o")String o);
 
+  @Select("""
+select exists(select 1 from order_settlements s where s.tenant_id=#{t} and s.order_id=#{o} and s.status='settled' and s.compensation_amount>0 and
+ (not exists(select 1 from jsonb_array_elements(coalesce(s.snapshot->'invoicePlan','[]'::jsonb)) p where p->>'source'='~compensation')
+ or exists(select 1 from order_settlement_evidence e where e.tenant_id=s.tenant_id and e.settlement_id=s.id and e.kind in ('refund','payment') and e.source is null)))
+""")
+  boolean ambiguousCompensation(@Param("t")String t,@Param("o")String o);
+
   record CashPeriod(String source,String period,java.math.BigDecimal amount){}
   @Select("""
 with project as(select distinct p.project_id from purchase_orders o join rfq_demands r on r.tenant_id=o.tenant_id and r.rfq_id=o.rfq_id join procurement_project_demands p on p.tenant_id=r.tenant_id and p.demand_id=r.demand_id where o.tenant_id=#{t} and o.id=#{o}), current_year as(select coalesce((select max(r.target_period) from procurement_project_lifecycle_requests r join project p on p.project_id=r.project_id where r.tenant_id=#{t} and r.status='approved' and r.kind='carryover'),to_char(o.created_at at time zone 'Asia/Shanghai','YYYY')) period from purchase_orders o where o.tenant_id=#{t} and o.id=#{o}), cash as (

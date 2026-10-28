@@ -101,6 +101,8 @@ function parse(s: string) {
     return JSON.parse(s) as {
       funding?: SettlementFundingBasis;
       previousSettlementId?: string;
+      previousCompensationAmount?: number;
+      compensationPaid?: number;
       period?: string;
       cashPeriods?: { source: string; period: string; amount: number }[];
       invoiceBasis?: {
@@ -234,7 +236,21 @@ export function OrderSettlementPanel({
             mayManage &&
             s.data &&
             !s.data.preview.blockers.length && (
-              <button className={button} onClick={() => setCreating(!creating)}>
+              <button
+                className={button}
+                onClick={() => {
+                  if (!creating) {
+                    setCompensation(
+                      String(basis.previousCompensationAmount || 0),
+                    );
+                    setAllocations({});
+                    setPrices({});
+                    setAgreement('');
+                    setReason('');
+                  }
+                  setCreating(!creating);
+                }}
+              >
                 <FileCheck2 size={14} />
                 {basis.previousSettlementId
                   ? '发起补充清算'
@@ -256,16 +272,13 @@ export function OrderSettlementPanel({
           {s.error}
         </p>
       )}
-      {!supplier &&
-        s.data &&
-        s.data.preview.blockers.length > 0 &&
-        !s.data.items.length && (
-          <ul className="space-y-1 text-sm text-slate-500">
-            {s.data.preview.blockers.map((b) => (
-              <li key={b}>{b}</li>
-            ))}
-          </ul>
-        )}
+      {!supplier && s.data && s.data.preview.blockers.length > 0 && (
+        <ul className="space-y-1 text-sm text-slate-500">
+          {s.data.preview.blockers.map((b) => (
+            <li key={b}>{b}</li>
+          ))}
+        </ul>
+      )}
       {creating && (
         <form
           className="space-y-3 border-t border-slate-100 pt-4"
@@ -283,7 +296,7 @@ export function OrderSettlementPanel({
                   lineId,
                   unitPrice: Number(p),
                 })),
-                ...(basis.allocationRequired
+                ...(basis.allocationRequired || Number(compensation) > 0
                   ? {
                       allocations: (basis.invoiceBasis || []).map((x) => ({
                         source: x.source,
@@ -339,7 +352,7 @@ export function OrderSettlementPanel({
               </tbody>
             </table>
           </div>
-          {basis.allocationRequired && (
+          {(basis.allocationRequired || Number(compensation) > 0) && (
             <fieldset className="space-y-3 rounded-md border border-slate-200 p-3">
               <legend className="px-1 text-sm font-semibold">
                 逐票货款归属
@@ -376,8 +389,15 @@ export function OrderSettlementPanel({
             </fieldset>
           )}
           <label className="block text-sm">
-            补偿款
+            本次最终补偿款
+            {basis.previousSettlementId && (
+              <span className="ml-2 text-xs text-slate-500">
+                上次约定 {money(basis.previousCompensationAmount || 0)} ·
+                已付净额 {money(basis.compensationPaid || 0)}
+              </span>
+            )}
             <input
+              aria-label="本次最终补偿款"
               className={input}
               required
               type="number"
