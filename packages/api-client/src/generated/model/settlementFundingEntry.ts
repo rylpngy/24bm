@@ -12,4 +12,6 @@ export interface SettlementFundingEntry {
   code?: string;
   name?: string;
   amount?: number;
+  targetFundId?: string;
+  targetName?: string;
 }

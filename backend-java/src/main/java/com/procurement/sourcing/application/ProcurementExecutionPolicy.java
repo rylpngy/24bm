@@ -61,7 +61,7 @@ public final class ProcurementExecutionPolicy {
     boolean unknownPaid = false;
     for (var order : data.path("orders")) {
       String id = text(order,"id");
-      var clearing=matching(data,"orderSettlements","orderId",id).stream().filter(s->"settled".equals(text(s,"status"))).toList();
+      var clearing=matching(data,"orderSettlements","orderId",id).stream().filter(s->"settled".equals(text(s,"status"))&&matching(data,"orderSettlements","orderId",id).stream().noneMatch(n->"settled".equals(text(n,"status"))&&text(n.path("snapshot"),"previousSettlementId").equals(text(s,"id")))).toList();
       if("已清算".equals(text(order,"status"))&&clearing.size()==1){
         var s=clearing.get(0);var proof=matching(data,"settlementEvidence","settlementId",text(s,"id"));
         BigDecimal net=amount(s,"initialPaid");for(var p:proof)if("payment".equals(text(p,"kind")))net=net.add(amount(p,"amount"));else if("refund".equals(text(p,"kind")))net=net.subtract(amount(p,"amount"));

@@ -90,19 +90,46 @@ public class OrderSettlementService {
 
   private List<String> blockers(PurchaseOrder o, OrderSettlementPolicy.Assessment a) {
     var b = new ArrayList<>(a.blockers());
-    b.addAll(mapper.blockers(o.tenantId(), o.id()));
-    if (!Set.of("待供应商确认", "待发货", "已发货", "已收货").contains(o.status())) b.add("订单状态不支持新建清算");
+    b.addAll(operationalBlockers(o,mapper.latest(o.tenantId(),o.id())!=null));
+    if (!Set.of("待供应商确认", "待发货", "已发货", "已收货","已清算").contains(o.status())) b.add("订单状态不支持新建清算");
     if (mapper.locked(o.tenantId(), o.id())) b.add("已有未结束或已完成的清算");
     return b;
+  }
+
+  private List<String> operationalBlockers(PurchaseOrder o,boolean reopening){
+    return mapper.blockers(o.tenantId(),o.id()).stream().filter(s->!reopening||!s.startsWith("已有采购或合同归档")).toList();
+  }
+
+  private OrderSettlementPolicy.Assessment assessment(PurchaseOrder o,List<Price> prices){
+    var previous=mapper.latest(o.tenantId(),o.id());
+    var raw=policy.tree(mapper.baseline(o.tenantId(),o.id()));
+    if(previous==null)return policy.assess(policy.write(raw),prices);
+    if(previous.kind().equals("draft_void")||previous.compensationAmount().signum()>0)throw new IllegalStateException("草案撤销或含补偿款的清算须另行核对，不能直接重开");
+    var effective=(com.fasterxml.jackson.databind.node.ObjectNode)raw.deepCopy();
+    for(var c:effective.path("contracts")){
+      if(!c.path("id").asText().equals(previous.contractId())||!"已解除".equals(c.path("status").asText()))throw new IllegalStateException("原清算合同身份或状态不一致");
+      ((com.fasterxml.jackson.databind.node.ObjectNode)c).put("status","已生效").put("archive_status","未归档");
+    }
+    var payments=effective.putArray("payments");
+    effective.put("unbilledPaid",mapper.cashPeriods(o.tenantId(),o.id()).stream().filter(c->c.source().equals("~unbilled")).map(OrderSettlementMapper.CashPeriod::amount).reduce(BigDecimal.ZERO,BigDecimal::add));
+    for(var i:effective.path("invoices")){
+      var net=mapper.cashPeriods(o.tenantId(),o.id()).stream().filter(c->c.source().equals(i.path("id").asText())).map(OrderSettlementMapper.CashPeriod::amount).reduce(BigDecimal.ZERO,BigDecimal::add);
+      ((com.fasterxml.jackson.databind.node.ObjectNode)i).put("payment_status",net.signum()==0?"待付款":net.compareTo(i.path("amount").decimalValue())==0?"已付款":"部分付款");
+      if(net.signum()!=0)payments.addObject().put("id","net:"+i.path("id").asText()).put("invoice_id",i.path("id").asText()).put("amount",net);
+    }
+    return policy.assess(policy.write(effective),prices);
   }
 
   @Transactional(readOnly = true)
   public View view(String id, boolean supplier, int page, int size) {
     if (page < 1 || size < 1 || size > 100) throw new IllegalArgumentException("分页参数无效");
     var o = order(id, supplier, false);
-    var a = policy.assess(mapper.baseline(o.tenantId(), id), null);
+    OrderSettlementPolicy.Assessment a;
+    try{a=assessment(o,null);}catch(IllegalStateException ex){a=policy.assess(mapper.baseline(o.tenantId(),id),null);}
     var metadata=new LinkedHashMap<String,Object>(Map.of("lines",policy.tree(a.snapshot()).path("lines"),"invoiceBasis",allocation().basis(policy.tree(a.snapshot()).path("baseline")),"allocationRequired",allocation().required(policy.tree(a.snapshot()).path("baseline"))));
     var problems=new ArrayList<String>(supplier?List.of():blockers(o,a));
+    var previous=mapper.latest(o.tenantId(),id);
+    if(!supplier){metadata.put("period",mapper.period(o.tenantId(),id));metadata.put("cashPeriods",mapper.cashPeriods(o.tenantId(),id));if(mapper.cashPeriods(o.tenantId(),id).stream().anyMatch(x->!x.period().equals(mapper.period(o.tenantId(),id))))metadata.put("allocationRequired",true);if(previous!=null){metadata.put("previousSettlementId",previous.id());metadata.put("allocationRequired",true);}}
     boolean canFunding=!supplier&&permissions.currentUserHas("buyer:budget:read");
     if(!supplier&&!mapper.locked(o.tenantId(),id))try{var basis=funding.prepare(o.tenantId(),id,a.paid(),null,false);if(basis!=null){if(canFunding){metadata.put("funding",basis);metadata.put("allocationRequired",true);}else problems.add("专项清算需要预算查看权限");}}catch(IllegalStateException ex){problems.add(ex.getMessage());}
     return new View(
@@ -150,7 +177,7 @@ public class OrderSettlementService {
         refundDue,
         paymentDue,
         policy.completionBlockers(e, items),
-        supplier||!permissions.currentUserHas("buyer:budget:read")?List.of():funding.entries(o.tenantId(),id).stream().map(x->new FundingEntry(x.evidenceId(),x.fundId(),x.code(),x.name(),x.amount())).toList(),
+        supplier||!permissions.currentUserHas("buyer:budget:read")?List.of():funding.entries(o.tenantId(),id).stream().map(x->new FundingEntry(x.evidenceId(),x.fundId(),x.code(),x.name(),x.amount(),x.targetFundId(),x.targetName())).toList(),
         !supplier&&funding.read(e.snapshot())!=null);
   }
 
@@ -190,7 +217,9 @@ public class OrderSettlementService {
         throw new IllegalStateException("同一提交编号内容不同");
       return policy.sanitizedEntry(old,permissions.currentUserHas("buyer:budget:read"));
     }
-    var a = policy.assess(mapper.baseline(o.tenantId(), id), r.prices());
+    var previous=mapper.latest(o.tenantId(),id);
+    if(!Objects.equals(r.previousSettlementId(),previous==null?null:previous.id()))throw new IllegalStateException("请明确关联当前已完成清算版本，刷新后重试");
+    var a = assessment(o, r.prices());
     if (a.contractId() != null) permissions.require("buyer:contract:manage");
     allowed(blockers(o, a));
     var fundingBasis=funding.prepare(o.tenantId(),id,a.paid(),null,true);
@@ -202,6 +231,11 @@ public class OrderSettlementService {
     var snapshot = new LinkedHashMap<String, Object>();
     snapshot.put("assessment", policy.tree(a.snapshot()));
     snapshot.put("proposal", r);
+    snapshot.put("rawBaseline",policy.tree(mapper.baseline(o.tenantId(),id)));
+    snapshot.put("period",mapper.period(o.tenantId(),id));
+    snapshot.put("cashPeriods",mapper.cashPeriods(o.tenantId(),id));
+    if(mapper.cashPeriods(o.tenantId(),id).stream().anyMatch(x->!x.period().equals(mapper.period(o.tenantId(),id)))&&r.allocations()==null)throw new IllegalArgumentException("跨年冻结订单清算须明确逐票最终归属");
+    if(previous!=null){snapshot.put("previousSettlementId",previous.id());if(r.allocations()==null)throw new IllegalArgumentException("补充清算须明确逐票最终归属");}
     if(fundingBasis!=null)snapshot.put("funding",fundingBasis);
     if(fundingBasis!=null&&r.allocations()==null)throw new IllegalArgumentException("专项清算须明确填写逐票最终货款归属");
     var plan = allocation().plan(policy.tree(a.snapshot()).path("baseline"), a.goods(), r.compensation(), r.allocations());
@@ -228,6 +262,7 @@ public class OrderSettlementService {
     v.put("sha", p.contentSha256());
     v.put("bytes", file.data());
     mapper.insert(v);
+    if(previous!=null)budget.recordOrder(o.tenantId(),o.id(),o.rfqId());
     status(o, "清算协商中");
     event(o, "proposed", r.reason());
     return policy.sanitizedEntry(mapper.find(o.tenantId(), v.get("id").toString()),true);
@@ -244,10 +279,13 @@ public class OrderSettlementService {
   }
 
   private void unchanged(PurchaseOrder o, Entry e) {
-    var old = policy.tree(e.snapshot()).path("assessment").path("baseline");
+    var snapshot=policy.tree(e.snapshot());
+    var old = snapshot.has("rawBaseline")?snapshot.path("rawBaseline"):snapshot.path("assessment").path("baseline");
     if (!old.equals(policy.tree(mapper.baseline(o.tenantId(), o.id()))))
       throw new IllegalStateException("履约或资金依据已变化，请驳回后重新申请");
-    allowed(mapper.blockers(o.tenantId(), o.id()));
+    var previous=mapper.latest(o.tenantId(),o.id());
+    if(snapshot.has("previousSettlementId")&&(previous==null||!previous.id().equals(snapshot.path("previousSettlementId").asText())))throw new IllegalStateException("上次清算版本已变化");
+    allowed(operationalBlockers(o,snapshot.has("previousSettlementId")));
     funding.validate(o.tenantId(),o.id(),e.id(),e.snapshot(),e.initialPaid());
   }
 
@@ -316,10 +354,10 @@ public class OrderSettlementService {
         if (!x.contentSha().equals(proof(o, x.attachmentId()).contentSha256()))
           throw new IllegalStateException("清算凭证原件已变化");
       }
-      var skus = mapper.returnSkus(o.tenantId(), order);
+      var skus = policy.tree(e.snapshot()).has("previousSettlementId")?List.<String>of():mapper.returnSkus(o.tenantId(), order);
       for (String sku : skus)
         if (mapper.lockSku(sku) == null) throw new IllegalStateException("原始库存无法核验");
-      if (mapper.restoreStock(o.tenantId(), order) != skus.size())
+      if (!policy.tree(e.snapshot()).has("previousSettlementId")&&mapper.restoreStock(o.tenantId(), order) != skus.size())
         throw new IllegalStateException("库存恢复数量不一致");
       state(o, e, "settled", null);
       if (e.contractId() != null) contracts.archive(o.tenantId(), e.contractId(), id);
@@ -343,6 +381,7 @@ public class OrderSettlementService {
           || !previous.attachmentId().equals(r.attachmentId())
           || !previous.remark().equals(r.remark().strip())
           || !Objects.equals(previous.source(), r.source())
+          || (r.cashPeriod()!=null&&!Objects.equals(previous.cashPeriod(),r.cashPeriod()))
           || !funding.matches(o.tenantId(),previous.id(),fundingLines(r)))
         throw new IllegalStateException("同一凭证请求内容不同");
       return previous;
@@ -380,6 +419,11 @@ public class OrderSettlementService {
     v.put("remark", r.remark().strip());
     v.put("actor", actor());
     v.put("source", r.source());
+    v.put("period",cashPeriod(e,r,items));
+    if(funding.read(e.snapshot())!=null&&Set.of("refund","payment").contains(r.kind()))for(var l:r.fundingLines()==null?List.<FundingLine>of():r.fundingLines()){
+      var fund=funding.read(e.snapshot()).sources().stream().filter(x->x.fundId().equals(l.fundId())).findFirst().orElseThrow();
+      if(!fund.period().equals(v.get("period")))throw new IllegalArgumentException("现金归属年度与所选资金来源不一致");
+    }
     mapper.insertEvidence(v);
     funding.record(o.tenantId(),order,id,v.get("id").toString(),e.snapshot(),r.kind(),r.source(),r.amount(),fundingLines(r),actor());
     event(o, "evidence", r.kind() + ":" + r.amount() + ":" + r.evidenceNo());
@@ -427,12 +471,29 @@ public class OrderSettlementService {
 
   private List<com.procurement.buyer.application.FundingSettlementService.Allocation> fundingLines(EvidenceRequest r){
     if(r.fundingLines()==null)return null;
-    return r.fundingLines().stream().map(x->{if(x==null)throw new IllegalArgumentException("资金来源不得为空");return new com.procurement.buyer.application.FundingSettlementService.Allocation(x.fundId(),x.amount());}).toList();
+    return r.fundingLines().stream().map(x->{if(x==null)throw new IllegalArgumentException("资金来源不得为空");return new com.procurement.buyer.application.FundingSettlementService.Allocation(x.fundId(),x.amount(),x.targetFundId());}).toList();
   }
 
   private boolean sameProposal(com.fasterxml.jackson.databind.JsonNode saved, Proposal request) {
     var normalized = saved.deepCopy();
     if (normalized.isObject() && !normalized.has("allocations")) ((com.fasterxml.jackson.databind.node.ObjectNode) normalized).putNull("allocations");
+    if(normalized.isObject()&&!normalized.has("previousSettlementId"))((com.fasterxml.jackson.databind.node.ObjectNode)normalized).putNull("previousSettlementId");
     return normalized.equals(policy.tree(policy.write(request)));
+  }
+
+  private String cashPeriod(Entry e,EvidenceRequest r,List<Evidence> items){
+    var s=policy.tree(e.snapshot());String current=s.path("period").asText(null);
+    if(!Set.of("refund","payment").contains(r.kind())){if(r.cashPeriod()!=null)throw new IllegalArgumentException("非现金凭证不填资金年度");return null;}
+    if(current==null)return null;
+    if("payment".equals(r.kind())){if(r.cashPeriod()!=null&&!current.equals(r.cashPeriod()))throw new IllegalArgumentException("补付款只允许当前责任年度");return current;}
+    var rows=s.path("cashPeriods");var periods=new TreeSet<String>();
+    for(var row:rows)if(r.source()==null||r.source().equals(row.path("source").asText()))periods.add(row.path("period").asText());
+    String selected=r.cashPeriod();if(selected==null&&periods.size()==1&&periods.contains(current))selected=current;
+    if(selected==null||!periods.contains(selected))throw new IllegalArgumentException("请选择该发票原实际付款年度，历史冻结退款不得默认记入当年");
+    BigDecimal available=BigDecimal.ZERO;
+    for(var row:rows)if(selected.equals(row.path("period").asText())&&(r.source()==null||r.source().equals(row.path("source").asText())))available=available.add(row.path("amount").decimalValue());
+    for(var x:items)if(selected.equals(x.cashPeriod())&&Objects.equals(x.source(),r.source()))available=available.add("refund".equals(x.kind())?x.amount().negate():"payment".equals(x.kind())?x.amount():BigDecimal.ZERO);
+    if(r.amount().compareTo(available)>0)throw new IllegalArgumentException("退款超过该发票该年度已付净额");
+    return selected;
   }
 }

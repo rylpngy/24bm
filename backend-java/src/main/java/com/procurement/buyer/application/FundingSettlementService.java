@@ -28,14 +28,27 @@ public record FundingSettlementService(
       int revision,
       BigDecimal allocatedAmount,
       BigDecimal paidAmount,
-      BigDecimal remainingAmount) {}
+      BigDecimal remainingAmount,
+      String planId,
+      String period,
+      boolean historical) {}
 
-  public record Allocation(String fundId, BigDecimal amount) {}
+  public record Allocation(String fundId, BigDecimal amount, String targetFundId) {
+    public Allocation(String fundId, BigDecimal amount) {
+      this(fundId, amount, null);
+    }
+  }
 
-  public record Original(String source, String fundId, BigDecimal amount) {}
+  public record Original(String source, String fundId, BigDecimal amount, String planId) {}
 
   public record CashEntry(
-      String evidenceId, String fundId, String code, String name, BigDecimal amount) {}
+      String evidenceId,
+      String fundId,
+      String code,
+      String name,
+      BigDecimal amount,
+      String targetFundId,
+      String targetName) {}
 
   public record Basis(
       String projectId,
@@ -66,8 +79,7 @@ public record FundingSettlementService(
         || lifecycle.pending(t, p.id()) > 0
         || cash.pending(t, p.id(), Objects.toString(ignore, "")) > 0)
       throw new IllegalStateException("项目存在在审资金、承接、更正或其他清算，请先处理");
-    if (plan == null || cash.historical(t, order, plan) || funds.priorPaid(t, p.id()).signum() > 0)
-      throw new IllegalStateException("跨年度冻结来源清算尚未开放，不能改写历史归属");
+    if (plan == null) throw new IllegalStateException("专项资金方案不存在");
     var original = cash.original(t, order);
     if (original.stream()
             .map(FundingSettlementMapper.Cash::amount)
@@ -88,30 +100,71 @@ public record FundingSettlementService(
               .filter(x -> x.fundId().equals(f.id()))
               .map(FundingSettlementMapper.Cash::amount)
               .reduce(BigDecimal.ZERO, BigDecimal::add);
+      BigDecimal restored = ignore == null ? BigDecimal.ZERO : cash.restored(t, ignore, f.id());
       sources.add(
           new Source(
               f.id(),
               f.code(),
               f.name(),
               f.revision(),
-              b.allocatedAmount(),
+              b.allocatedAmount().subtract(restored),
               b.paidAmount().subtract(adjustment),
-              b.remainingAmount().add(adjustment)));
+              b.remainingAmount().add(adjustment).subtract(restored),
+              plan,
+              f.period(),
+              false));
     }
     if (sources.stream()
                 .map(Source::allocatedAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .reduce(
+                    funds
+                        .priorPaid(t, p.id())
+                        .add(
+                            own.stream()
+                                .filter(x -> !plan.equals(x.planId()))
+                                .map(x -> x.amount().negate())
+                                .reduce(BigDecimal.ZERO, BigDecimal::add)),
+                    BigDecimal::add)
                 .compareTo(p.plannedAmount())
             != 0
         || sources.stream()
             .anyMatch(s -> s.paidAmount().signum() < 0 || s.remainingAmount().signum() < 0))
       throw new IllegalStateException("项目专项责任与批准金额不一致");
+    var historical = new TreeMap<String, BigDecimal>();
+    for (var o : original)
+      if (!plan.equals(o.planId())) historical.merge(o.fundId(), o.amount(), BigDecimal::add);
+    for (var h : historical.entrySet()) {
+      var f = funds.fund(t, h.getKey());
+      var plans =
+          original.stream()
+              .filter(x -> x.fundId().equals(f.id()))
+              .map(FundingSettlementMapper.Cash::planId)
+              .distinct()
+              .toList();
+      if (plans.size() != 1 || h.getValue().signum() < 0)
+        throw new IllegalStateException("历史资金版本归属无法唯一核验");
+      if (access) scopes.requireRecordAccess(f.departmentId(), f.createdBy());
+      sources.add(
+          new Source(
+              f.id(),
+              f.code(),
+              f.name(),
+              f.revision(),
+              BigDecimal.ZERO,
+              h.getValue(),
+              BigDecimal.ZERO,
+              plans.getFirst(),
+              f.period(),
+              true));
+    }
     return new Basis(
         p.id(),
         plan,
         carryover.period(p),
         List.copyOf(sources),
-        original.stream().map(x -> new Original(x.source(), x.fundId(), x.amount())).toList());
+        original.stream()
+            .map(x -> new Original(x.source(), x.fundId(), x.amount(), x.planId()))
+            .toList());
   }
 
   public Basis read(String snapshot) {
@@ -144,7 +197,10 @@ public record FundingSettlementService(
   }
 
   public boolean matches(String t, String id, List<Allocation> lines) {
-    return matchesRows(shares(lines), cashForEvidence(t, id));
+    return matchesRows(shares(lines), cashForEvidence(t, id))
+        && (lines == null
+            || lines.stream()
+                .allMatch(l -> Objects.equals(l.targetFundId(), cash.target(t, id, l.fundId()))));
   }
 
   private List<FundingSettlementMapper.Entry> cashForEvidence(String t, String id) {
@@ -195,14 +251,21 @@ public record FundingSettlementService(
       var sourceFund = funds.fund(t, l.fundId());
       if (sourceFund != null)
         scopes.requireRecordAccess(sourceFund.departmentId(), sourceFund.createdBy());
+      var selected =
+          basis.sources().stream()
+              .filter(b -> b.fundId().equals(l.fundId()))
+              .findFirst()
+              .orElseThrow(() -> new IllegalArgumentException("来源不属于已批准清算依据"));
       var balance =
           funds.balances(t, basis.projectId()).stream()
               .filter(b -> b.fundId().equals(l.fundId()))
               .findFirst()
-              .orElseThrow(() -> new IllegalArgumentException("来源不属于已批准项目资金方案"));
+              .orElse(null);
+      if ("payment".equals(kind) && selected.historical())
+        throw new IllegalArgumentException("补付款只能使用当前年度资金来源");
       var allowed =
           "payment".equals(kind)
-              ? balance.remainingAmount()
+              ? Objects.requireNonNull(balance).remainingAmount()
               : basis.original().stream()
                   .filter(o -> o.source().equals(source) && o.fundId().equals(l.fundId()))
                   .map(Original::amount)
@@ -215,12 +278,34 @@ public record FundingSettlementService(
       if (l.amount().compareTo(allowed) > 0)
         throw new IllegalArgumentException(
             "refund".equals(kind) ? "退款超过该发票在此来源下的已付净额" : "补付超过项目该来源剩余额度");
+      var input =
+          lines.stream().filter(x -> x.fundId().equals(l.fundId())).findFirst().orElseThrow();
+      if (selected.historical()) {
+        var target =
+            funds.balances(t, basis.projectId()).stream()
+                .filter(x -> x.fundId().equals(input.targetFundId()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("历史退款须明确选择当前年度责任回补来源"));
+        var targetFund = funds.fund(t, target.fundId());
+        scopes.requireRecordAccess(targetFund.departmentId(), targetFund.createdBy());
+        if (l.amount().compareTo(targetFund.availableAmount()) > 0)
+          throw new IllegalStateException("当前年度回补来源额度不足，请先调整额度再申请清算");
+        cash.restore(
+            t,
+            evidence,
+            l.fundId(),
+            target.fundId(),
+            basis.projectId(),
+            basis.planId(),
+            l.amount(),
+            actor);
+      } else if (input.targetFundId() != null) throw new IllegalArgumentException("非历史退款不应填写回补来源");
       cash.insert(
           t,
           evidence,
           basis.projectId(),
           l.fundId(),
-          basis.planId(),
+          selected.planId(),
           "refund".equals(kind) ? l.amount().negate() : l.amount(),
           actor);
     }
@@ -234,7 +319,16 @@ public record FundingSettlementService(
 
   public List<CashEntry> entries(String t, String id) {
     return cash.entries(t, id).stream()
-        .map(x -> new CashEntry(x.evidenceId(), x.fundId(), x.code(), x.name(), x.amount()))
+        .map(
+            x ->
+                new CashEntry(
+                    x.evidenceId(),
+                    x.fundId(),
+                    x.code(),
+                    x.name(),
+                    x.amount(),
+                    x.targetFundId(),
+                    x.targetName()))
         .toList();
   }
 }

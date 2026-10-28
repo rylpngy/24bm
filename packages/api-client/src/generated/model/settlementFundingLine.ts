@@ -12,4 +12,5 @@ export interface SettlementFundingLine {
    * @minimum 0.01
    */
   amount: number;
+  targetFundId?: string;
 }

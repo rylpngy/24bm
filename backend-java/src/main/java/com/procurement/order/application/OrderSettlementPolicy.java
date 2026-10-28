@@ -20,6 +20,7 @@ public class OrderSettlementPolicy {
     safe.set("assessment", assessment);
     if (tree(entry.snapshot()).has("invoicePlan")) safe.set("invoicePlan", tree(entry.snapshot()).path("invoicePlan"));
     if(includeFunding&&tree(entry.snapshot()).has("funding"))safe.set("funding",tree(entry.snapshot()).path("funding"));
+    for(String key:List.of("period","cashPeriods","previousSettlementId"))if(tree(entry.snapshot()).has(key))safe.set(key,tree(entry.snapshot()).path(key));
     node.put("snapshot", write(safe));
     return json.convertValue(node, Entry.class);
   }
@@ -140,6 +141,7 @@ public class OrderSettlementPolicy {
       invoiced = invoiced.add(face);
     }
     if (invoiced.compareTo(b.path("amount").decimalValue()) > 0) errors.add("原始累计开票金额超过订单金额");
+    paid=paid.add(b.path("unbilledPaid").decimalValue());
     for (var payment : b.path("payments")) {
       boolean found = false;
       for (var invoice : b.path("invoices")) if (invoice.path("id").asText().equals(payment.path("invoice_id").asText())) found = true;

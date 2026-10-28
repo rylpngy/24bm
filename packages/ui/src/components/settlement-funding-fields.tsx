@@ -10,6 +10,8 @@ export type SettlementFundingBasis = {
     allocatedAmount: number;
     paidAmount: number;
     remainingAmount: number;
+    period?: string;
+    historical?: boolean;
   }[];
   original: { source: string; fundId: string; amount: number }[];
 };
@@ -19,6 +21,8 @@ export type SettlementFundingEntry = {
   code: string;
   name: string;
   amount: number;
+  targetFundId?: string | null;
+  targetName?: string | null;
 };
 const cents = (s: string) =>
   s === ''
@@ -39,6 +43,9 @@ export function SettlementFundingFields({
   value,
   onChange,
   onReady,
+  cashPeriod,
+  targets = {},
+  onTargetsChange,
 }: {
   basis: SettlementFundingBasis;
   entries: SettlementFundingEntry[];
@@ -49,21 +56,30 @@ export function SettlementFundingFields({
   value: Record<string, string>;
   onChange: (v: Record<string, string>) => void;
   onReady: (v: boolean) => void;
+  cashPeriod?: string;
+  targets?: Record<string, string>;
+  onTargetsChange?: (v: Record<string, string>) => void;
 }) {
-  const rows = basis.sources.map((s) => {
-    const own = entries.filter((e) => e.fundId === s.fundId);
-    const bound = own.filter((e) =>
-      evidence.some((p) => p.id === e.evidenceId && p.source === source),
-    );
-    const max =
-      kind === 'refund'
-        ? basis.original
-            .filter((o) => o.source === source && o.fundId === s.fundId)
-            .reduce((n, o) => n + o.amount, 0) +
-          bound.reduce((n, e) => n + e.amount, 0)
-        : s.remainingAmount - own.reduce((n, e) => n + e.amount, 0);
-    return { ...s, max };
-  });
+  const rows = basis.sources
+    .filter(
+      (s) =>
+        (!cashPeriod || !s.period || s.period === cashPeriod) &&
+        (kind !== 'payment' || !s.historical),
+    )
+    .map((s) => {
+      const own = entries.filter((e) => e.fundId === s.fundId);
+      const bound = own.filter((e) =>
+        evidence.some((p) => p.id === e.evidenceId && p.source === source),
+      );
+      const max =
+        kind === 'refund'
+          ? basis.original
+              .filter((o) => o.source === source && o.fundId === s.fundId)
+              .reduce((n, o) => n + o.amount, 0) +
+            bound.reduce((n, e) => n + e.amount, 0)
+          : s.remainingAmount - own.reduce((n, e) => n + e.amount, 0);
+      return { ...s, max };
+    });
   const sum = rows.reduce((n, s) => n + (cents(value[s.fundId] || '') || 0), 0),
     target = cents(amount);
   const ready =
@@ -73,7 +89,15 @@ export function SettlementFundingFields({
     sum === target &&
     rows.every((s) => {
       const a = cents(value[s.fundId] || '');
-      return a !== null && a <= Math.round(s.max * 100);
+      return (
+        a !== null &&
+        a <= Math.round(s.max * 100) &&
+        (!s.historical ||
+          a === 0 ||
+          basis.sources.some(
+            (t) => !t.historical && t.fundId === targets[s.fundId],
+          ))
+      );
     });
   useEffect(() => {
     onReady(ready);
@@ -84,11 +108,13 @@ export function SettlementFundingFields({
       aria-label="清算资金来源"
       className="space-y-3 border-t border-slate-200 pt-3"
     >
-      <h4 className="font-semibold">{basis.period} 年度资金来源</h4>
+      <h4 className="font-semibold">
+        {kind === 'refund' ? '退款原资金来源' : basis.period + ' 年度资金来源'}
+      </h4>
       {rows.map((s) => (
-        <label key={s.fundId} className="grid min-w-0 gap-2 sm:grid-cols-2">
+        <div key={s.fundId} className="grid min-w-0 gap-2 sm:grid-cols-2">
           <span className="break-words text-sm">
-            {s.code} · {s.name}
+            {s.period || basis.period} · {s.code} · {s.name}
             <span className="block text-xs text-slate-500">
               本项可{kind === 'refund' ? '退' : '付'} {money(s.max)}
             </span>
@@ -103,7 +129,29 @@ export function SettlementFundingFields({
             onChange={(e) => onChange({ ...value, [s.fundId]: e.target.value })}
             className="h-10 w-full min-w-0 rounded-md border border-slate-200 px-3 text-sm"
           />
-        </label>
+          {s.historical && kind === 'refund' && (
+            <label className="text-sm sm:col-span-2">
+              当前年度责任回补来源
+              <select
+                aria-label={'回补来源 ' + s.code}
+                className="mt-1 h-10 w-full rounded-md border border-slate-200 px-3"
+                value={targets[s.fundId] || ''}
+                onChange={(e) =>
+                  onTargetsChange?.({ ...targets, [s.fundId]: e.target.value })
+                }
+              >
+                <option value="">请选择已批准来源</option>
+                {basis.sources
+                  .filter((t) => !t.historical)
+                  .map((t) => (
+                    <option key={t.fundId} value={t.fundId}>
+                      {t.code} · {t.name}
+                    </option>
+                  ))}
+              </select>
+            </label>
+          )}
+        </div>
       ))}
       <p
         role="status"

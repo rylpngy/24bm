@@ -40,4 +40,6 @@ export interface OrderSettlementEvidenceRequest {
    * @maxItems 30
    */
   fundingLines?: SettlementFundingLine[];
+  /** @pattern 20[0-9]{2} */
+  cashPeriod?: string;
 }

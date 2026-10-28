@@ -34,8 +34,24 @@ public interface OrderSettlementMapper {
 
   @Select(
       "select exists(select 1 from order_settlements where tenant_id=#{t} and order_id=#{o} and"
-          + " status not in ('rejected','withdrawn'))")
+          + " status not in ('rejected','withdrawn','settled'))")
   boolean locked(@Param("t") String t, @Param("o") String o);
+
+  @Select(ROW+"where tenant_id=#{t} and order_id=#{o} and status='settled' order by created_at desc,id desc limit 1")
+  Entry latest(@Param("t")String t,@Param("o")String o);
+
+  record CashPeriod(String source,String period,java.math.BigDecimal amount){}
+  @Select("""
+with project as(select distinct p.project_id from purchase_orders o join rfq_demands r on r.tenant_id=o.tenant_id and r.rfq_id=o.rfq_id join procurement_project_demands p on p.tenant_id=r.tenant_id and p.demand_id=r.demand_id where o.tenant_id=#{t} and o.id=#{o}), current_year as(select coalesce((select max(r.target_period) from procurement_project_lifecycle_requests r join project p on p.project_id=r.project_id where r.tenant_id=#{t} and r.status='approved' and r.kind='carryover'),to_char(o.created_at at time zone 'Asia/Shanghai','YYYY')) period from purchase_orders o where o.tenant_id=#{t} and o.id=#{o}), cash as (
+ select e.invoice_id source,coalesce((select min(r.source_period) from procurement_project_lifecycle_requests r join project p on p.project_id=r.project_id where r.tenant_id=e.tenant_id and r.status='approved' and r.kind='carryover' and (jsonb_exists(r.snapshot->'paidEntryIds',e.id) or jsonb_exists(r.snapshot->'paidEntryIds',e.reversal_of))),(select period from current_year)) period,e.amount
+ from invoice_payment_entries e join invoices i on i.tenant_id=e.tenant_id and i.id=e.invoice_id where i.tenant_id=#{t} and i.order_id=#{o}
+ union all select coalesce(e.source,(select min(i.id) from invoices i where i.tenant_id=s.tenant_id and i.order_id=s.order_id having count(*)=1),'~unbilled'),coalesce(e.cash_period,to_char(e.created_at at time zone 'Asia/Shanghai','YYYY')),case when e.kind='refund' then -e.amount else e.amount end from order_settlement_evidence e join order_settlements s on s.tenant_id=e.tenant_id and s.id=e.settlement_id where s.tenant_id=#{t} and s.order_id=#{o} and s.status='settled' and e.kind in ('refund','payment'))
+ select source,period,sum(amount) amount from cash group by source,period order by source,period
+""")
+  List<CashPeriod> cashPeriods(@Param("t")String t,@Param("o")String o);
+
+  @Select("select coalesce(max(l.target_period),to_char(min(o.created_at) at time zone 'Asia/Shanghai','YYYY')) from purchase_orders o left join rfq_demands r on r.tenant_id=o.tenant_id and r.rfq_id=o.rfq_id left join procurement_project_demands p on p.tenant_id=r.tenant_id and p.demand_id=r.demand_id left join procurement_project_lifecycle_requests l on l.tenant_id=p.tenant_id and l.project_id=p.project_id and l.kind='carryover' and l.status='approved' where o.tenant_id=#{t} and o.id=#{o}")
+  String period(@Param("t")String t,@Param("o")String o);
 
   @Select(
       """
@@ -64,7 +80,7 @@ select id from contracts where tenant_id=#{t} and related_order_id=#{o} union se
 union all select '存在售后或实物退换货责任，须先核验' where exists(select 1 from mall_after_sales a left join mall_after_sales_physical_checks p on p.tenant_id=a.tenant_id and p.id=a.id where a.tenant_id=#{t} and a.order_id=#{o} and a.status not in ('已拒绝','已撤回') and (a.status<>'已完成' or (a.type in ('退货','换货') and not coalesce(p.verified,false))))
 union all select '存在未归属行明细的发货或收货记录' where exists(select 1 from deliveries d where d.tenant_id=#{t} and d.order_id=#{o} and (not exists(select 1 from delivery_line_items l where l.tenant_id=d.tenant_id and l.delivery_id=d.id) or d.shipped_quantity<>(select sum(l.shipped_quantity) from delivery_line_items l where l.tenant_id=d.tenant_id and l.delivery_id=d.id)))
 or exists(select 1 from receipts r where r.tenant_id=#{t} and r.order_id=#{o} and (r.inspection_conclusion not in ('全部合格','部分合格','全部不合格') or not exists(select 1 from receipt_line_items l where l.tenant_id=r.tenant_id and l.receipt_id=r.id) or r.received_quantity is distinct from (select sum(l.received_quantity) from receipt_line_items l where l.tenant_id=r.tenant_id and l.receipt_id=r.id) or r.qualified_quantity is distinct from (select sum(l.qualified_quantity) from receipt_line_items l where l.tenant_id=r.tenant_id and l.receipt_id=r.id) or exists(select 1 from receipt_after_sales_line_clearance c where c.tenant_id=r.tenant_id and c.receipt_id=r.id and (not c.valid or c.unresolved_quantity>0))))
-union all select '项目在审、已结项或已有跨年度冻结支出，不能直接解除清算' where exists(select 1 from purchase_orders o join rfq_demands rd on rd.tenant_id=o.tenant_id and rd.rfq_id=o.rfq_id join procurement_project_demands pd on pd.tenant_id=rd.tenant_id and pd.demand_id=rd.demand_id join procurement_projects p on p.tenant_id=pd.tenant_id and p.id=pd.project_id where o.tenant_id=#{t} and o.id=#{o} and (p.status<>'approved' or exists(select 1 from procurement_project_lifecycle_requests x where x.tenant_id=p.tenant_id and x.project_id=p.id and (x.status='submitted' or (x.status='approved' and x.snapshot->'paidEntryIds'<>'[]'::jsonb))) or exists(select 1 from procurement_project_changes x where x.tenant_id=p.tenant_id and x.project_id=p.id and x.status in ('draft','submitted'))))
+union all select '项目在审、已结项或分包已关闭，不能直接解除清算' where exists(select 1 from purchase_orders o join rfq_demands rd on rd.tenant_id=o.tenant_id and rd.rfq_id=o.rfq_id join procurement_project_demands pd on pd.tenant_id=rd.tenant_id and pd.demand_id=rd.demand_id join procurement_projects p on p.tenant_id=pd.tenant_id and p.id=pd.project_id where o.tenant_id=#{t} and o.id=#{o} and (p.status<>'approved' or exists(select 1 from procurement_project_lifecycle_requests x where x.tenant_id=p.tenant_id and x.project_id=p.id and x.status='submitted') or exists(select 1 from procurement_project_packages b join procurement_project_package_demands bd on bd.tenant_id=b.tenant_id and bd.package_id=b.id where bd.tenant_id=pd.tenant_id and bd.demand_id=pd.demand_id and b.status='closed') or exists(select 1 from procurement_project_changes x where x.tenant_id=p.tenant_id and x.project_id=p.id and x.status in ('draft','submitted'))))
 union all select '订单跨部门资金归属尚未拆分，须先核对' where (select count(distinct d.department_id) from purchase_orders o join rfq_demands r on r.tenant_id=o.tenant_id and r.rfq_id=o.rfq_id join purchase_demands d on d.tenant_id=r.tenant_id and d.id=r.demand_id where o.tenant_id=#{t} and o.id=#{o})>1
 ) b order by reason
 """)
@@ -112,22 +128,22 @@ values(#{id},#{t},#{o},#{supplier},#{contract},#{key},#{kind},#{reason},#{previo
 
   @Select(
       "select"
-          + " id,settlement_id,kind,amount,evidence_no,attachment_id,content_sha,remark,created_by,created_at,source"
+          + " id,settlement_id,kind,amount,evidence_no,attachment_id,content_sha,remark,created_by,created_at,source,cash_period"
           + " from order_settlement_evidence where tenant_id=#{t} and settlement_id=#{id} order by"
           + " created_at,id")
   List<Evidence> evidence(@Param("t") String t, @Param("id") String id);
 
   @Select(
       "select"
-          + " id,settlement_id,kind,amount,evidence_no,attachment_id,content_sha,remark,created_by,created_at,source"
+          + " id,settlement_id,kind,amount,evidence_no,attachment_id,content_sha,remark,created_by,created_at,source,cash_period"
           + " from order_settlement_evidence where tenant_id=#{t} and settlement_id=#{id} and"
           + " request_key=#{key}")
   Evidence evidenceByKey(@Param("t") String t, @Param("id") String id, @Param("key") String key);
 
   @Insert(
       "insert into"
-          + " order_settlement_evidence(id,tenant_id,settlement_id,request_key,kind,amount,evidence_no,attachment_id,content_sha,remark,created_by,source)"
-          + " values(#{id},#{t},#{settlement},#{key},#{kind},#{amount},#{reference},#{attachment},#{sha},#{remark},#{actor},#{source,jdbcType=VARCHAR})")
+          + " order_settlement_evidence(id,tenant_id,settlement_id,request_key,kind,amount,evidence_no,attachment_id,content_sha,remark,created_by,source,cash_period)"
+          + " values(#{id},#{t},#{settlement},#{key},#{kind},#{amount},#{reference},#{attachment},#{sha},#{remark},#{actor},#{source,jdbcType=VARCHAR},#{period,jdbcType=VARCHAR})")
   void insertEvidence(Map<String, Object> values);
 
   @Select(

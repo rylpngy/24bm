@@ -109,6 +109,30 @@ it('keeps detail errors visible and prevents stale detail actions', () => {
   expect(screen.getByRole('alert').textContent).toContain('详情加载失败');
   expect(screen.queryByRole('button', { name: '撤回申请' })).toBeNull();
 });
+it('offers supplemental clearing as a new application referencing the completed version', () => {
+  const s = state();
+  s.data.preview.baseline = JSON.stringify({
+    previousSettlementId: 'completed-1',
+    lines: [],
+    allocationRequired: true,
+    invoiceBasis: [{ source: 'i', label: '原发票', face: 100, paid: 60 }],
+  });
+  render(<OrderSettlementPanel state={s} canManage onAgreement={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: '发起补充清算' }));
+  fireEvent.change(screen.getByLabelText('清算原因'), {
+    target: { value: '双方补充协议' },
+  });
+  fireEvent.change(screen.getByLabelText('原发票清算货款'), {
+    target: { value: '50' },
+  });
+  fireEvent.submit(screen.getByLabelText('清算原因').closest('form')!);
+  expect(s.propose).toHaveBeenCalledWith(
+    expect.objectContaining({
+      previousSettlementId: 'completed-1',
+      allocations: [{ source: 'i', goodsAmount: 50 }],
+    }),
+  );
+});
 it('keeps funded finance read-only when budget source details are not authorized', () => {
   const s = state();
   s.detail.record.status = 'approved';
@@ -120,7 +144,9 @@ it('keeps funded finance read-only when budget source details are not authorized
       onAgreement={vi.fn()}
     />,
   );
-  expect(screen.getByRole('alert')).toHaveTextContent('专项清算需要预算查看权限');
+  expect(screen.getByRole('alert')).toHaveTextContent(
+    '专项清算需要预算查看权限',
+  );
   expect(screen.queryByText('登记实际清算凭证')).toBeNull();
   expect(screen.queryByRole('button', { name: '登记凭证' })).toBeNull();
 });

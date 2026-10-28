@@ -18,4 +18,5 @@ export interface OrderSettlementEvidence {
   createdBy?: string;
   createdAt?: string;
   source?: string;
+  cashPeriod?: string;
 }

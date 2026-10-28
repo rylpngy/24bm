@@ -61,6 +61,29 @@ class ProcurementProjectIT {
   @Autowired FundingService funding;
   @Autowired FundingCarryoverService fundingCarryover;
   record FundedCase(CancelCase order,String invoice,String entry,String a,String b){}
+  @Test void frozenFundedRefundRestoresCurrentResponsibilityWithoutChangingHistoricalBasis()throws Exception{
+    var f=fundedPaidCase();settlementContract(f.order(),true);String proof=settlementProof(f.order());var a=futureFund("A",1,"300");var b=futureFund("B",1,"300");
+    var carry=lifecycle.submit(f.order().project(),fundedCarry(f.order().project(),1,f.a(),f.b(),a.id(),b.id()));decide(carry.id(),"approve");
+    String frozen=jdbc.queryForObject("select snapshot::text from procurement_project_lifecycle_requests where id=?",String.class,carry.id());
+    String line=jdbc.queryForObject("select id from order_line_items where order_id=?",String.class,f.order().order());
+    var e=settlements.propose(f.order().order(),new com.procurement.order.api.OrderSettlementContracts.Proposal("cross-year","历史现金退原年度，当年责任明确回补",BigDecimal.ZERO,proof,List.of(new com.procurement.order.api.OrderSettlementContracts.Price(line,new BigDecimal("5"))),List.of(new com.procurement.order.api.OrderSettlementContracts.Allocation(f.invoice(),new BigDecimal("10")))));e=approveSettlement(f.order(),e);var approved=e;
+    var missing=fundEvidence(f,"refund","40","10","30",proof,"missing-target");assertThatThrownBy(()->settlements.evidence(f.order().order(),approved.id(),missing)).hasMessageContaining("年度");
+    var refund=new com.procurement.order.api.OrderSettlementContracts.EvidenceRequest("refund","refund",new BigDecimal("40"),"CROSS-BANK",proof,"原年退款，回补当年责任",f.invoice(),List.of(new com.procurement.order.api.OrderSettlementContracts.FundingLine(f.a(),new BigDecimal("10"),a.id()),new com.procurement.order.api.OrderSettlementContracts.FundingLine(f.b(),new BigDecimal("30"),b.id())),year);
+    settlements.evidence(f.order().order(),e.id(),refund);settlements.evidence(f.order().order(),e.id(),refund);
+    settlements.evidence(f.order().order(),e.id(),new com.procurement.order.api.OrderSettlementContracts.EvidenceRequest("final","invoice",new BigDecimal("10"),"CREDIT",proof,"最终发票核对",f.invoice()));
+    settlements.act(f.order().order(),e.id(),settlementAction(e,"complete"),false);
+    assertThat(funding.project(f.order().project()).priorPaidAmount()).isEqualByComparingTo("10");assertThat(funding.project(f.order().project()).sources().stream().map(x->x.allocatedAmount()).reduce(BigDecimal.ZERO,BigDecimal::add)).isEqualByComparingTo("236.91");
+    assertThat(jdbc.queryForObject("select snapshot::text from procurement_project_lifecycle_requests where id=?",String.class,carry.id())).isEqualTo(frozen);assertThat(paymentLedger.summary(f.invoice()).paidAmount()).isEqualByComparingTo("50");
+    var old=jdbc.queryForObject("select row_to_json(s)::text from order_settlements s where id=?",String.class,e.id());
+    var next=settlements.propose(f.order().order(),new com.procurement.order.api.OrderSettlementContracts.Proposal("reopen","双方补充协议，上调为20",BigDecimal.ZERO,proof,List.of(new com.procurement.order.api.OrderSettlementContracts.Price(line,new BigDecimal("10"))),List.of(new com.procurement.order.api.OrderSettlementContracts.Allocation(f.invoice(),new BigDecimal("20"))),e.id()));next=approveSettlement(f.order(),next);
+    settlements.evidence(f.order().order(),next.id(),new com.procurement.order.api.OrderSettlementContracts.EvidenceRequest("topup","payment",new BigDecimal("10"),"NEW-YEAR-TOPUP",proof,"当年来源补付",f.invoice(),List.of(new com.procurement.order.api.OrderSettlementContracts.FundingLine(a.id(),new BigDecimal("10"))),String.valueOf(Integer.parseInt(year)+1)));
+    settlements.evidence(f.order().order(),next.id(),new com.procurement.order.api.OrderSettlementContracts.EvidenceRequest("new-final","invoice",new BigDecimal("20"),"NEW-INVOICE",proof,"补充协议发票核对",f.invoice()));
+    settlements.act(f.order().order(),next.id(),settlementAction(next,"complete"),false);
+    assertThat(jdbc.queryForObject("select row_to_json(s)::text from order_settlements s where id=?",String.class,e.id())).isEqualTo(old);assertThat(jdbc.queryForObject("select count(*) from effective_order_settlements where tenant_id=?",Integer.class,tenant)).isEqualTo(1);
+    assertThat(funding.project(f.order().project()).sources().stream().map(x->x.paidAmount()).reduce(BigDecimal.ZERO,BigDecimal::add)).isEqualByComparingTo("10");
+    assertThat(settlements.detail(f.order().order(),next.id(),false).netPaid()).isEqualByComparingTo("20");
+    assertThat(jdbc.queryForObject("select sum(paid_amount) from budget_commitment_lines where tenant_id=?",BigDecimal.class,tenant)).isEqualByComparingTo("20");
+  }
   com.procurement.order.api.OrderSettlementContracts.Entry fundedSettlement(FundedCase f,String price,String target,String key)throws Exception{
     settlementContract(f.order(),true);String proof=settlementProof(f.order());String line=jdbc.queryForObject("select id from order_line_items where order_id=?",String.class,f.order().order());
     return settlements.propose(f.order().order(),new com.procurement.order.api.OrderSettlementContracts.Proposal(key,"原资金来源明确的专项订单清算",BigDecimal.ZERO,proof,List.of(new com.procurement.order.api.OrderSettlementContracts.Price(line,new BigDecimal(price))),List.of(new com.procurement.order.api.OrderSettlementContracts.Allocation(f.invoice(),new BigDecimal(target)))));
@@ -537,6 +560,15 @@ class ProcurementProjectIT {
     assertThat(jdbc.queryForObject("select quantity from order_line_items where id=?",BigDecimal.class,line)).isEqualByComparingTo("2");
     assertThat(jdbc.queryForObject("select stock_qty from mall_skus where id=?",BigDecimal.class,c.sku())).isEqualByComparingTo("19");
     assertThat(budget.position(tenant,dept,year).orderAmount()).isEqualByComparingTo("100");assertThat(budget.position(tenant,dept,year).paidAmount()).isEqualByComparingTo("100");
+    var parent=jdbc.queryForObject("select row_to_json(s)::text from order_settlements s where id=?",String.class,e.id());
+    var child=settlements.propose(c.order(),new com.procurement.order.api.OrderSettlementContracts.Proposal("supplement","已履行货款再调减20",BigDecimal.ZERO,proof,List.of(new com.procurement.order.api.OrderSettlementContracts.Price(line,new BigDecimal("80"))),List.of(new com.procurement.order.api.OrderSettlementContracts.Allocation("~unbilled",new BigDecimal("80"))),e.id()));
+    child=approveSettlement(c,child);
+    settlements.evidence(c.order(),child.id(),new com.procurement.order.api.OrderSettlementContracts.EvidenceRequest("refund","refund",new BigDecimal("20"),"SECOND-REFUND",proof,"补充协议退款","~unbilled"));
+    settlements.evidence(c.order(),child.id(),new com.procurement.order.api.OrderSettlementContracts.EvidenceRequest("invoice","invoice",new BigDecimal("80"),"SECOND-FINAL",proof,"补充发票核对","~unbilled"));
+    settlements.act(c.order(),child.id(),settlementAction(child,"complete"),false);
+    assertThat(jdbc.queryForObject("select stock_qty from mall_skus where id=?",BigDecimal.class,c.sku())).isEqualByComparingTo("19");
+    assertThat(jdbc.queryForObject("select row_to_json(s)::text from order_settlements s where id=?",String.class,e.id())).isEqualTo(parent);
+    assertThat(budget.position(tenant,dept,year).orderAmount()).isEqualByComparingTo("80");assertThat(budget.position(tenant,dept,year).paidAmount()).isEqualByComparingTo("80");
   }
   record CancelCase(String project,String lot,String order,String sku,String supplier,String user) {}
   CancelCase cancellationCase() {

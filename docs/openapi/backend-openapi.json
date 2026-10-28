@@ -45786,6 +45786,9 @@
             "items": {
               "$ref": "#/components/schemas/OrderSettlementAllocation"
             }
+          },
+          "previousSettlementId": {
+            "type": "string"
           }
         }
       },
@@ -45856,6 +45859,10 @@
             "items": {
               "$ref": "#/components/schemas/SettlementFundingLine"
             }
+          },
+          "cashPeriod": {
+            "pattern": "20[0-9]{2}",
+            "type": "string"
           }
         }
       },
@@ -45908,6 +45915,9 @@
             "format": "date-time"
           },
           "source": {
+            "type": "string"
+          },
+          "cashPeriod": {
             "type": "string"
           }
         }
@@ -47289,6 +47299,9 @@
             "minimum": 0.01,
             "exclusiveMinimum": false,
             "type": "number"
+          },
+          "targetFundId": {
+            "type": "string"
           }
         }
       },
@@ -47309,6 +47322,12 @@
           },
           "amount": {
             "type": "number"
+          },
+          "targetFundId": {
+            "type": "string"
+          },
+          "targetName": {
+            "type": "string"
           }
         }
       }
