@@ -75,11 +75,30 @@ const ep = 'buyer/projects/' + c.projectId,
 async function decide(type, id) {
   const tasks = await api('buyer/workflow/tasks', r),
     task = tasks.find((t) => t.businessType === type && t.businessId === id);
+  if (!task) {
+    const history = await api(
+      'buyer/workflow/instances/business/' +
+        type +
+        '/' +
+        encodeURIComponent(id) +
+        '/history',
+      r,
+    );
+    assert.equal(
+      history.status,
+      'approved',
+      'Only verified completed preparation may resume',
+    );
+    if (['funding_change', 'order_settlement'].includes(type))
+      assert.notEqual(history.initiatorId, history.completedBy);
+    return;
+  }
   assert.ok(task, 'Independent approval task ' + type);
-  assert.ok(
-    !(await api('buyer/workflow/tasks', b)).some((t) => t.businessId === id),
-    'No self approval',
-  );
+  if (['funding_change', 'order_settlement'].includes(type))
+    assert.ok(
+      !(await api('buyer/workflow/tasks', b)).some((t) => t.businessId === id),
+      'No self approval',
+    );
   await api('buyer/workflow/tasks/' + task.taskId + '/complete', r, {
     action: 'approve',
     comment: '核验逐项货款、补偿及资金依据',
@@ -204,34 +223,65 @@ async function shot(page, label) {
 }
 try {
   const project = (await api(ep, b)).project;
-  const plan = await api('buyer/funding/changes', b, {
-    requestKey: 'COMP-PLAN',
-    kind: 'project_plan',
-    projectId: c.projectId,
-    revision: project.revision,
-    amount: 1200,
-    lines: [
-      { fundId: c.funds[0], amount: 700 },
-      { fundId: c.funds[1], amount: 500 },
-    ],
-    reason: '货款与补偿分项清算',
-    formData: {},
-  });
-  await decide('funding_change', plan.id);
+  const resumingPreparation =
+    process.env.COMPENSATION_RESUME_PREPARATION === '1';
+  if (resumingPreparation) {
+    const funding = await api(ep + '/funding', b);
+    assert.deepEqual(
+      funding.sources.map((x) => [x.fundId, x.allocatedAmount]).sort(),
+      [
+        [c.funds[0], 700],
+        [c.funds[1], 500],
+      ].sort(),
+    );
+    assert.ok(funding.sources.every((x) => x.paidAmount === 0));
+  } else {
+    const plan = await api('buyer/funding/changes', b, {
+      requestKey: 'COMP-PLAN',
+      kind: 'project_plan',
+      projectId: c.projectId,
+      revision: project.revision,
+      amount: 1200,
+      lines: [
+        { fundId: c.funds[0], amount: 700 },
+        { fundId: c.funds[1], amount: 500 },
+      ],
+      reason: '货款与补偿分项清算',
+      formData: {},
+    });
+    await decide('funding_change', plan.id);
+  }
   const batch = 'COMP-PAY-' + fixture.runId;
-  const request = await api('buyer/payment-requests', b, {
-    invoiceId: c.invoiceId,
-    requestStatus: '付款申请待提交',
-    paymentBatchNo: batch,
-    remark: '原900元实付',
-  });
+  const request = resumingPreparation
+    ? (
+        await api(
+          'buyer/payment-requests?invoiceId=' + encodeURIComponent(c.invoiceId),
+          b,
+        )
+      ).find((x) => x.paymentBatchNo === batch)
+    : await api('buyer/payment-requests', b, {
+        invoiceId: c.invoiceId,
+        requestStatus: '付款申请待提交',
+        paymentBatchNo: batch,
+        remark: '原900元实付',
+      });
+  assert.ok(request, 'Prepared payment request must exist');
+  if (!resumingPreparation) {
+    await api(
+      'buyer/payment-requests/' + request.id + '/status',
+      b,
+      { requestStatus: '付款申请审批中', formData: {} },
+      'PUT',
+    );
+  }
+  await decide('payment_request', request.id);
   await api(
-    'buyer/payment-requests/' + request.id + '/status',
+    'buyer/payment-batches/' + batch + '/status',
     b,
-    { requestStatus: '付款申请审批中', formData: {} },
+    { batchStatus: '审批中', formData: {} },
     'PUT',
   );
-  await decide('payment_request', request.id);
+  await decide('payment_batch', batch);
   const ledgerPath = 'buyer/invoices/' + c.invoiceId + '/payment-ledger';
   await api(ledgerPath, b, {
     idempotencyKey: batch,
