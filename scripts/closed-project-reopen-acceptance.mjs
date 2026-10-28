@@ -432,6 +432,9 @@ try {
     await expect(
       p.getByRole('region', { name: '重开依据', exact: true }).first(),
     ).toContainText('已终止');
+    await expect(p.getByText('正在读取流程状态…', { exact: true })).toHaveCount(
+      0,
+    );
     await shot(p, 'reopen-history-' + width);
   }
   const latest = await api('buyer/rfqs/' + c.rfqId + '/execution/archives', b, {
@@ -442,6 +445,21 @@ try {
     '最新采购执行.zip',
   );
   report.archiveId = latest.id;
+  const sourceBalances = (await api('buyer/funding', b)).items;
+  const related = previous.balances.map((x) =>
+    sourceBalances.find((f) => f.id === x.id),
+  );
+  assert.ok(related.every(Boolean));
+  assert.equal(
+    related.reduce((sum, x) => sum + x.reservedAmount, 0),
+    c.amount,
+    'Repeated reopening must not duplicate source responsibility',
+  );
+  assert.equal(
+    related.reduce((sum, x) => sum + x.paidAmount, 0),
+    570,
+  );
+  report.sourceReserved = c.amount;
   report.finalNet = 570;
   report.restoredResponsibility = [660, 630];
   report.checks.push(
