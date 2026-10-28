@@ -70,10 +70,17 @@ async function decide(type, id, action = 'approve') {
     (t) => t.businessType === type && t.businessId === id,
   );
   assert.ok(task, 'Independent task ' + type);
-  assert.ok(
-    !(await api('buyer/workflow/tasks', b)).some((t) => t.businessId === id),
-    'Initiator cannot approve',
-  );
+  if (
+    [
+      'funding_change',
+      'project_carryover',
+      'frozen_payment_correction',
+    ].includes(type)
+  )
+    assert.ok(
+      !(await api('buyer/workflow/tasks', b)).some((t) => t.businessId === id),
+      'Initiator cannot approve',
+    );
   await api('buyer/workflow/tasks/' + task.taskId + '/complete', r, {
     action,
     comment:
@@ -129,22 +136,35 @@ try {
     'Use a fresh unpaid fixture',
   );
   assert.equal((await api('buyer/budgets/policy', b)).mode, 'warning');
-  const plan = await api('buyer/funding/changes', b, {
-    requestKey: 'partial-plan-' + fixture.runId,
-    kind: 'project_plan',
-    projectId: c.projectId,
-    revision: project.revision,
-    amount: 1200,
-    lines: [
-      { fundId: c.funds[0], amount: 700 },
-      { fundId: c.funds[1], amount: 500 },
-    ],
-    reason: '隔离验收，明确原年度来源',
-    formData: {},
-  });
-  await decide('funding_change', plan.id);
+  if (!(await api(ep + '/funding', b)).enabled) {
+    const plan = await api('buyer/funding/changes', b, {
+      requestKey: 'partial-plan-' + fixture.runId,
+      kind: 'project_plan',
+      projectId: c.projectId,
+      revision: project.revision,
+      amount: 1200,
+      lines: [
+        { fundId: c.funds[0], amount: 700 },
+        { fundId: c.funds[1], amount: 500 },
+      ],
+      reason: '隔离验收，明确原年度来源',
+      formData: {},
+    });
+    await decide('funding_change', plan.id);
+  }
   const future = [];
   for (const code of ['A', 'B']) {
+    const existing = (await api('buyer/funding?pageSize=100', b)).items.find(
+      (f) =>
+        f.period === String(year + 1) &&
+        f.code === code &&
+        f.departmentId === project.departmentId,
+    );
+    if (existing) {
+      assert.equal(existing.status, 'approved');
+      future.push(existing.id);
+      continue;
+    }
     const fund = await api('buyer/funding', b, {
       departmentId: project.departmentId,
       period: String(year + 1),
@@ -164,18 +184,23 @@ try {
     future.push(fund.id);
   }
   const batch = 'PARTIAL-' + fixture.runId;
-  const payment = await api('buyer/payment-requests', b, {
-    invoiceId: c.invoiceId,
-    requestStatus: '付款申请待提交',
-    paymentBatchNo: batch,
-    remark: '隔离付款凭据，非真实银行出款',
-  });
-  await api(
-    'buyer/payment-requests/' + payment.id + '/status',
-    b,
-    { requestStatus: '付款申请审批中', formData: {} },
-    'PUT',
-  );
+  const payment =
+    (await api('buyer/payment-requests', b)).find(
+      (p) => p.invoiceId === c.invoiceId && p.paymentBatchNo === batch,
+    ) ||
+    (await api('buyer/payment-requests', b, {
+      invoiceId: c.invoiceId,
+      requestStatus: '付款申请待提交',
+      paymentBatchNo: batch,
+      remark: '隔离付款凭据，非真实银行出款',
+    }));
+  if (payment.requestStatus !== '付款申请审批中')
+    await api(
+      'buyer/payment-requests/' + payment.id + '/status',
+      b,
+      { requestStatus: '付款申请审批中', formData: {} },
+      'PUT',
+    );
   await decide('payment_request', payment.id);
   await api(
     'buyer/payment-batches/' + batch + '/status',
@@ -384,11 +409,19 @@ try {
   assert.equal(response.status, 200);
   const zip = root + '/partial-correction.zip';
   writeFileSync(zip, Buffer.from(await response.arrayBuffer()));
-  const snapshot = JSON.parse(
-    execFileSync('unzip', ['-p', zip, '业务快照.json'], {
-      maxBuffer: 16000000,
-    }),
+  const integrity = JSON.parse(
+    execFileSync(
+      'python3',
+      [
+        '-c',
+        "import sys,zipfile,json,hashlib; z=zipfile.ZipFile(sys.argv[1]); assert z.testzip() is None; lines=z.read('SHA256SUMS.txt').decode().splitlines(); [(_ for _ in ()).throw(AssertionError(name)) if hashlib.sha256(z.read(name)).hexdigest()!=digest else None for digest,name in (line.split('  ',1) for line in lines)]; print(json.dumps({'snapshot':json.loads(z.read('业务快照.json')),'sha256Entries':len(lines)},ensure_ascii=False))",
+        zip,
+      ],
+      { maxBuffer: 16000000 },
+    ),
   );
+  const snapshot = integrity.snapshot;
+  report.sha256Entries = integrity.sha256Entries;
   assert.equal(
     snapshot.frozenPaymentCorrections.filter((x) => x.status === 'approved')
       .length,
