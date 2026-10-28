@@ -1,7 +1,33 @@
 import { customInstance } from './http-client';
 import type { ApiEnvelope } from './workflow-runtime';
 
-export type ProjectLifecycleKind = 'carryover' | 'liquidation';
+export type ProjectLifecycleKind = 'carryover' | 'liquidation' | 'reopen';
+export interface ProjectReopenPreview {
+  projectStatus: string;
+  packageId?: string;
+  period: string;
+  restoreAmount: number;
+  funds: {
+    fundId: string;
+    name: string;
+    revision: number;
+    restoreAmount: number;
+  }[];
+  packages: { id: string; title: string; revision: number }[];
+  blockers: string[];
+}
+export const projectReopenPreview = async (id: string, packageId?: string) =>
+  (
+    await customInstance<ApiEnvelope<ProjectReopenPreview>>({
+      url: path(id) + '/reopen-preview',
+      params: packageId ? { packageId } : undefined,
+    })
+  ).data!;
+export const projectReopenArchive = (project: string, id: string) =>
+  customInstance<Blob>({
+    url: path(project) + '/' + encodeURIComponent(id) + '/closure-archive',
+    responseType: 'blob',
+  });
 export interface ProjectLifecycleSource {
   departmentId: string;
   period: string;
@@ -77,6 +103,8 @@ export const projectLifecycleSubmit = async (
     reason: string;
     formData?: Record<string, unknown>;
     fundingSources?: { sourceFundId: string; targetFundId: string }[];
+    packageId?: string;
+    packageRevision?: number;
   },
 ) =>
   (

@@ -11,7 +11,7 @@ import type { FundingCarryoverMapping } from './fundingCarryoverMapping';
 export interface ProjectLifecycleRequest {
   /** @minimum 1 */
   revision?: number;
-  /** @pattern carryover|liquidation */
+  /** @pattern carryover|liquidation|reopen */
   kind: string;
   /** @pattern 20[0-9]{2} */
   targetPeriod?: string;
@@ -26,4 +26,7 @@ export interface ProjectLifecycleRequest {
    * @maxItems 30
    */
   fundingSources?: FundingCarryoverMapping[];
+  packageId?: string;
+  /** @minimum 1 */
+  packageRevision?: number;
 }

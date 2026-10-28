@@ -303,6 +303,7 @@ public class WorkflowDefinitionPublicationService {
       case "frozen_payment_correction" -> "跨年冻结付款更正";
       case "funding_change" -> "专项资金与项目分摊";
       case "project_liquidation" -> "项目终止清算";
+      case "project_reopen" -> "项目及分包受控重开";
       case "order_settlement" -> "合同解除与订单清算";
       case "budget_exception" -> "超预算例外";
       case "buyer_supplier_admission" -> "供应商准入";

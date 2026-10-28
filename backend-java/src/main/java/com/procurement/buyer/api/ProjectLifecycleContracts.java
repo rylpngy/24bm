@@ -15,11 +15,23 @@ public final class ProjectLifecycleContracts {
   @Schema(name = "ProjectLifecycleRequest")
   public record Request(
       @Min(1) int revision,
-      @NotBlank @Pattern(regexp = "carryover|liquidation") String kind,
+      @NotBlank @Pattern(regexp = "carryover|liquidation|reopen") String kind,
       @Pattern(regexp = "20[0-9]{2}") String targetPeriod,
       @NotBlank @Size(max = 1000) String reason,
       Map<String, Object> formData,
-      @Size(max = 30) List<@Valid Mapping> fundingSources) {
+      @Size(max = 30) List<@Valid Mapping> fundingSources,
+      String packageId,
+      @Min(1) Integer packageRevision) {
+    public Request(
+        int revision,
+        String kind,
+        String targetPeriod,
+        String reason,
+        Map<String, Object> formData,
+        List<Mapping> fundingSources) {
+      this(revision, kind, targetPeriod, reason, formData, fundingSources, null, null);
+    }
+
     public Request(
         int revision,
         String kind,
@@ -29,6 +41,22 @@ public final class ProjectLifecycleContracts {
       this(revision, kind, targetPeriod, reason, formData, null);
     }
   }
+
+  @Schema(name = "ProjectReopenPackage")
+  public record ReopenPackage(String id, String title, int revision) {}
+
+  @Schema(name = "ProjectReopenFund")
+  public record ReopenFund(String fundId, String name, int revision, BigDecimal restoreAmount) {}
+
+  @Schema(name = "ProjectReopenPreview")
+  public record ReopenPreview(
+      String projectStatus,
+      String packageId,
+      String period,
+      BigDecimal restoreAmount,
+      List<ReopenFund> funds,
+      List<ReopenPackage> packages,
+      List<String> blockers) {}
 
   @Schema(name = "ProjectLifecycleSource")
   public record Source(

@@ -202,6 +202,7 @@ public class ProcurementExecutionApplicationService {
     if(raw==null) throw new IllegalArgumentException("采购项目不存在");
     var data=parse(raw);
     if(data.path("fundingCarryovers").isEmpty())data.remove("fundingCarryovers");
+    if(data.path("projectReopens").isEmpty())data.remove("projectReopens");
     if(data.path("fundingRestorations").isEmpty())data.remove("fundingRestorations");
     if(data.path("fundingReallocations").isEmpty())data.remove("fundingReallocations");
     if(data.path("fundingSettlementEntries").isEmpty())data.remove("fundingSettlementEntries");
@@ -275,6 +276,7 @@ public class ProcurementExecutionApplicationService {
   }
   private List<String> businessIds(JsonNode data) {
     List<String> ids=new ArrayList<>(); ids.add(data.path("rfq").path("id").asText());
+    for(var r:data.path("projectReopens"))ids.add(r.path("id").asText());
     if(data.has("procurementProject"))ids.add(data.path("procurementProject").path("id").asText());
     for(var change:data.path("procurementProject").path("changeIds"))ids.add(change.asText());
     for(String key : List.of("demands","orders","awards","contracts","invoices","paymentRequests","orderSettlements","frozenPaymentCorrections","fundingChanges","fundingCarryovers")) for(var item:data.path(key)) {

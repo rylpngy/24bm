@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class OrderSettlementService {
+  @org.springframework.beans.factory.annotation.Autowired private com.procurement.buyer.application.ProjectReopenService projectReopens;
   @org.springframework.beans.factory.annotation.Autowired private com.procurement.buyer.application.FundingSettlementService funding;
   private final OrderSettlementMapper mapper;
   private final PurchaseOrderMapper orders;
@@ -97,13 +98,16 @@ public class OrderSettlementService {
   }
 
   private List<String> operationalBlockers(PurchaseOrder o,boolean reopening){
-    return mapper.blockers(o.tenantId(),o.id()).stream().filter(s->!reopening||!s.startsWith("已有采购或合同归档")).toList();
+    return mapper.blockers(o.tenantId(),o.id()).stream().filter(s->!(reopening||projectReopens.orderGrant(o.tenantId(),o.id())!=null)||!s.startsWith("已有采购或合同归档")).toList();
   }
 
   private OrderSettlementPolicy.Assessment assessment(PurchaseOrder o,List<Price> prices){
     var previous=mapper.latest(o.tenantId(),o.id());
     var raw=policy.tree(mapper.baseline(o.tenantId(),o.id()));
-    if(previous==null)return policy.assess(policy.write(raw),prices);
+    if(previous==null){
+      if(projectReopens.orderGrant(o.tenantId(),o.id())!=null)for(var c:raw.path("contracts"))if("已生效".equals(c.path("status").asText()))((com.fasterxml.jackson.databind.node.ObjectNode)c).put("archive_status","未归档");
+      return policy.assess(policy.write(raw),prices);
+    }
     if(previous.kind().equals("draft_void"))throw new IllegalStateException("草案撤销不能直接重开");
     if(mapper.ambiguousCompensation(o.tenantId(),o.id()))throw new IllegalStateException("历史补偿款缺少逐项现金归属，须先核对，不能自动推算重开");
     var cash=mapper.cashPeriods(o.tenantId(),o.id());
@@ -243,6 +247,8 @@ public class OrderSettlementService {
     snapshot.put("rawBaseline",policy.tree(mapper.baseline(o.tenantId(),id)));
     snapshot.put("period",mapper.period(o.tenantId(),id));
     snapshot.put("cashPeriods",mapper.cashPeriods(o.tenantId(),id));
+    String projectReopen=projectReopens.orderGrant(o.tenantId(),id);
+    if(projectReopen!=null)snapshot.put("projectReopenId",projectReopen);
     if(mapper.cashPeriods(o.tenantId(),id).stream().anyMatch(x->!x.period().equals(mapper.period(o.tenantId(),id)))&&r.allocations()==null)throw new IllegalArgumentException("跨年冻结订单清算须明确逐票最终归属");
     if(previous!=null){snapshot.put("previousSettlementId",previous.id());if(r.allocations()==null)throw new IllegalArgumentException("补充清算须明确逐票最终归属");}
     if(fundingBasis!=null)snapshot.put("funding",fundingBasis);
@@ -294,6 +300,7 @@ public class OrderSettlementService {
     if (!old.equals(policy.tree(mapper.baseline(o.tenantId(), o.id()))))
       throw new IllegalStateException("履约或资金依据已变化，请驳回后重新申请");
     var previous=mapper.latest(o.tenantId(),o.id());
+    if(snapshot.has("projectReopenId")&&!Objects.equals(snapshot.path("projectReopenId").asText(),projectReopens.orderGrant(o.tenantId(),o.id())))throw new IllegalStateException("项目重开授权已变化，请重新核对");
     if(snapshot.has("previousSettlementId")&&(previous==null||!previous.id().equals(snapshot.path("previousSettlementId").asText())))throw new IllegalStateException("上次清算版本已变化");
     allowed(operationalBlockers(o,snapshot.has("previousSettlementId")));
     funding.validate(o.tenantId(),o.id(),e.id(),e.snapshot(),e.initialPaid());

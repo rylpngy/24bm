@@ -60,6 +60,74 @@ class ProcurementProjectIT {
   @Autowired com.procurement.finance.application.FrozenPaymentCorrectionService corrections;
   @Autowired FundingService funding;
   @Autowired FundingCarryoverService fundingCarryover;
+  @Autowired ProjectReopenService reopening;
+  com.procurement.buyer.api.ProjectLifecycleContracts.Request reopenRequest(String id,String lot){
+    return new com.procurement.buyer.api.ProjectLifecycleContracts.Request(projects.detail(id).project().revision(),"reopen",null,"核对关闭依据后独立审批恢复办理",Map.of(),null,lot,lot==null?null:expansion.packages(id).stream().filter(l->l.info().id().equals(lot)).findFirst().orElseThrow().info().revision());
+  }
+  @Test void terminatedProjectReopensIndependentlyWithoutRevivingCancelledDemand(){
+    var p=approve(projects.create(draft(0))).project();var l=ready(lot(p.id(),"2"));
+    closeout.terminate(p.id(),new Action(projects.detail(p.id()).project().revision(),"不再采购",Map.of()));
+    var old=projects.demands(p.id()).stream().map(d->d.id()+":"+d.status()).toList();
+    var r=lifecycle.submit(p.id(),reopenRequest(p.id(),null));assertThat(projects.detail(p.id()).project().status()).isEqualTo("terminated");
+    String initialReopenId=r.id();assertThat(workflow.listCurrentUserTasks()).noneMatch(t->t.businessId().equals(initialReopenId));
+    lifecycle.withdraw(p.id(),r.id(),r.revision(),"重新核对");assertThat(projects.detail(p.id()).project().status()).isEqualTo("terminated");
+    r=lifecycle.submit(p.id(),reopenRequest(p.id(),null));decide(r.id(),"reject");context(author);assertThat(projects.detail(p.id()).project().status()).isEqualTo("terminated");
+    r=lifecycle.submit(p.id(),reopenRequest(p.id(),null));decide(r.id(),"approve");context(author);
+    assertThat(projects.detail(p.id()).project().status()).isEqualTo("approved");assertThat(projects.demands(p.id()).stream().map(d->d.id()+":"+d.status()).toList()).isEqualTo(old);
+    assertThat(expansion.packages(p.id()).getFirst().info().status()).isEqualTo("cancelled");assertThat(reopening.preview(p.id(),null).blockers()).isNotEmpty();
+    assertThat(lifecycle.history(p.id(),1,2).total()).isEqualTo(3);assertThat(lifecycle.history(p.id(),2,2).items()).hasSize(1);
+  }
+  FundedCase closedFundedProject(boolean terminated)throws Exception{
+    var f=fundedPaidCase();var e=approveSettlement(f.order(),fundedSettlement(f,"5","10","closed"));String proof=e.agreementId();
+    settlements.evidence(f.order().order(),e.id(),fundEvidence(f,"refund","40","10","30",proof,"close-refund"));settlementCash(f.order(),e,"invoice","10",f.invoice(),proof,"close-invoice");settlements.act(f.order().order(),e.id(),settlementAction(e,"complete"),false);
+    expansion.closePackage(f.order().project(),f.order().lot(),new com.procurement.buyer.api.ProjectExpansionContracts.PackageAction(expansion.packages(f.order().project()).getFirst().info().revision(),"清算归档"));
+    if(terminated){var r=lifecycle.submit(f.order().project(),lifecycleRequest(f.order().project(),"liquidation",null));decide(r.id(),"approve");context(author);}else expansion.closeProject(f.order().project(),new Action(projects.detail(f.order().project()).project().revision(),"整项目结项",Map.of()));
+    return f;
+  }
+  @Test void closedProjectAndSelectedPackageReopenPreserveCashAndAllowSupplementalSettlement()throws Exception{
+    var f=closedFundedProject(false);var old=jdbc.queryForObject("select row_to_json(s)::text from order_settlements s where tenant_id=?",String.class,tenant);
+    var archives=jdbc.queryForList("select id,snapshot::text,sha256 from procurement_execution_archives where tenant_id=? order by id",tenant);
+    var withdrawn=lifecycle.submit(f.order().project(),reopenRequest(f.order().project(),null));var originalClosure=reopening.archive(f.order().project(),withdrawn.id());lifecycle.withdraw(f.order().project(),withdrawn.id(),withdrawn.revision(),"补充依据");
+    var rejected=lifecycle.submit(f.order().project(),reopenRequest(f.order().project(),null));assertThat(reopening.archive(f.order().project(),rejected.id())).isEqualTo(originalClosure);decide(rejected.id(),"reject");context(author);
+    var projectOnly=lifecycle.submit(f.order().project(),reopenRequest(f.order().project(),null));assertThat(projectOnly.amount()).isEqualByComparingTo("236.91");var closureZip=reopening.archive(f.order().project(),projectOnly.id());assertThat(closureZip).startsWith((byte)80,(byte)75);decide(projectOnly.id(),"approve");context(author);assertThat(reopening.archive(f.order().project(),projectOnly.id())).isEqualTo(closureZip);
+    assertThat(expansion.packages(f.order().project()).getFirst().info().status()).isEqualTo("closed");
+    assertThat(settlements.view(f.order().order(),false,1,10).preview().blockers()).anyMatch(b->b.contains("分包已关闭"));
+    var request=lifecycle.submit(f.order().project(),reopenRequest(f.order().project(),f.order().lot()));assertThat(request.amount()).isZero();decide(request.id(),"approve");context(author);
+    assertThat(expansion.packages(f.order().project()).getFirst().info().status()).isEqualTo("ready");
+    assertThat(jdbc.queryForList("select id,snapshot::text,sha256 from procurement_execution_archives where tenant_id=? order by id",tenant)).isEqualTo(archives);
+    String parent=jdbc.queryForObject("select id from order_settlements where tenant_id=?",String.class,tenant),line=jdbc.queryForObject("select id from order_line_items where order_id=?",String.class,f.order().order());
+    var e=settlements.propose(f.order().order(),new com.procurement.order.api.OrderSettlementContracts.Proposal("after-project-reopen","结项重开后补充清算20",BigDecimal.ZERO,settlementProof(f.order()),List.of(new com.procurement.order.api.OrderSettlementContracts.Price(line,BigDecimal.TEN)),List.of(new com.procurement.order.api.OrderSettlementContracts.Allocation(f.invoice(),new BigDecimal("20"))),parent));
+    assertThat(e.snapshot()).contains(request.id());e=approveSettlement(f.order(),e);settlements.evidence(f.order().order(),e.id(),fundEvidence(f,"payment","10","10","0",e.agreementId(),"new-pay"));settlementCash(f.order(),e,"invoice","20",f.invoice(),e.agreementId(),"new-invoice");settlements.act(f.order().order(),e.id(),settlementAction(e,"complete"),false);
+    assertThat(jdbc.queryForObject("select row_to_json(s)::text from order_settlements s where id=?",String.class,parent)).isEqualTo(old);assertThat(paymentLedger.summary(f.invoice()).paidAmount()).isEqualByComparingTo("50");assertThat(settlements.detail(f.order().order(),e.id(),false).netPaid()).isEqualByComparingTo("20");
+  }
+  @Test void reopenRechecksReleasedSourceCapacityAtApprovalAndCannotBypassDatabase()throws Exception{
+    var f=closedFundedProject(true);String project=f.order().project();
+    assertThatThrownBy(()->jdbc.update("update procurement_projects set status='approved' where id=?",project)).hasMessageContaining("separately approved");
+    assertThatThrownBy(()->jdbc.update("update procurement_project_packages set status='ready' where id=?",f.order().lot())).hasMessageContaining("separately approved");
+    var r=lifecycle.submit(project,reopenRequest(project,f.order().lot()));
+    var source=funding.funds(1,100).items().stream().filter(x->x.id().equals(f.a())).findFirst().orElseThrow();var reduced=funding.submit(fundLimit(source,"50","released-capacity-used"));decide(reduced.id(),"approve");context(author);
+    assertThatThrownBy(()->decide(r.id(),"approve")).hasMessageContaining("额度不足");context(author);
+    assertThat(projects.detail(project).project().status()).isEqualTo("terminated");assertThat(expansion.packages(project).getFirst().info().status()).isEqualTo("closed");assertThat(paymentLedger.summary(f.invoice()).paidAmount()).isEqualByComparingTo("50");
+    decide(r.id(),"reject");context(author);assertThat(reopening.preview(project,f.order().lot()).blockers()).anyMatch(x->x.contains("额度不足"));
+  }
+  @Test void ordinaryArchivedContractNeedsApprovedProjectAndPackageReopenBeforeFirstSettlement()throws Exception{
+    var f=fundedPaidCase();String contract=settlementContract(f.order(),true);fundedCash(f.invoice(),f.a(),f.b(),"80","70");jdbc.update("update invoices set payment_status='已付款' where id=?",f.invoice());jdbc.update("update contracts set archive_status='已归档' where id=?",contract);
+    expansion.closeProject(f.order().project(),new Action(projects.detail(f.order().project()).project().revision(),"正常履约结项",Map.of()));
+    assertThat(settlements.view(f.order().order(),false,1,10).preview().blockers()).isNotEmpty();
+    var r=lifecycle.submit(f.order().project(),reopenRequest(f.order().project(),f.order().lot()));decide(r.id(),"approve");context(author);
+    assertThat(settlements.view(f.order().order(),false,1,10).preview().blockers()).isEmpty();
+    String line=jdbc.queryForObject("select id from order_line_items where order_id=?",String.class,f.order().order()),proof=settlementProof(f.order());
+    var e=settlements.propose(f.order().order(),new com.procurement.order.api.OrderSettlementContracts.Proposal("first-after-close","正常合同归档后补充价款核验",BigDecimal.ZERO,proof,List.of(new com.procurement.order.api.OrderSettlementContracts.Price(line,new BigDecimal("90"))),List.of(new com.procurement.order.api.OrderSettlementContracts.Allocation(f.invoice(),new BigDecimal("180")))));e=approveSettlement(f.order(),e);
+    settlements.evidence(f.order().order(),e.id(),fundEvidence(f,"refund","20","10","10",proof,"refund"));settlementCash(f.order(),e,"invoice","180",f.invoice(),proof,"final");settlements.act(f.order().order(),e.id(),settlementAction(e,"complete"),false);
+    assertThat(settlements.detail(f.order().order(),e.id(),false).netPaid()).isEqualByComparingTo("180");assertThat(jdbc.queryForObject("select amount from contracts where id=?",BigDecimal.class,contract)).isEqualByComparingTo("200");
+  }
+  @Test void reopenRejectsUnapprovedTerminationsForeignPackagesAndStaleVersions(){
+    var draft=projects.create(draft(0)).project();closeout.terminate(draft.id(),new Action(draft.revision(),"尚未批准取消",Map.of()));
+    assertThatThrownBy(()->lifecycle.submit(draft.id(),reopenRequest(draft.id(),null))).hasMessageContaining("原立项批准");
+    var p=approve(projects.create(draft(0))).project();closeout.terminate(p.id(),new Action(p.revision(),"未采购取消",Map.of()));
+    assertThatThrownBy(()->lifecycle.submit(p.id(),new com.procurement.buyer.api.ProjectLifecycleContracts.Request(p.revision(),"reopen",null,"过期版本",Map.of()))).hasMessageContaining("已变化");
+    assertThatThrownBy(()->lifecycle.submit(p.id(),new com.procurement.buyer.api.ProjectLifecycleContracts.Request(projects.detail(p.id()).project().revision(),"reopen",null,"外部分包",Map.of(),null,"foreign",1))).hasMessageContaining("所选分包");
+  }
   record FundedCase(CancelCase order,String invoice,String entry,String a,String b){}
   @Test void compensationReopenRefundsAndTopupsIndependentlyWithoutOverwritingPriorRecords()throws Exception{
     var c=cancellationCase();settlementContract(c,true);String line=receivedLine(c),proof=settlementProof(c);
@@ -819,7 +887,7 @@ class ProcurementProjectIT {
         material,
         tenant);
     context(author);
-    for (String type : List.of("project_initiation", "purchase_demand", "project_change", "project_carryover", "project_liquidation", "order_settlement", "frozen_payment_correction", "funding_change")) {
+    for (String type : List.of("project_initiation", "purchase_demand", "project_change", "project_carryover", "project_liquidation", "project_reopen", "order_settlement", "frozen_payment_correction", "funding_change")) {
       var definition =
           definitions.createProcess(
               new CreateProcessDefinitionRequest("Project " + type, "", "file-text", type));

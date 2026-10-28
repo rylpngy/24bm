@@ -227,6 +227,8 @@ public class ProjectCloseoutService {
       for (var r : lots.runs(t(), l.id())) expansions.requireRun(r, false);
   }
 
+  public void authorizeHistoricalArchive(String id){authorizeHistory(id);permissions.require("buyer:workflow:read");}
+
   @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
   public Monitor monitor(String project) {
     var p = guard.require(project, false);
