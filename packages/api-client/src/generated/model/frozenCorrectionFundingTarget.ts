@@ -9,4 +9,8 @@
 export interface FrozenCorrectionFundingTarget {
   sourceFundId: string;
   targetFundId: string;
+  /**
+   * @minimum 0.01
+   */
+  amount?: number;
 }

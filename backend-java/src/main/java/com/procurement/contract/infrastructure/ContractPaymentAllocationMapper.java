@@ -29,6 +29,9 @@ public interface ContractPaymentAllocationMapper {
   @Select("select milestone_id,amount from contract_payment_allocations where tenant_id=#{tenant} and entry_id=#{entry} order by milestone_id")
   List<Allocation> byEntry(@Param("tenant") String tenant, @Param("entry") String entry);
 
+  @Select("select a.milestone_id,a.amount+coalesce((select sum(r.amount) from contract_payment_allocations r join invoice_payment_entries e on e.tenant_id=r.tenant_id and e.id=r.entry_id where e.tenant_id=a.tenant_id and e.reversal_of=a.entry_id and r.milestone_id=a.milestone_id),0) amount from contract_payment_allocations a where a.tenant_id=#{tenant} and a.entry_id=#{entry} order by a.milestone_id")
+  List<Allocation> remainingByEntry(@Param("tenant")String tenant,@Param("entry")String entry);
+
   @Insert("insert into contract_payment_allocations(id,tenant_id,entry_id,milestone_id,amount) values(#{id},#{tenant},#{entry},#{milestone},#{amount})")
   void insert(@Param("id") String id, @Param("tenant") String tenant, @Param("entry") String entry,
       @Param("milestone") String milestone, @Param("amount") BigDecimal amount);

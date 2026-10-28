@@ -95,22 +95,34 @@ public class ContractInstallmentService {
 
   @Transactional(propagation = Propagation.MANDATORY)
   public void reverse(String tenant, String order, String original, String reversal) {
+    reverseAmount(tenant,order,original,reversal,null);
+  }
+
+  @Transactional(propagation = Propagation.MANDATORY)
+  public void reverseAmount(String tenant,String order,String original,String reversal,BigDecimal requested) {
     var contract = contracts.lockByOrder(tenant, order);
     if (contract != null && "已归档".equals(contract.archiveStatus())) {
       throw new IllegalStateException("关联合同已归档，不能冲销付款");
     }
-    var originalAllocations = allocations.byEntry(tenant, original);
+    var originalAllocations = allocations.remainingByEntry(tenant, original);
     if (originalAllocations.isEmpty()) return;
     if (contract == null) throw new IllegalStateException("关联合同不存在，不能冲销里程碑付款");
     var schedule = balances(tenant, order);
+    var remaining=originalAllocations.stream().map(a->a.amount()).reduce(BigDecimal.ZERO,BigDecimal::add);
+    var left=requested==null?remaining:requested;
+    if(left.signum()<=0||left.compareTo(remaining)>0)throw new IllegalStateException("里程碑剩余可冲销金额不足");
     for (var allocation : originalAllocations) {
+      if(left.signum()==0)break;
+      var amount=left.min(allocation.amount());
+      if(amount.signum()<=0)continue;
       var m = schedule.stream().filter(item -> item.id().equals(allocation.milestoneId())).findFirst()
           .orElseThrow(() -> new IllegalStateException("原付款里程碑已变更，请先核对"));
-      if (!m.verified() || m.paid().compareTo(allocation.amount()) < 0) {
+      if (!m.verified() || m.paid().compareTo(amount) < 0) {
         throw new IllegalStateException("里程碑累计金额异常，不能冲销");
       }
-      allocations.insert("allocation-" + UUID.randomUUID(), tenant, reversal, m.id(), allocation.amount().negate());
-      sync(tenant, contract.id(), m.id(), m.amount(), m.paid().subtract(allocation.amount()), reversal);
+      allocations.insert("allocation-" + UUID.randomUUID(), tenant, reversal, m.id(), amount.negate());
+      sync(tenant, contract.id(), m.id(), m.amount(), m.paid().subtract(amount), reversal);
+      left=left.subtract(amount);
     }
   }
 

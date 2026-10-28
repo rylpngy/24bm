@@ -17,13 +17,13 @@ public interface ProjectLifecycleMapper {
 
   @Select(
       """
-select e.id,e.invoice_id,i.order_id,o.rfq_id,e.amount,e.evidence_no
+select e.id,e.invoice_id,i.order_id,o.rfq_id,e.amount+coalesce((select sum(rev.amount) from invoice_payment_entries rev where rev.tenant_id=e.tenant_id and rev.invoice_id=e.invoice_id and rev.reversal_of=e.id),0) amount,e.evidence_no
 from invoice_payment_entries e join invoices i on i.tenant_id=e.tenant_id and i.id=e.invoice_id
 join purchase_orders o on o.tenant_id=i.tenant_id and o.id=i.order_id
 where e.tenant_id=#{t} and e.amount>0
 and exists(select 1 from rfq_demands rd join procurement_project_demands d on d.tenant_id=rd.tenant_id and d.demand_id=rd.demand_id
   where rd.tenant_id=o.tenant_id and rd.rfq_id=o.rfq_id and d.project_id=#{p})
-and not exists(select 1 from invoice_payment_entries rev where rev.tenant_id=e.tenant_id and rev.invoice_id=e.invoice_id and rev.reversal_of=e.id)
+and e.amount+coalesce((select sum(rev.amount) from invoice_payment_entries rev where rev.tenant_id=e.tenant_id and rev.invoice_id=e.invoice_id and rev.reversal_of=e.id),0)>0
 union all
 select e.id,null::text,o.id,o.rfq_id,case when e.kind='refund' then -e.amount else e.amount end,e.evidence_no
 from order_settlement_evidence e join order_settlements s on s.tenant_id=e.tenant_id and s.id=e.settlement_id

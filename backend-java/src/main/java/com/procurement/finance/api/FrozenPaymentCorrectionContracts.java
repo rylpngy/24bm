@@ -11,7 +11,14 @@ public final class FrozenPaymentCorrectionContracts {
   private FrozenPaymentCorrectionContracts() {}
 
   @io.swagger.v3.oas.annotations.media.Schema(name = "FrozenCorrectionFundingTarget")
-  public record FundingTarget(@NotBlank String sourceFundId, @NotBlank String targetFundId) {}
+  public record FundingTarget(
+      @NotBlank String sourceFundId,
+      @NotBlank String targetFundId,
+      @DecimalMin("0.01") @Digits(integer = 12, fraction = 2) BigDecimal amount) {
+    public FundingTarget(String sourceFundId, String targetFundId) {
+      this(sourceFundId, targetFundId, null);
+    }
+  }
 
   @io.swagger.v3.oas.annotations.media.Schema(name = "FrozenPaymentCorrectionRequest")
   public record Request(
@@ -20,14 +27,25 @@ public final class FrozenPaymentCorrectionContracts {
       @NotBlank @Size(max = 200) String evidenceNo,
       @NotBlank @Size(max = 1000) String reason,
       Map<String, Object> formData,
-      @Size(max = 30) List<@Valid FundingTarget> fundingTargets) {
+      @Size(max = 30) List<@Valid FundingTarget> fundingTargets,
+      @DecimalMin("0.01") @Digits(integer = 12, fraction = 2) BigDecimal amount) {
+    public Request(
+        String requestKey,
+        String entryId,
+        String evidenceNo,
+        String reason,
+        Map<String, Object> formData,
+        List<FundingTarget> fundingTargets) {
+      this(requestKey, entryId, evidenceNo, reason, formData, fundingTargets, null);
+    }
+
     public Request(
         String requestKey,
         String entryId,
         String evidenceNo,
         String reason,
         Map<String, Object> formData) {
-      this(requestKey, entryId, evidenceNo, reason, formData, null);
+      this(requestKey, entryId, evidenceNo, reason, formData, null, null);
     }
   }
 
@@ -40,7 +58,8 @@ public final class FrozenPaymentCorrectionContracts {
       String sourcePeriod,
       String targetPeriod,
       List<String> blockers,
-      boolean fundingRequired) {}
+      boolean fundingRequired,
+      BigDecimal remainingAmount) {}
 
   @io.swagger.v3.oas.annotations.media.Schema(name = "FrozenPaymentCorrection")
   public record Correction(

@@ -17,11 +17,11 @@ public interface FundingCorrectionMapper {
       BigDecimal entryAmount) {}
 
   @Select(
-      "select a.fund_id,f.code,f.name,f.period,a.change_id,a.project_id,a.amount,e.amount"
+      "select a.fund_id,f.code,f.name,f.period,a.change_id,a.project_id,a.amount+coalesce(rev.amount,0) amount,e.amount+coalesce((select sum(r.amount) from invoice_payment_entries r where r.tenant_id=e.tenant_id and r.invoice_id=e.invoice_id and r.reversal_of=e.id),0)"
           + " entry_amount from funding_payment_allocations a join special_funds f on"
           + " f.tenant_id=a.tenant_id and f.id=a.fund_id join invoice_payment_entries e on"
-          + " e.tenant_id=a.tenant_id and e.id=a.entry_id where a.tenant_id=#{t} and"
-          + " a.entry_id=#{e} and e.invoice_id=#{invoice} order by a.fund_id")
+          + " e.tenant_id=a.tenant_id and e.id=a.entry_id left join lateral(select sum(x.amount) amount from funding_payment_allocations x join invoice_payment_entries r on r.tenant_id=x.tenant_id and r.id=x.entry_id where r.tenant_id=e.tenant_id and r.invoice_id=e.invoice_id and r.reversal_of=e.id and x.fund_id=a.fund_id and x.change_id=a.change_id) rev on true where a.tenant_id=#{t} and"
+          + " a.entry_id=#{e} and e.invoice_id=#{invoice} and a.amount+coalesce(rev.amount,0)>0 order by a.fund_id")
   List<Original> original(
       @Param("t") String t, @Param("invoice") String invoice, @Param("e") String e);
 

@@ -8,6 +8,17 @@ import com.procurement.sourcing.application.ProcurementExecutionPolicy;
 import org.junit.jupiter.api.Test;
 
 class ProcurementExecutionPolicyTests {
+  @Test void approvedPartialCorrectionsCanBeArchivedWithoutPretendingTheOriginalWasFullyReversed() throws Exception {
+    var data=complete();
+    data.withArray("payments").addObject().put("id","rev").put("invoiceId","i").put("reversalOf","p").put("amount",-20).put("evidenceNo","PARTIAL-PROOF");
+    data.withArray("payments").addObject().put("id","repay").put("invoiceId","i").put("amount",20).put("evidenceNo","REPAY");
+    assertThat(ProcurementExecutionPolicy.evaluate(data).blockers()).anyMatch(b->b.contains("付款冲销"));
+    data.withArray("frozenPaymentCorrections").addObject().put("id","partial").put("status","approved").put("workflowInstanceId","flow").put("entry_id","p").put("reversal_id","rev").put("amount",20);
+    data.withArray("workflowHistory").addObject().putObject("instance").put("id","flow").put("status","approved");
+    assertThat(ProcurementExecutionPolicy.evaluate(data).blockers()).isEmpty();
+    ((ObjectNode)data.path("payments").get(1)).put("amount",-101);
+    assertThat(ProcurementExecutionPolicy.evaluate(data).blockers()).anyMatch(b->b.contains("付款冲销"));
+  }
   @Test void frozenCorrectionCannotBeArchivedWithPendingOrUnprovenReversal() throws Exception {
     var data=complete();var correction=data.withArray("frozenPaymentCorrections").addObject().put("id","correction").put("status","submitted");
     assertThat(ProcurementExecutionPolicy.evaluate(data).blockers()).anyMatch(b->b.contains("更正审批"));

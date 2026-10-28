@@ -13,7 +13,11 @@ import {
 import { WorkflowSubmitDialog } from '../workflow/workflow-submit-dialog';
 import { WorkflowStatusPanel } from '../workflow/workflow-instance-panel';
 import { financeErrorMessage } from './finance-feedback';
-import { FundedCorrectionTargets, FundingRestorationEvidence, type FundingRestoreTarget } from './funded-correction-targets';
+import {
+  FundedCorrectionTargets,
+  type FundingRestoreTarget,
+} from './funded-correction-targets';
+import { FrozenCorrectionEvidence } from './frozen-correction-evidence';
 
 type Candidate = {
   entryId: string;
@@ -24,6 +28,7 @@ type Candidate = {
   targetPeriod: string;
   blockers: string[];
   fundingRequired?: boolean;
+  remainingAmount?: number;
 };
 type Correction = {
   id: string;
@@ -58,13 +63,22 @@ export function FrozenPaymentCorrections({ invoiceId }: { invoiceId: string }) {
     [reviewing, setReviewing] = useState(false),
     [reason, setReason] = useState(''),
     [evidence, setEvidence] = useState(''),
+    [amount, setAmount] = useState(''),
     [withdrawReason, setWithdrawReason] = useState(''),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(''),
     [notice, setNotice] = useState('');
   const keys = useRef(new Map<string, string>()),
     held = useRef(false);
-  const [fundingTargets,setFundingTargets]=useState<FundingRestoreTarget[]>([]),[fundingReady,setFundingReady]=useState(false);
+  const [fundingTargets, setFundingTargets] = useState<FundingRestoreTarget[]>(
+      [],
+    ),
+    [fundingReady, setFundingReady] = useState(false);
+  const amountValid =
+    !!selected &&
+    Number(amount) > 0 &&
+    Number(amount) <= (selected.remainingAmount ?? selected.amount) &&
+    Math.abs(Number(amount) * 100 - Math.round(Number(amount) * 100)) < 0.00001;
   const candidates = useQuery({
     queryKey: [base + '/candidates'],
     queryFn: async () =>
@@ -166,7 +180,7 @@ export function FrozenPaymentCorrections({ invoiceId }: { invoiceId: string }) {
                     {[
                       '原付款凭据 / 流水',
                       '原责任年度 → 当前年度',
-                      '整笔更正金额',
+                      '原金额 / 剩余可更正',
                       '操作',
                     ].map((h) => (
                       <th key={h} className="whitespace-nowrap px-3 py-3">
@@ -190,6 +204,9 @@ export function FrozenPaymentCorrections({ invoiceId }: { invoiceId: string }) {
                       </td>
                       <td className="whitespace-nowrap px-3 py-3">
                         {money(c.amount)}
+                        <span className="block text-xs text-slate-500">
+                          剩余 {money(c.remainingAmount ?? c.amount)}
+                        </span>
                       </td>
                       <td className="px-3 py-3">
                         {c.blockers.length
@@ -207,8 +224,12 @@ export function FrozenPaymentCorrections({ invoiceId }: { invoiceId: string }) {
                                 className={btn + ' whitespace-nowrap'}
                                 onClick={() => {
                                   setSelected(c);
+                                  setAmount(
+                                    String(c.remainingAmount ?? c.amount),
+                                  );
                                   keys.current.clear();
-                                  setFundingTargets([]);setFundingReady(false);
+                                  setFundingTargets([]);
+                                  setFundingReady(false);
                                   setReason('');
                                   setEvidence('');
                                   setError('');
@@ -300,13 +321,21 @@ export function FrozenPaymentCorrections({ invoiceId }: { invoiceId: string }) {
             className="space-y-4"
             onSubmit={(e) => {
               e.preventDefault();
-              if (reason.trim() && evidence.trim()&&(!selected.fundingRequired||fundingReady)) setReviewing(true);
+              if (
+                amountValid &&
+                reason.trim() &&
+                evidence.trim() &&
+                (!selected.fundingRequired || fundingReady)
+              )
+                setReviewing(true);
             }}
           >
             <dl className="grid grid-cols-2 gap-3 text-sm">
               <div>
-                <dt className="text-slate-500">整笔冲销金额</dt>
-                <dd className="font-bold">{money(selected.amount)}</dd>
+                <dt className="text-slate-500">剩余可更正金额</dt>
+                <dd className="font-bold">
+                  {money(selected.remainingAmount ?? selected.amount)}
+                </dd>
               </div>
               <div>
                 <dt className="text-slate-500">责任年度</dt>
@@ -317,8 +346,28 @@ export function FrozenPaymentCorrections({ invoiceId }: { invoiceId: string }) {
             </dl>
             <FeedbackNotice
               tone="info"
-              message="批准后保留原付款，另记整笔反向流水。年度台账按更正后口径展示，当前承接年度恢复未付责任。此操作不发起银行退款，不支持部分金额或已归档合同更正。"
+              message="批准后保留原付款，按本次金额追加反向流水并恢复当前年度未付责任。剩余部分仍冻结在原责任年度，可另行申请。此操作不发起银行退款，已归档合同仍不可更正。"
             />
+            <label className="block text-sm">
+              本次更正金额 <span className="text-red-600">*</span>
+              <input
+                aria-label="本次更正金额"
+                type="number"
+                required
+                min="0.01"
+                max={selected.remainingAmount ?? selected.amount}
+                step="0.01"
+                className={input}
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+              />
+            </label>
+            {!amountValid && (
+              <FeedbackNotice
+                tone="error"
+                message="金额须大于零，不超过剩余可更正金额，最多两位小数。"
+              />
+            )}
             <label className="block text-sm">
               更正凭据号 <span className="text-red-600">*</span>
               <input
@@ -341,12 +390,34 @@ export function FrozenPaymentCorrections({ invoiceId }: { invoiceId: string }) {
                 onChange={(e) => setReason(e.target.value)}
               />
             </label>
-            {selected.fundingRequired&&<FundedCorrectionTargets key={selected.entryId} base={base} entryId={selected.entryId} value={fundingTargets} onChange={setFundingTargets} onReady={setFundingReady}/>}
+            {selected.fundingRequired && (
+              <FundedCorrectionTargets
+                key={selected.entryId}
+                base={base}
+                entryId={selected.entryId}
+                value={fundingTargets}
+                onChange={setFundingTargets}
+                onReady={setFundingReady}
+                requestedAmount={Number(amount)}
+              />
+            )}
+            {selected.fundingRequired && !fundingReady && (
+              <FeedbackNotice
+                tone="info"
+                message="请逐来源填写本次金额并选择回补来源，合计须等于本次更正金额，且不超过来源剩余金额与可用额度。"
+              />
+            )}
             <div className="flex justify-end">
               <button
                 type="submit"
                 className={btn}
-                disabled={busy || !reason.trim() || !evidence.trim() || (!!selected.fundingRequired&&!fundingReady)}
+                disabled={
+                  busy ||
+                  !amountValid ||
+                  !reason.trim() ||
+                  !evidence.trim() ||
+                  (!!selected.fundingRequired && !fundingReady)
+                }
               >
                 下一步
               </button>
@@ -365,10 +436,17 @@ export function FrozenPaymentCorrections({ invoiceId }: { invoiceId: string }) {
             void run(async () => {
               const body = {
                   entryId: selected.entryId,
+                  amount: Number(amount),
                   evidenceNo: evidence.trim(),
                   reason: reason.trim(),
                   formData,
-                  ...(selected.fundingRequired?{fundingTargets}:{}),
+                  ...(selected.fundingRequired
+                    ? {
+                        fundingTargets: fundingTargets.filter(
+                          (v) => (v.amount || 0) > 0,
+                        ),
+                      }
+                    : {}),
                 },
                 fingerprint = JSON.stringify(body);
               let requestKey = keys.current.get(fingerprint);
@@ -407,7 +485,7 @@ export function FrozenPaymentCorrections({ invoiceId }: { invoiceId: string }) {
             <p className="break-words">原流水：{detail.entryId}</p>
             <p className="break-words">更正凭据：{detail.evidenceNo}</p>
             <p className="whitespace-pre-wrap break-words">{detail.reason}</p>
-            <FundingRestorationEvidence snapshot={detail.snapshot}/>
+            <FrozenCorrectionEvidence snapshot={detail.snapshot} />
             {detail.reversalId && (
               <p className="break-words">反向流水：{detail.reversalId}</p>
             )}
