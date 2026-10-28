@@ -46,3 +46,30 @@ it('submits only the current batch with matching header and line quantities', ()
     receivedQuantity: 5, qualifiedQuantity: 5, lineItems: [{ orderLineId: 'line', receivedQuantity: 5, qualifiedQuantity: 5 }],
   }) }, expect.any(Object));
 });
+
+it('retains quantities and quality notes when changing registration tabs', () => {
+  open();
+  fireEvent.change(screen.getByLabelText('物料本批实收数量'),{target:{value:'4'}});
+  fireEvent.click(screen.getByRole('button',{name:'质检处置'}));
+  fireEvent.change(screen.getByPlaceholderText('如:抽检结果、外观与数量核对情况'),{target:{value:'已抽检外观'}});
+  expect(screen.getByLabelText('物料本批实收数量')).not.toBeVisible();
+  fireEvent.click(screen.getByRole('button',{name:'订单与批次'}));
+  expect(screen.getByText(/发货批次 delivery-first/)).toBeVisible();
+  fireEvent.click(screen.getByRole('button',{name:'数量核对'}));
+  expect(screen.getByLabelText('物料本批实收数量')).toHaveValue(4);
+  fireEvent.click(screen.getByRole('button',{name:'质检处置'}));
+  expect(screen.getByPlaceholderText('如:抽检结果、外观与数量核对情况')).toHaveValue('已抽检外观');
+  expect(mutation.mutate).not.toHaveBeenCalled();
+});
+
+it('opens historical receipts as separate categorized read-only detail pages', () => {
+  render(<QueryClientProvider client={new QueryClient()}><ReceiptsPage /></QueryClientProvider>);
+  fireEvent.click(screen.getByRole('tab',{name:/验收记录/}));
+  fireEvent.click(screen.getAllByRole('button',{name:'详情'})[0]);
+  expect(screen.getByText('收货验收详情')).toBeVisible();
+  fireEvent.click(screen.getByRole('button',{name:'验收明细'}));
+  expect(screen.getByText('逐项验收明细')).toBeVisible();
+  fireEvent.click(screen.getByRole('button',{name:'质检与处置'}));
+  expect(screen.getByText('质检结论与处置')).toBeVisible();
+  expect(screen.queryByRole('button',{name:'提交验收'})).not.toBeInTheDocument();
+});

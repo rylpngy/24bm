@@ -1,6 +1,7 @@
 import { Fragment, useMemo, useState } from 'react';
 import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
 import { ReceiptDispositionReview } from './receipt-disposition-review';
+import { ReceiptDetail } from './receipt-detail';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, ClipboardCheck, Info, PackageCheck } from 'lucide-react';
 import {
@@ -20,6 +21,7 @@ import {
   PrimaryActionButton,
   ResponsiveTableFrame,
   SearchInput,
+  Tabs,
   cn,
 } from '@24bid/ui';
 
@@ -61,6 +63,7 @@ export function ReceiptsPage() {
   const [receivingId, setReceivingId] = useState<string | null>(null);
   const [expandedReceiptId, setExpandedReceiptId] = useState<string | null>(null);
   const [reviewingId, setReviewingId] = useState<string | null>(null);
+  const [receiveTab, setReceiveTab] = useState('quantity');
 
   const ordersQuery = usePurchaseOrderList(undefined, { query: { enabled: can('buyer:order:read') } });
   const receiptsQuery = useBuyerReceiptList();
@@ -143,6 +146,7 @@ export function ReceiptsPage() {
   const startReceiving = (o: PurchaseOrderResponse) => {
     if (!canReceive) return;
     setReceivingId(o.id ?? null);
+    setReceiveTab('quantity');
     setLines(
       (o.lineItems ?? []).map((l) => ({
         orderLineId: l.id!,
@@ -258,13 +262,16 @@ export function ReceiptsPage() {
         {error && <FeedbackNotice tone="error" message={error} />}
         {!attributable(o) && <FeedbackNotice tone="info" message="订单或历史批次缺少可核对行明细，暂停数量续办。" />}
         <p className="text-xs font-bold">已发累计 {deliveryHistory(o.id).reduce((s, d) => s + (d.shippedQuantity ?? 0), 0)} · 已收累计 {receiptHistory(o.id).reduce((s, r) => s + (r.receivedQuantity ?? 0), 0)} · 剩余可收 {lines.reduce((s, l) => s + l.remaining, 0)}</p>
+        <Tabs items={[{id:'overview',label:'订单与批次'},{id:'quantity',label:'数量核对'},{id:'quality',label:'质检处置'}]} value={receiveTab} onChange={setReceiveTab} />
+        <div hidden={receiveTab !== 'overview'}>
         {deliveryHistory(o.id).map(d => <p key={d.id} className="break-words text-xs">发货批次 {d.id} · {d.trackingNo} · 数量 {d.shippedQuantity ?? '待核对'}</p>)}
         {receiptHistory(o.id).map(r => <p key={r.id} className="break-words text-xs">收货批次 {r.id} · 实收 {r.receivedQuantity} · 合格 {r.qualifiedQuantity}</p>)}
+        </div>
 
-        <div className="grid gap-4 xl:grid-cols-[1fr_20rem]">
+        <div className="min-w-0 space-y-4">
           <div className="min-w-0 space-y-4">
             {/* 行项验收 */}
-            <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
+            <section hidden={receiveTab !== 'quantity'} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
               <h3 className="text-base font-black text-slate-950">
                 <span className="mr-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[11px] text-white">1</span>
                 数量核对
@@ -321,7 +328,7 @@ export function ReceiptsPage() {
             </section>
 
             {/* 质检说明 + 处置 */}
-            <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
+            <section hidden={receiveTab !== 'quality'} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
               <h3 className="text-base font-black text-slate-950">
                 <span className="mr-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[11px] text-white">2</span>
                 质检结论
@@ -364,7 +371,7 @@ export function ReceiptsPage() {
           </div>
 
           {/* 右栏:物流 + 订单关键信息 */}
-          <div className="space-y-4">
+          <div hidden={receiveTab !== 'overview'}><div className="grid items-start gap-4 lg:grid-cols-2">
             <section className="rounded-lg bg-slate-900 p-5 text-white shadow-sm">
               <p className="flex items-center gap-2 text-sm font-black">
                 <Info size={15} className="text-blue-400" /> 订单关键信息
@@ -398,6 +405,7 @@ export function ReceiptsPage() {
               </section>
             )}
           </div>
+          </div>
         </div>
 
         {/* 底部悬浮提交条 */}
@@ -428,6 +436,13 @@ export function ReceiptsPage() {
   }
 
   // ── 工作台列表 ─────────────────────────────────────────────
+  const detailReceipt = receipts.find((item) => item.id === expandedReceiptId);
+  if (detailReceipt) return <>
+    {reviewingId && <ReceiptDispositionReview key={reviewingId} receiptId={reviewingId} onClose={() => setReviewingId(null)} />}
+    <ReceiptDetail key={detailReceipt.id} receipt={detailReceipt} order={orders.find((order) => order.id === detailReceipt.orderId)}
+      deliveries={(deliveriesQuery.data?.data ?? []).filter((delivery) => delivery.orderId === detailReceipt.orderId)}
+      onBack={() => setExpandedReceiptId(null)} onReview={() => setReviewingId(detailReceipt.id!)} />
+  </>;
   return (
     <Panel title="收货验收" icon={PackageCheck} subtitle="待验收队列 · 验收登记 · 质检记录">
       {reviewingId && <ReceiptDispositionReview key={reviewingId} receiptId={reviewingId} onClose={() => setReviewingId(null)} />}
@@ -588,6 +603,7 @@ export function ReceiptsPage() {
                 {r.id && r.disposition === '退货换货' && (r.qualifiedQuantity ?? 0) < (r.receivedQuantity ?? 0) && (
                   <button type="button" onClick={() => setReviewingId(r.id!)} className="mt-3 text-sm font-bold text-blue-700">处置复核</button>
                 )}
+                <button type="button" onClick={() => setExpandedReceiptId(r.id ?? null)} className="mt-3 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700">详情</button>
               </div>
             ))}
           >
@@ -640,51 +656,10 @@ export function ReceiptsPage() {
                           onClick={() => setExpandedReceiptId(expandedReceiptId === r.id ? null : r.id ?? null)}
                           className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50"
                         >
-                          {expandedReceiptId === r.id ? '收起' : '明细'}
+                          详情
                         </button>
                       </td>
                     </tr>
-                    {expandedReceiptId === r.id && (
-                      <tr className="bg-slate-50/60">
-                        <td colSpan={9} className="px-5 py-4">
-                          {(r.lineItems ?? []).length > 0 && (
-                            <div className="overflow-hidden rounded-lg border border-slate-100 bg-white">
-                              <table className="w-full text-left text-xs">
-                                <thead className="bg-slate-50 text-[11px] font-black text-slate-400">
-                                  <tr>
-                                    <th className="px-3 py-1.5">品名/规格</th>
-                                    <th className="px-3 py-1.5 text-right">订购</th>
-                                    <th className="px-3 py-1.5 text-right">收货</th>
-                                    <th className="px-3 py-1.5 text-right">合格</th>
-                                    <th className="px-3 py-1.5 text-right">合格率</th>
-                                  </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100">
-                                  {(r.lineItems ?? []).map((l) => (
-                                    <tr key={l.id} className="font-bold text-slate-700">
-                                      <td className="px-3 py-1.5">{l.description}</td>
-                                      <td className="px-3 py-1.5 text-right">
-                                        {l.orderedQuantity}
-                                        {l.unit ? ` ${l.unit}` : ''}
-                                      </td>
-                                      <td className="px-3 py-1.5 text-right">{l.receivedQuantity}</td>
-                                      <td className="px-3 py-1.5 text-right font-black text-slate-900">{l.qualifiedQuantity}</td>
-                                      <td className="px-3 py-1.5 text-right">{ratePct(Number(l.qualifiedQuantity), Number(l.receivedQuantity))}</td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
-                          )}
-                          {r.qualityNote && (
-                            <p className="mt-2 break-words text-xs font-bold leading-5 text-slate-600">验收说明:{r.qualityNote}</p>
-                          )}
-                          {r.dispositionNote && r.dispositionNote !== r.qualityNote && (
-                            <p className="mt-1 break-words text-xs font-bold leading-5 text-amber-700">处置说明:{r.dispositionNote}</p>
-                          )}
-                        </td>
-                      </tr>
-                    )}
                   </Fragment>
                 ))}
               </tbody>

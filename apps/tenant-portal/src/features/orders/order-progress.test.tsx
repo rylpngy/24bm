@@ -17,6 +17,18 @@ const open = () => {
   fireEvent.click(screen.getAllByRole('button', { name: '详情' })[0]);
 };
 describe('order fulfillment progress', () => {
+  it('separates logistics, receipt and cancellation information from the basic page', () => {
+    fixture.status='已收货'; fixture.delivered=true; open();
+    expect(screen.getByText('订单信息')).toBeVisible();
+    expect(screen.getByText('物流信息 · batch')).not.toBeVisible();
+    fireEvent.click(screen.getByRole('button',{name:'发货物流'}));
+    expect(screen.getByText('物流信息 · batch')).toBeVisible();
+    expect(screen.getByText('订单信息')).not.toBeVisible();
+    fireEvent.click(screen.getByRole('button',{name:'采购明细'}));
+    expect(screen.getByText('暂无订单行项明细。')).toBeVisible();
+    fireEvent.click(screen.getByRole('button',{name:'收货验收'}));
+    expect(screen.getByText('暂无收货验收记录。')).toBeVisible();
+  });
   it('uses the registration date when actual shipping date was not entered', () => {
     fixture.status='已收货';
     fixture.delivered = true;
