@@ -379,6 +379,39 @@ try {
     return bytes;
   };
   const oldZip = await download(oldArchive.id, 'first-clearance.zip');
+  const supplement = {
+    ...proposal,
+    requestKey: 'WITHDRAW-' + f.runId,
+    previousSettlementId: originalSettlement.id,
+    prices: [{ lineId: order.lineItems[0].id, unitPrice: 250 }],
+    allocations: [{ source: c.invoiceId, goodsAmount: 750 }],
+  };
+  await api(
+    path,
+    b,
+    {
+      ...supplement,
+      requestKey: 'STALE-' + f.runId,
+      previousSettlementId: 'not-current',
+    },
+    'POST',
+    [400, 409, 422],
+  );
+  let discarded = await api(path, b, supplement);
+  await act(b, 'withdraw', discarded);
+  discarded = await api(path, b, {
+    ...supplement,
+    requestKey: 'REJECT-' + f.runId,
+  });
+  await act(s, 'reject', discarded, sp);
+  assert.equal(
+    (await api('buyer/orders', b)).find((x) => x.id === c.orderId).status,
+    '已清算',
+  );
+  assert.deepEqual(
+    (await api(path + '/' + originalSettlement.id, b)).record,
+    originalSettlement,
+  );
   // The existing archive stays downloadable while the new bilateral agreement is reviewed.
   await p.reload();
   await panel
@@ -485,6 +518,12 @@ try {
   const ex = await api('buyer/rfqs/' + c.rfqId + '/execution', b);
   assert.ok(ex.canArchive, JSON.stringify(ex.blockers));
   assert.equal(ex.orderAmount, 750);
+  const yearly = (await api(ep + '/lifecycle/preview', b)).sources.filter(
+    (x) => x.sourceType === 'rfq' && x.sourceId === c.rfqId,
+  );
+  assert.equal(yearly.find((x) => x.period === project.period).paidAmount, 600);
+  assert.equal(yearly.find((x) => x.period === targetPeriod).paidAmount, 150);
+  result.yearly = yearly;
   const lot = (await api(ep + '/packages', b)).find(
     (x) => x.info.id === c.packageId,
   );
