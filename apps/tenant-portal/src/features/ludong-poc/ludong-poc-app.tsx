@@ -102,7 +102,7 @@ export function LudongPocApp() {
     const url = new URL(window.location.href);
     url.searchParams.set('solution', 'ludong-poc');
     url.searchParams.set('module', next);
-    for (const key of ['recordId', 'view', 'reviewDocument']) url.searchParams.delete(key);
+    for (const key of ['recordId', 'view', 'reviewDocument', 'financeView']) url.searchParams.delete(key);
     window.history.replaceState(null, '', url);
   };
 

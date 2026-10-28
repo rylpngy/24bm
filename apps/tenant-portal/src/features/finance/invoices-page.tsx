@@ -94,7 +94,10 @@ function InvoiceApprovalRecords({ invoiceId }: { invoiceId: string }) {
 // 二级页:对账差异处理(从对账详情进入,返回详情)、付款批次(从台账进入,返回台账)。
 export function InvoicesPage() {
   const queryClient = useQueryClient();
-  const [subpage, setSubpage] = useState<'none' | 'variance' | 'batches' | 'reviews'>(() => new URLSearchParams(window.location.search).get('financeView') === 'reviews' ? 'reviews' : 'none');
+  const [subpage, setSubpage] = useState<'none' | 'variance' | 'batches' | 'reviews'>(() => {
+    const view = new URLSearchParams(window.location.search).get('financeView');
+    return view === 'reviews' || view === 'batches' ? view : 'none';
+  });
   const [feedback, setFeedback] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(() => new URLSearchParams(window.location.search).get('recordId'));
@@ -102,6 +105,12 @@ export function InvoicesPage() {
   const [visitedTabs, setVisitedTabs] = useState<string[]>(['info']);
   const selectDetailTab = (id: string) => { setDetailTab(id); setVisitedTabs(visited => visited.includes(id) ? visited : [...visited, id]); };
   const openInvoice = (id: string) => { setSelectedId(id); setDetailTab('info'); setVisitedTabs(['info']); };
+  const leaveSubpage = () => {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('financeView');
+    window.history.replaceState(null, '', url);
+    setSubpage('none');
+  };
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState('全部');
   const [page, setPage] = useState(1);
@@ -158,7 +167,7 @@ export function InvoicesPage() {
     return <FeedbackNotice tone="error" message={financeErrorMessage(query.error, '发票数据加载失败，请刷新重试。')} />;
   }
 
-  if (subpage === 'reviews') return <PaymentReviewsPage onBack={() => setSubpage('none')} onInvoice={id => { openInvoice(id); setSubpage('none'); }} />;
+  if (subpage === 'reviews') return <PaymentReviewsPage onBack={leaveSubpage} onInvoice={id => { openInvoice(id); leaveSubpage(); }} />;
 
   // ── 二级页:付款批次(发票付款的批量执行工作台) ─────────────
   if (subpage === 'batches') {
@@ -168,7 +177,7 @@ export function InvoicesPage() {
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              onClick={() => setSubpage('none')}
+              onClick={leaveSubpage}
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-50"
               aria-label="返回发票台账"
             >

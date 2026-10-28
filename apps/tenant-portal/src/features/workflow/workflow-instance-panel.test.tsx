@@ -2,9 +2,17 @@ import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { describe, expect, it } from 'vitest';
 import type { WorkflowInstanceHistory } from '@24bid/api-client';
-import { WorkflowInstancePanel, workflowFormLabels } from './workflow-instance-panel';
+import { WorkflowInstancePanel, workflowBusinessHref, workflowFormLabels } from './workflow-instance-panel';
 
 describe('workflow history form display', () => {
+  it('retains the active solution in business links and directs batches to their workbench', () => {
+    window.history.replaceState(null, '', '/?solution=ludong-poc&module=contracts&recordId=old');
+    const request = new URL(workflowBusinessHref({ businessType: 'payment_request', businessId: 'request-1', businessSnapshot: { invoiceId: 'invoice-1' } })!, window.location.origin);
+    expect(Object.fromEntries(request.searchParams)).toEqual({ module: 'invoices', recordId: 'invoice-1', solution: 'ludong-poc' });
+    const batch = new URL(workflowBusinessHref({ businessType: 'payment_batch', businessId: 'batch-1', businessSnapshot: {} })!, window.location.origin);
+    expect(Object.fromEntries(batch.searchParams)).toEqual({ module: 'invoices', financeView: 'batches', solution: 'ludong-poc' });
+    window.history.replaceState(null, '', '/');
+  });
   it('renders the bound schema labels and preserves unknown fields and false/zero values', () => {
     const history: WorkflowInstanceHistory = {
       workflowInstanceId: 'instance-1', businessType: 'buyer_supplier_exit', businessId: 'supplier-1',

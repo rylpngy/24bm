@@ -73,6 +73,12 @@ export function RfqsPage() {
   const admittedSuppliers = useBuyerSupplierList({ status: '已准入' });
   const [resumeDraft, setResumeDraft] = useState<RfqResponse | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const closeDetail = () => {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('recordId');
+    window.history.replaceState(null, '', url);
+    setSelectedId(null);
+  };
 
   const list = rfqs.data?.data ?? [];
   const demands = approvedDemands.data?.data ?? [];
@@ -147,10 +153,10 @@ export function RfqsPage() {
           rfq={fresh}
           budget={demandBudgetOf(fresh)}
           supplierNames={supplierNames}
-          onBack={() => setSelectedId(null)}
+          onBack={closeDetail}
           onResumeDraft={() => {
             setResumeDraft(fresh);
-            setSelectedId(null);
+            closeDetail();
             setShowForm(true);
           }}
         />

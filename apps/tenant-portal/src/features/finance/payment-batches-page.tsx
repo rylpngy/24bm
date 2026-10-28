@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { portalHref } from '../../lib/portal-href';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   useBuyerFinanceActionPaymentBatches,
@@ -61,7 +62,7 @@ function PaymentBatchExecutionDetails({
               <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
                 <span className="text-xs font-black text-slate-700">{currency(record.amount)}</span>
                 {record.invoiceId && (
-                  <a href={`?module=invoices&recordId=${encodeURIComponent(record.invoiceId)}`} className="inline-flex h-8 items-center whitespace-nowrap rounded-md border border-blue-200 bg-white px-3 text-xs font-bold text-blue-700">
+                  <a href={portalHref({ module: 'invoices', recordId: record.invoiceId })} className="inline-flex h-8 items-center whitespace-nowrap rounded-md border border-blue-200 bg-white px-3 text-xs font-bold text-blue-700">
                     付款金额台账
                   </a>
                 )}

@@ -29,6 +29,15 @@ beforeEach(()=>{api.matched=true;window.history.replaceState(null,'','/?solution
 afterEach(()=>{cleanup();vi.clearAllMocks();});
 function show(){render(<QueryClientProvider client={new QueryClient()}><InvoicesPage/></QueryClientProvider>);}
 
+it('opens the batch workbench from a workflow link and clears the subpage on return',()=>{
+  window.history.replaceState(null,'','/?solution=ludong-poc&module=invoices&financeView=batches');
+  show();expect(screen.getByText('付款批次工作台')).toBeVisible();
+  fireEvent.click(screen.getByRole('button',{name:'返回发票台账'}));
+  expect(screen.queryByText('付款批次工作台')).not.toBeInTheDocument();
+  expect(new URLSearchParams(window.location.search).has('financeView')).toBe(false);
+  expect(new URLSearchParams(window.location.search).get('solution')).toBe('ludong-poc');
+});
+
 it('separates invoice facts, matching, payment and execution without losing payment inputs',()=>{
   show();expect(screen.getByText('发票信息(增值税专用发票)')).toBeVisible();
   expect(screen.queryByLabelText('本次付款金额')).not.toBeInTheDocument();
