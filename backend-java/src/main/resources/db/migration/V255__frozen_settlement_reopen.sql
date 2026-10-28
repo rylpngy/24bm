@@ -222,4 +222,3 @@ select h.tenant_id,h.department_id,h.period,h.source_type,h.source_id,
   coalesce(b.label,'历史已支付责任 · '||h.source_id),0::numeric,h.paid,h.paid,h.paid,0::numeric
 from historical h left join labels b on b.tenant_id=h.tenant_id and b.department_id=h.department_id
   and b.source_type=h.source_type and b.source_id=h.source_id;
-
