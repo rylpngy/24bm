@@ -98,8 +98,17 @@ public class ContractInstallmentService {
     reverseAmount(tenant,order,original,reversal,null);
   }
 
+  public void validateReversalAmount(String tenant,String original,BigDecimal amount){
+    var all=allocations.remainingByEntry(tenant,original);
+    if(all.stream().anyMatch(a->a.amount().signum()<0)||(!all.isEmpty()&&amount.compareTo(all.stream().map(a->a.amount()).reduce(BigDecimal.ZERO,BigDecimal::add))>0))throw new IllegalStateException("里程碑剩余可冲销金额不足");
+    var shares=all.stream().filter(a->a.amount().signum()>0).toList();
+    if(shares.size()>1&&amount.compareTo(shares.stream().map(a->a.amount()).reduce(BigDecimal.ZERO,BigDecimal::add))<0)
+      throw new IllegalStateException("原付款涉及多个合同里程碑，部分更正须先明确各里程碑金额；当前仅支持整笔更正，不自动选择扣减节点");
+  }
+
   @Transactional(propagation = Propagation.MANDATORY)
   public void reverseAmount(String tenant,String order,String original,String reversal,BigDecimal requested) {
+    if(requested!=null)validateReversalAmount(tenant,original,requested);
     var contract = contracts.lockByOrder(tenant, order);
     if (contract != null && "已归档".equals(contract.archiveStatus())) {
       throw new IllegalStateException("关联合同已归档，不能冲销付款");

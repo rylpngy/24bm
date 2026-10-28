@@ -220,6 +220,7 @@ public class FrozenPaymentCorrectionService {
     var milestones = installments.balances(t, invoice.orderId());
     if (milestones.stream().anyMatch(m -> !m.verified()))
       throw new IllegalStateException("合同付款计划待核对");
+    installments.validateReversalAmount(t, entry, amount);
     var snapshot = new LinkedHashMap<String, Object>();
     snapshot.put("invoiceId", invoiceId);
     snapshot.put("projectId", b.projectId());

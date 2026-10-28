@@ -463,6 +463,16 @@ class ProcurementProjectIT {
     assertThatThrownBy(()->jdbc.update("insert into invoice_payment_entries(id,tenant_id,invoice_id,idempotency_key,amount,evidence_no,reversal_of,created_by) values (?,?,?,?,-10,'BAD',?,?)",id,tenant,f[2],id,f[3],reviewer)).hasStackTraceContaining("requires approved frozen correction");
     assertThat(paymentLedger.summary(f[2]).paidAmount()).isEqualByComparingTo("50");
   }
+  @Test void partialCorrectionDoesNotGuessWhichOfSeveralContractMilestonesToReduce(){
+    var f=fundedPaidCase();String contract=settlementContract(f.order(),true),first="multi-first-"+UUID.randomUUID(),second="multi-second-"+UUID.randomUUID();
+    for(String m:List.of(first,second))jdbc.update("insert into contract_payment_milestones(id,tenant_id,contract_id,name,percent,amount,status,sort_no,reached) values (?,?,?,'待核对分项',50,100,'部分已付',0,true)",m,tenant,contract);
+    for(String m:List.of(first,second))jdbc.update("insert into contract_payment_allocations(id,tenant_id,entry_id,milestone_id,amount) values (?,?,?,?,25)",UUID.randomUUID().toString(),tenant,f.entry(),m);
+    var a=futureFund("A",1,"300");var b=futureFund("B",1,"300");var carry=lifecycle.submit(f.order().project(),fundedCarry(f.order().project(),1,f.a(),f.b(),a.id(),b.id()));decide(carry.id(),"approve");
+    assertThatThrownBy(()->corrections.submit(f.invoice(),partial(f.entry(),"ambiguous","10",List.of(correctionShare(f.b(),b.id(),"10"))))).hasMessageContaining("多个合同里程碑");
+    assertThat(corrections.history(f.invoice(),1,10).total()).isZero();assertThat(paymentLedger.summary(f.invoice()).paidAmount()).isEqualByComparingTo("50");
+    var full=corrections.submit(f.invoice(),fundedCorrection(f,"whole-is-known",a.id(),b.id()));decide(full.id(),"approve");
+    assertThat(contractInstallments.balances(tenant,f.order().order()).stream().map(m->m.paid()).reduce(BigDecimal.ZERO,BigDecimal::add)).isZero();
+  }
   @Test void fundedFrozenCorrectionAfterMultipleCarryoversDoesNotReassignOtherHistoricalCash(){
     var f=fundedPaidCase();var a=futureFund("A",1,"300");var b=futureFund("B",1,"300");var first=lifecycle.submit(f.order().project(),fundedCarry(f.order().project(),1,f.a(),f.b(),a.id(),b.id()));decide(first.id(),"approve");fundedCash(f.invoice(),a.id(),b.id(),"10","20");
     var aa=futureFund("A",2,"300");var bb=futureFund("B",2,"300");var second=lifecycle.submit(f.order().project(),fundedCarry(f.order().project(),2,a.id(),b.id(),aa.id(),bb.id()));decide(second.id(),"approve");
