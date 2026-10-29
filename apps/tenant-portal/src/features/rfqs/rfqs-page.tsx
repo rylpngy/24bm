@@ -166,7 +166,7 @@ export function RfqsPage() {
 
   return (
     <Panel title="询比项目" icon={FileText} subtitle="询比列表 · 邀请 · 比价定标">
-      <div className="mb-4 flex flex-wrap items-center gap-2">
+      <div className="mb-4 space-y-3">
         <div className="flex flex-wrap gap-2">
           {STATUS_FILTERS.map((s) => (
             <button
@@ -177,7 +177,7 @@ export function RfqsPage() {
                 setPage(1);
               }}
               className={cn(
-                'h-8 rounded-md border px-3 text-xs font-black transition',
+                'h-8 shrink-0 whitespace-nowrap rounded-md border px-3 text-xs font-black transition',
                 s === status
                   ? 'border-blue-200 bg-blue-50 text-blue-700'
                   : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50',
@@ -187,8 +187,9 @@ export function RfqsPage() {
             </button>
           ))}
         </div>
+        <div className="flex flex-wrap items-center justify-between gap-3">
         <SearchInput
-          className="mb-0 ml-auto"
+          className="mb-0 min-w-0 max-w-full [&>div]:min-w-0 [&>div]:flex-1"
           placeholder="按标题 / 编号 / 方式 / 要求搜索"
           onSearch={(k) => {
             setKeyword(k);
@@ -198,10 +199,11 @@ export function RfqsPage() {
         <button
           type="button"
           onClick={() => { setResumeDraft(null); void approvedDemands.refetch(); setShowForm(true); }}
-          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-slate-900 px-4 text-xs font-black text-white transition hover:bg-slate-800"
+          className="inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md bg-slate-900 px-4 text-xs font-black text-white transition hover:bg-slate-800"
         >
           <Plus size={14} /> 发起询价立项
         </button>
+        </div>
       </div>
 
       {feedback && (
@@ -224,72 +226,83 @@ export function RfqsPage() {
         <FeedbackNotice tone="info" message="没有符合当前筛选条件的询比项目。" />
       ) : (
         <>
-        <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm shadow-slate-200/50">
-          <table className="w-full min-w-[960px] text-left text-sm">
+        <div className="min-w-0 max-w-full overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm shadow-slate-200/50">
+          <table aria-label="询比项目列表" className="w-full min-w-[860px] table-fixed whitespace-nowrap text-left text-sm">
+            <colgroup>
+              <col className="w-12" />
+              <col className="w-40" />
+              <col />
+              <col className="w-28" />
+              <col className="w-28" />
+              <col className="w-[172px]" />
+              <col className="w-20" />
+            </colgroup>
             <thead className="bg-slate-50 text-xs font-black text-slate-500">
               <tr>
-                <th className="px-4 py-3">序号</th>
-                <th className="px-4 py-3">项目编号</th>
-                <th className="px-4 py-3">项目名称</th>
-                <th className="px-4 py-3 text-right">预算</th>
-                <th className="px-4 py-3">截止日期</th>
-                <th className="px-4 py-3">项目阶段</th>
-                <th className="px-4 py-3 text-right">操作</th>
+                <th className="px-3 py-3 text-center">序号</th>
+                <th className="px-3 py-3">项目编号</th>
+                <th className="px-3 py-3">项目名称</th>
+                <th className="px-3 py-3 text-right">预算</th>
+                <th className="px-3 py-3">截止日期</th>
+                <th className="px-3 py-3">项目阶段</th>
+                <th className="sticky right-0 bg-slate-50 px-3 py-3 text-right">操作</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {pageItems.map((r, i) => (
-                <tr key={r.id} className="hover:bg-blue-50/30">
-                  <td className="px-4 py-4 font-mono font-black text-slate-400">
+                <tr key={r.id} className="group hover:bg-blue-50/30">
+                  <td className="px-3 py-3 text-center font-mono font-bold tabular-nums text-slate-400">
                     {(safePage - 1) * PAGE_SIZE + i + 1}
                   </td>
-                  <td className="px-4 py-4 font-mono text-xs font-black text-slate-500">{r.id}</td>
-                  <td className="px-4 py-4">
-                    <p className="flex flex-wrap items-center gap-2 break-words font-black text-slate-950">
-                      {r.title}
+                  <td className="px-3 py-3 font-mono text-xs font-bold text-slate-500"><span className="block truncate" title={r.id}>{r.id}</span></td>
+                  <td className="px-3 py-3">
+                    <p className="truncate font-bold text-slate-950" title={r.title}>{r.title}</p>
+                    <div className="mt-1 flex min-w-0 items-center gap-1.5 text-xs font-medium text-slate-400">
+                      <span className={cn('shrink-0 rounded px-1.5 py-0.5 text-[11px] font-bold', methodTone(r.method))}>
+                        {r.method ?? '询比'}
+                      </span>
+                      <span className="min-w-0 truncate" title={`${r.evaluationMethod ?? '最低价'}${(r.currentRound ?? 1) > 1 ? ` · 第${r.currentRound}轮${r.finalRound ? '(最终)' : ''}` : ''}`}>
+                        {r.evaluationMethod ?? '最低价'}
+                        {(r.currentRound ?? 1) > 1 && ` · 第${r.currentRound}轮${r.finalRound ? '(最终)' : ''}`}
+                      </span>
                       {(r.demandIds?.length ?? 0) > 0 &&
                         r.demandIds!.every((id) =>
                           (allDemands.data?.data ?? []).find((d) => d.id === id)?.source === '直录登记',
                         ) && (
-                          <span className="shrink-0 rounded bg-amber-50 px-1.5 py-0.5 text-[11px] font-black text-amber-700">直接创建</span>
+                          <span className="shrink-0 rounded bg-amber-50 px-1.5 py-0.5 text-[11px] font-bold text-amber-700">直接创建</span>
                         )}
-                    </p>
-                    <p className="mt-1 text-xs font-bold text-slate-400">
-                      <span className={cn('mr-1.5 rounded px-1.5 py-0.5 text-[11px] font-black', methodTone(r.method))}>
-                        {r.method ?? '询比'}
-                      </span>
-                      {r.evaluationMethod ?? '最低价'}
-                      {(r.currentRound ?? 1) > 1 && ` · 第${r.currentRound}轮${r.finalRound ? '(最终)' : ''}`}
-                    </p>
+                    </div>
                   </td>
-                  <td className="px-4 py-4 text-right font-mono font-black text-slate-950">
-                    ¥{demandBudgetOf(r).toLocaleString('zh-CN')}
+                  <td className="px-3 py-3 text-right font-mono font-semibold tabular-nums text-slate-950">
+                    <span className="block truncate" title={`¥${demandBudgetOf(r).toLocaleString('zh-CN')}`}>¥{demandBudgetOf(r).toLocaleString('zh-CN')}</span>
                   </td>
-                  <td className="px-4 py-4 font-bold text-slate-600">{deadlineText(r.deadlineAt)}</td>
-                  <td className="px-4 py-4">
-                    <div className="flex flex-wrap items-center gap-1.5">
+                  <td className="px-3 py-3 text-xs font-medium tabular-nums text-slate-600">{deadlineText(r.deadlineAt)}</td>
+                  <td className="px-3 py-3">
+                    <div className="flex min-w-0 items-center gap-1.5">
                       {r.status && (
-                        <span className={cn('rounded-md border px-2 py-1 text-[11px] font-black', statusTone(r.status))}>
+                        <span title={r.status} className={cn('max-w-full shrink-0 truncate rounded-md border px-2 py-1 text-[11px] font-bold', statusTone(r.status))}>
                           {r.status}
                         </span>
                       )}
-                      <span
+                      {stageLabelOf(r.status) !== r.status && <span
+                        title={stageLabelOf(r.status)}
                         className={cn(
-                          'rounded-md px-2 py-1 text-[11px] font-black text-white',
+                          'min-w-0 truncate rounded-md px-2 py-1 text-[11px] font-bold text-white',
                           ABORTED_STATUS[r.status ?? ''] ? 'bg-red-500' : 'bg-slate-900',
                         )}
                       >
                         {stageLabelOf(r.status)}
-                      </span>
+                      </span>}
                     </div>
                   </td>
-                  <td className="px-4 py-4 text-right">
+                  <td className="sticky right-0 bg-white px-3 py-3 text-right group-hover:bg-blue-50">
                     <button
                       type="button"
                       onClick={() => setSelectedId(r.id ?? null)}
-                      className="h-8 rounded-md border border-blue-200 bg-white px-3 text-xs font-black text-blue-700 hover:bg-blue-50"
+                      aria-label={`详情：${r.title ?? r.id ?? '询比项目'}`}
+                      className="inline-flex h-8 w-14 shrink-0 items-center justify-center whitespace-nowrap rounded-md border border-blue-200 bg-white text-xs font-bold text-blue-700 hover:bg-blue-50"
                     >
-                      查看详情
+                      详情
                     </button>
                   </td>
                 </tr>
