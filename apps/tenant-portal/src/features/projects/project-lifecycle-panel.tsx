@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { FundingCarryoverFields, FundingCarryoverEvidence, type FundingTarget } from './funding-carryover-fields';
+import { FundingLiquidationPreview, FundingLiquidationEvidence } from './funding-liquidation-evidence';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, CalendarClock, FileCheck2, RefreshCw } from 'lucide-react';
 import {
@@ -371,6 +372,7 @@ export function ProjectLifecyclePanel({
               </label>
             )}
             {kind==='carryover'&&preview.data?.fundingEnabled&&<FundingCarryoverFields projectId={p.id} target={target} value={fundingSources} onChange={setFundingSources} onReady={setFundingReady}/>}
+            {kind==='liquidation'&&preview.data?.fundingEnabled&&<><FundingLiquidationPreview projectId={p.id} onReady={setFundingReady}/>{!can('buyer:budget:manage')&&<FeedbackNotice tone="error" message="办理专项资金终止清算还需要预算管理权限。"/>}</>}
             <label className="block text-sm font-medium">
               申请原因 <span className="text-red-600">*</span>
               <textarea
@@ -399,6 +401,7 @@ export function ProjectLifecyclePanel({
                   !reason.trim() ||
                   (kind === 'carryover' && !/^20\d{2}$/.test(target)) ||
                   (kind === 'carryover' && !!preview.data?.fundingEnabled && !fundingReady) ||
+                  (kind === 'liquidation' && !!preview.data?.fundingEnabled && (!fundingReady || !can('buyer:budget:manage'))) ||
                   !!(kind === 'carryover'
                     ? preview.data?.carryoverBlockers.length
                     : preview.data?.liquidationBlockers.length)
@@ -453,6 +456,7 @@ export function ProjectLifecyclePanel({
               {selected.reason}
             </p>
             <FundingCarryoverEvidence snapshot={selected.snapshot}/>
+            <FundingLiquidationEvidence snapshot={selected.snapshot}/>
             {can('buyer:workflow:read') && (
               <WorkflowStatusPanel
                 businessType={'project_' + selected.kind}
