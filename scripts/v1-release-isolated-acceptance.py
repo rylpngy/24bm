@@ -87,4 +87,4 @@ finally:
     print(str(out), flush=True)
 if not result['passed'] or not result.get('browserPassed') or not result.get('marketBrowserPassed') or not result.get('mallFinancePassed'):
     raise SystemExit(1)
-
+print('All isolated acceptance groups passed', flush=True)
