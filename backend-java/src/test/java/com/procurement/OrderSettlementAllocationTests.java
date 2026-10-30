@@ -136,6 +136,31 @@ class OrderSettlementAllocationTests {
   }
 
   @Test
+  void previousCompensationIsSeparateFromGoodsAndZeroTargetRequiresCancellationProof() {
+    var b = (com.fasterxml.jackson.databind.node.ObjectNode)baseline();
+    b.put("compensationPaid",20);
+    assertThat(policy.assess(policy.write(b),null).paid()).isEqualByComparingTo("120");
+    var plan=p.plan(b,new BigDecimal("100"),BigDecimal.ZERO,allocations());
+    assertThat(plan.get(2).path("source").asText()).isEqualTo("~compensation");
+    assertThat(plan.get(2).path("paid").decimalValue()).isEqualByComparingTo("20");
+    var items=new ArrayList<>(List.of(evidence("refund",100,"a"),evidence("payment",100,"b"),evidence("invoice",0,"a"),evidence("invoice",100,"b"),evidence("refund",20,"~compensation")));
+    assertThat(p.completionBlockers(plan,items)).singleElement().asString().contains("补偿凭证");
+    items.add(evidence("compensation_receipt",0,"~compensation"));
+    assertThat(p.completionBlockers(plan,items)).isEmpty();
+    assertThatThrownBy(()->p.validate(plan,items,request("refund",1,"~compensation"))).hasMessageContaining("超过");
+  }
+
+  @Test
+  void increasingCompensationCannotOffsetGoodsRefundWithoutSeparateCashProofs() {
+    var b=(com.fasterxml.jackson.databind.node.ObjectNode)baseline();b.put("compensationPaid",10);
+    var plan=p.plan(b,new BigDecimal("80"),new BigDecimal("30"),List.of(new Allocation("a",new BigDecimal("80")),new Allocation("b",BigDecimal.ZERO)));
+    p.validate(plan,List.of(),request("refund",20,"a"));
+    p.validate(plan,List.of(),request("payment",20,"~compensation"));
+    assertThatThrownBy(()->p.validate(plan,List.of(),request("payment",20,"a"))).hasMessageContaining("超过");
+    assertThat(p.completionBlockers(plan,List.of(evidence("invoice",80,"a"),evidence("invoice",0,"b"),evidence("compensation_receipt",30,"~compensation")))).hasSize(2);
+  }
+
+  @Test
   void legacySingleFullInvoiceStillUsesOriginalPolicy() {
     var b = baseline().deepCopy();
     ((com.fasterxml.jackson.databind.node.ArrayNode) b.path("invoices")).remove(1);

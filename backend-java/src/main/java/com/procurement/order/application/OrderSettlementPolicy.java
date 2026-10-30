@@ -141,7 +141,7 @@ public class OrderSettlementPolicy {
       invoiced = invoiced.add(face);
     }
     if (invoiced.compareTo(b.path("amount").decimalValue()) > 0) errors.add("原始累计开票金额超过订单金额");
-    paid=paid.add(b.path("unbilledPaid").decimalValue());
+    paid=paid.add(b.path("unbilledPaid").decimalValue()).add(b.path("compensationPaid").decimalValue());
     for (var payment : b.path("payments")) {
       boolean found = false;
       for (var invoice : b.path("invoices")) if (invoice.path("id").asText().equals(payment.path("invoice_id").asText())) found = true;

@@ -150,6 +150,58 @@ it('keeps funded finance read-only when budget source details are not authorized
   expect(screen.queryByText('登记实际清算凭证')).toBeNull();
   expect(screen.queryByRole('button', { name: '登记凭证' })).toBeNull();
 });
+it('shows and defaults prior compensation while keeping goods attribution separate', () => {
+  const s = state();
+  s.data.preview.baseline = JSON.stringify({
+    previousSettlementId: 'prior',
+    previousCompensationAmount: 20,
+    compensationPaid: 20,
+    allocationRequired: true,
+    invoiceBasis: [
+      { source: '~unbilled', label: '未开票货款', face: 200, paid: 100 },
+    ],
+    lines: [],
+  });
+  render(<OrderSettlementPanel state={s} canManage onAgreement={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: '发起补充清算' }));
+  expect(
+    screen.getByRole('spinbutton', { name: '本次最终补偿款' }),
+  ).toHaveValue(20);
+  expect(screen.getByText(/上次约定/)).toHaveTextContent('20.00');
+  fireEvent.change(screen.getByRole('spinbutton', { name: '本次最终补偿款' }), {
+    target: { value: '0' },
+  });
+  expect(
+    screen.getByRole('spinbutton', { name: '未开票货款清算货款' }),
+  ).toBeTruthy();
+});
+it('requires explicit goods attribution when initial compensation is entered', () => {
+  const s = state();
+  s.data.preview.baseline = JSON.stringify({
+    lines: [],
+    invoiceBasis: [{ source: 'i', label: '原发票', face: 200, paid: 100 }],
+  });
+  render(<OrderSettlementPanel state={s} canManage onAgreement={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: '发起合同清算' }));
+  expect(
+    screen.queryByRole('spinbutton', { name: '原发票清算货款' }),
+  ).toBeNull();
+  fireEvent.change(screen.getByRole('spinbutton', { name: '本次最终补偿款' }), {
+    target: { value: '20' },
+  });
+  expect(
+    screen.getByRole('spinbutton', { name: '原发票清算货款' }),
+  ).toBeRequired();
+});
+it('shows a historical attribution blocker even when previous settlements exist', () => {
+  const s = state();
+  s.data.preview.blockers = [
+    '历史补偿款缺少逐项现金归属，须先核对，不能自动推算重开',
+  ];
+  render(<OrderSettlementPanel state={s} canManage onAgreement={vi.fn()} />);
+  expect(screen.getByText(/历史补偿款缺少/)).toBeTruthy();
+  expect(screen.queryByRole('button', { name: '发起合同清算' })).toBeNull();
+});
 it('renders explicit invoice allocation inputs and post-return retained quantities', () => {
   const s = state();
   s.data.preview.baseline = JSON.stringify({

@@ -61,6 +61,41 @@ class ProcurementProjectIT {
   @Autowired FundingService funding;
   @Autowired FundingCarryoverService fundingCarryover;
   record FundedCase(CancelCase order,String invoice,String entry,String a,String b){}
+  @Test void compensationReopenRefundsAndTopupsIndependentlyWithoutOverwritingPriorRecords()throws Exception{
+    var c=cancellationCase();settlementContract(c,true);String line=receivedLine(c),proof=settlementProof(c);
+    var first=settlements.propose(c.order(),new com.procurement.order.api.OrderSettlementContracts.Proposal("comp-first","货款100及补偿20分别核验",new BigDecimal("20"),proof,List.of(new com.procurement.order.api.OrderSettlementContracts.Price(line,new BigDecimal("50"))),List.of(new com.procurement.order.api.OrderSettlementContracts.Allocation("~unbilled",new BigDecimal("100")))));
+    first=approveSettlement(c,first);
+    settlementCash(c,first,"payment","100","~unbilled",proof,"goods");settlementCash(c,first,"payment","20","~compensation",proof,"comp");settlementCash(c,first,"invoice","100","~unbilled",proof,"invoice");settlementCash(c,first,"compensation_receipt","20","~compensation",proof,"receipt");
+    settlements.act(c.order(),first.id(),settlementAction(first,"complete"),false);
+    String old=jdbc.queryForObject("select row_to_json(s)::text from order_settlements s where id=?",String.class,first.id());
+    var second=settlements.propose(c.order(),new com.procurement.order.api.OrderSettlementContracts.Proposal("comp-zero","新协议取消补偿，货款不变",BigDecimal.ZERO,proof,List.of(new com.procurement.order.api.OrderSettlementContracts.Price(line,new BigDecimal("50"))),List.of(new com.procurement.order.api.OrderSettlementContracts.Allocation("~unbilled",new BigDecimal("100"))),first.id()));
+    assertThat(second.initialPaid()).isEqualByComparingTo("120");second=approveSettlement(c,second);var approved=second;
+    assertThat(settlements.detail(c.order(),second.id(),false).refundDue()).isEqualByComparingTo("20");
+    assertThatThrownBy(()->settlementCash(c,approved,"refund","20","~unbilled",proof,"wrong-source")).hasMessageContaining("超过");
+    settlementCash(c,second,"refund","20","~compensation",proof,"refund");settlementCash(c,second,"invoice","100","~unbilled",proof,"invoice");
+    assertThatThrownBy(()->settlements.act(c.order(),approved.id(),settlementAction(approved,"complete"),false)).hasMessageContaining("补偿凭证");
+    settlementCash(c,second,"compensation_receipt","0","~compensation",proof,"cancel-receipt");settlements.act(c.order(),second.id(),settlementAction(second,"complete"),false);
+    var third=settlements.propose(c.order(),new com.procurement.order.api.OrderSettlementContracts.Proposal("comp-again","货款减20，补偿增30，不能只补差额10",new BigDecimal("30"),proof,List.of(new com.procurement.order.api.OrderSettlementContracts.Price(line,new BigDecimal("40"))),List.of(new com.procurement.order.api.OrderSettlementContracts.Allocation("~unbilled",new BigDecimal("80"))),second.id()));third=approveSettlement(c,third);
+    var detail=settlements.detail(c.order(),third.id(),false);assertThat(detail.refundDue()).isEqualByComparingTo("20");assertThat(detail.paymentDue()).isEqualByComparingTo("30");
+    settlementCash(c,third,"refund","20","~unbilled",proof,"goods-refund");settlementCash(c,third,"payment","30","~compensation",proof,"comp-topup");settlementCash(c,third,"invoice","80","~unbilled",proof,"invoice");settlementCash(c,third,"compensation_receipt","30","~compensation",proof,"receipt");settlements.act(c.order(),third.id(),settlementAction(third,"complete"),false);
+    assertThat(jdbc.queryForObject("select row_to_json(s)::text from order_settlements s where id=?",String.class,first.id())).isEqualTo(old);assertThat(jdbc.queryForObject("select count(*) from effective_order_settlements where tenant_id=?",Integer.class,tenant)).isEqualTo(1);
+    assertThat(budget.position(tenant,dept,year).orderAmount()).isEqualByComparingTo("110");assertThat(budget.position(tenant,dept,year).paidAmount()).isEqualByComparingTo("110");
+  }
+  void settlementCash(CancelCase c,com.procurement.order.api.OrderSettlementContracts.Entry e,String kind,String amount,String source,String proof,String key){settlements.evidence(c.order(),e.id(),new com.procurement.order.api.OrderSettlementContracts.EvidenceRequest(key,kind,new BigDecimal(amount),"PROOF-"+key,proof,"双方补充协议及实际凭证核验",source));}
+
+  @Test void fundedCompensationReopenRefundsOnlyItsActualOriginalSource()throws Exception{
+    var f=fundedPaidCase();settlementContract(f.order(),true);String proof=settlementProof(f.order()),line=jdbc.queryForObject("select id from order_line_items where order_id=?",String.class,f.order().order());
+    var first=settlements.propose(f.order().order(),new com.procurement.order.api.OrderSettlementContracts.Proposal("fund-comp","货款10及补偿20",new BigDecimal("20"),proof,List.of(new com.procurement.order.api.OrderSettlementContracts.Price(line,new BigDecimal("5"))),List.of(new com.procurement.order.api.OrderSettlementContracts.Allocation(f.invoice(),new BigDecimal("10")))));first=approveSettlement(f.order(),first);
+    settlements.evidence(f.order().order(),first.id(),fundEvidence(f,"refund","40","10","30",proof,"goods-refund"));
+    settlements.evidence(f.order().order(),first.id(),new com.procurement.order.api.OrderSettlementContracts.EvidenceRequest("comp-pay","payment",new BigDecimal("20"),"COMP-PAY",proof,"实际补偿款支付","~compensation",List.of(new com.procurement.order.api.OrderSettlementContracts.FundingLine(f.a(),new BigDecimal("20")))));
+    settlementCash(f.order(),first,"invoice","10",f.invoice(),proof,"invoice");settlementCash(f.order(),first,"compensation_receipt","20","~compensation",proof,"receipt");settlements.act(f.order().order(),first.id(),settlementAction(first,"complete"),false);
+    var second=settlements.propose(f.order().order(),new com.procurement.order.api.OrderSettlementContracts.Proposal("fund-comp-reopen","补偿调减至5",new BigDecimal("5"),proof,List.of(new com.procurement.order.api.OrderSettlementContracts.Price(line,new BigDecimal("5"))),List.of(new com.procurement.order.api.OrderSettlementContracts.Allocation(f.invoice(),new BigDecimal("10"))),first.id()));second=approveSettlement(f.order(),second);var approved=second;
+    assertThatThrownBy(()->settlements.evidence(f.order().order(),approved.id(),new com.procurement.order.api.OrderSettlementContracts.EvidenceRequest("wrong","refund",new BigDecimal("15"),"BAD-COMP-REFUND",proof,"来源B未支付补偿","~compensation",List.of(new com.procurement.order.api.OrderSettlementContracts.FundingLine(f.b(),new BigDecimal("15")))))).hasMessageContaining("超过");
+    settlements.evidence(f.order().order(),second.id(),new com.procurement.order.api.OrderSettlementContracts.EvidenceRequest("comp-refund","refund",new BigDecimal("15"),"COMP-REFUND",proof,"来源A原补偿退款","~compensation",List.of(new com.procurement.order.api.OrderSettlementContracts.FundingLine(f.a(),new BigDecimal("15")))));
+    settlementCash(f.order(),second,"invoice","10",f.invoice(),proof,"invoice");settlementCash(f.order(),second,"compensation_receipt","5","~compensation",proof,"receipt");settlements.act(f.order().order(),second.id(),settlementAction(second,"complete"),false);
+    assertThat(settlements.detail(f.order().order(),second.id(),false).netPaid()).isEqualByComparingTo("15");assertThat(funding.project(f.order().project()).sources().stream().map(x->x.paidAmount()).reduce(BigDecimal.ZERO,BigDecimal::add)).isEqualByComparingTo("15");assertThat(paymentLedger.summary(f.invoice()).paidAmount()).isEqualByComparingTo("50");
+  }
+
   @Test void frozenFundedRefundRestoresCurrentResponsibilityWithoutChangingHistoricalBasis()throws Exception{
     var f=fundedPaidCase();settlementContract(f.order(),true);String proof=settlementProof(f.order());var a=futureFund("A",1,"300");var b=futureFund("B",1,"300");
     var carry=lifecycle.submit(f.order().project(),fundedCarry(f.order().project(),1,f.a(),f.b(),a.id(),b.id()));decide(carry.id(),"approve");

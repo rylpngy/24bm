@@ -104,13 +104,19 @@ public class OrderSettlementService {
     var previous=mapper.latest(o.tenantId(),o.id());
     var raw=policy.tree(mapper.baseline(o.tenantId(),o.id()));
     if(previous==null)return policy.assess(policy.write(raw),prices);
-    if(previous.kind().equals("draft_void")||previous.compensationAmount().signum()>0)throw new IllegalStateException("草案撤销或含补偿款的清算须另行核对，不能直接重开");
+    if(previous.kind().equals("draft_void"))throw new IllegalStateException("草案撤销不能直接重开");
+    if(mapper.ambiguousCompensation(o.tenantId(),o.id()))throw new IllegalStateException("历史补偿款缺少逐项现金归属，须先核对，不能自动推算重开");
+    var cash=mapper.cashPeriods(o.tenantId(),o.id());
+    if(cash.stream().anyMatch(c->c.amount().signum()<0)||cash.stream().map(OrderSettlementMapper.CashPeriod::amount).reduce(BigDecimal.ZERO,BigDecimal::add).compareTo(previous.finalAmount())!=0)throw new IllegalStateException("上次清算与实际分项净付款不一致，不能自动推算重开");
+    BigDecimal compensationPaid=cash.stream().filter(c->c.source().equals("~compensation")).map(OrderSettlementMapper.CashPeriod::amount).reduce(BigDecimal.ZERO,BigDecimal::add);
+    if(compensationPaid.compareTo(previous.compensationAmount())!=0)throw new IllegalStateException("上次补偿款与实际净付款不一致，须先核对");
     var effective=(com.fasterxml.jackson.databind.node.ObjectNode)raw.deepCopy();
     for(var c:effective.path("contracts")){
       if(!c.path("id").asText().equals(previous.contractId())||!"已解除".equals(c.path("status").asText()))throw new IllegalStateException("原清算合同身份或状态不一致");
       ((com.fasterxml.jackson.databind.node.ObjectNode)c).put("status","已生效").put("archive_status","未归档");
     }
     var payments=effective.putArray("payments");
+    effective.put("compensationPaid",compensationPaid);
     effective.put("unbilledPaid",mapper.cashPeriods(o.tenantId(),o.id()).stream().filter(c->c.source().equals("~unbilled")).map(OrderSettlementMapper.CashPeriod::amount).reduce(BigDecimal.ZERO,BigDecimal::add));
     for(var i:effective.path("invoices")){
       var net=mapper.cashPeriods(o.tenantId(),o.id()).stream().filter(c->c.source().equals(i.path("id").asText())).map(OrderSettlementMapper.CashPeriod::amount).reduce(BigDecimal.ZERO,BigDecimal::add);
@@ -125,10 +131,13 @@ public class OrderSettlementService {
     if (page < 1 || size < 1 || size > 100) throw new IllegalArgumentException("分页参数无效");
     var o = order(id, supplier, false);
     OrderSettlementPolicy.Assessment a;
-    try{a=assessment(o,null);}catch(IllegalStateException ex){a=policy.assess(mapper.baseline(o.tenantId(),id),null);}
+    String reopeningError=null;
+    try{a=assessment(o,null);}catch(IllegalStateException ex){a=policy.assess(mapper.baseline(o.tenantId(),id),null);reopeningError=ex.getMessage();}
     var metadata=new LinkedHashMap<String,Object>(Map.of("lines",policy.tree(a.snapshot()).path("lines"),"invoiceBasis",allocation().basis(policy.tree(a.snapshot()).path("baseline")),"allocationRequired",allocation().required(policy.tree(a.snapshot()).path("baseline"))));
     var problems=new ArrayList<String>(supplier?List.of():blockers(o,a));
+    if(!supplier&&reopeningError!=null)problems.add(reopeningError);
     var previous=mapper.latest(o.tenantId(),id);
+    if(!supplier&&previous!=null){metadata.put("previousCompensationAmount",previous.compensationAmount());metadata.put("compensationPaid",policy.tree(a.snapshot()).path("baseline").path("compensationPaid").decimalValue());}
     if(!supplier){metadata.put("period",mapper.period(o.tenantId(),id));metadata.put("cashPeriods",mapper.cashPeriods(o.tenantId(),id));if(mapper.cashPeriods(o.tenantId(),id).stream().anyMatch(x->!x.period().equals(mapper.period(o.tenantId(),id))))metadata.put("allocationRequired",true);if(previous!=null){metadata.put("previousSettlementId",previous.id());metadata.put("allocationRequired",true);}}
     boolean canFunding=!supplier&&permissions.currentUserHas("buyer:budget:read");
     if(!supplier&&!mapper.locked(o.tenantId(),id))try{var basis=funding.prepare(o.tenantId(),id,a.paid(),null,false);if(basis!=null){if(canFunding){metadata.put("funding",basis);metadata.put("allocationRequired",true);}else problems.add("专项清算需要预算查看权限");}}catch(IllegalStateException ex){problems.add(ex.getMessage());}
@@ -238,6 +247,7 @@ public class OrderSettlementService {
     if(previous!=null){snapshot.put("previousSettlementId",previous.id());if(r.allocations()==null)throw new IllegalArgumentException("补充清算须明确逐票最终归属");}
     if(fundingBasis!=null)snapshot.put("funding",fundingBasis);
     if(fundingBasis!=null&&r.allocations()==null)throw new IllegalArgumentException("专项清算须明确填写逐票最终货款归属");
+    if(r.compensation().signum()>0&&r.allocations()==null)throw new IllegalArgumentException("含补偿款清算须明确逐票货款归属，货款与补偿款分别核验");
     var plan = allocation().plan(policy.tree(a.snapshot()).path("baseline"), a.goods(), r.compensation(), r.allocations());
     if (plan != null) snapshot.put("invoicePlan", plan);
     var v = new HashMap<String, Object>();

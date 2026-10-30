@@ -82,12 +82,13 @@ public class OrderSettlementAllocationPolicy {
     }
     if (!values.isEmpty() || total.compareTo(goods) != 0)
       throw new IllegalArgumentException("归属含其他订单发票或货款合计不等于清算货款");
-    if (compensation.signum() > 0) {
+    BigDecimal previousCompensation=baseline.path("compensationPaid").decimalValue();
+    if (compensation.signum() > 0 || previousCompensation.signum()>0) {
       var row = rows.addObject();
       row.put("source", "~compensation");
       row.put("label", "补偿款");
       row.put("face", compensation);
-      row.put("paid", BigDecimal.ZERO);
+      row.put("paid", previousCompensation);
       row.put("target", compensation);
     }
     return rows;
@@ -130,7 +131,7 @@ public class OrderSettlementAllocationPolicy {
       BigDecimal target = row.path("target").decimalValue();
       if (balance(row, items).compareTo(target) != 0) errors.add(label + "：净付款与本项清算金额不一致");
       String kind = "~compensation".equals(source) ? "compensation_receipt" : "invoice";
-      if ((target.signum() > 0 || !source.startsWith("~"))
+      if ((target.signum() > 0 || !source.startsWith("~") || row.path("paid").decimalValue().signum()>0)
           && items.stream()
               .noneMatch(
                   x ->
