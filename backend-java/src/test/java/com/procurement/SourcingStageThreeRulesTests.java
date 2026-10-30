@@ -58,7 +58,8 @@ class SourcingStageThreeRulesTests {
   QuoteApplicationService quoteService() {
     return new QuoteApplicationService(rfqs, demands, invites, quotes, lines,
         new RfqSourcingStatusTransition(), items, audit, notifications,
-        mock(org.springframework.context.ApplicationEventPublisher.class));
+        mock(org.springframework.context.ApplicationEventPublisher.class),
+        mock(com.procurement.sourcing.application.QuoteVersionService.class));
   }
 
   @Test void supplierStreamReadFilterRechecksInvitationWithoutThreadLocalContextOrWrites() {

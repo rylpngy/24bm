@@ -1,6 +1,8 @@
 import { Fragment, useMemo, useState } from 'react';
+import { compactList } from '../../lib/compact-list';
 import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
 import { ReceiptDispositionReview } from './receipt-disposition-review';
+import { ReceiptDetail } from './receipt-detail';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, ClipboardCheck, Info, PackageCheck } from 'lucide-react';
 import {
@@ -20,6 +22,7 @@ import {
   PrimaryActionButton,
   ResponsiveTableFrame,
   SearchInput,
+  Tabs,
   cn,
 } from '@24bid/ui';
 
@@ -61,6 +64,7 @@ export function ReceiptsPage() {
   const [receivingId, setReceivingId] = useState<string | null>(null);
   const [expandedReceiptId, setExpandedReceiptId] = useState<string | null>(null);
   const [reviewingId, setReviewingId] = useState<string | null>(null);
+  const [receiveTab, setReceiveTab] = useState('quantity');
 
   const ordersQuery = usePurchaseOrderList(undefined, { query: { enabled: can('buyer:order:read') } });
   const receiptsQuery = useBuyerReceiptList();
@@ -143,6 +147,7 @@ export function ReceiptsPage() {
   const startReceiving = (o: PurchaseOrderResponse) => {
     if (!canReceive) return;
     setReceivingId(o.id ?? null);
+    setReceiveTab('quantity');
     setLines(
       (o.lineItems ?? []).map((l) => ({
         orderLineId: l.id!,
@@ -258,13 +263,16 @@ export function ReceiptsPage() {
         {error && <FeedbackNotice tone="error" message={error} />}
         {!attributable(o) && <FeedbackNotice tone="info" message="订单或历史批次缺少可核对行明细，暂停数量续办。" />}
         <p className="text-xs font-bold">已发累计 {deliveryHistory(o.id).reduce((s, d) => s + (d.shippedQuantity ?? 0), 0)} · 已收累计 {receiptHistory(o.id).reduce((s, r) => s + (r.receivedQuantity ?? 0), 0)} · 剩余可收 {lines.reduce((s, l) => s + l.remaining, 0)}</p>
+        <Tabs items={[{id:'overview',label:'订单与批次'},{id:'quantity',label:'数量核对'},{id:'quality',label:'质检处置'}]} value={receiveTab} onChange={setReceiveTab} />
+        <div hidden={receiveTab !== 'overview'}>
         {deliveryHistory(o.id).map(d => <p key={d.id} className="break-words text-xs">发货批次 {d.id} · {d.trackingNo} · 数量 {d.shippedQuantity ?? '待核对'}</p>)}
         {receiptHistory(o.id).map(r => <p key={r.id} className="break-words text-xs">收货批次 {r.id} · 实收 {r.receivedQuantity} · 合格 {r.qualifiedQuantity}</p>)}
+        </div>
 
-        <div className="grid gap-4 xl:grid-cols-[1fr_20rem]">
+        <div className="min-w-0 space-y-4">
           <div className="min-w-0 space-y-4">
             {/* 行项验收 */}
-            <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
+            <section hidden={receiveTab !== 'quantity'} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
               <h3 className="text-base font-black text-slate-950">
                 <span className="mr-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[11px] text-white">1</span>
                 数量核对
@@ -321,7 +329,7 @@ export function ReceiptsPage() {
             </section>
 
             {/* 质检说明 + 处置 */}
-            <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
+            <section hidden={receiveTab !== 'quality'} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
               <h3 className="text-base font-black text-slate-950">
                 <span className="mr-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[11px] text-white">2</span>
                 质检结论
@@ -364,7 +372,7 @@ export function ReceiptsPage() {
           </div>
 
           {/* 右栏:物流 + 订单关键信息 */}
-          <div className="space-y-4">
+          <div hidden={receiveTab !== 'overview'}><div className="grid items-start gap-4 lg:grid-cols-2">
             <section className="rounded-lg bg-slate-900 p-5 text-white shadow-sm">
               <p className="flex items-center gap-2 text-sm font-black">
                 <Info size={15} className="text-blue-400" /> 订单关键信息
@@ -398,6 +406,7 @@ export function ReceiptsPage() {
               </section>
             )}
           </div>
+          </div>
         </div>
 
         {/* 底部悬浮提交条 */}
@@ -428,6 +437,13 @@ export function ReceiptsPage() {
   }
 
   // ── 工作台列表 ─────────────────────────────────────────────
+  const detailReceipt = receipts.find((item) => item.id === expandedReceiptId);
+  if (detailReceipt) return <>
+    {reviewingId && <ReceiptDispositionReview key={reviewingId} receiptId={reviewingId} onClose={() => setReviewingId(null)} />}
+    <ReceiptDetail key={detailReceipt.id} receipt={detailReceipt} order={orders.find((order) => order.id === detailReceipt.orderId)}
+      deliveries={(deliveriesQuery.data?.data ?? []).filter((delivery) => delivery.orderId === detailReceipt.orderId)}
+      onBack={() => setExpandedReceiptId(null)} onReview={() => setReviewingId(detailReceipt.id!)} />
+  </>;
   return (
     <Panel title="收货验收" icon={PackageCheck} subtitle="待验收队列 · 验收登记 · 质检记录">
       {reviewingId && <ReceiptDispositionReview key={reviewingId} receiptId={reviewingId} onClose={() => setReviewingId(null)} />}
@@ -487,11 +503,11 @@ export function ReceiptsPage() {
                 <div key={o.id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="break-words font-mono font-black text-slate-950">
+                      <p className="truncate font-mono font-bold text-slate-950" title={o.id}>
                         <span className="mr-1.5 text-slate-400">{(safePage - 1) * PAGE_SIZE + i + 1}.</span>
                         {o.id}
                       </p>
-                      <p className="mt-1 text-xs font-bold text-slate-500">{supplierOf(o)}</p>
+                      <p className="mt-1 truncate text-xs font-bold text-slate-500" title={supplierOf(o)}>{supplierOf(o)}</p>
                     </div>
                     <span className="font-mono text-sm font-black text-slate-900">{currency(o.amount)}</span>
                   </div>
@@ -507,14 +523,14 @@ export function ReceiptsPage() {
                 </div>
               ))}
             >
-              <table className="w-full min-w-[840px] table-fixed text-left text-sm [&_td]:px-3 [&_th]:px-3 [&_td_p]:max-w-full">
-                <colgroup>{['5%', '20%', '13%', '16%', '8%', '12%', '13%', '13%'].map((width, i) => <col key={i} style={{ width }} />)}</colgroup>
+              <table aria-label="待收货验收列表" className={cn(compactList.table, 'min-w-[880px]')}>
+                <colgroup><col className="w-12" /><col className="w-[136px]" /><col /><col className="w-[152px]" /><col className="w-20" /><col className="w-[104px]" /><col className="w-32" /><col className="w-28" /></colgroup>
                 <thead className="bg-slate-50 text-xs font-black text-slate-500">
                   <tr>
                     <th className="w-12 px-2 py-4 text-center">序号</th>
                     <th className="px-5 py-4">订单编号</th>
                     <th className="px-5 py-4">供应商</th>
-                    <th className="px-5 py-4">物流(承运商 · 运单)</th>
+                    <th className="px-5 py-4">物流 / 运单</th>
                     <th className="px-5 py-4 text-right">发货数量</th>
                     <th className="px-5 py-4">预计到达</th>
                     <th className="px-5 py-4 text-right">订单金额</th>
@@ -525,33 +541,33 @@ export function ReceiptsPage() {
                   {pending.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE).map((o, i) => {
                     const d = o.id ? deliveryByOrder[o.id] : undefined;
                     return (
-                      <tr key={o.id} className="hover:bg-blue-50/30">
+                      <tr key={o.id} className="group hover:bg-blue-50/30">
                         <td className="px-2 py-5 text-center font-mono font-black text-slate-400">
                           {(safePage - 1) * PAGE_SIZE + i + 1}
                         </td>
                         <td className="px-5 py-5">
-                          <p className="w-44 truncate font-mono text-xs font-black text-slate-900" title={o.id}>{o.id}</p>
-                          <p className="mt-1 w-44 truncate font-mono text-[11px] font-bold text-slate-400" title={o.rfqId ?? undefined}>
+                          <p className="truncate font-mono text-xs font-bold text-slate-900" title={o.id}>{o.id}</p>
+                          <p className="mt-1 truncate font-mono text-[11px] font-bold text-slate-400" title={o.rfqId ?? undefined}>
                             询比 {o.rfqId ?? '—'}
                           </p>
                         </td>
-                        <td className="px-5 py-5 text-sm font-bold text-slate-600">{supplierOf(o)}</td>
+                        <td className="px-5 py-5 text-sm font-bold text-slate-600"><span className={compactList.text} title={supplierOf(o)}>{supplierOf(o)}</span></td>
                         <td className="px-5 py-5">
-                          <p className="text-xs font-bold text-slate-600">{d?.carrier ?? '—'}</p>
-                          <p className="mt-0.5 w-36 truncate font-mono text-[11px] font-bold text-slate-400" title={d?.trackingNo ?? undefined}>
+                          <p className="truncate text-xs font-bold text-slate-600" title={d?.carrier}>{d?.carrier ?? '—'}</p>
+                          <p className="mt-1 truncate font-mono text-[11px] font-bold text-slate-400" title={d?.trackingNo ?? undefined}>
                             {d?.trackingNo ?? '—'}
                           </p>
                         </td>
-                        <td className="px-5 py-5 text-right font-mono font-black text-slate-900">{d?.shippedQuantity ?? '—'}</td>
-                        <td className="px-5 py-5 font-mono text-xs font-bold text-slate-600">{d?.estimatedArrival ?? o.expectedReceiptDate ?? '—'}</td>
-                        <td className="px-5 py-5 text-right font-mono font-black text-slate-900">{currency(o.amount)}</td>
-                        <td className="sticky right-0 bg-white px-5 py-5 text-right">
+                        <td className="px-5 py-5 text-right font-mono font-semibold tabular-nums text-slate-900"><span className={compactList.text} title={String(d?.shippedQuantity ?? '—')}>{d?.shippedQuantity ?? '—'}</span></td>
+                        <td className="px-5 py-5 font-mono text-xs font-bold text-slate-600"><span className={compactList.text} title={d?.estimatedArrival ?? o.expectedReceiptDate}>{d?.estimatedArrival ?? o.expectedReceiptDate ?? '—'}</span></td>
+                        <td className="px-5 py-5 text-right font-mono text-xs font-semibold tabular-nums text-slate-900"><span className={compactList.text} title={currency(o.amount)}>{currency(o.amount)}</span></td>
+                        <td className={compactList.actionCell}>
                           <button
                             type="button"
                             onClick={() => startReceiving(o)}
                             disabled={!canReceive}
                             title={canReceive ? '登记收货验收' : '当前账号仅可查看'}
-                            className="inline-flex h-8 shrink-0 items-center justify-center whitespace-nowrap rounded-md bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
+                            className={compactList.primary}
                           >
                             {canReceive ? '验收登记' : '仅可查看'}
                           </button>
@@ -573,11 +589,11 @@ export function ReceiptsPage() {
             mobileCards={done.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE).map((r, i) => (
               <div key={r.id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
                 <div className="flex items-start justify-between gap-3">
-                  <p className="break-words font-mono font-black text-slate-950">
+                  <p className="min-w-0 truncate font-mono font-bold text-slate-950" title={r.orderId}>
                     <span className="mr-1.5 text-slate-400">{(safePage - 1) * PAGE_SIZE + i + 1}.</span>
                     {r.orderId}
                   </p>
-                  <span className={cn('rounded px-1.5 py-0.5 text-[10px] font-black', conclusionCls(r.inspectionConclusion))}>
+                  <span title={r.inspectionConclusion ?? r.result} className={cn('max-w-[45%] shrink-0 truncate rounded px-1.5 py-0.5 text-[10px] font-bold', conclusionCls(r.inspectionConclusion))}>
                     {r.inspectionConclusion ?? r.result ?? '—'}
                   </span>
                 </div>
@@ -588,10 +604,12 @@ export function ReceiptsPage() {
                 {r.id && r.disposition === '退货换货' && (r.qualifiedQuantity ?? 0) < (r.receivedQuantity ?? 0) && (
                   <button type="button" onClick={() => setReviewingId(r.id!)} className="mt-3 text-sm font-bold text-blue-700">处置复核</button>
                 )}
+                <button type="button" onClick={() => setExpandedReceiptId(r.id ?? null)} className="mt-3 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700">详情</button>
               </div>
             ))}
           >
-            <table className="w-full min-w-[920px] text-left text-sm">
+            <table aria-label="收货验收记录列表" className={cn(compactList.table, 'min-w-[880px]')}>
+              <colgroup><col className="w-12" /><col /><col className="w-[104px]" /><col className="w-16" /><col className="w-16" /><col className="w-[76px]" /><col className="w-[88px]" /><col className="w-[140px]" /><col className="w-40" /></colgroup>
               <thead className="bg-slate-50 text-xs font-black text-slate-500">
                 <tr>
                   <th className="w-12 px-2 py-4 text-center">序号</th>
@@ -602,89 +620,48 @@ export function ReceiptsPage() {
                   <th className="px-5 py-4 text-right">合格率</th>
                   <th className="px-5 py-4">处置</th>
                   <th className="px-5 py-4">验收时间</th>
-                  <th className="px-5 py-4 text-right">操作</th>
+                  <th className="sticky right-0 bg-slate-50 text-right">操作</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {done.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE).map((r, i) => (
                   <Fragment key={r.id}>
-                    <tr className={cn('hover:bg-blue-50/30', expandedReceiptId === r.id && 'bg-blue-50/30')}>
+                    <tr className={cn('group hover:bg-blue-50/30', expandedReceiptId === r.id && 'bg-blue-50/30')}>
                       <td className="px-2 py-5 text-center font-mono font-black text-slate-400">
                         {(safePage - 1) * PAGE_SIZE + i + 1}
                       </td>
                       <td className="px-5 py-5">
-                        <p className="w-44 truncate font-mono text-xs font-black text-slate-900" title={r.orderId ?? undefined}>
+                        <p className="truncate font-mono text-xs font-bold text-slate-900" title={r.orderId ?? undefined}>
                           {r.orderId}
                         </p>
                       </td>
                       <td className="px-5 py-5">
-                        <span className={cn('rounded px-2 py-0.5 text-[11px] font-black', conclusionCls(r.inspectionConclusion))}>
+                        <span title={r.inspectionConclusion ?? r.result} className={cn('block max-w-full truncate rounded px-2 py-0.5 text-[11px] font-bold', conclusionCls(r.inspectionConclusion))}>
                           {r.inspectionConclusion ?? r.result ?? '—'}
                         </span>
                       </td>
-                      <td className="px-5 py-5 text-right font-mono font-bold text-slate-700">{r.receivedQuantity ?? '—'}</td>
-                      <td className="px-5 py-5 text-right font-mono font-black text-slate-900">{r.qualifiedQuantity ?? '—'}</td>
+                      <td className="px-5 py-5 text-right font-mono font-bold text-slate-700"><span className={compactList.text} title={String(r.receivedQuantity ?? '—')}>{r.receivedQuantity ?? '—'}</span></td>
+                      <td className="px-5 py-5 text-right font-mono font-semibold text-slate-900"><span className={compactList.text} title={String(r.qualifiedQuantity ?? '—')}>{r.qualifiedQuantity ?? '—'}</span></td>
                       <td className="px-5 py-5 text-right font-mono font-black text-emerald-700">
                         {ratePct(r.qualifiedQuantity, r.receivedQuantity)}
                       </td>
-                      <td className="px-5 py-5 text-xs font-bold text-slate-600">{r.disposition ?? '—'}</td>
+                      <td className="px-5 py-5 text-xs font-bold text-slate-600"><span className={compactList.text} title={r.disposition}>{r.disposition ?? '—'}</span></td>
                       <td className="px-5 py-5 font-mono text-xs font-bold text-slate-500">
                         {r.receivedAt?.slice(0, 16).replace('T', ' ') ?? '—'}
                       </td>
-                      <td className="px-5 py-5 text-right">
+                      <td className={compactList.actionCell}><div className={compactList.actions}>
                         {r.id && r.disposition === '退货换货' && (r.qualifiedQuantity ?? 0) < (r.receivedQuantity ?? 0) && (
-                          <button type="button" onClick={() => setReviewingId(r.id!)} className="mr-2 inline-flex h-8 items-center text-xs font-bold text-blue-700">处置复核</button>
+                          <button type="button" onClick={() => setReviewingId(r.id!)} className={compactList.primary}>处置复核</button>
                         )}
                         <button
                           type="button"
                           onClick={() => setExpandedReceiptId(expandedReceiptId === r.id ? null : r.id ?? null)}
-                          className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50"
+                          className={compactList.detail}
                         >
-                          {expandedReceiptId === r.id ? '收起' : '明细'}
+                          详情
                         </button>
-                      </td>
+                      </div></td>
                     </tr>
-                    {expandedReceiptId === r.id && (
-                      <tr className="bg-slate-50/60">
-                        <td colSpan={9} className="px-5 py-4">
-                          {(r.lineItems ?? []).length > 0 && (
-                            <div className="overflow-hidden rounded-lg border border-slate-100 bg-white">
-                              <table className="w-full text-left text-xs">
-                                <thead className="bg-slate-50 text-[11px] font-black text-slate-400">
-                                  <tr>
-                                    <th className="px-3 py-1.5">品名/规格</th>
-                                    <th className="px-3 py-1.5 text-right">订购</th>
-                                    <th className="px-3 py-1.5 text-right">收货</th>
-                                    <th className="px-3 py-1.5 text-right">合格</th>
-                                    <th className="px-3 py-1.5 text-right">合格率</th>
-                                  </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100">
-                                  {(r.lineItems ?? []).map((l) => (
-                                    <tr key={l.id} className="font-bold text-slate-700">
-                                      <td className="px-3 py-1.5">{l.description}</td>
-                                      <td className="px-3 py-1.5 text-right">
-                                        {l.orderedQuantity}
-                                        {l.unit ? ` ${l.unit}` : ''}
-                                      </td>
-                                      <td className="px-3 py-1.5 text-right">{l.receivedQuantity}</td>
-                                      <td className="px-3 py-1.5 text-right font-black text-slate-900">{l.qualifiedQuantity}</td>
-                                      <td className="px-3 py-1.5 text-right">{ratePct(Number(l.qualifiedQuantity), Number(l.receivedQuantity))}</td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
-                          )}
-                          {r.qualityNote && (
-                            <p className="mt-2 break-words text-xs font-bold leading-5 text-slate-600">验收说明:{r.qualityNote}</p>
-                          )}
-                          {r.dispositionNote && r.dispositionNote !== r.qualityNote && (
-                            <p className="mt-1 break-words text-xs font-bold leading-5 text-amber-700">处置说明:{r.dispositionNote}</p>
-                          )}
-                        </td>
-                      </tr>
-                    )}
                   </Fragment>
                 ))}
               </tbody>

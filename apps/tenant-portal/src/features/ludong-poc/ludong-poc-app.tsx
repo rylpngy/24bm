@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { AdminNavigationModule } from '@24bid/shared';
 import {
@@ -17,25 +17,48 @@ import {
   XAxis, YAxis,
 } from 'recharts';
 import { useAuthStore } from '../../lib/auth-store';
+import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
+import { WorkflowInstanceReminder } from '../process/workflow-instance-reminder';
+import { WorkflowApplicationWithdrawal } from '../process/workflow-application-withdrawal';
+import { AdditionalReviewHistory } from '../process/additional-review-panel';
+import { LudongWorkflowHistory } from './ludong-workflow-history';
+import { LudongCustomApprovalEvidence } from './ludong-custom-approval-evidence';
 import { ProcessEnginePage } from '../process/process-engine-page';
 import { OrgStructurePage } from '../org/org-structure-page';
 import { TeamPage } from '../team/team-page';
 import { LudongPocLogin } from './ludong-poc-login';
 import { LudongPocForm, type LudongFormPayload } from './ludong-poc-form';
 import { LudongPocArchiveMaterials } from './ludong-poc-archive-materials';
-import { LudongPocApplicationSnapshot } from './ludong-poc-application-snapshot';
+import { LudongPocApplicationSnapshot, type SnapshotView } from './ludong-poc-application-snapshot';
+import { ApplicationTabs } from './ludong-application-tabs';
 import { createTaskReviewData, LudongPocApprovalDialog } from './ludong-poc-approval-dialog';
 import { ludongApi, type LudongApplication, type WorkflowHistory, type WorkflowTask } from './api';
 import { availableReportYears, buildLudongAnalytics, type ReportPeriod } from './ludong-poc-analytics';
 import { buildLudongWorkflowProgress, workflowProgressCounts, type WorkflowProgressNode } from './workflow-progress';
 
-type ModuleId = 'dashboard' | 'applications' | 'approvals' | 'workflow-config' | 'org' | 'team' | 'archive' | 'stats';
+const ProjectsPage = lazy(() => import('../projects/projects-page').then((value) => ({ default: value.ProjectsPage })));
+const BudgetsPage = lazy(() => import('../budgets/budgets-page').then((value) => ({ default: value.BudgetsPage })));
+const RfqsPage = lazy(() => import('../rfqs/rfqs-page').then((value) => ({ default: value.RfqsPage })));
+const ContractsPage = lazy(() => import('../contracts/contracts-page').then((value) => ({ default: value.ContractsPage })));
+const OrdersPage = lazy(() => import('../orders/orders-page').then((value) => ({ default: value.OrdersPage })));
+const ReceiptsPage = lazy(() => import('../receipts/receipts-page').then((value) => ({ default: value.ReceiptsPage })));
+const InvoicesPage = lazy(() => import('../finance/invoices-page').then((value) => ({ default: value.InvoicesPage })));
+
+type ModuleId = 'dashboard' | 'applications' | 'approvals' | 'workflow-config' | 'org' | 'team' | 'archive' | 'stats'
+  | 'projects' | 'budgets' | 'rfqs' | 'contracts' | 'orders' | 'receipts' | 'invoices';
 type Screen = { type: 'list' } | { type: 'form'; application?: LudongApplication } | { type: 'detail'; application: LudongApplication };
 
 const modules: AdminNavigationModule[] = [
   { id: 'dashboard', label: '首页看板', desc: '申报、待办与归档概览' },
   { id: 'applications', label: '项目申报', desc: '货物类采购材料填报与提交' },
   { id: 'approvals', label: '审批中心', desc: '当前待办与已审批记录' },
+  { id: 'projects', label: '项目库', desc: '立项与采购执行', requiredPermission: 'buyer:project:read' },
+  { id: 'budgets', label: '预算管理', desc: '预算编制与执行', requiredPermission: 'buyer:budget:read' },
+  { id: 'rfqs', label: '询价比价', desc: '供应商报价与采购比较', requiredPermission: 'buyer:rfq:read' },
+  { id: 'contracts', label: '采购合同', desc: '合同台账与履约', requiredPermission: 'buyer:contract:read' },
+  { id: 'orders', label: '采购订单', desc: '关联订单与供应商履约', requiredPermission: 'buyer:order:read' },
+  { id: 'receipts', label: '收货验收', desc: '到货登记与验收记录', requiredPermission: 'buyer:receipt:read' },
+  { id: 'invoices', label: '发票付款', desc: '发票、付款审批与登记', requiredPermission: 'buyer:invoice:read' },
   { id: 'workflow-config', label: '流程配置', desc: '审批节点、办理岗位与条件规则' },
   { id: 'org', label: '组织架构', desc: '学校部门树、负责人和成员' },
   { id: 'team', label: '用户与权限', desc: '工号账号、角色与数据权限' },
@@ -56,16 +79,19 @@ export function LudongPocApp() {
   const signOut = useAuthStore((state) => state.signOut);
   const [moduleId, setModuleId] = useState<ModuleId>(initialModule);
   const [screen, setScreen] = useState<Screen>({ type: 'list' });
+  const { can, query: permissionQuery } = useBuyerPermissions();
 
   const isAdmin = session?.userId === 'user-ldu-admin';
   const visibleModules = useMemo(
-    () => isAdmin ? modules : modules.filter((item) => !['org', 'team'].includes(item.id)),
-    [isAdmin],
+    () => modules.filter((item) => (isAdmin || !['org', 'team'].includes(item.id))
+      && (!item.requiredPermission || can(item.requiredPermission))),
+    [isAdmin, can],
   );
 
   useEffect(() => {
+    if (!permissionQuery.isSuccess) return;
     if (!visibleModules.some((item) => item.id === moduleId)) setModuleId('dashboard');
-  }, [moduleId, visibleModules]);
+  }, [moduleId, visibleModules, permissionQuery.isSuccess]);
 
   if (!session || session.tenantId !== 'tenant-ludong-poc') return <LudongPocLogin />;
 
@@ -76,6 +102,7 @@ export function LudongPocApp() {
     const url = new URL(window.location.href);
     url.searchParams.set('solution', 'ludong-poc');
     url.searchParams.set('module', next);
+    for (const key of ['recordId', 'view', 'reviewDocument', 'financeView']) url.searchParams.delete(key);
     window.history.replaceState(null, '', url);
   };
 
@@ -90,8 +117,8 @@ export function LudongPocApp() {
 
   return (
     <AppShell
-      brandSubtitle="鲁东大学采购申报"
-      mainlineHint="项目填报 - 分级审批 - 表格生成 - 材料归档"
+      brandSubtitle="鲁东大学采购管理"
+      mainlineHint="项目申报 - 分级审批 - 询价比价 - 合同履约 - 材料归档"
       modules={visibleModules}
       activeModuleId={moduleId}
       onSelectModule={navigate}
@@ -99,6 +126,7 @@ export function LudongPocApp() {
       accountLabel={`${session.displayName} · 鲁东大学 POC`}
       onSignOut={signOut}
     >
+      {permissionQuery.isError && <div className="mb-4 space-y-2"><FeedbackNotice tone="error" message="暂时无法读取菜单权限，当前页面已保留，请重试。"/><button type="button" className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700" disabled={permissionQuery.isFetching} onClick={()=>void permissionQuery.refetch()}>重新加载权限</button></div>}
       {moduleId === 'dashboard' && (
         <Dashboard
           onNavigate={navigate}
@@ -115,6 +143,17 @@ export function LudongPocApp() {
       {moduleId === 'team' && isAdmin && <TeamPage requireEmployeeNo />}
       {moduleId === 'archive' && <ArchivePage />}
       {moduleId === 'stats' && <StatsPage />}
+      <Suspense fallback={<p role="status" className="p-5 text-sm text-slate-500">正在加载业务模块...</p>}>
+        {visibleModules.some((item) => item.id === moduleId) && <>
+          {moduleId === 'projects' && <ProjectsPage />}
+          {moduleId === 'budgets' && <BudgetsPage />}
+          {moduleId === 'rfqs' && <RfqsPage />}
+          {moduleId === 'contracts' && <ContractsPage />}
+          {moduleId === 'orders' && <OrdersPage onNavigate={(id) => { if (modules.some((item) => item.id === id)) navigate(id as ModuleId); }} />}
+          {moduleId === 'receipts' && <ReceiptsPage />}
+          {moduleId === 'invoices' && <InvoicesPage />}
+        </>}
+      </Suspense>
     </AppShell>
   );
 }
@@ -149,6 +188,12 @@ function LudongWorkflowConfiguration() {
         scopeTitle="货物类采购申报流程"
         scopeDescription="修改草稿不影响已在办实例；发布新版本后，新发起的申报将按新流程执行。"
         initialTab="flow"
+        attachmentCatalog={[
+          {id:'project_attachment',label:'项目附件',required:false},
+          {id:'mall_confirmation',label:'商城确认材料',required:false},
+          {id:'supplementary_evidence',label:'补充证明',required:false},
+          ...Array.from({length:5},(_,index)=>({id:`custom_${index+1}`,label:`自定义材料${index+1}`,required:false})),
+        ]}
       />
     </div>
   );
@@ -183,6 +228,8 @@ function Dashboard({
   onNewApplication: () => void;
   onOpenApplication: (application: LudongApplication, edit?: boolean) => void;
 }) {
+  const { can } = useBuyerPermissions();
+  const canWrite = can('buyer:ludong-poc:write');
   const stats = useQuery({ queryKey: ['ludong-poc', 'stats'], queryFn: ludongApi.stats });
   const apps = useQuery({ queryKey: ['ludong-poc', 'applications'], queryFn: ludongApi.list });
   const tasks = useQuery({ queryKey: ['ludong-poc', 'tasks'], queryFn: ludongApi.tasks });
@@ -214,13 +261,13 @@ function Dashboard({
     { label: '审批流程配置', hint: '节点、办理岗位与条件规则', icon: Workflow, onClick: () => onNavigate('workflow-config'), accent: 'bg-violet-50 text-violet-700' },
     { label: '表格与材料归档', hint: '生成原始表格并打包下载', icon: FileArchive, onClick: () => onNavigate('archive'), accent: 'bg-emerald-50 text-emerald-700' },
     { label: '数据统计分析', hint: '单位、预算与审批效率', icon: BarChart3, onClick: () => onNavigate('stats'), accent: 'bg-rose-50 text-rose-700' },
-  ];
+  ].filter((item) => item.label !== '新建项目申报' || canWrite);
   return (
     <div className="space-y-5">
       <PageHeader title="货物类项目采购申报工作台" subtitle="统一填报、分级审批、表格生成与材料归档。" actions={
         <div className="flex flex-wrap items-center justify-end gap-2">
           <ActionButton icon={ClipboardCheck} size="md" onClick={() => onNavigate('approvals')}>审批中心</ActionButton>
-          <PrimaryActionButton icon={Plus} size="md" flushTop onClick={onNewApplication}>新建项目申报</PrimaryActionButton>
+          {canWrite && <PrimaryActionButton icon={Plus} size="md" flushTop onClick={onNewApplication}>新建项目申报</PrimaryActionButton>}
         </div>
       } />
       <MetricGrid columns={5}>
@@ -257,7 +304,7 @@ function Dashboard({
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700"><FileText size={17} /></span>
                 <div className="min-w-0 flex-1"><p className="truncate text-sm font-black text-slate-900">{app.projectName}</p><p className="mt-1 truncate text-xs font-bold text-slate-400">{app.applicationNo} · {app.applicantUnit}</p></div>
                 <Status applicationStatus={app.status} />
-                <ActionButton onClick={() => onOpenApplication(app, ['draft', 'rejected'].includes(app.status))}>{['draft', 'rejected'].includes(app.status) ? '继续填写' : '详情'}</ActionButton>
+                <ActionButton onClick={() => onOpenApplication(app, canWrite && ['draft', 'rejected'].includes(app.status))}>{canWrite && ['draft', 'rejected'].includes(app.status) ? '继续填写' : '详情'}</ActionButton>
               </div>
             ))}
             {!apps.isLoading && !apps.data?.length && <EmptyState title="尚未创建项目申报" />}
@@ -311,6 +358,8 @@ function Dashboard({
 
 function Applications({ screen, setScreen }: { screen: Screen; setScreen: (screen: Screen) => void }) {
   const queryClient = useQueryClient();
+  const { can } = useBuyerPermissions();
+  const canWrite = can('buyer:ludong-poc:write');
   const applications = useQuery({ queryKey: ['ludong-poc', 'applications'], queryFn: ludongApi.list });
   const [keyword, setKeyword] = useState('');
   const [page, setPage] = useState(1);
@@ -326,7 +375,17 @@ function Applications({ screen, setScreen }: { screen: Screen; setScreen: (scree
     onError: (reason) => setError(apiError(reason)),
   });
 
-  if (screen.type === 'form') return <LudongPocForm initial={screen.application} busy={save.isPending} error={error} onBack={() => setScreen({ type: 'list' })} onSave={(payload) => save.mutate({ payload, id: screen.application?.id })} />;
+  const draft = useMutation({
+    mutationFn: ({ payload, id }: { payload: LudongFormPayload; id?: string }) => ludongApi.saveDraft(payload, id),
+    onSuccess: (application) => {
+      queryClient.invalidateQueries({ queryKey: ['ludong-poc'] });
+      setScreen({ type: 'form', application });
+      setError('');
+    },
+    onError: (reason) => setError(apiError(reason)),
+  });
+
+  if (screen.type === 'form') return canWrite ? <LudongPocForm initial={screen.application} busy={save.isPending || draft.isPending} error={error} onBack={() => setScreen({ type: 'list' })} onSaveDraft={(payload) => draft.mutateAsync({ payload, id: screen.application?.id })} onSave={(payload) => save.mutate({ payload, id: screen.application?.id })} /> : <FeedbackNotice tone="error" message="当前岗位无申报编辑权限。" />;
   if (screen.type === 'detail') return <ApplicationDetail application={screen.application} onBack={() => setScreen({ type: 'list' })} />;
 
   const filtered = (applications.data ?? []).filter((item) => !keyword || `${item.projectName}${item.applicationNo}${item.applicantUnit}`.toLowerCase().includes(keyword.toLowerCase()));
@@ -338,7 +397,7 @@ function Applications({ screen, setScreen }: { screen: Screen; setScreen: (scree
   const actions = (app: LudongApplication, compact = false) => (
     <div className="flex flex-nowrap items-center justify-end gap-2">
       <ActionButton onClick={() => setScreen({ type: 'detail', application: app })}>详情</ActionButton>
-      {['draft', 'rejected'].includes(app.status) && <>
+      {canWrite && ['draft', 'rejected'].includes(app.status) && <>
         <ActionButton icon={compact ? undefined : Pencil} onClick={() => setScreen({ type: 'form', application: app })}>编辑</ActionButton>
         <PrimaryActionButton icon={compact ? undefined : Send} flushTop busy={submit.isPending} pendingLabel="提交中" onClick={() => submit.mutate(app.id)}>提交</PrimaryActionButton>
       </>}
@@ -347,7 +406,7 @@ function Applications({ screen, setScreen }: { screen: Screen; setScreen: (scree
 
   return (
     <div className="space-y-5">
-      <PageHeader title="项目申报" subtitle="采购需求表与采购申请单共用同一份项目数据。" actions={<PrimaryActionButton icon={Plus} size="md" flushTop onClick={() => setScreen({ type: 'form' })}>新建申报</PrimaryActionButton>} />
+      <PageHeader title="项目申报" subtitle="采购需求表与采购申请单共用同一份项目数据。" actions={canWrite ? <PrimaryActionButton icon={Plus} size="md" flushTop onClick={() => setScreen({ type: 'form' })}>新建申报</PrimaryActionButton> : undefined} />
       {error && <FeedbackNotice tone="error" message={error} />}
       <Panel title="申报项目列表" icon={ClipboardList} subtitle={`共 ${filtered.length} 条申报记录`} action={<SearchInput onSearch={(value) => { setKeyword(value); setPage(1); }} placeholder="搜索名称、编号或单位" className="mb-0" />}>
         <ResponsiveTableFrame mobileCards={rows.map((app, index) => (
@@ -375,33 +434,54 @@ function Applications({ screen, setScreen }: { screen: Screen; setScreen: (scree
 }
 
 function ApplicationDetail({ application, onBack }: { application: LudongApplication; onBack: () => void }) {
+  const [detailTab, setDetailTab] = useState('basic');
+  const session = useAuthStore((state) => state.session);
+  const { can } = useBuyerPermissions();
   const fresh = useQuery({ queryKey: ['ludong-poc', 'application', application.id], queryFn: () => ludongApi.get(application.id) });
   const history = useQuery({ queryKey: ['ludong-poc', 'history', application.id], queryFn: () => ludongApi.history(application.id) });
   const app = fresh.data ?? application;
   const downloadable = ['approved', 'archived'].includes(app.status);
   return (
     <div className="space-y-5">
-      <PageHeader title={app.projectName} subtitle={`${app.applicationNo} · ${app.applicantUnit}`} onBack={onBack} meta={<Status applicationStatus={app.status} />} actions={downloadable ? <>
-        <ActionButton icon={Download} onClick={() => ludongApi.downloadDemand(app.id)}>需求表</ActionButton><ActionButton icon={Download} onClick={() => ludongApi.downloadApplication(app.id)}>申请单</ActionButton><PrimaryActionButton icon={Archive} flushTop onClick={() => ludongApi.downloadArchive(app.id)}>打包归档</PrimaryActionButton>
-      </> : undefined} />
+      <PageHeader title={app.projectName} subtitle={`${app.applicationNo} · ${app.applicantUnit}`} onBack={onBack} meta={<Status applicationStatus={app.status} />} actions={<>
+        {downloadable && <><ActionButton icon={Download} onClick={() => ludongApi.downloadDemand(app.id)}>需求表</ActionButton><ActionButton icon={Download} onClick={() => ludongApi.downloadApplication(app.id)}>申请单</ActionButton><PrimaryActionButton icon={Archive} flushTop onClick={() => ludongApi.downloadArchive(app.id)}>打包归档</PrimaryActionButton></>}
+        {app.status === 'in_approval' && history.data && history.data.initiatorId === session?.userId
+          && <WorkflowApplicationWithdrawal instanceId={history.data.workflowInstanceId} />}
+      </>} />
       <DetailHeroCard eyebrow="货物类采购项目" title={app.projectName} meta={`${app.applicationNo} · 创建于 ${formatDate(app.createdAt)}`} status={statusLabels[app.status]} amountLabel={currency(app.budgetAmount)} facts={[
         { label: '申报单位', value: app.applicantUnit }, { label: '项目负责人', value: app.formData.projectLeaderName || '—' }, { label: '经费来源', value: app.formData.fundingSource || '—' }, { label: '采购方式', value: app.formData.procurementMethod || '—' },
       ]} />
-      <div className="grid gap-5 xl:grid-cols-[1.5fr_.85fr]">
-        <div className="space-y-5">
-          <SectionCard title="项目申报与审批详情" icon={ClipboardList} extra={<StatusPill label="完整材料" />}>
-            <LudongPocApplicationSnapshot app={app} />
-          </SectionCard>
-        </div>
+      <ApplicationTabs value={detailTab} onChange={setDetailTab} label="项目详情分类" tabs={[
+        { id: 'basic', label: '基本信息' }, { id: 'equipment', label: '设备清单' },
+        { id: 'mall', label: '商城确认' }, { id: 'requirements', label: '采购要求' },
+        { id: 'delivery', label: '交付验收' }, { id: 'approvals', label: '审批记录' },
+        { id: 'files', label: '附件归档' },
+      ]}>
+      {!['approvals', 'files'].includes(detailTab) && <div className="min-w-0 rounded-lg border border-slate-200 bg-white p-4 sm:p-6">
+        <LudongPocApplicationSnapshot app={app} view={detailTab as SnapshotView} includeApprovals={false} />
+      </div>}
+      {detailTab === 'approvals' && <>
+        <div className="grid items-start gap-5 xl:grid-cols-2">
         <div className="space-y-5">
           <WorkflowCard history={history.data} loading={history.isLoading} />
+          {history.isError && <FeedbackNotice tone="error" message="审批记录加载失败，请刷新后重试。" />}
+          {history.data && <AdditionalReviewHistory instanceId={history.data.workflowInstanceId} />}
+          {app.status === 'in_approval' && history.data && history.data.initiatorId === session?.userId
+            && <WorkflowInstanceReminder instanceId={history.data.workflowInstanceId} />}
           <RouteDecisionSummary app={app} />
-          <SectionCard title="系统生成表格" icon={FileArchive}><div className="space-y-2"><DocumentRow name="采购需求表（货物类）" ready={downloadable} /><DocumentRow name="采购及招标申请单、受理单" ready={downloadable} /></div></SectionCard>
         </div>
-      </div>
+        <SectionCard title="各节点审批意见" icon={ClipboardList}><LudongPocApplicationSnapshot app={app} view="approvals" /></SectionCard>
+        </div>
+        {history.data && <LudongCustomApprovalEvidence applicationId={app.id} instanceId={history.data.workflowInstanceId} />}
+        <LudongWorkflowHistory application={app} renderProgress={(value) => <WorkflowCard history={value} loading={false} />} />
+      </>}
+      {detailTab === 'files' && <>
+      <SectionCard title="系统生成表格" icon={FileArchive}><div className="space-y-2"><DocumentRow name="采购需求表（货物类）" ready={downloadable} /><DocumentRow name="采购及招标申请单、受理单" ready={downloadable} /></div></SectionCard>
       <SectionCard title="统一附件台账" icon={FileArchive} extra={<StatusPill label={app.status === 'archived' ? '已封存' : '持续归集'} />}>
-        <LudongPocArchiveMaterials applicationId={app.id} readOnly={app.status === 'archived'} />
+        <LudongPocArchiveMaterials applicationId={app.id} readOnly={app.status === 'archived' || !can('buyer:ludong-poc:write')} />
       </SectionCard>
+      </>}
+      </ApplicationTabs>
     </div>
   );
 }
@@ -628,8 +708,25 @@ function WorkflowCard({ history, loading }: { history?: WorkflowHistory | null; 
           );
         })}
       </div>
+      <details className="mt-4 border-t border-slate-100 pt-3">
+        <summary className="cursor-pointer text-sm font-bold text-slate-700">完整操作记录（{history.events.length}）</summary>
+        <div className="mt-3 space-y-3">
+          {history.events.map((event) => <div key={event.id} className="border-l-2 border-slate-200 pl-3 text-xs leading-5 text-slate-500">
+            <p className="font-bold text-slate-800">{workflowActionLabel(event.action)} · {event.nodeName}{event.effective === false ? '（已失效，须重新审批）' : ''}</p>
+            <p>{event.actorName || event.actorId || '系统'} · {new Date(event.createdAt).toLocaleString('zh-CN')}</p>
+            {event.comment && <p className="break-words">{event.comment}</p>}
+          </div>)}
+        </div>
+      </details>
     </SectionCard>
   );
+}
+
+function workflowActionLabel(action: string) {
+  return ({ created: '任务到达', claimed: '认领', approved: '通过', rejected: '驳回', completed: '结束',
+    transferred: '转审', copied: '抄送', reminded: '催办通知', deadline_changed: '调整办理时限',
+    returned: '退回重审', approval_invalidated: '原审批转为历史', cancelled: '发起人撤回',
+    additional_requested: '发起加审', additional_approved: '加审同意', additional_rejected: '加审不同意' } as Record<string, string>)[action] || action;
 }
 
 function RouteDecisionSummary({ app }: { app: LudongApplication }) {

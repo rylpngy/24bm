@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import {BuyerOrderSettlement} from './order-settlement';
 import { OrderAfterSales } from './order-after-sales';
+import { compactList } from '../../lib/compact-list';
 import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
 import { ArrowLeft, Info, Truck } from 'lucide-react';
 import {
@@ -20,6 +21,7 @@ import {
   SearchInput,
   StatusPill,
   OrderCancellationPanel,
+  Tabs,
   cn,
 } from '@24bid/ui';
 
@@ -44,6 +46,10 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
   const [statusFilter, setStatusFilter] = useState('全部');
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(() => new URLSearchParams(window.location.search).get('recordId'));
+  const [detailTab, setDetailTab] = useState('info');
+  const [cancellationVisited, setCancellationVisited] = useState(false);
+  const [afterSalesVisited, setAfterSalesVisited] = useState(false);
+  const openOrder = (id: string) => { setSelectedId(id); setDetailTab('info'); setCancellationVisited(false); setAfterSalesVisited(false); };
 
   const query = usePurchaseOrderList();
   const suppliersQuery = useBuyerSupplierList({ status: '已准入' }, { query: { enabled: can('buyer:supplier:read') } });
@@ -94,7 +100,7 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              onClick={() => setSelectedId(null)}
+              onClick={() => { const url = new URL(window.location.href); url.searchParams.delete('recordId'); window.history.replaceState(null, '', url); setSelectedId(null); }}
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-50"
               aria-label="返回订单列表"
             >
@@ -115,13 +121,19 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
 
         <p className="text-xs font-bold">发货累计 {deliveryBatches.reduce((s, d) => s + (d.shippedQuantity ?? 0), 0)} · 收货累计 {receiptBatches.reduce((s, r) => s + (r.receivedQuantity ?? 0), 0)} · 合格累计 {receiptBatches.reduce((s, r) => s + (r.qualifiedQuantity ?? 0), 0)} · 待收总量 {['已取消','已清算'].includes(o.status??'')?0:(o.lineItems ?? []).length ? Math.max(0, (o.lineItems ?? []).reduce((s, l) => s + (l.quantity ?? 0), 0) - receiptBatches.reduce((s, r) => s + (r.receivedQuantity ?? 0), 0)) : '待核对'}</p>
 
-        {o.id&&<BuyerOrderCancellation orderId={o.id} canManage={can('buyer:order:manage')} refresh={()=>query.refetch()}/>}
-        {o.id&&<BuyerOrderSettlement orderId={o.id} canManage={can('buyer:order:manage')} canContractManage={can('buyer:contract:manage')} canFinance={can('buyer:order:manage')&&can('buyer:payment:register')} refresh={()=>query.refetch()}/>}
-        {o.id && <OrderAfterSales orderId={o.id} status={o.status ?? ''} canPurchase={can('buyer:mall:purchase')} lines={(o.lineItems ?? []).filter(l => Boolean(l.id) && (l.quantity ?? 0) > 0).map(l => ({ id: l.id!, quantity: l.quantity!, description: l.description }))} />}
-        <div className="grid gap-4 xl:grid-cols-[1fr_20rem]">
+        <Tabs items={[{id:'info',label:'基本信息'},{id:'items',label:'采购明细'},{id:'delivery',label:'发货物流'},{id:'receipts',label:'收货验收'},{id:'cancellation',label:'取消与清算'},{id:'afterSales',label:'退换与售后'}]} value={detailTab}
+          onChange={(id) => { setDetailTab(id); if (id === 'cancellation') setCancellationVisited(true); if (id === 'afterSales') setAfterSalesVisited(true); }} />
+        {cancellationVisited && <div hidden={detailTab !== 'cancellation'} className="space-y-4">
+          {o.id && <BuyerOrderCancellation key={o.id} orderId={o.id} canManage={can('buyer:order:manage')} refresh={()=>query.refetch()}/>}
+          {o.id && <BuyerOrderSettlement key={`settlement-${o.id}`} orderId={o.id} canManage={can('buyer:order:manage')} canContractManage={can('buyer:contract:manage')} canFinance={can('buyer:order:manage')&&can('buyer:payment:register')} refresh={()=>query.refetch()}/>}
+        </div>}
+        {afterSalesVisited && <div hidden={detailTab !== 'afterSales'}>
+          {o.id && <OrderAfterSales key={o.id} orderId={o.id} status={o.status ?? ''} canPurchase={can('buyer:mall:purchase')} lines={(o.lineItems ?? []).filter(l => Boolean(l.id) && (l.quantity ?? 0) > 0).map(l => ({ id: l.id!, quantity: l.quantity!, description: l.description }))} />}
+        </div>}
+        <div className="min-w-0 space-y-4">
           <div className="min-w-0 space-y-4">
             {/* 抬头信息 */}
-            <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
+            <section hidden={detailTab !== 'info'} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
               <h3 className="text-base font-black text-slate-950">订单信息</h3>
               <div className="mt-3 grid gap-2 sm:grid-cols-4">
                 <MiniFact label="关联询比" value={o.rfqId ?? '—'} />
@@ -148,12 +160,14 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
             </section>
 
             {/* 行项明细 */}
+            <div hidden={detailTab !== 'items'}>
+            {(o.lineItems ?? []).length === 0 && <FeedbackNotice tone="info" message="暂无订单行项明细。" />}
             {(o.lineItems ?? []).length > 0 && (
               <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm shadow-slate-200/50">
                 <p className="border-b border-slate-100 bg-slate-50 px-4 py-2.5 text-xs font-black text-slate-500">
                   订单行项明细({(o.lineItems ?? []).length} 项 · 源自中标报价)
                 </p>
-                <table className="w-full text-left text-xs">
+                <div className="overflow-x-auto"><table className="w-full min-w-[600px] text-left text-xs">
                   <thead className="bg-slate-50 text-[11px] font-black text-slate-400">
                     <tr>
                       <th className="px-4 py-2">品名/规格</th>
@@ -175,11 +189,14 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </table></div>
               </section>
             )}
+            </div>
 
             {/* 物流信息 */}
+            <div hidden={detailTab !== 'delivery'} className="space-y-4">
+            {!deliveryBatches.length && <FeedbackNotice tone="info" message="暂无发货物流记录。" />}
             {deliveryBatches.map(delivery => (
               <section key={delivery.id} className="rounded-lg border border-indigo-100 bg-indigo-50/40 p-4">
                 <p className="break-words text-xs font-black text-indigo-700">物流信息 · {delivery.id}</p>
@@ -198,8 +215,11 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
                 )}
               </section>
             ))}
+            </div>
 
             {/* 收货验收明细(已收货) */}
+            <div hidden={detailTab !== 'receipts'} className="space-y-4">
+            {!receiptBatches.length && <FeedbackNotice tone="info" message="暂无收货验收记录。" />}
             {receiptBatches.map(rec => (
               <section key={rec.id} className="rounded-lg border border-emerald-100 bg-emerald-50/50 p-4">
                 <p className="flex flex-wrap items-center gap-2 text-xs font-black text-emerald-700">
@@ -271,10 +291,11 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
                 </button>
               </section>
             )}
+            </div>
           </div>
 
           {/* 右栏:关键信息 + 履约进度 */}
-          <div className="space-y-4">
+          <div hidden={detailTab !== 'info'}><div className="grid items-start gap-4 lg:grid-cols-2">
             <section className="rounded-lg bg-slate-900 p-5 text-white shadow-sm">
               <p className="flex items-center gap-2 text-sm font-black">
                 <Info size={15} className="text-blue-400" /> 关键信息
@@ -317,6 +338,7 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
                 ))}
               </div>
             </section>
+          </div>
           </div>
         </div>
       </div>
@@ -370,11 +392,11 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
               <div key={o.id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="break-words font-mono font-black text-slate-950">
+                    <p className="truncate font-mono font-bold text-slate-950" title={o.id}>
                       <span className="mr-1.5 text-slate-400">{(safePage - 1) * PAGE_SIZE + i + 1}.</span>
                       {o.id}
                     </p>
-                    <p className="mt-1 text-xs font-bold text-slate-500">
+                    <p className="mt-1 truncate text-xs font-bold text-slate-500" title={o.supplierId ? (supplierNames[o.supplierId] ?? o.supplierId) : '—'}>
                       {o.supplierId ? (supplierNames[o.supplierId] ?? o.supplierId) : '—'}
                     </p>
                   </div>
@@ -385,7 +407,7 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
                 </div>
                 <button
                   type="button"
-                  onClick={() => o.id && setSelectedId(o.id)}
+                  onClick={() => o.id && openOrder(o.id)}
                   className="mt-3 inline-flex h-8 w-full items-center justify-center rounded-md border border-slate-200 bg-white text-xs font-black text-slate-600 hover:bg-slate-50"
                 >
                   详情
@@ -393,8 +415,8 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
               </div>
             ))}
           >
-            <table className="w-full min-w-[800px] table-fixed text-left text-sm [&_td]:px-3 [&_th]:px-3 [&_td_p]:max-w-full">
-              <colgroup>{['5%', '21%', '16%', '13%', '12%', '16%', '17%'].map((width, i) => <col key={i} style={{ width }} />)}</colgroup>
+            <table aria-label="采购订单列表" className={cn(compactList.table, 'min-w-[860px]')}>
+              <colgroup><col className="w-12" /><col /><col className="w-40" /><col className="w-28" /><col className="w-24" /><col className="w-32" /><col className="w-[152px]" /></colgroup>
               <thead className="bg-slate-50 text-xs font-black text-slate-500">
                 <tr>
                   <th className="w-12 px-2 py-4 text-center">序号</th>
@@ -403,44 +425,44 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
                   <th className="px-5 py-4">预计到货</th>
                   <th className="px-5 py-4">状态</th>
                   <th className="px-5 py-4 text-right">订单金额</th>
-                  <th className="sticky right-0 w-40 whitespace-nowrap bg-slate-50 px-5 py-4 text-right">操作</th>
+                  <th className="sticky right-0 bg-slate-50 text-right">操作</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {pageItems.map((o, i) => (
-                  <tr key={o.id} className="hover:bg-blue-50/30">
+                  <tr key={o.id} className="group hover:bg-blue-50/30">
                     <td className="px-2 py-5 text-center font-mono font-black text-slate-400">
                       {(safePage - 1) * PAGE_SIZE + i + 1}
                     </td>
                     <td className="px-5 py-5">
-                      <p className="w-44 truncate font-mono text-xs font-black text-slate-900" title={o.id}>
+                      <p className="truncate font-mono text-xs font-bold text-slate-900" title={o.id}>
                         {o.id}
                       </p>
-                      <p className="mt-1 w-44 truncate font-mono text-[11px] font-bold text-slate-400" title={o.rfqId ?? undefined}>
+                      <p className="mt-1 truncate font-mono text-[11px] font-bold text-slate-400" title={o.rfqId ?? undefined}>
                         询比 {o.rfqId ?? '—'}
                       </p>
                     </td>
                     <td className="px-5 py-5 text-sm font-bold text-slate-600">
-                      {o.supplierId ? (supplierNames[o.supplierId] ?? o.supplierId) : '—'}
+                      <span className={compactList.text} title={o.supplierId ? (supplierNames[o.supplierId] ?? o.supplierId) : '—'}>{o.supplierId ? (supplierNames[o.supplierId] ?? o.supplierId) : '—'}</span>
                     </td>
                     <td className="px-5 py-5 font-mono text-xs font-bold text-slate-600">{o.expectedReceiptDate ?? '—'}</td>
-                    <td className="px-5 py-5">{o.status && <StatusPill label={o.status} />}</td>
-                    <td className="px-5 py-5 text-right font-mono font-black text-slate-900">{currency(o.amount)}</td>
-                    <td className="sticky right-0 bg-white px-5 py-5 text-right">
-                      <div className="flex justify-end gap-2 whitespace-nowrap">
+                    <td className="px-5 py-5" title={o.status}>{o.status && <StatusPill label={o.status} className="overflow-hidden whitespace-nowrap" />}</td>
+                    <td className="px-5 py-5 text-right font-mono text-xs font-semibold tabular-nums text-slate-900"><span className={compactList.text} title={currency(o.amount)}>{currency(o.amount)}</span></td>
+                    <td className={compactList.actionCell}>
+                      <div className={compactList.actions}>
                         {o.status === '已发货' && can('buyer:receipt:read') && (
                           <button
                             type="button"
                             onClick={() => onNavigate('receipts')}
-                            className="inline-flex h-8 items-center rounded-md bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700"
+                            className={compactList.primary}
                           >
                             去验收
                           </button>
                         )}
                         <button
                           type="button"
-                          onClick={() => o.id && setSelectedId(o.id)}
-                          className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50"
+                          onClick={() => o.id && openOrder(o.id)}
+                          className={compactList.detail}
                         >
                           详情
                         </button>

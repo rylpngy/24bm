@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { type DepartmentResponse, useDepartmentList } from '@24bid/api-client';
-import { FeedbackNotice, PageHeader, PrimaryActionButton, SectionCard, cn } from '@24bid/ui';
-import { ClipboardList, GitBranch, ListChecks, RotateCcw, Save, WalletCards } from 'lucide-react';
+import { ActionButton, FeedbackNotice, PageHeader, PrimaryActionButton, SectionCard, cn } from '@24bid/ui';
+import { ArrowLeft, ArrowRight, ClipboardList, GitBranch, ListChecks, RotateCcw, Save, WalletCards } from 'lucide-react';
+import { ApplicationTabs, applicationFormTabs, requiredFieldTab } from './ludong-application-tabs';
 import { defaultFormData, emptyItem, type LudongApplication, type LudongItem } from './api';
 import { inferGovernmentMallCatalog, LudongPocMaterialItemsEditor } from './ludong-poc-material-items-editor';
 import {
@@ -30,18 +31,23 @@ export function LudongPocForm({
   error,
   onBack,
   onSave,
+  onSaveDraft,
 }: {
   initial?: LudongApplication;
   busy: boolean;
   error?: string;
   onBack: () => void;
   onSave: (payload: LudongFormPayload) => void;
+  onSaveDraft?: (payload: LudongFormPayload) => Promise<LudongApplication>;
 }) {
   const departmentsQuery = useDepartmentList();
   const [projectName, setProjectName] = useState(initial?.projectName ?? '');
   const [applicantUnit, setApplicantUnit] = useState(initial?.applicantUnit ?? '');
   const [departmentId, setDepartmentId] = useState(initial?.departmentId ?? '');
   const [showValidation, setShowValidation] = useState(false);
+  const [activeTab, setActiveTab] = useState(() => applicationFormTabs.some((tab) => tab.id === initial?.formData._draftTab) ? initial!.formData._draftTab : 'basic');
+  const [savedMessage, setSavedMessage] = useState('');
+  const [savedFingerprint, setSavedFingerprint] = useState('');
   const [formData, setFormData] = useState<Record<string, string>>(() => {
     const data = { ...defaultFormData, ...initial?.formData };
     data.acceptanceStandard = requirementSupplement(acceptanceStandardTemplate, data.acceptanceStandard);
@@ -126,10 +132,23 @@ export function LudongPocForm({
     projectName, applicantUnit, departmentId, formData, items,
   });
   const valid = missingRequired.length === 0;
+  const tabIndex = applicationFormTabs.findIndex((tab) => tab.id === activeTab);
+  const currentMissing = missingRequired.filter((field) => requiredFieldTab(field) === activeTab);
+  const fingerprint = JSON.stringify({ projectName, applicantUnit, departmentId, formData, items });
+  const [initialFingerprint] = useState(fingerprint);
+  const dirty = fingerprint !== (savedFingerprint || initialFingerprint);
+  useEffect(() => {
+    const warn = (event: BeforeUnloadEvent) => {
+      if (dirty) { event.preventDefault(); event.returnValue = ''; }
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [dirty]);
 
-  const save = () => {
-    if (!valid) {
+  const save = async (draft = false) => {
+    if (!draft && !valid) {
       setShowValidation(true);
+      setActiveTab(requiredFieldTab(missingRequired[0]));
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -141,13 +160,14 @@ export function LudongPocForm({
       [`${decision.key}Reason`, decision.evidence.join('；')],
     ]));
     const hasGovernmentMallItems = items.some((item) => item.governmentMallCatalog === '是');
-    onSave({
+    const payload = {
       projectName,
       applicantUnit,
       departmentId,
       budgetAmount,
       formData: {
         ...formData,
+        _draftTab: activeTab,
         ...routeSnapshot,
         coreProduct: coreProductName,
         mallSelectionApplicable: hasGovernmentMallItems ? '是' : '否',
@@ -156,14 +176,20 @@ export function LudongPocForm({
           : '设备清单中没有属于山东省政府采购网上商城目录的项目',
       },
       items,
-    });
+    };
+    if (draft && onSaveDraft) {
+      try {
+        await onSaveDraft(payload);
+        setSavedFingerprint(fingerprint);
+        setSavedMessage(`草稿已保存 · ${new Date().toLocaleTimeString('zh-CN')}`);
+      } catch { /* API error is displayed by the parent. */ }
+    } else onSave(payload);
   };
 
   return (
     <div className="space-y-5">
       <PageHeader
         title={initial ? '编辑采购项目申报' : '新建采购项目申报'}
-        subtitle="本页只填写原始申报信息。购置论证、部门意见、审批签字和采购方式将在后续流程节点逐步完成。"
         onBack={onBack}
         meta={<span className="rounded-md border border-blue-100 bg-blue-50 px-2.5 py-1 text-[11px] font-black text-blue-700">{initial?.applicationNo ?? '保存后生成申报编号'}</span>}
       />
@@ -178,9 +204,11 @@ export function LudongPocForm({
         </span>
       </div>
       {showValidation && !valid && (
-        <FeedbackNotice tone="error" message={`请先完成以下必填项：${missingRequired.join('、')}`} />
+        <FeedbackNotice tone="error" message={`本页待完成：${currentMissing.join('、') || '本页已完整，请继续检查其他带数字的分类'}`} />
       )}
-
+      {savedMessage && <FeedbackNotice tone="success" message={dirty ? '有未保存修改，请保存草稿后再离开。' : savedMessage} />}
+      <ApplicationTabs tabs={applicationFormTabs.map((tab) => ({ ...tab, badge: missingRequired.filter((field) => requiredFieldTab(field) === tab.id).length }))} value={activeTab} onChange={setActiveTab}>
+      {activeTab === 'basic' && <>
       <SectionCard title="项目申报信息" icon={ClipboardList}>
         <div className="grid gap-5 md:grid-cols-2">
           <Field label="采购项目名称" required><input className={inputClass} value={projectName} onChange={(e) => setProjectName(e.target.value)} /></Field>
@@ -227,7 +255,8 @@ export function LudongPocForm({
         </div>
       </SectionCard>
 
-      <SectionCard title="采购需求与政策信息" icon={ClipboardList}>
+      </>}
+      {activeTab === 'requirements' && <SectionCard title="采购需求与政策信息" icon={ClipboardList}>
         <div className="grid gap-5 md:grid-cols-2">
           <Field label="参与编制人员"><input className={inputClass} value={formData.participants} onChange={(e) => update('participants', e.target.value)} placeholder="多人可使用顿号分隔" /></Field>
           <div className="grid grid-cols-2 gap-3">
@@ -241,8 +270,9 @@ export function LudongPocForm({
           <Field label="供应商特殊资质要求" className="md:col-span-2"><textarea className={textareaClass} value={formData.supplierQualifications} onChange={(e) => update('supplierQualifications', e.target.value)} /></Field>
           <Field label="购置理由及必要性" required className="md:col-span-2"><textarea className={textareaClass} value={formData.purchaseReason} onChange={(e) => update('purchaseReason', e.target.value)} placeholder="由申请人说明购置背景、现状、必要性及预期效益" /></Field>
         </div>
-      </SectionCard>
+      </SectionCard>}
 
+      {activeTab === 'delivery' && <>
       <SectionCard title="交付、服务与验收要求" icon={ListChecks}>
         <div className="grid gap-5 md:grid-cols-2">
           <Field label="项目实施地点" required><input className={inputClass} value={formData.implementationLocation} onChange={(e) => update('implementationLocation', e.target.value)} /></Field>
@@ -293,23 +323,24 @@ export function LudongPocForm({
         </div>
       </SectionCard>
 
-      <SectionCard title="采购设备明细" icon={ListChecks} extra={<span className="text-[11px] font-black text-red-500">至少选择 1 条 *</span>}>
+      </>}
+      {activeTab === 'equipment' && <SectionCard title="采购设备明细" icon={ListChecks} extra={<span className="text-[11px] font-black text-red-500">至少选择 1 条 *</span>}>
         <LudongPocMaterialItemsEditor stage="application" items={items} onChange={setItems} />
         <div className="mt-5 rounded-lg border border-blue-100 bg-blue-50/60 p-4">
           <p className="text-xs font-black text-blue-800">系统目录判定</p>
           <p className="mt-1 text-xs font-bold leading-5 text-blue-700/80">
             {items.some((item) => item.governmentMallCatalog === '是')
-              ? `已识别 ${items.filter((item) => item.governmentMallCatalog === '是').length} 项省政府商城目录设备，系统已自动纳入下方确认单。`
+              ? `已识别 ${items.filter((item) => item.governmentMallCatalog === '是').length} 项省政府商城目录设备，已纳入商城确认单。`
               : '当前清单没有省政府商城目录设备，网上商城确认单无需填写。'}
           </p>
         </div>
-      </SectionCard>
+      </SectionCard>}
 
-      <SectionCard title="网上商城品牌型号确认单" icon={ListChecks} extra={<span className="text-[11px] font-black text-blue-600">由申请人填写 · 系统自动带入目录内设备</span>}>
+      {activeTab === 'mall' && <SectionCard title="网上商城品牌型号确认单" icon={ListChecks} extra={<span className="text-[11px] font-black text-blue-600">由申请人填写 · 系统自动带入目录内设备</span>}>
         <LudongPocMaterialItemsEditor stage="mall-selection" items={items} onChange={setItems} />
-      </SectionCard>
+      </SectionCard>}
 
-      <SectionCard title="流程判定信息" icon={GitBranch}>
+      {activeTab === 'routing' && <SectionCard title="流程判定信息" icon={GitBranch}>
         <div className="mb-4 rounded-lg border border-blue-100 bg-blue-50/60 px-4 py-3">
           <p className="text-xs font-black text-blue-800">系统根据当前表单实时辅助判断</p>
           <p className="mt-1 text-xs font-bold leading-5 text-blue-700/80">下方完整展示使用的字段、命中依据和系统建议。申报人可人工调整，调整记录与系统原建议会同时保存，最终确认值用于 Flowable 条件路由。</p>
@@ -329,14 +360,20 @@ export function LudongPocForm({
         <div className={cn('mt-5 rounded-lg border px-4 py-3 text-sm font-bold', schoolLeaderRule.startsWith('需要') ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-slate-200 bg-slate-50 text-slate-600')}>
           {schoolLeaderRule}
         </div>
-      </SectionCard>
+      </SectionCard>}
+      </ApplicationTabs>
 
-      <div className={cn('flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-white px-5 py-4 shadow-sm', showValidation && !valid ? 'border-red-200' : 'border-slate-200')}>
+      <div className={cn('sticky bottom-0 z-10 flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-white px-5 py-4 shadow-sm', showValidation && !valid ? 'border-red-200' : 'border-slate-200')}>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-bold text-slate-500">保存后返回项目列表，再提交进入“购置必要性论证”节点。</p>
-          {!valid && <p className="mt-1.5 break-words text-xs font-black text-amber-700">尚未完成：{missingRequired.join('、')}</p>}
+          <p className="text-xs font-bold text-slate-500">{dirty ? '有未保存修改。' : ''}草稿可随时保存；全部完成后返回列表提交审批。</p>
+          <p className="mt-1 text-xs text-slate-500">{tabIndex + 1} / {applicationFormTabs.length} · {applicationFormTabs[tabIndex].label}{currentMissing.length ? ` · 待完成 ${currentMissing.length} 项` : ''}</p>
         </div>
-        <PrimaryActionButton icon={Save} size="md" flushTop busy={busy} pendingLabel="保存中" onClick={save}>{valid ? '保存申报' : '检查并保存'}</PrimaryActionButton>
+        <div className="flex flex-wrap items-center gap-2">
+        <ActionButton icon={ArrowLeft} disabled={tabIndex === 0 || busy} onClick={() => { setActiveTab(applicationFormTabs[tabIndex - 1].id); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>上一步</ActionButton>
+        {tabIndex < applicationFormTabs.length - 1 && <ActionButton icon={ArrowRight} disabled={busy} onClick={() => { setActiveTab(applicationFormTabs[tabIndex + 1].id); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>下一步</ActionButton>}
+        {onSaveDraft && <ActionButton icon={Save} disabled={busy} onClick={() => void save(true)}>保存草稿</ActionButton>}
+        <PrimaryActionButton icon={Save} size="md" flushTop busy={busy} pendingLabel="保存中" onClick={() => void save()}>{valid ? '保存申报' : '检查并保存'}</PrimaryActionButton>
+        </div>
       </div>
     </div>
   );

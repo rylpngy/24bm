@@ -76,9 +76,11 @@ export interface WorkflowTask {
 
 export interface WorkflowEvent {
   id: string;
+  flowableTaskId?: string;
   nodeName: string;
   nodeId: string;
   action: string;
+  effective?: boolean;
   actorId?: string;
   actorName?: string;
   comment?: string;
@@ -86,10 +88,14 @@ export interface WorkflowEvent {
 }
 
 export interface WorkflowHistory {
+  flowSchema?: string;
+  amount?: number;
+  departmentId?: string;
   workflowInstanceId: string;
   businessType?: string;
   businessId?: string;
   status: string;
+  definitionVersionId?: string;
   initiatorId?: string;
   initiatorName?: string;
   completedBy?: string;
@@ -106,6 +112,7 @@ export interface WorkflowLedgerItem {
   workflowInstanceId: string;
   businessType: string;
   businessId: string;
+  definitionVersionId?: string;
   status: string;
   initiatorId: string;
   initiatorName?: string;
@@ -176,7 +183,8 @@ const unwrap = async <T>(promise: Promise<{ data: Envelope<T> }>) => (await prom
 export type LudongArchiveMaterialCategory =
   | 'project_attachment'
   | 'mall_confirmation'
-  | 'supplementary_evidence';
+  | 'supplementary_evidence'
+  | `custom_${number}`;
 
 export interface LudongArchiveMaterialCategoryMeta {
   id: LudongArchiveMaterialCategory;
@@ -216,7 +224,8 @@ interface AttachmentUploadTicket {
 }
 
 async function listArchiveMaterials(applicationId: string): Promise<LudongArchiveMaterial[]> {
-  const groups = await Promise.all(ludongArchiveMaterialCategories.map(async (category) => {
+  const categories = await listArchiveMaterialCategories(applicationId);
+  const groups = await Promise.all(categories.map(async (category) => {
     const values = await unwrap<AttachmentPayload[]>(axiosInstance.get('/api/v1/buyer/attachments', {
       params: { ownerType: category.ownerType, ownerId: applicationId },
     }));
@@ -225,12 +234,17 @@ async function listArchiveMaterials(applicationId: string): Promise<LudongArchiv
   return groups.flat().sort((left, right) => right.createdAt.localeCompare(left.createdAt));
 }
 
+async function listArchiveMaterialCategories(applicationId: string): Promise<LudongArchiveMaterialCategoryMeta[]> {
+  return unwrap(axiosInstance.get(`/api/v1/buyer/ludong-poc/applications/${applicationId}/attachment-categories`));
+}
+
 async function uploadArchiveMaterial(
   applicationId: string,
   categoryId: LudongArchiveMaterialCategory,
   file: File,
 ): Promise<void> {
-  const category = ludongArchiveMaterialCategories.find((item) => item.id === categoryId);
+  const categories = await listArchiveMaterialCategories(applicationId);
+  const category = categories.find((item) => item.id === categoryId);
   if (!category) throw new Error('Unsupported archive material category');
   const ticket = await unwrap<AttachmentUploadTicket>(axiosInstance.post(
     '/api/v1/buyer/attachments/upload-ticket',
@@ -263,6 +277,10 @@ export const ludongApi = {
   update: (id: string, data: Pick<LudongApplication, 'projectName' | 'applicantUnit' | 'departmentId' | 'budgetAmount' | 'formData' | 'items'>) =>
     unwrap<LudongApplication>(axiosInstance.put(`/api/v1/buyer/ludong-poc/applications/${id}`, data)),
   submit: (id: string) => unwrap<LudongApplication>(axiosInstance.post(`/api/v1/buyer/ludong-poc/applications/${id}/submit`)),
+  saveDraft: (data: Pick<LudongApplication, 'projectName' | 'applicantUnit' | 'departmentId' | 'budgetAmount' | 'formData' | 'items'>, id?: string) =>
+    unwrap<LudongApplication>(id
+      ? axiosInstance.put(`/api/v1/buyer/ludong-poc/applications/${id}/draft`, data)
+      : axiosInstance.post('/api/v1/buyer/ludong-poc/applications/drafts', data)),
   tasks: () => unwrap<WorkflowTask[]>(axiosInstance.get('/api/v1/buyer/workflow/tasks')),
   processed: () => unwrap<WorkflowLedgerItem[]>(axiosInstance.get('/api/v1/buyer/workflow/instances', {
     params: { view: 'processed', limit: 100 },
@@ -296,6 +314,7 @@ export const ludongApi = {
   aiReviewMetrics: () => unwrap<LudongAiReviewMetrics>(
     axiosInstance.get('/api/v1/buyer/ludong-poc/ai-review/metrics')),
   listArchiveMaterials,
+  listArchiveMaterialCategories,
   uploadArchiveMaterial,
   downloadArchiveMaterial: (material: Pick<LudongArchiveMaterial, 'id' | 'fileName'>) =>
     downloadReport(`/api/v1/buyer/attachments/${material.id}/download`, material.fileName),
@@ -305,6 +324,13 @@ export const ludongApi = {
     );
     return response.data.data;
   },
+  instances: (id: string, page: number) => unwrap<{items: WorkflowLedgerItem[]; total: number}>(axiosInstance.get(
+    `/api/v1/buyer/workflow/instances/business/ludong_project_application/${id}/instances`, {params: {page, pageSize: 5}})),
+  historyById: (id: string) => unwrap<WorkflowHistory>(axiosInstance.get(`/api/v1/buyer/workflow/instances/${id}/history`)),
+  reviewRecords: (id: string, instanceId: string) => unwrap<{
+    id: string; workflowTaskId: string; nodeId: string; reviewerId: string; decision: string;
+    reviewDataJson: string; comment: string; reviewedAt: string;
+  }[]>(axiosInstance.get(`/api/v1/buyer/ludong-poc/applications/${id}/approval-records`, {params: {instanceId}})),
   downloadDemand: (id: string) => downloadReport(
     `/api/v1/buyer/ludong-poc/applications/${id}/documents/demand.docx`, '采购需求表（货物类）.docx'),
   downloadApplication: (id: string) => downloadReport(

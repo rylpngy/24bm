@@ -41,7 +41,7 @@ export function QuoteComparisonTable({
     const withTax = quotes.map((q) => ({
       ...q,
       supplierName: supplierNames[q.supplierId ?? ''] ?? q.supplierId ?? '—',
-      taxedAmount: (q.amount ?? 0) * (1 + (q.taxRate ?? 0) / 100),
+      taxedAmount: q.amount ?? 0,
       recommended: false,
     }));
     const min = Math.min(...withTax.map((r) => r.taxedAmount));
@@ -78,7 +78,7 @@ export function QuoteComparisonTable({
             <span className="font-bold text-slate-900">{c.getValue<string>()}</span>
             {c.row.original.recommended && (
               <span className="rounded-md bg-blue-100 px-2 py-0.5 text-[11px] font-black text-blue-700">
-                推荐
+                价格最低
               </span>
             )}
           </div>
@@ -91,7 +91,6 @@ export function QuoteComparisonTable({
           <span className="font-mono font-black text-slate-900">{currency(c.getValue<number>())}</span>
         ),
       },
-      { accessorKey: 'amount', header: '报价', cell: (c) => currency(c.getValue<number>()) },
       { accessorKey: 'taxRate', header: '税率', cell: (c) => `${c.getValue<number>()}%` },
       { accessorKey: 'deliveryDays', header: '交期(天)', cell: (c) => c.getValue<number>() },
       {

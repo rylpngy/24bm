@@ -77,6 +77,29 @@ public class LudongPocController {
     return ApiResponse.ok(applicationService.submit(id));
   }
 
+  @PostMapping("/applications/drafts")
+  public ApiResponse<LudongPocApplicationResponse> createDraft(
+      @RequestBody LudongPocApplicationRequest request) {
+    return ApiResponse.ok(applicationService.saveDraft(null, request));
+  }
+
+  @PutMapping("/applications/{id}/draft")
+  public ApiResponse<LudongPocApplicationResponse> updateDraft(
+      @PathVariable String id, @RequestBody LudongPocApplicationRequest request) {
+    return ApiResponse.ok(applicationService.saveDraft(id, request));
+  }
+
+  @GetMapping("/applications/{id}/approval-records")
+  public ApiResponse<List<com.procurement.ludongpoc.domain.LudongPocReviewRecord>> reviewHistory(
+      @PathVariable String id, @RequestParam String instanceId) {
+    return ApiResponse.ok(applicationService.reviewHistory(id, instanceId));
+  }
+
+  @GetMapping("/applications/{id}/attachment-categories")
+  public ApiResponse<List<com.procurement.ludongpoc.application.LudongPocArchiveMaterialCatalog.Category>> attachmentCategories(@PathVariable String id) {
+    return ApiResponse.ok(applicationService.archiveCategories(id));
+  }
+
   @PostMapping("/tasks/{taskId}/complete")
   public ApiResponse<LudongPocTaskCompletionResponse> completeTask(
       @PathVariable String taskId,

@@ -7,6 +7,24 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class LudongPocTaskFormCatalogTests {
+  @Test void customPublishedNodesHaveAnExplicitBoundedDecisionForm() {
+    assertThat(LudongPocTaskFormCatalog.validate("custom_review", "approve", Map.of("customNodeOpinion","同意")))
+        .containsEntry("customNodeOpinion", "同意");
+    assertThatThrownBy(()->LudongPocTaskFormCatalog.validate("custom_review", "approve", Map.of("customNodeOpinion","不同意")))
+        .hasMessageContaining("只能驳回");
+    assertThatThrownBy(()->LudongPocTaskFormCatalog.validate("custom_review", "approve", Map.of("customNodeOpinion","同意","items","forged")))
+        .hasMessageContaining("不允许填写");
+  }
+
+  @Test
+  void stripsApprovalFieldsFromApplicantPayloadWithoutRemovingBusinessInputs() {
+    Map<String, Object> payload = new java.util.LinkedHashMap<>(Map.of(
+        "purchaseReason", "申请人的购置理由", "argumentationOpinion", "伪造通过",
+        "argumentationComment", "过期意见", "technicalLeaderOpinion", "同意",
+        "procurementBudgetStatus", "旧预算结论"));
+    LudongPocTaskFormCatalog.clearApprovalFields(payload);
+    assertThat(payload).containsOnlyKeys("purchaseReason").containsEntry("purchaseReason", "申请人的购置理由");
+  }
 
   @Test
   void validatesNewParticipantApprovalForms() {

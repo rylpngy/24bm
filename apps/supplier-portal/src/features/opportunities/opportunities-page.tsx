@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type ElementType } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { axiosInstance } from '@24bid/api-client';
+import type { QuotationPackage } from '@24bid/shared/quotation';
+import { DetailedQuotation } from './detailed-quotation';
 import {
   ArrowLeft,
   CalendarClock,
@@ -229,6 +232,13 @@ export function OpportunitiesPage({ onExitDetail }: { onExitDetail?: () => void 
     () => new URLSearchParams(window.location.search).get('rfq'),
   );
   const [declineOpen, setDeclineOpen] = useState(false);
+  const quotation=useQuery({queryKey:['supplier-quotation-package',supplierId,selectedId],enabled:!!selectedId,
+    queryFn:async()=>(await axiosInstance.get<{data:QuotationPackage}>(`/api/v1/supplier/rfqs/${selectedId}/quotation-package`)).data.data,
+    refetchInterval:10000});
+  const detailed=quotation.data?.policy.fullQuoteRequired===true;
+  useEffect(()=>{if(quotation.data?.deadlineAt)
+    void queryClient.invalidateQueries({predicate:q=>typeof q.queryKey[0]==='string'&&(q.queryKey[0] as string).includes('/supplier/rfqs')});
+  },[quotation.data?.deadlineAt,queryClient]);
 
   const all = rfqs.data?.data ?? [];
   const statuses = ['全部', ...Array.from(new Set(all.map((r) => r.status).filter(Boolean) as string[]))];
@@ -403,6 +413,10 @@ export function OpportunitiesPage({ onExitDetail }: { onExitDetail?: () => void 
 
         <div className="grid gap-4 xl:grid-cols-[1fr_21rem]">
           <div className="space-y-4">
+            {quotation.isError&&<FeedbackNotice tone="error" message="完整报价资料加载失败，请刷新后重试。" />}
+            {detailed&&quotation.data&&<DetailedQuotation key={r.id} rfq={r} pack={quotation.data} onRefresh={()=>{
+              void queryClient.invalidateQueries({queryKey:['supplier-quotation-package',supplierId,selectedId]});void refresh();
+            }} />}
             {/* 报价/交付要求 */}
             {(r.quoteRequirement || r.deliveryRequirement || r.singleSourceReason) && (
               <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
@@ -536,7 +550,7 @@ export function OpportunitiesPage({ onExitDetail }: { onExitDetail?: () => void 
             )}
 
             {/* 我的报价单:已提交后展示明细回执 */}
-            {myQuote && (
+            {myQuote && !detailed && (
               <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
                 <SectionTitle icon={ClipboardList} title="我的报价单" />
                 {myQuote.id && <QuoteEsignRecords quoteId={myQuote.id} />}
@@ -591,7 +605,7 @@ export function OpportunitiesPage({ onExitDetail }: { onExitDetail?: () => void 
             )}
 
             {/* 按行报价:报价中开放(竞价多轮可再次出价) */}
-            {quoting && (!myQuote || r.method === '竞价') && (
+            {quoting && !detailed && !quotation.isPending && (!myQuote || r.method === '竞价') && (
               <section className="rounded-lg border border-emerald-100 bg-emerald-50/40 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-xs font-black text-emerald-800">

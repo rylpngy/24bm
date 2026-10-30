@@ -173,6 +173,7 @@ class AuctionBidSerializationPostgresIT {
     return new QuoteApplicationService(rfqs, mock(RfqDemandMapper.class), invites, quotes,
         mock(QuoteLineItemMapper.class), new RfqSourcingStatusTransition(), mock(RfqItemQueryService.class),
         mock(AuditLogApplicationService.class), mock(NotificationApplicationService.class),
-        mock(org.springframework.context.ApplicationEventPublisher.class));
+        mock(org.springframework.context.ApplicationEventPublisher.class),
+        mock(com.procurement.sourcing.application.QuoteVersionService.class));
   }
 }

@@ -25,7 +25,11 @@ public record WorkflowDefinitionSchema(
       String type,
       String title,
       Assignment assignment,
-      List<FlowBranch> branches) {
+      List<FlowBranch> branches,
+      Integer deadlineHours) {
+    public FlowStep(String id, String type, String title, Assignment assignment, List<FlowBranch> branches) {
+      this(id, type, title, assignment, branches, null);
+    }
   }
 
   public record Assignment(

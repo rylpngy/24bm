@@ -14,7 +14,7 @@ vi.mock('@24bid/api-client', () => ({
   useContractScheduleReach: () => ({ isError: state.mutationFailed, error: state.mutationFailed ? new Error('合同未生效') : undefined }),
   useContractScheduleGenerate: () => ({}),
 }));
-beforeEach(() => { state.failed = false; state.loading = false; state.mutationFailed = false; });
+beforeEach(() => { state.failed = false; state.loading = false; state.mutationFailed = false; window.history.replaceState(null, '', '/'); });
 function show() {
   render(<QueryClientProvider client={new QueryClient()}><ContractScheduleSection contractId="c1" /></QueryClientProvider>);
 }
@@ -38,4 +38,9 @@ it('does not offer generation while loading', () => {
 it('shows failed milestone operations', () => {
   state.mutationFailed = true; show();
   expect(screen.getByRole('status').textContent).toContain('合同未生效');
+});
+it('keeps the school POC context when opening the payment ledger', () => {
+  window.history.replaceState(null, '', '/?solution=ludong-poc&module=contracts');
+  show();
+  expect(screen.getByRole('link', { name: '付款台账' })).toHaveAttribute('href', '?solution=ludong-poc&module=invoices');
 });

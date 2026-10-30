@@ -70,6 +70,7 @@ public class FlowableProcessCompiler {
       CompileContext context) {
     UserTask task = node(new UserTask(), "task_" + step.id(), step.title());
     task.setCategory("24bid-workflow");
+    if (step.deadlineHours() != null) task.setDueDate("PT" + step.deadlineHours() + "H");
     switch (step.assignment().type()) {
       case "user" -> task.setCandidateUsers(List.of(step.assignment().userId()));
       case "role" -> task.setCandidateGroups(List.of(candidateRoleGroup(context.tenantId(), step.assignment().roleId())));
