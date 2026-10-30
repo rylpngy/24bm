@@ -26,4 +26,5 @@ export interface OrderSettlementProposal {
   agreementId: string;
   prices?: Price[];
   allocations?: OrderSettlementAllocation[];
+  previousSettlementId?: string;
 }

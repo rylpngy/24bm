@@ -14,7 +14,18 @@ public final class OrderSettlementContracts {
       @NotNull @DecimalMin("0") @Digits(integer = 14, fraction = 2) BigDecimal compensation,
       @NotBlank String agreementId,
       List<@jakarta.validation.Valid Price> prices,
-      List<@jakarta.validation.Valid Allocation> allocations) {
+      List<@jakarta.validation.Valid Allocation> allocations,
+      String previousSettlementId) {
+    public Proposal(
+        String requestKey,
+        String reason,
+        BigDecimal compensation,
+        String agreementId,
+        List<Price> prices,
+        List<Allocation> allocations) {
+      this(requestKey, reason, compensation, agreementId, prices, allocations, null);
+    }
+
     public Proposal(
         String requestKey,
         String reason,
@@ -50,8 +61,31 @@ public final class OrderSettlementContracts {
       @NotBlank String attachmentId,
       @NotBlank @Size(max = 1000) String remark,
       @Size(max = 150) String source,
-      @Size(max=30) List<@jakarta.validation.Valid FundingLine> fundingLines) {
-    public EvidenceRequest(String requestKey,String kind,BigDecimal amount,String evidenceNo,String attachmentId,String remark,String source){this(requestKey,kind,amount,evidenceNo,attachmentId,remark,source,null);}
+      @Size(max = 30) List<@jakarta.validation.Valid FundingLine> fundingLines,
+      @Pattern(regexp = "20[0-9]{2}") String cashPeriod) {
+    public EvidenceRequest(
+        String requestKey,
+        String kind,
+        BigDecimal amount,
+        String evidenceNo,
+        String attachmentId,
+        String remark,
+        String source,
+        List<FundingLine> fundingLines) {
+      this(requestKey, kind, amount, evidenceNo, attachmentId, remark, source, fundingLines, null);
+    }
+
+    public EvidenceRequest(
+        String requestKey,
+        String kind,
+        BigDecimal amount,
+        String evidenceNo,
+        String attachmentId,
+        String remark,
+        String source) {
+      this(requestKey, kind, amount, evidenceNo, attachmentId, remark, source, null);
+    }
+
     public EvidenceRequest(
         String requestKey,
         String kind,
@@ -59,14 +93,29 @@ public final class OrderSettlementContracts {
         String evidenceNo,
         String attachmentId,
         String remark) {
-      this(requestKey, kind, amount, evidenceNo, attachmentId, remark, null,null);
+      this(requestKey, kind, amount, evidenceNo, attachmentId, remark, null, null);
     }
   }
 
-  @Schema(name="SettlementFundingLine")
-  public record FundingLine(@NotBlank String fundId,@NotNull @DecimalMin("0.01") @Digits(integer=14,fraction=2) BigDecimal amount) {}
-  @Schema(name="SettlementFundingEntry")
-  public record FundingEntry(String evidenceId,String fundId,String code,String name,BigDecimal amount) {}
+  @Schema(name = "SettlementFundingLine")
+  public record FundingLine(
+      @NotBlank String fundId,
+      @NotNull @DecimalMin("0.01") @Digits(integer = 14, fraction = 2) BigDecimal amount,
+      String targetFundId) {
+    public FundingLine(String fundId, BigDecimal amount) {
+      this(fundId, amount, null);
+    }
+  }
+
+  @Schema(name = "SettlementFundingEntry")
+  public record FundingEntry(
+      String evidenceId,
+      String fundId,
+      String code,
+      String name,
+      BigDecimal amount,
+      String targetFundId,
+      String targetName) {}
 
   @Schema(name = "OrderSettlementRecord")
   public record Entry(
@@ -108,7 +157,35 @@ public final class OrderSettlementContracts {
       String remark,
       String createdBy,
       OffsetDateTime createdAt,
-      String source) {
+      String source,
+      String cashPeriod) {
+    public Evidence(
+        String id,
+        String settlementId,
+        String kind,
+        BigDecimal amount,
+        String evidenceNo,
+        String attachmentId,
+        String contentSha,
+        String remark,
+        String createdBy,
+        OffsetDateTime createdAt,
+        String source) {
+      this(
+          id,
+          settlementId,
+          kind,
+          amount,
+          evidenceNo,
+          attachmentId,
+          contentSha,
+          remark,
+          createdBy,
+          createdAt,
+          source,
+          null);
+    }
+
     public Evidence(
         String id,
         String settlementId,

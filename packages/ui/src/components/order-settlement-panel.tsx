@@ -31,6 +31,7 @@ interface Detail {
   record: Entry;
   evidence: {
     source?: string | null;
+    cashPeriod?: string | null;
     id: string;
     kind: string;
     amount: number;
@@ -99,6 +100,9 @@ function parse(s: string) {
   try {
     return JSON.parse(s) as {
       funding?: SettlementFundingBasis;
+      previousSettlementId?: string;
+      period?: string;
+      cashPeriods?: { source: string; period: string; amount: number }[];
       invoiceBasis?: {
         source: string;
         label: string;
@@ -179,14 +183,33 @@ export function OrderSettlementPanel({
       {},
     ),
     [fundingReady, setFundingReady] = useState(false);
+  const [cashPeriod, setCashPeriod] = useState(''),
+    [targets, setTargets] = useState<Record<string, string>>({});
   const e = s.detail?.record,
     lines = parse(s.data?.preview.baseline || '{}').lines || [];
   const basis = parse(s.data?.preview.baseline || '{}');
   const invoicePlan = e ? parse(e.snapshot).invoicePlan : undefined;
   const funding = e ? parse(e.snapshot).funding : undefined;
+  const settlementBasis = e ? parse(e.snapshot) : basis;
+  const years = Array.from(
+    new Set(
+      (settlementBasis.cashPeriods || [])
+        .filter((x) => x.source === source && x.amount > 0)
+        .map((x) => x.period),
+    ),
+  );
+  const chosenPeriod =
+    kind === 'payment'
+      ? settlementBasis.period
+      : cashPeriod ||
+        (years.length === 1 && years[0] === settlementBasis.period
+          ? years[0]
+          : '');
   useEffect(() => {
     setFundingValues({});
     setFundingReady(false);
+    setCashPeriod('');
+    setTargets({});
   }, [e?.id]);
   const mayManage =
     canManage &&
@@ -213,7 +236,11 @@ export function OrderSettlementPanel({
             !s.data.preview.blockers.length && (
               <button className={button} onClick={() => setCreating(!creating)}>
                 <FileCheck2 size={14} />
-                {s.data.preview.contractId ? '发起合同清算' : '发起订单清算'}
+                {basis.previousSettlementId
+                  ? '发起补充清算'
+                  : s.data.preview.contractId
+                    ? '发起合同清算'
+                    : '发起订单清算'}
               </button>
             )}
         </div>
@@ -249,6 +276,9 @@ export function OrderSettlementPanel({
                 reason,
                 agreementId: agreement,
                 compensation: Number(compensation),
+                ...(basis.previousSettlementId
+                  ? { previousSettlementId: basis.previousSettlementId }
+                  : {}),
                 prices: Object.entries(prices).map(([lineId, p]) => ({
                   lineId,
                   unitPrice: Number(p),
@@ -490,6 +520,20 @@ export function OrderSettlementPanel({
                 </div>
               </div>
               <p className="break-words text-sm">{e.reason}</p>
+              {parse(e.snapshot).previousSettlementId && (
+                <div className="flex flex-wrap items-center gap-2 border-l-2 border-blue-500 pl-3 text-sm">
+                  <span>补充清算</span>
+                  <button
+                    className={button}
+                    onClick={() =>
+                      s.setSelected(parse(e.snapshot).previousSettlementId!)
+                    }
+                  >
+                    <Eye size={14} />
+                    查看上次清算
+                  </button>
+                </div>
+              )}
               {invoicePlan && (
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[580px] text-left text-sm">
@@ -638,11 +682,24 @@ export function OrderSettlementPanel({
                           attachmentId: proof,
                           remark,
                           ...(invoicePlan ? { source } : {}),
+                          ...(['payment', 'refund'].includes(kind) &&
+                          chosenPeriod
+                            ? { cashPeriod: chosenPeriod }
+                            : {}),
                           ...(funding && ['payment', 'refund'].includes(kind)
                             ? {
                                 fundingLines: funding.sources
+                                  .filter(
+                                    (x) =>
+                                      !chosenPeriod ||
+                                      !x.period ||
+                                      x.period === chosenPeriod,
+                                  )
                                   .map((x) => ({
                                     fundId: x.fundId,
+                                    ...(x.historical
+                                      ? { targetFundId: targets[x.fundId] }
+                                      : {}),
                                     amount: Number(
                                       fundingValues[x.fundId] || 0,
                                     ),
@@ -673,6 +730,8 @@ export function OrderSettlementPanel({
                               setSource(v.target.value);
                               setFundingValues({});
                               setFundingReady(false);
+                              setCashPeriod('');
+                              setTargets({});
                             }}
                           >
                             <option value="">请选择归属</option>
@@ -756,23 +815,58 @@ export function OrderSettlementPanel({
                         />
                       </label>
                     </div>
-                    {funding && ['payment', 'refund'].includes(kind) && (
-                      <SettlementFundingFields
-                        basis={funding}
-                        entries={s.detail!.fundingEntries || []}
-                        evidence={s.detail!.evidence}
-                        kind={kind}
-                        source={source}
-                        amount={amount}
-                        value={fundingValues}
-                        onChange={setFundingValues}
-                        onReady={setFundingReady}
-                      />
+                    {kind === 'refund' && settlementBasis.period && (
+                      <label className="block text-sm">
+                        退款归属年度 <span className="text-red-600">*</span>
+                        <select
+                          aria-label="退款归属年度"
+                          className={input}
+                          required
+                          value={chosenPeriod || ''}
+                          onChange={(v) => {
+                            setCashPeriod(v.target.value);
+                            setFundingValues({});
+                            setTargets({});
+                            setFundingReady(false);
+                          }}
+                        >
+                          <option value="">请选择原付款年度</option>
+                          {years.map((y) => (
+                            <option key={y} value={y}>
+                              {y}
+                              {y === settlementBasis.period
+                                ? '（当前责任年度）'
+                                : '（历史冻结年度）'}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
                     )}
+                    {funding &&
+                      ['payment', 'refund'].includes(kind) &&
+                      (!settlementBasis.period || !!chosenPeriod) && (
+                        <SettlementFundingFields
+                          basis={funding}
+                          entries={s.detail!.fundingEntries || []}
+                          evidence={s.detail!.evidence}
+                          kind={kind}
+                          source={source}
+                          amount={amount}
+                          value={fundingValues}
+                          onChange={setFundingValues}
+                          onReady={setFundingReady}
+                          cashPeriod={chosenPeriod}
+                          targets={targets}
+                          onTargetsChange={setTargets}
+                        />
+                      )}
                     <button
                       className={button}
                       disabled={
                         s.busy ||
+                        (kind === 'refund' &&
+                          !!settlementBasis.period &&
+                          !chosenPeriod) ||
                         !!(
                           funding &&
                           ['payment', 'refund'].includes(kind) &&
@@ -814,7 +908,14 @@ export function OrderSettlementPanel({
                   <tbody>
                     {s.detail!.evidence.map((p) => (
                       <tr key={p.id}>
-                        <td className="py-2">{labels[p.kind]}</td>
+                        <td className="py-2">
+                          {labels[p.kind]}
+                          {p.cashPeriod && (
+                            <span className="block text-xs text-slate-500">
+                              {p.cashPeriod} 年度
+                            </span>
+                          )}
+                        </td>
                         {invoicePlan && (
                           <td className="max-w-48 break-words">
                             {invoicePlan.find((row) => row.source === p.source)
@@ -842,6 +943,11 @@ export function OrderSettlementPanel({
                     >
                       <span>
                         {x.code} · {x.name}
+                        {x.targetName && (
+                          <span className="block text-xs text-slate-500">
+                            当年责任回补：{x.targetName}
+                          </span>
+                        )}
                       </span>
                       <span>
                         {x.amount < 0 ? '退款' : '补付'}{' '}

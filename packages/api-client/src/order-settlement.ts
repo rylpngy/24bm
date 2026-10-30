@@ -23,6 +23,7 @@ export interface SettlementEntry {
 }
 export interface SettlementEvidence {
   source?: string | null;
+  cashPeriod?: string | null;
   id: string;
   kind: string;
   amount: number;
@@ -38,6 +39,16 @@ export interface SettlementDetail {
   refundDue: number;
   paymentDue: number;
   blockers: string[];
+  fundingRequired?: boolean;
+  fundingEntries?: {
+    evidenceId: string;
+    fundId: string;
+    code: string;
+    name: string;
+    amount: number;
+    targetFundId?: string | null;
+    targetName?: string | null;
+  }[];
 }
 export interface SettlementView {
   preview: {

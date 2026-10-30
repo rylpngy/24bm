@@ -39,7 +39,7 @@ public class OrderSettlementAllocationPolicy {
       row.put("source", "~unbilled");
       row.put("label", "未开票货款");
       row.put("face", unbilled);
-      row.put("paid", BigDecimal.ZERO);
+      row.put("paid", baseline.path("unbilledPaid").decimalValue());
     }
     return rows;
   }
