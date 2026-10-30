@@ -88,7 +88,7 @@ public interface FundingMapper {
   Change byKey(@Param("t") String t, @Param("key") String key);
 
   String FILTER =
-      "where tenant_id=#{t} and (#{fund}='' or fund_id=#{fund}) and (#{project}='' or"
+      "where tenant_id=#{t} and (#{fund}='' or fund_id=#{fund} or exists(select 1 from jsonb_array_elements(case when jsonb_typeof(proposal->'lines')='array' then proposal->'lines' else '[]'::jsonb end) l where l->>'fundId'=#{fund} or l->>'sourceFundId'=#{fund} or l->>'targetFundId'=#{fund})) and (#{project}='' or"
           + " project_id=#{project}) ";
 
   @Select(
@@ -143,6 +143,18 @@ values(#{id},#{tenantId},#{kind},#{fundId},#{projectId},#{departmentId},#{period
 
   @Select("select change_id from project_funding_plans where tenant_id=#{t} and project_id=#{p}")
   String plan(@Param("t") String t, @Param("p") String p);
+
+  @Select("select coalesce((select prior_paid_amount from project_funding_plans where tenant_id=#{t} and project_id=#{p}),0)")
+  BigDecimal priorPaid(@Param("t") String t, @Param("p") String p);
+
+  @Select("select coalesce(sum(amount),0) from funding_payment_allocations where tenant_id=#{t} and project_id=#{p}")
+  BigDecimal totalPaid(@Param("t") String t, @Param("p") String p);
+
+  @Select("select exists(select 1 from funding_payment_allocations a where a.tenant_id=#{t} and a.entry_id=#{e} and a.change_id<>#{plan})")
+  boolean historicalEntry(@Param("t") String t,@Param("e") String e,@Param("plan") String plan);
+
+  @Update("update project_funding_plans set prior_paid_amount=#{amount} where tenant_id=#{t} and project_id=#{p}")
+  int carryPaidBasis(@Param("t") String t,@Param("p") String p,@Param("amount") BigDecimal amount);
 
   @Select(
       "select fund_id,code,name,allocated_amount,paid_amount,remaining_amount from"

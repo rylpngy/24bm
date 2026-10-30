@@ -7,6 +7,7 @@ import { Plus, Trash2, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
 import { useBuyerPermissions } from "../../lib/use-buyer-permissions";
 import { WorkflowSubmitDialog } from "../workflow/workflow-submit-dialog";
 import { WorkflowStatusPanel } from "../workflow/workflow-instance-panel";
+import { FundingCarryoverEvidence } from '../projects/funding-carryover-fields';
 import {
   ProjectDialog,
   projectButton as btn,
@@ -201,7 +202,7 @@ export function FundingHistory({
                   {r.createdAt?.slice(0, 19).replace("T", " ")}
                 </td>
                 <td className="px-3 py-3">
-                  {r.kind === "fund_limit" ? "年度额度" : "项目资金分摊"}
+                  {r.kind === "fund_limit" ? "年度额度" : r.kind==='project_carryover'?'专项资金跨年承接':"项目资金分摊"}
                 </td>
                 <td className="px-3 py-3">{money(r.amount)}</td>
                 <td className="px-3 py-3">{status[r.status] || r.status}</td>
@@ -251,7 +252,8 @@ export function FundingHistory({
                 {snapshot.code} · {snapshot.name} · {snapshot.period}
               </p>
             )}
-            {proposal?.lines?.map((l: { fundId: string; amount: number }) => (
+            {selected.kind==='project_carryover'&&<FundingCarryoverEvidence snapshot={JSON.stringify({fundingCarryover:snapshot})}/>}
+            {selected.kind!=='project_carryover'&&proposal?.lines?.map((l: { fundId: string; amount: number }) => (
               <p key={l.fundId} className="break-words">
                 {snapshot?.sources?.find(
                   (s: { fundId: string }) => s.fundId === l.fundId,
@@ -261,7 +263,7 @@ export function FundingHistory({
             ))}
             {can("buyer:workflow:read") && (
               <WorkflowStatusPanel
-                businessType="funding_change"
+                businessType={selected.kind==='project_carryover'?'project_carryover':'funding_change'}
                 businessId={selected.id}
               />
             )}
@@ -644,6 +646,8 @@ export function ProjectFundingPanel({
           choices: Fund[];
           sources: Balance[];
           blocker?: string;
+          effectivePeriod?: string;
+          priorPaidAmount?: number;
         }>(url),
       enabled: expanded,
     });
@@ -688,6 +692,7 @@ export function ProjectFundingPanel({
             <span>
               项目批准金额 {money(project.plannedAmount)} ·{" "}
               {q.data?.enabled ? "已启用专项分账" : "未启用专项分账"}
+              {q.data?.effectivePeriod&&<> · 当前资金年度 {q.data.effectivePeriod} · 历史已付 {money(q.data.priorPaidAmount||0)}</>}
             </span>
             {project.status === "approved" &&
               can("buyer:budget:manage") &&

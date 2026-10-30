@@ -106,5 +106,7 @@ public final class FundingContracts {
       String planId,
       List<Fund> choices,
       List<Balance> sources,
-      String blocker) {}
+      String blocker,
+      String effectivePeriod,
+      BigDecimal priorPaidAmount) {}
 }

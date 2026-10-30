@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.*;
 @Service
 public class ProjectLifecycleService {
   @Autowired private FundingService funding;
+  @Autowired private FundingCarryoverService fundingCarryover;
   private final ProcurementProjectGuard guard;
   private final ProcurementProjectMapper projects;
   private final ProjectExpansionMapper packages;
@@ -69,10 +70,15 @@ public class ProjectLifecycleService {
   }
 
   private Preview inspect(Project p) {
+    return inspect(p,null);
+  }
+
+  private Preview inspect(Project p,String ownWorkflow) {
     var sources = mapper.sources(p.tenantId(), p.id());
     var frozenYears = mapper.frozenYears(p.tenantId(), p.id());
     var carry = new ArrayList<String>();
     var clear = new ArrayList<String>();
+    if(funding.hasFunding(p.tenantId(),p.id()))clear.add("专项资金项目终止清算暂未开放，请保留原资金责任，不直接抹去来源归属");
     if(mapper.orderSettlements(p.tenantId(),p.id())>0)carry.add("项目存在合同清算责任或退款调整，请先完成当前年度清算；不自动重写跨年度历史支出");
     var paidEntries = mapper.paidEntries(p.tenantId(), p.id());
     boolean known = sources.stream().allMatch(s -> s.paidAmount() != null);
@@ -145,7 +151,9 @@ public class ProjectLifecycleService {
         carry.add(rfq + "：已有订单的需求预算归属无法核验，请先补齐原始关联");
       hasOrders = true;
       var view = execution.projectView(rfq);
-      for (var b : view.blockers()) clear.add(rfq + "：" + b);
+      // The pending carryover itself blocks archive, but is not a change in its submitted evidence.
+      for (var b : view.blockers()) if(!b.equals("专项资金跨年承接审批中，暂不能归档")
+          && !(ownWorkflow!=null&&b.equals("存在未完成审批："+ownWorkflow)))clear.add(rfq + "：" + b);
     }
     if (!hasOrders) clear.add("没有已有订单，请使用无订单终止入口");
     for (var lot : packages.packages(p.tenantId(), p.id()))
@@ -170,7 +178,7 @@ public class ProjectLifecycleService {
         paidEntries,
         sources,
         carry.stream().distinct().toList(),
-        clear.stream().distinct().toList());
+        clear.stream().distinct().toList(),funding.hasFunding(p.tenantId(),p.id()));
   }
 
   private void acceptable(Preview v, String kind) {
@@ -194,12 +202,12 @@ public class ProjectLifecycleService {
     guard.lock();
     var p = guard.require(project, true);
     mapper.lockOrders(tenant(), project);
-    funding.requireUnfundedProject(tenant(),project);
     if (p.revision() != r.revision()) throw new IllegalStateException("项目已变化，请刷新");
     if (mapper.pending(tenant(), project) > 0)
       throw new IllegalStateException("已有跨年度承接或清算审批，请勿重复提交");
     if (!List.of("carryover", "liquidation").contains(r.kind()))
       throw new IllegalArgumentException("业务类型无效");
+    if("liquidation".equals(r.kind()))funding.requireUnfundedProject(tenant(),project);
     var v = inspect(p);
     acceptable(v, r.kind());
     String target = period(p);
@@ -221,6 +229,8 @@ public class ProjectLifecycleService {
     snapshot.put("preview", v);
     snapshot.put("paidEntryIds", v.payments().stream().map(PaymentBasis::id).toList());
     snapshot.put("packages", expansion.packages(project));
+    if("carryover".equals(r.kind()))snapshot.put("fundingCarryover",fundingCarryover.prepare(p,target,r.fundingSources(),v.paidAmount(),true));
+    else if(r.fundingSources()!=null&&!r.fundingSources().isEmpty())throw new IllegalArgumentException("清算不能提交资金承接映射");
     if ("liquidation".equals(r.kind())) snapshot.put("execution", expansion.summary(project));
     String id = "project-lifecycle-" + UUID.randomUUID();
     mapper.insert(
@@ -278,15 +288,19 @@ public class ProjectLifecycleService {
       throw new IllegalStateException("申请不在对应审批中");
     var p = projects.find(i.tenantId(), r.projectId());
     mapper.lockOrders(i.tenantId(), r.projectId());
-    if(approved)funding.requireUnfundedProject(i.tenantId(),r.projectId());
+    if(approved&&"liquidation".equals(r.kind()))funding.requireUnfundedProject(i.tenantId(),r.projectId());
     if (approved) {
       if (p.revision() != r.projectRevision() || !period(p).equals(r.sourcePeriod()))
         throw new IllegalStateException("项目或承接年度已变化，请驳回后重提");
-      var now = inspect(p);
+      var now = inspect(p,i.id());
       acceptable(now, r.kind());
-      var old = policy.tree(r.snapshot()).path("preview");
-      if (!old.equals(policy.tree(policy.write(now))))
+      var old = (com.fasterxml.jackson.databind.node.ObjectNode)policy.tree(r.snapshot()).path("preview").deepCopy();
+      var current=(com.fasterxml.jackson.databind.node.ObjectNode)policy.tree(policy.write(now));
+      // UI availability was absent in older pending requests; cash and source evidence remain strict.
+      old.remove("fundingEnabled");current.remove("fundingEnabled");
+      if (!old.equals(current))
         throw new IllegalStateException("履约或资金数据已变化，请驳回后重新核对清算/承接依据");
+      if("carryover".equals(r.kind()))fundingCarryover.validate(p,r,now.paidAmount());
       if ("liquidation".equals(r.kind())
           && !policy
               .tree(r.snapshot())
@@ -304,9 +318,10 @@ public class ProjectLifecycleService {
         != 1) throw new IllegalStateException("申请状态已变化");
     if (c.approved()) {
       var p = projects.find(i.tenantId(), r.projectId());
-      if ("carryover".equals(r.kind()))
+      if ("carryover".equals(r.kind())) {
         budget.checkProjectCarryover(i.tenantId(), p.departmentId(), r.targetPeriod(), r.id());
-      else {
+        fundingCarryover.publish(i,c,r);
+      } else {
         for (var run : expansion.activeRuns(p)) {
           var rfq = expansion.rfq(run);
           if (rfq != null) execution.archiveProject(rfq, "终止清算:" + r.reason());

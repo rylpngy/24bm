@@ -59,6 +59,86 @@ class ProcurementProjectIT {
   @Autowired com.procurement.finance.application.PaymentLedgerApplicationService paymentLedger;
   @Autowired com.procurement.finance.application.FrozenPaymentCorrectionService corrections;
   @Autowired FundingService funding;
+  @Autowired FundingCarryoverService fundingCarryover;
+  record FundedCase(CancelCase order,String invoice,String entry,String a,String b){}
+  com.procurement.buyer.api.FundingContracts.Fund futureFund(String code,int offset,String limit){
+    var f=funding.create(new com.procurement.buyer.api.FundingContracts.Draft(dept,nextYear(offset),code,"年度专项 "+code));
+    var c=funding.submit(fundLimit(f,limit,"future-"+code+"-"+offset));decide(c.id(),"approve");return f;
+  }
+  String fundedCash(String invoice,String a,String b,String first,String second){
+    var tx=new org.springframework.transaction.support.TransactionTemplate(txManager);
+    return tx.execute(s->{var amount=new BigDecimal(first).add(new BigDecimal(second));String e=paidEntry(invoice,amount.toPlainString());
+      funding.pay(tenant,invoice,e,amount,List.of(new com.procurement.buyer.domain.FundingAllocationPolicy.Share(a,new BigDecimal(first)),new com.procurement.buyer.domain.FundingAllocationPolicy.Share(b,new BigDecimal(second))));
+      jdbc.update("update invoices set payment_status='部分付款' where id=?",invoice);return e;});
+  }
+  FundedCase fundedPaidCase(){
+    var a=approvedFund("A","300");var b=approvedFund("B","300");var c=cancellationCase();var plan=funding.submit(fundPlan(c.project(),a.id(),b.id(),"plan"));decide(plan.id(),"approve");
+    String line=receivedLine(c);invoiceSupplier(c);var invoice=invoiceService.create(c.order(),installmentRequest(line,"funded",2,200));context(author);
+    return new FundedCase(c,invoice.id(),fundedCash(invoice.id(),a.id(),b.id(),"20","30"),a.id(),b.id());
+  }
+  com.procurement.buyer.api.ProjectLifecycleContracts.Request fundedCarry(String p,int n,String a,String b,String ta,String tb){
+    return new com.procurement.buyer.api.ProjectLifecycleContracts.Request(projects.detail(p).project().revision(),"carryover",nextYear(n),"专项资金仅承接未付责任",Map.of(),List.of(new com.procurement.buyer.api.FundingCarryoverContracts.Mapping(a,ta),new com.procurement.buyer.api.FundingCarryoverContracts.Mapping(b,tb)));
+  }
+  @Test void fundedCarryoverRetainsHistoricalSourcesAndMovesOnlyUnpaidResponsibility(){
+    var f=fundedPaidCase();var a=futureFund("A",1,"300");var b=futureFund("B",1,"300");
+    var original=jdbc.queryForMap("select * from funding_payment_allocations where entry_id=? and fund_id=?",f.entry(),f.a());
+    var request=lifecycle.submit(f.order().project(),fundedCarry(f.order().project(),1,f.a(),f.b(),a.id(),b.id()));
+    assertThat(funding.project(f.order().project()).sources()).anyMatch(x->x.fundId().equals(f.a()));
+    assertThatThrownBy(()->fundedCash(f.invoice(),f.a(),f.b(),"1","1")).hasMessageContaining("审批中");
+    decide(request.id(),"approve");
+    assertThat(lifecycle.preview(f.order().project()).effectivePeriod()).isEqualTo(nextYear(1));
+    assertThat(funding.project(f.order().project()).priorPaidAmount()).isEqualByComparingTo("50");
+    assertThat(funding.project(f.order().project()).sources()).anySatisfy(s->{assertThat(s.fundId()).isEqualTo(a.id());assertThat(s.allocatedAmount()).isEqualByComparingTo("80");});
+    assertThat(funding.funds(1,100).items()).filteredOn(x->x.id().equals(f.a())).singleElement().satisfies(x->{assertThat(x.reservedAmount()).isEqualByComparingTo("20");assertThat(x.paidAmount()).isEqualByComparingTo("20");});
+    assertThat(jdbc.queryForMap("select * from funding_payment_allocations where entry_id=? and fund_id=?",f.entry(),f.a())).isEqualTo(original);
+    assertThatThrownBy(()->fundedCash(f.invoice(),f.a(),f.b(),"1","1")).hasMessageContaining("不属于");
+    fundedCash(f.invoice(),a.id(),b.id(),"10","20");
+    assertThat(paymentLedger.summary(f.invoice()).paidAmount()).isEqualByComparingTo("80");
+    assertThat(funding.history(a.id(),null,1,100).items()).anyMatch(x->x.kind().equals("project_carryover"));
+    assertThatThrownBy(()->corrections.submit(f.invoice(),new com.procurement.finance.api.FrozenPaymentCorrectionContracts.Request("funded-correction",f.entry(),"BANK-CORRECTION","专项冻结不能猜测更正",Map.of()))).hasMessageContaining("专项资金原年度付款已冻结");
+  }
+  @Test void fundedCarryoverSupportsMultipleYearsWithoutReassigningEarlierCash(){
+    var f=fundedPaidCase();var a=futureFund("A",1,"300");var b=futureFund("B",1,"300");var first=lifecycle.submit(f.order().project(),fundedCarry(f.order().project(),1,f.a(),f.b(),a.id(),b.id()));decide(first.id(),"approve");
+    fundedCash(f.invoice(),a.id(),b.id(),"10","20");
+    var aa=futureFund("A",2,"300");var bb=futureFund("B",2,"300");var second=lifecycle.submit(f.order().project(),fundedCarry(f.order().project(),2,a.id(),b.id(),aa.id(),bb.id()));decide(second.id(),"approve");
+    assertThat(funding.project(f.order().project()).priorPaidAmount()).isEqualByComparingTo("80");
+    assertThat(funding.project(f.order().project()).sources().stream().map(x->x.allocatedAmount()).reduce(BigDecimal.ZERO,BigDecimal::add)).isEqualByComparingTo("166.91");
+    assertThat(funding.funds(1,100).items()).filteredOn(x->x.id().equals(a.id())).singleElement().satisfies(x->assertThat(x.reservedAmount()).isEqualByComparingTo("10"));
+    assertThat(funding.funds(1,100).items()).filteredOn(x->x.id().equals(f.a())).singleElement().satisfies(x->assertThat(x.reservedAmount()).isEqualByComparingTo("20"));
+    assertThat(funding.invoice(tenant,f.invoice()).blocker()).isEmpty();
+    assertThat(jdbc.queryForObject("select count(*) from special_funding_changes where project_id=? and kind='project_carryover'",Integer.class,f.order().project())).isEqualTo(2);
+  }
+  @Test void fundedCarryoverRechecksTargetCapacityAndRejectsWithoutChangingSourcePlans(){
+    var f=fundedPaidCase();var a=futureFund("A",1,"300");var b=futureFund("B",1,"300");var request=lifecycle.submit(f.order().project(),fundedCarry(f.order().project(),1,f.a(),f.b(),a.id(),b.id()));
+    var current=funding.funds(1,100).items().stream().filter(x->x.id().equals(a.id())).findFirst().orElseThrow();var lower=funding.submit(fundLimit(current,"0","lower-limit"));decide(lower.id(),"approve");
+    assertThatThrownBy(()->decide(request.id(),"approve")).hasMessageContaining("额度不足");context(author);
+    assertThat(funding.project(f.order().project()).priorPaidAmount()).isZero();decide(request.id(),"reject");
+    assertThat(funding.project(f.order().project()).sources()).anyMatch(x->x.fundId().equals(f.a()));
+    assertThat(jdbc.queryForObject("select count(*) from special_funding_changes where kind='project_carryover' and project_id=?",Integer.class,f.order().project())).isZero();
+  }
+  @Test void fundedCarryoverRequiresExplicitSameYearTargetsAndWithdrawalKeepsOriginalAllocation(){
+    var f=fundedPaidCase();var a=futureFund("A",1,"300");var b=futureFund("B",1,"300");
+    assertThatThrownBy(()->lifecycle.submit(f.order().project(),lifecycleRequest(f.order().project(),"carryover",nextYear(1)))).hasMessageContaining("选择目标");
+    assertThatThrownBy(()->lifecycle.submit(f.order().project(),fundedCarry(f.order().project(),1,f.a(),f.b(),f.a(),b.id()))).hasMessageContaining("目标年度");
+    var r=lifecycle.submit(f.order().project(),fundedCarry(f.order().project(),1,f.a(),f.b(),a.id(),b.id()));lifecycle.withdraw(f.order().project(),r.id(),r.revision(),"调整目标来源后重提");
+    assertThat(funding.project(f.order().project()).priorPaidAmount()).isZero();assertThat(funding.project(f.order().project()).sources()).hasSize(2);
+    assertThat(fundingCarryover.options(f.order().project(),nextYear(1)).choices()).hasSize(2);
+  }
+  @Test void fundedCarryoverAggregatesMultipleSourcesBeforeCheckingTargetLimit(){
+    var f=fundedPaidCase();var target=futureFund("MERGED",1,"150");
+    assertThatThrownBy(()->lifecycle.submit(f.order().project(),fundedCarry(f.order().project(),1,f.a(),f.b(),target.id(),target.id()))).hasMessageContaining("额度不足");
+    var fund=funding.funds(1,100).items().stream().filter(x->x.id().equals(target.id())).findFirst().orElseThrow();var limit=funding.submit(fundLimit(fund,"200","merged-limit"));decide(limit.id(),"approve");
+    var carry=lifecycle.submit(f.order().project(),fundedCarry(f.order().project(),1,f.a(),f.b(),target.id(),target.id()));decide(carry.id(),"approve");
+    assertThat(funding.project(f.order().project()).sources()).singleElement().satisfies(x->assertThat(x.allocatedAmount()).isEqualByComparingTo("196.91"));
+  }
+  @Test void originalPendingCarryoverWithoutNewUiAvailabilityStillApprovesWithoutRewritingEvidence(){
+    var f=paidProject();var request=lifecycle.submit(f[0],lifecycleRequest(f[0],"carryover",nextYear(1)));
+    jdbc.update("update procurement_project_lifecycle_requests set snapshot=jsonb_set(snapshot-'fundingCarryover','{preview}',(snapshot->'preview')-'fundingEnabled') where id=?",request.id());
+    var original=jdbc.queryForObject("select snapshot::text from procurement_project_lifecycle_requests where id=?",String.class,request.id());
+    decide(request.id(),"approve");
+    assertThat(lifecycle.preview(f[0]).effectivePeriod()).isEqualTo(nextYear(1));
+    assertThat(jdbc.queryForObject("select snapshot::text from procurement_project_lifecycle_requests where id=?",String.class,request.id())).isEqualTo(original);
+  }
   com.procurement.buyer.api.FundingContracts.Request fundLimit(com.procurement.buyer.api.FundingContracts.Fund fund,String limit,String key){return new com.procurement.buyer.api.FundingContracts.Request(key,"fund_limit",fund.id(),null,fund.revision(),new BigDecimal(limit),null,"年度专项额度独立审批",Map.of());}
   com.procurement.buyer.api.FundingContracts.Fund approvedFund(String code,String limit){var fund=funding.create(new com.procurement.buyer.api.FundingContracts.Draft(dept,year,code,"专项资金 "+code));var c=funding.submit(fundLimit(fund,limit,"limit-"+code));decide(c.id(),"approve");return funding.funds(1,100).items().stream().filter(f->f.id().equals(fund.id())).findFirst().orElseThrow();}
   com.procurement.buyer.api.FundingContracts.Request fundPlan(String project,String first,String second,String key){return new com.procurement.buyer.api.FundingContracts.Request(key,"project_plan",null,project,projects.detail(project).project().revision(),new BigDecimal("246.91"),List.of(new com.procurement.buyer.api.FundingContracts.Share(first,new BigDecimal("100")),new com.procurement.buyer.api.FundingContracts.Share(second,new BigDecimal("146.91"))),"项目多来源资金分摊",Map.of());}

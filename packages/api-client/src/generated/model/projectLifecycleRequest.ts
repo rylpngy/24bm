@@ -6,6 +6,7 @@
  * OpenAPI spec version: v1
  */
 import type { ProjectLifecycleRequestFormData } from './projectLifecycleRequestFormData';
+import type { FundingCarryoverMapping } from './fundingCarryoverMapping';
 
 export interface ProjectLifecycleRequest {
   /** @minimum 1 */
@@ -20,4 +21,9 @@ export interface ProjectLifecycleRequest {
    */
   reason: string;
   formData?: ProjectLifecycleRequestFormData;
+  /**
+   * @minItems 0
+   * @maxItems 30
+   */
+  fundingSources?: FundingCarryoverMapping[];
 }
