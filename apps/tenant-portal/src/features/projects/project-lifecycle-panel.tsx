@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import {ProjectReopenEvidence} from './project-reopen-evidence';
 import { FundingCarryoverFields, FundingCarryoverEvidence, type FundingTarget } from './funding-carryover-fields';
 import { FundingLiquidationPreview, FundingLiquidationEvidence } from './funding-liquidation-evidence';
 import { useQuery } from '@tanstack/react-query';
@@ -23,7 +24,7 @@ import {
   projectMoney as money,
 } from './project-dialog';
 
-const names = { carryover: '跨年度承接', liquidation: '已有订单终止清算' };
+const names = { carryover: '跨年度承接', liquidation: '已有订单终止清算', reopen:'项目及分包重开' };
 const states = {
   submitted: '审批中',
   approved: '已批准',
@@ -117,7 +118,7 @@ export function ProjectLifecyclePanel({
   return (
     <section className="min-w-0 space-y-4" aria-label="跨年度承接与终止清算">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
-        <h2 className="text-base font-bold">跨年度承接与终止清算</h2>
+        <h2 className="text-base font-bold">承接、清算与重开台账</h2>
         <button
           type="button"
           className={btn}
@@ -457,6 +458,7 @@ export function ProjectLifecyclePanel({
             </p>
             <FundingCarryoverEvidence snapshot={selected.snapshot}/>
             <FundingLiquidationEvidence snapshot={selected.snapshot}/>
+            <ProjectReopenEvidence snapshot={selected.snapshot}/>
             {can('buyer:workflow:read') && (
               <WorkflowStatusPanel
                 businessType={'project_' + selected.kind}

@@ -22,6 +22,9 @@ public class ProjectLifecycleService {
   @Autowired private FundingService funding;
   @Autowired private FundingCarryoverService fundingCarryover;
   @Autowired private FundingLiquidationService fundingLiquidation;
+  @Autowired private ProjectReopenService reopening;
+  public ReopenPreview reopenPreview(String project,String lot){return reopening.preview(project,lot);}
+  public byte[] reopenArchive(String project,String id){return reopening.archive(project,id);}
   private final ProcurementProjectGuard guard;
   private final ProcurementProjectMapper projects;
   private final ProjectExpansionMapper packages;
@@ -200,6 +203,8 @@ public class ProjectLifecycleService {
 
   @Transactional
   public Record submit(String project, Request r) {
+    if("reopen".equals(r.kind()))return reopening.submit(project,r);
+    if(r.packageId()!=null||r.packageRevision()!=null)throw new IllegalArgumentException("仅重开申请可选择分包");
     guard.lock();
     var p = guard.require(project, true);
     mapper.lockOrders(tenant(), project);

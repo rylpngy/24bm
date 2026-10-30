@@ -22,6 +22,8 @@ const eventLabel: Record<string, string> = {
   completed: '任务完成',
 };
 
+import {ProjectReopenEvidence} from '../projects/project-reopen-evidence';
+
 export function WorkflowStatusPanel({
   businessType,
   businessId,
@@ -109,6 +111,7 @@ export function WorkflowInstancePanel({
         </div>
       )}
       {!compact&&!hideBusinessSnapshot&&history.businessType==='order_settlement'&&<SettlementSnapshot snapshot={history.businessSnapshot?.settlementSnapshot}/>}
+      {!compact&&!hideBusinessSnapshot&&history.businessType==='project_reopen'&&<ProjectReopenEvidence snapshot={JSON.stringify(history.businessSnapshot)}/>}
 
       {!compact && (
         <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_0.8fr]">
@@ -226,6 +229,7 @@ export function workflowBusinessHref(history: Pick<WorkflowInstanceHistory, 'bus
     project_change: { module: 'projects', id: snapshot.projectId },
     project_carryover: { module: 'projects', id: snapshot.projectId },
     project_liquidation: { module: 'projects', id: snapshot.projectId },
+    project_reopen: { module: 'projects', id: snapshot.projectId },
     order_settlement: { module: 'orders', id: snapshot.orderId },
     frozen_payment_correction: { module: 'invoices', id: snapshot.invoiceId },
     funding_change: { module: snapshot.projectId ? 'projects' : 'budgets', id: snapshot.projectId || snapshot.fundId },

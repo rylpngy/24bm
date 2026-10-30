@@ -28,10 +28,12 @@ import type {
   ApiResponseProjectLifecyclePage,
   ApiResponseProjectLifecyclePreview,
   ApiResponseProjectLifecycleRecord,
+  ApiResponseProjectReopenPreview,
   ApiResponseVoid,
   ProcurementProjectAction,
   ProjectLifecycleHistoryParams,
-  ProjectLifecycleRequest
+  ProjectLifecycleRequest,
+  ProjectReopenPreviewParams
 } from '.././model';
 
 import { customInstance } from '../../http-client';
@@ -328,6 +330,193 @@ export function useProjectLifecyclePreview<TData = Awaited<ReturnType<typeof pro
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getProjectLifecyclePreviewQueryOptions(project,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const projectReopenClosureArchive = (
+    project: string,
+    id: string,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<string>(
+      {url: `/api/v1/buyer/projects/${project}/lifecycle/${id}/closure-archive`, method: 'GET', signal
+    },
+      );
+    }
+
+
+
+
+export const getProjectReopenClosureArchiveQueryKey = (project?: string,
+    id?: string,) => {
+    return [
+    `/api/v1/buyer/projects/${project}/lifecycle/${id}/closure-archive`
+    ] as const;
+    }
+
+
+export const getProjectReopenClosureArchiveQueryOptions = <TData = Awaited<ReturnType<typeof projectReopenClosureArchive>>, TError = ErrorType<ApiResponseVoid>>(project: string,
+    id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof projectReopenClosureArchive>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getProjectReopenClosureArchiveQueryKey(project,id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof projectReopenClosureArchive>>> = ({ signal }) => projectReopenClosureArchive(project,id, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(project && id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof projectReopenClosureArchive>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ProjectReopenClosureArchiveQueryResult = NonNullable<Awaited<ReturnType<typeof projectReopenClosureArchive>>>
+export type ProjectReopenClosureArchiveQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useProjectReopenClosureArchive<TData = Awaited<ReturnType<typeof projectReopenClosureArchive>>, TError = ErrorType<ApiResponseVoid>>(
+ project: string,
+    id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof projectReopenClosureArchive>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof projectReopenClosureArchive>>,
+          TError,
+          Awaited<ReturnType<typeof projectReopenClosureArchive>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useProjectReopenClosureArchive<TData = Awaited<ReturnType<typeof projectReopenClosureArchive>>, TError = ErrorType<ApiResponseVoid>>(
+ project: string,
+    id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof projectReopenClosureArchive>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof projectReopenClosureArchive>>,
+          TError,
+          Awaited<ReturnType<typeof projectReopenClosureArchive>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useProjectReopenClosureArchive<TData = Awaited<ReturnType<typeof projectReopenClosureArchive>>, TError = ErrorType<ApiResponseVoid>>(
+ project: string,
+    id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof projectReopenClosureArchive>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useProjectReopenClosureArchive<TData = Awaited<ReturnType<typeof projectReopenClosureArchive>>, TError = ErrorType<ApiResponseVoid>>(
+ project: string,
+    id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof projectReopenClosureArchive>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getProjectReopenClosureArchiveQueryOptions(project,id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const projectReopenPreview = (
+    project: string,
+    params?: ProjectReopenPreviewParams,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseProjectReopenPreview>(
+      {url: `/api/v1/buyer/projects/${project}/lifecycle/reopen-preview`, method: 'GET',
+        params, signal
+    },
+      );
+    }
+
+
+
+
+export const getProjectReopenPreviewQueryKey = (project?: string,
+    params?: ProjectReopenPreviewParams,) => {
+    return [
+    `/api/v1/buyer/projects/${project}/lifecycle/reopen-preview`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+
+export const getProjectReopenPreviewQueryOptions = <TData = Awaited<ReturnType<typeof projectReopenPreview>>, TError = ErrorType<ApiResponseVoid>>(project: string,
+    params?: ProjectReopenPreviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof projectReopenPreview>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getProjectReopenPreviewQueryKey(project,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof projectReopenPreview>>> = ({ signal }) => projectReopenPreview(project,params, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(project), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof projectReopenPreview>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ProjectReopenPreviewQueryResult = NonNullable<Awaited<ReturnType<typeof projectReopenPreview>>>
+export type ProjectReopenPreviewQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useProjectReopenPreview<TData = Awaited<ReturnType<typeof projectReopenPreview>>, TError = ErrorType<ApiResponseVoid>>(
+ project: string,
+    params: undefined |  ProjectReopenPreviewParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof projectReopenPreview>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof projectReopenPreview>>,
+          TError,
+          Awaited<ReturnType<typeof projectReopenPreview>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useProjectReopenPreview<TData = Awaited<ReturnType<typeof projectReopenPreview>>, TError = ErrorType<ApiResponseVoid>>(
+ project: string,
+    params?: ProjectReopenPreviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof projectReopenPreview>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof projectReopenPreview>>,
+          TError,
+          Awaited<ReturnType<typeof projectReopenPreview>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useProjectReopenPreview<TData = Awaited<ReturnType<typeof projectReopenPreview>>, TError = ErrorType<ApiResponseVoid>>(
+ project: string,
+    params?: ProjectReopenPreviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof projectReopenPreview>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useProjectReopenPreview<TData = Awaited<ReturnType<typeof projectReopenPreview>>, TError = ErrorType<ApiResponseVoid>>(
+ project: string,
+    params?: ProjectReopenPreviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof projectReopenPreview>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getProjectReopenPreviewQueryOptions(project,params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

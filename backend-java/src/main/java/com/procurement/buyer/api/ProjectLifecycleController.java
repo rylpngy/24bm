@@ -11,6 +11,26 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/buyer/projects/{project}/lifecycle")
 public record ProjectLifecycleController(ProjectLifecycleService service) {
+  @Operation(operationId = "projectReopenClosureArchive")
+  @GetMapping("/{id}/closure-archive")
+  public org.springframework.http.ResponseEntity<byte[]> closureArchive(
+      @PathVariable String project, @PathVariable String id) {
+    byte[] bytes = service.reopenArchive(project, id);
+    return org.springframework.http.ResponseEntity.ok()
+        .contentType(org.springframework.http.MediaType.parseMediaType("application/zip"))
+        .header("Cache-Control", "no-store")
+        .header("Content-Disposition", "attachment; filename=\"project-closure.zip\"")
+        .contentLength(bytes.length)
+        .body(bytes);
+  }
+
+  @Operation(operationId = "projectReopenPreview")
+  @GetMapping("/reopen-preview")
+  public ApiResponse<ReopenPreview> reopen(
+      @PathVariable String project, @RequestParam(required = false) String packageId) {
+    return ApiResponse.ok(service.reopenPreview(project, packageId));
+  }
+
   @Operation(operationId = "projectLifecyclePreview")
   @GetMapping("/preview")
   public ApiResponse<Preview> preview(@PathVariable String project) {

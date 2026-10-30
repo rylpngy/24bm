@@ -51,6 +51,7 @@ const BUSINESS_TYPES = [
   { id: 'frozen_payment_correction', label: '跨年冻结付款更正' },
   { id: 'funding_change', label: '专项资金与项目分摊' },
   { id: 'project_liquidation', label: '项目终止清算' },
+  { id: 'project_reopen', label: '项目及分包受控重开' },
   { id: 'order_settlement', label: '合同解除与订单清算' },
   { id: 'budget_exception', label: '超预算例外' },
   { id: 'supplier_qualification_change', label: '供应商资质变更' },

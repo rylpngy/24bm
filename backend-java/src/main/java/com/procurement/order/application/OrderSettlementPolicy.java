@@ -20,7 +20,7 @@ public class OrderSettlementPolicy {
     safe.set("assessment", assessment);
     if (tree(entry.snapshot()).has("invoicePlan")) safe.set("invoicePlan", tree(entry.snapshot()).path("invoicePlan"));
     if(includeFunding&&tree(entry.snapshot()).has("funding"))safe.set("funding",tree(entry.snapshot()).path("funding"));
-    for(String key:List.of("period","cashPeriods","previousSettlementId"))if(tree(entry.snapshot()).has(key))safe.set(key,tree(entry.snapshot()).path(key));
+    for(String key:List.of("period","cashPeriods","previousSettlementId","projectReopenId"))if(tree(entry.snapshot()).has(key))safe.set(key,tree(entry.snapshot()).path(key));
     node.put("snapshot", write(safe));
     return json.convertValue(node, Entry.class);
   }

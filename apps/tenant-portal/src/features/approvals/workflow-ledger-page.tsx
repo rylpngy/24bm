@@ -30,6 +30,7 @@ const businessLabel: Record<string, string> = {
   frozen_payment_correction: '跨年冻结付款更正',
   funding_change: '专项资金与项目分摊',
   project_liquidation: '项目终止清算',
+  project_reopen: '项目及分包受控重开',
   order_settlement: '合同解除与订单清算',
   supplier_qualification_change: '供应商资质变更',
   purchase_demand: '采购需求', buyer_supplier_admission: '供应商准入', buyer_supplier_exit: '供应商退出', rfq_award: '询价定标',

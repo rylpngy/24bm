@@ -14,7 +14,7 @@ export interface SpecialFundChangeRequest {
    * @maxLength 100
    */
   requestKey: string;
-  /** @pattern fund_limit|project_plan */
+  /** @pattern fund_limit|project_plan|project_reallocation */
   kind: string;
   fundId?: string;
   projectId?: string;
