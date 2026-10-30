@@ -42,6 +42,9 @@ export function MallCheckoutPage({ onNavigate }: { onNavigate: (route: MallRoute
   const groups = view?.groups ?? [];
   const selected = list.find((a) => a.id === addressId) ?? list.find((a) => a.isDefault) ?? list[0];
   const formValid = form.receiver.trim() && form.phone.trim() && form.detail.trim();
+  const checkoutBlockReason = view?.hasBlockedItems ? '存在不可采购商品，请返回购物车处理'
+    : (view?.itemCount ?? 0) === 0 ? '请先选择采购商品'
+    : controls.data?.requireAddress && !selected ? '请选择收货地址' : undefined;
 
   const reportError = (e: unknown) =>
     setError(
@@ -293,11 +296,13 @@ export function MallCheckoutPage({ onNavigate }: { onNavigate: (route: MallRoute
                 fullWidth
                 busy={checkout.isPending}
                 pendingLabel="提交中"
-                disabled={view?.hasBlockedItems || (view?.itemCount ?? 0) === 0 || (!!controls.data?.requireAddress && !selected)}
+                disabled={!!checkoutBlockReason}
+                disabledReason={checkoutBlockReason}
                 onClick={submit}
               >
                 提交订单
               </PrimaryActionButton>
+              {checkoutBlockReason && <p role="status" className="mt-2 text-xs font-bold text-amber-700">{checkoutBlockReason}</p>}
             </div>
             <p className="mt-2 text-[11px] font-bold text-slate-400">
               提交即按当前协议价与阶梯价成交,金额以服务端重算为准。

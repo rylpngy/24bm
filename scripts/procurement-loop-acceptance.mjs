@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import { writeFileSync } from 'node:fs';
+import { createAcceptanceQualification } from './acceptance-supplier-qualification.mjs';
 
 // This writes only to a deliberately selected local acceptance environment.
 const base = process.env.JAVA_API_BASE_URL;
 assert.ok(base && ['127.0.0.1', 'localhost', '[::1]'].includes(new URL(base).hostname)
+  && new URL(base).port !== '8080'
   && process.env.ACCEPTANCE_LOCAL_WRITES === '1',
   'Set JAVA_API_BASE_URL to an isolated local API and ACCEPTANCE_LOCAL_WRITES=1.');
 const required = (name) => { assert.ok(process.env[name], `Missing ${name}`); return process.env[name]; };
@@ -45,6 +47,7 @@ async function complete(token, businessType, businessId) {
 try {
   const platform = await login(platformAccount, platformPassword, 'PLATFORM');
   const supplierOwner = await login(supplierAccount, supplierPassword, 'SUPPLIER', { supplierId });
+  await createAcceptanceQualification(base, supplierOwner.accessToken, request, runId);
   report.supplierAccount = `member-${runId}@example.com`;
   report.supplierId = supplierId;
   await request('supplier/users', supplierOwner.accessToken, {
@@ -106,9 +109,9 @@ try {
   await complete(b, 'rfq_award', award.id);
   if (verifySupplierRestrictions) {
     await request(`buyer/suppliers/${relation.id}/status`, b, { status: '黑名单' });
-    await request('buyer/orders', b, { awardId: award.id }, 'POST', [400]);
+    await request('buyer/orders', b, { awardId: award.id, expectedReceiptDate: day(14).slice(0, 10) }, 'POST', [400]);
     await request(`buyer/suppliers/${relation.id}/status`, b, { status: '待准入' });
-    await request('buyer/orders', b, { awardId: award.id }, 'POST', [400]);
+    await request('buyer/orders', b, { awardId: award.id, expectedReceiptDate: day(14).slice(0, 10) }, 'POST', [400]);
     await request(`buyer/suppliers/${relation.id}/submit`, b, { formData: {} });
     await complete(b, 'buyer_supplier_admission', relation.id);
     check('new orders blocked while blacklisted and pending readmission');
@@ -120,7 +123,7 @@ try {
   if (verifySupplierRestrictions) {
     await request(`buyer/suppliers/${relation.id}/status`, b, { status: '黑名单' });
   }
-  assert.equal((await request('buyer/orders', b, { awardId: award.id })).id, order.id);
+  assert.equal((await request('buyer/orders', b, { awardId: award.id, expectedReceiptDate: day(14).slice(0, 10) })).id, order.id);
   assert.equal((await request(`supplier/orders/${order.id}/confirm`, s, {})).status, '待发货');
   await request(`supplier/orders/${order.id}/deliveries`, s, { carrier: '验收物流', trackingNo: runId, shippedQuantity: 0 }, 'POST', [400]);
   assert.equal((await request('supplier/orders', s)).find(o => o.id === order.id).status, '待发货');

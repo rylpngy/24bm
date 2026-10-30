@@ -5,6 +5,7 @@ import { mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from '
 import { dirname, isAbsolute, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as sleep } from 'node:timers/promises';
+import { createAcceptanceQualification } from './acceptance-supplier-qualification.mjs';
 
 const HELP = `Stage-three real HTTP acceptance (macOS, Node 20+). No SQL, mocks, or server startup.
 
@@ -36,9 +37,10 @@ node scripts/mall-procurement-stage-three-acceptance.mjs
   No payment, CA, guarantee, shipment, or external-platform acceptance is claimed.
 `;
 
-export function validateBase(value) {
+export function validateBase(value, port = '8095') {
   const url = new URL(value);
-  assert.ok(url.protocol === 'http:' && url.hostname === '127.0.0.1' && url.port === '8095'
+  assert.ok(/^\d+$/.test(port) && Number(port) >= 1024 && Number(port) <= 65535 && port !== '8080', 'Invalid isolated port');
+  assert.ok(url.protocol === 'http:' && url.hostname === '127.0.0.1' && url.port === port
     && url.pathname === '/' && !url.username && !url.password && !url.search && !url.hash,
   'Only the exact loopback origin http://127.0.0.1:8095 is permitted.');
   return url.origin;
@@ -65,7 +67,7 @@ export function validateHealth(payload, now = Date.now()) {
 
 export function readConfig(env = process.env) {
   const required = key => { assert.ok(env[key], `Missing ${key}`); return env[key]; };
-  const base = validateBase(required('JAVA_API_BASE_URL'));
+  const base = validateBase(required('JAVA_API_BASE_URL'), env.ACCEPTANCE_API_PORT ?? '8095');
   assert.ok(env.ACCEPTANCE_LOCAL_WRITES === '1' && env.ACCEPTANCE_STAGE_THREE_READY === '1',
     'Both ACCEPTANCE_LOCAL_WRITES=1 and ACCEPTANCE_STAGE_THREE_READY=1 are required.');
   const database = required('ACCEPTANCE_EXPECTED_DB');
@@ -92,7 +94,8 @@ const environmentValue = (text, key) => {
 };
 
 function runtimeIdentity(config) {
-  const pids = [...new Set(command('lsof', ['-nP', '-iTCP:8095', '-sTCP:LISTEN', '-Fp'])
+  const port = new URL(config.base).port;
+  const pids = [...new Set(command('lsof', ['-nP', `-iTCP:${port}`, '-sTCP:LISTEN', '-Fp'])
     .split('\n').filter(s => /^p\d+$/.test(s)).map(s => s.slice(1)))];
   assert.ok(pids.length === 1, 'Expected exactly one process listening on 8095.');
   const pid = pids[0];
@@ -107,7 +110,7 @@ function runtimeIdentity(config) {
     assert.ok(!environmentValue(processText, key), `Unset ${key} on the isolated backend to make runtime identity unambiguous.`);
   }
   validateDatabase(environmentValue(processText, 'DB_URL'), config.database);
-  assert.ok(environmentValue(processText, 'SERVER_PORT') === '8095', 'Runtime SERVER_PORT must explicitly be 8095.');
+  assert.ok(environmentValue(processText, 'SERVER_PORT') === port, 'Runtime SERVER_PORT must match explicit isolated port.');
   const jar = processText.match(/(?:^|\s)-jar\s+(\S+\.jar)(?:\s|$)/)?.[1];
   assert.ok(jar && isAbsolute(jar), 'Only a pinned executable JAR with an absolute path is supported.');
   const path = realpathSync(jar);
@@ -207,6 +210,7 @@ async function run(config) {
       adminName: '隔离验收管理员', adminEmail: buyerAccount, adminPassword: config.password });
     const buyer = await login(buyerAccount, 'BUYER', { tenantId });
     const b = buyer.accessToken, s = supplier.accessToken;
+    await createAcceptanceQualification(config.base, s, api, runId);
     const own = data => { assert.equal(data.tenantId, tenantId, 'Response escaped acceptance tenant'); return data; };
     const department = await api('buyer/departments', b, { name: `Acceptance ${runId}` });
     const material = await api('buyer/materials', b, { code: `MAT-${runId}`, name: '隔离验收设备', category: '验收专用', unit: '台', referencePrice: 1000 });

@@ -7,6 +7,13 @@ const config = () => ({ JAVA_API_BASE_URL: 'http://127.0.0.1:8095', ACCEPTANCE_L
   ACCEPTANCE_STAGE_THREE_READY: '1', ACCEPTANCE_EXPECTED_DB: 'srm_acceptance_20261023',
   ACCEPTANCE_BACKEND_SHA256: 'a'.repeat(64), ACCEPTANCE_PASSWORD: 'test-only-value' });
 
+test('explicit alternate isolated port must match and may never be original 8080', () => {
+  assert.equal(validateBase('http://127.0.0.1:38095', '38095'), 'http://127.0.0.1:38095');
+  assert.throws(() => validateBase('http://127.0.0.1:8095', '38095'));
+  assert.throws(() => validateBase('http://127.0.0.1:8080', '8080'));
+  assert.throws(() => validateBase('http://127.0.0.1:80', '80'));
+});
+
 test('accepts only the exact local 8095 origin', () => {
   assert.equal(validateBase('http://127.0.0.1:8095'), 'http://127.0.0.1:8095');
   for (const url of ['http://127.0.0.1:8080', 'http://localhost:8095', 'http://example.com:8095',

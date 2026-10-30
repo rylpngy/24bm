@@ -8,6 +8,7 @@ export interface PrimaryActionButtonProps {
   disabled?: boolean;
   busy?: boolean;
   pendingLabel?: string;
+  disabledReason?: string;
   icon?: ElementType;
   fullWidth?: boolean;
   flushTop?: boolean;
@@ -36,6 +37,7 @@ export function PrimaryActionButton({
   disabled = false,
   busy = false,
   pendingLabel,
+  disabledReason,
   icon: Icon,
   fullWidth = false,
   flushTop = false,
@@ -47,11 +49,12 @@ export function PrimaryActionButton({
     <button
       type={type}
       onClick={onClick}
-      disabled={disabled}
+      disabled={disabled || busy}
+      title={disabled && !busy ? disabledReason : undefined}
       data-testid={testId}
       aria-busy={busy || undefined}
       className={cn(
-        'inline-flex min-w-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg text-center font-black leading-4 text-white shadow-sm transition active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-white disabled:shadow-none',
+        'inline-flex min-w-0 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg text-center font-black leading-4 text-white shadow-sm transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-white disabled:shadow-none',
         flushTop ? '' : 'mt-3',
         fullWidth && 'w-full',
         sizeClasses[size],

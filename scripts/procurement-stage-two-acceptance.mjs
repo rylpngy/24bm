@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { createAcceptanceQualification } from './acceptance-supplier-qualification.mjs';
 
 const base = process.env.JAVA_API_BASE_URL;
 assert.ok(base && ['127.0.0.1', 'localhost'].includes(new URL(base).hostname)
@@ -34,6 +35,7 @@ try {
   const platform = await login(required('ACCEPTANCE_PLATFORM_ACCOUNT'), 'PLATFORM');
   const supplier = await login(required('ACCEPTANCE_SUPPLIER_ACCOUNT'), 'SUPPLIER', { supplierId });
   const s = supplier.accessToken;
+  await createAcceptanceQualification(base, s, api, runId);
   await api('platform/tenants', platform.accessToken, { tenantId: runId, enterpriseId: `ent-${runId}`, name: `采购完整闭环 ${runId}`,
     industry: '通用采购', plan: 'MVP', userLimit: 20, enabledFeatures: ['rfq', 'finance', 'order', 'method:compare'],
     adminName: '采购负责人', adminEmail: report.buyerAccount, adminPassword: password });

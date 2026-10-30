@@ -40,7 +40,22 @@ vi.mock('@24bid/api-client', async (original) => {
     },
   };
 });
-afterEach(() => { cleanup(); state.manage = false; state.failed = false; state.awarded = false; state.mixed = false; state.noneEligible = false; state.evaluatorCounts = [1]; state.submitScores.mockClear(); });
+afterEach(() => { cleanup(); window.history.replaceState(null, '', '/'); state.manage = false; state.failed = false; state.awarded = false; state.mixed = false; state.noneEligible = false; state.evaluatorCounts = [1]; state.submitScores.mockClear(); });
+
+it('opens a linked tender directly and clears only its record when returning', () => {
+  window.history.replaceState(null, '', '/?module=tenders&recordId=t-1&solution=base');
+  show();
+  expect(screen.getByRole('heading', { name: '只读招标' })).toBeVisible();
+  fireEvent.click(screen.getByRole('button', { name: '返回招标台账' }));
+  expect(new URLSearchParams(window.location.search).get('recordId')).toBeNull();
+  expect(new URLSearchParams(window.location.search).get('solution')).toBe('base');
+});
+
+it('does not silently fall back to the list for an unavailable linked tender', () => {
+  window.history.replaceState(null, '', '/?module=tenders&recordId=missing');
+  show();
+  expect(screen.getByText('未找到该招标项目或无权查看。')).toBeVisible();
+});
 const show = () => render(<QueryClientProvider client={new QueryClient()}><TendersPage /></QueryClientProvider>);
 
 it('does not expose edit or create actions to read-only users', () => {

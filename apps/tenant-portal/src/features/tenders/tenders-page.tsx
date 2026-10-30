@@ -33,6 +33,7 @@ import {
   Pagination,
   Panel,
   PrimaryActionButton,
+  ActionButton,
   ResponsiveTableFrame,
   RichTextEditor,
   RichTextView,
@@ -720,9 +721,9 @@ export function TendersPage() {
   const [failReason, setFailReason] = useState('');
   const [failing, setFailing] = useState(false);
 
-  const [view, setView] = useState<'list' | 'edit' | 'detail'>('list');
+  const [view, setView] = useState<'list' | 'edit' | 'detail'>(() => new URLSearchParams(window.location.search).get('recordId') ? 'detail' : 'list');
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(() => new URLSearchParams(window.location.search).get('recordId'));
   const [form, setForm] = useState<DraftForm>(emptyForm());
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -733,6 +734,20 @@ export function TendersPage() {
 
   const all = tenders.isError ? [] : tenders.data?.data ?? [];
   const selected = selectedId ? all.find((t) => t.id === selectedId) : undefined;
+  const showDetail = (id: string) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('recordId', id);
+    window.history.replaceState(null, '', url);
+    setSelectedId(id);
+    setView('detail');
+  };
+  const backToList = () => {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('recordId');
+    window.history.replaceState(null, '', url);
+    setSelectedId(null);
+    setView('list');
+  };
 
   const refresh = () =>
     queryClient.invalidateQueries({
@@ -825,6 +840,10 @@ export function TendersPage() {
 
   // ── 编制页 ─────────────────────────────────────────────────
   if (tenders.isError) return <FeedbackNotice tone="error" message="招标项目加载失败，请确认权限后重试。" />;
+  if (view === 'detail' && !selected) return <div className="space-y-3">
+    <FeedbackNotice tone={tenders.isLoading ? 'info' : 'error'} message={tenders.isLoading ? '正在加载招标项目…' : '未找到该招标项目或无权查看。'} />
+    <ActionButton onClick={backToList} icon={ArrowLeft}>返回招标台账</ActionButton>
+  </div>;
   if (view === 'edit' && canManage) {
     return (
       <div className="space-y-4">
@@ -940,7 +959,7 @@ export function TendersPage() {
       <div className="space-y-4">
         <div className="rounded-lg border border-slate-200 bg-white px-5 py-4 shadow-sm shadow-slate-200/50">
           <div className="flex flex-wrap items-center gap-3">
-            <button type="button" onClick={() => setView('list')} aria-label="返回招标台账"
+            <button type="button" onClick={backToList} aria-label="返回招标台账"
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-50">
               <ArrowLeft size={18} />
             </button>
@@ -1427,7 +1446,7 @@ export function TendersPage() {
                   </div>
                   {t.status && <span className="shrink-0 whitespace-nowrap"><StatusPill label={t.status} /></span>}
                 </div>
-                <button type="button" onClick={() => { setSelectedId(t.id ?? null); setView('detail'); }}
+                <button type="button" onClick={() => t.id && showDetail(t.id)}
                   className="mt-3 inline-flex h-8 w-full items-center justify-center rounded-md border border-slate-200 bg-white text-xs font-black text-slate-600 hover:bg-slate-50">
                   查看详情
                 </button>
@@ -1478,7 +1497,7 @@ export function TendersPage() {
                               继续编制
                             </button>
                           )}
-                          <button type="button" onClick={() => { setSelectedId(t.id ?? null); setView('detail'); }}
+                          <button type="button" onClick={() => t.id && showDetail(t.id)}
                             className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50">
                             详情
                           </button>
