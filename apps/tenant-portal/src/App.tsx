@@ -1,8 +1,8 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
-import { Construction, ShieldAlert } from 'lucide-react';
+import { Construction, RefreshCw, ShieldAlert } from 'lucide-react';
 import { buyerNavigation, hasPermission } from '@24bid/shared';
 import { useSessionPermissions, useBuyerCapabilityCapabilities } from '@24bid/api-client';
-import { AppShell, FeedbackNotice, Panel } from '@24bid/ui';
+import { AppShell, FeedbackNotice, Panel, PrimaryActionButton } from '@24bid/ui';
 import { useAuthStore } from './lib/auth-store';
 import { PageErrorBoundary } from './lib/page-error-boundary';
 import { PortalLanding } from './features/portal/portal-landing';
@@ -63,7 +63,13 @@ function TenantPortalApp() {
   const grantedKey = (permsQuery.isError ? [] : permsQuery.data?.data?.permissions ?? []).join(',');
 
   // Procurement capabilities gate new work; explicitly retained historical modules remain readable.
-  const capabilityQuery = useBuyerCapabilityCapabilities({ query: { enabled: !!session } });
+  const capabilityQuery = useBuyerCapabilityCapabilities({ query: {
+    queryKey: ['/api/v1/buyer/capabilities', session?.tenantId, session?.userId],
+    enabled: !!session,
+    retry: 2,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: 'always',
+  } });
   const capability = capabilityQuery.data?.data;
   const enabledModuleKey = (capability?.moduleIds ?? []).join(',');
   const gatedModuleKey = (capability?.methodGatedModuleIds ?? []).join(',');
@@ -124,7 +130,12 @@ function TenantPortalApp() {
       accountLabel={`${session.displayName} · ${session.tenantId}`}
     >
       <PageErrorBoundary key={activeModuleId}><Suspense fallback={<PageLoading />}>
-      {capabilityQuery.isError && <FeedbackNotice tone="error" message="业务能力配置加载失败，新增业务开通状态尚未确认，请刷新后重试。" />}
+      {capabilityQuery.isError && <div className="mb-4 flex flex-wrap items-center gap-3" role="status">
+        <div className="min-w-0 flex-1"><FeedbackNotice tone="error" message="业务能力配置暂时加载失败，系统将自动重试；新增业务开通状态尚未确认。" /></div>
+        <PrimaryActionButton icon={RefreshCw} busy={capabilityQuery.isFetching} pendingLabel="正在重新加载" onClick={() => void capabilityQuery.refetch()}>
+          重新加载业务配置
+        </PrimaryActionButton>
+      </div>}
       {historicalModuleKey.split(',').includes(activeModuleId) && gatedModuleKey.split(',').includes(activeModuleId)
         && !enabledModuleKey.split(',').includes(activeModuleId) && <FeedbackNotice tone="info" message="此采购方式已停止新增业务，仍可按权限查看历史资料并办理既有业务；新增操作须先由平台开通。" />}
       {!permitted ? (
