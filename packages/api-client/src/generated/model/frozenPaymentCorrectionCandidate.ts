@@ -14,4 +14,5 @@ export interface FrozenPaymentCorrectionCandidate {
   sourcePeriod?: string;
   targetPeriod?: string;
   blockers?: string[];
+  fundingRequired?: boolean;
 }

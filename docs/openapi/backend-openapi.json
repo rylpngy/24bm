@@ -29478,6 +29478,64 @@
           }
         }
       }
+    },
+    "/api/v1/buyer/invoices/{invoice}/payment-ledger/corrections/funding-options": {
+      "get": {
+        "tags": [
+          "frozen-payment-correction-controller"
+        ],
+        "operationId": "frozenPaymentFundingOptions",
+        "parameters": [
+          {
+            "name": "invoice",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entryId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseFundingCorrectionOptions"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -46386,6 +46444,14 @@
             "additionalProperties": {
               "type": "object"
             }
+          },
+          "fundingTargets": {
+            "maxItems": 30,
+            "minItems": 0,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FrozenCorrectionFundingTarget"
+            }
           }
         }
       },
@@ -46570,6 +46636,9 @@
             "items": {
               "type": "string"
             }
+          },
+          "fundingRequired": {
+            "type": "boolean"
           }
         }
       },
@@ -47093,6 +47162,96 @@
             "items": {
               "$ref": "#/components/schemas/SpecialFund"
             }
+          }
+        }
+      },
+      "FrozenCorrectionFundingTarget": {
+        "required": [
+          "sourceFundId",
+          "targetFundId"
+        ],
+        "type": "object",
+        "properties": {
+          "sourceFundId": {
+            "type": "string"
+          },
+          "targetFundId": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseFundingCorrectionOptions": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/FundingCorrectionOptions"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "FundingCorrectionChoice": {
+        "type": "object",
+        "properties": {
+          "fundId": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "availableAmount": {
+            "type": "number"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "FundingCorrectionOptions": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FundingCorrectionSource"
+            }
+          },
+          "choices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FundingCorrectionChoice"
+            }
+          }
+        }
+      },
+      "FundingCorrectionSource": {
+        "type": "object",
+        "properties": {
+          "fundId": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "period": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
           }
         }
       }

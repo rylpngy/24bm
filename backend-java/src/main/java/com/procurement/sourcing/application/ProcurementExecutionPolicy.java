@@ -30,6 +30,10 @@ public final class ProcurementExecutionPolicy {
       if(funding.isEmpty()||sum(funding,"amount").compareTo(amount(payment,"amount"))!=0)blockers.add("付款 "+text(payment,"id")+" 缺少完整资金来源归属");
     }
     for(var correction:data.path("frozenPaymentCorrections")) {
+      if("approved".equals(text(correction,"status"))&&correction.path("snapshot").hasNonNull("fundingCorrection")) {
+        var restored=matching(data,"fundingRestorations","correctionId",text(correction,"id"));
+        if(restored.isEmpty()||sum(restored,"amount").compareTo(amount(correction,"amount"))!=0||restored.stream().anyMatch(r->!text(r,"createdBy").equals(text(correction,"completed_by"))))blockers.add("专项资金更正缺少完整来源回补及审核人证据");
+      }
       if("submitted".equals(text(correction,"status")))blockers.add("存在跨年冻结付款更正审批，请先完成更正办理");
       if("approved".equals(text(correction,"status"))) {
         boolean workflow=list(data,"workflowHistory").stream().anyMatch(h->text(h.path("instance"),"id").equals(text(correction,"workflowInstanceId"))&&"approved".equals(text(h.path("instance"),"status")));

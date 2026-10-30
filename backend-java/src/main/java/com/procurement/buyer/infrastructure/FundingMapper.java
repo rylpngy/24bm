@@ -144,8 +144,11 @@ values(#{id},#{tenantId},#{kind},#{fundId},#{projectId},#{departmentId},#{period
   @Select("select change_id from project_funding_plans where tenant_id=#{t} and project_id=#{p}")
   String plan(@Param("t") String t, @Param("p") String p);
 
-  @Select("select coalesce((select prior_paid_amount from project_funding_plans where tenant_id=#{t} and project_id=#{p}),0)")
+  @Select("select coalesce((select effective_prior_paid_amount from project_funding_paid_basis where tenant_id=#{t} and project_id=#{p}),0)")
   BigDecimal priorPaid(@Param("t") String t, @Param("p") String p);
+
+  @Select("select count(*) from frozen_payment_corrections where tenant_id=#{t} and project_id=#{p} and status='submitted'")
+  int pendingCorrection(@Param("t")String t,@Param("p")String p);
 
   @Select("select coalesce(sum(amount),0) from funding_payment_allocations where tenant_id=#{t} and project_id=#{p}")
   BigDecimal totalPaid(@Param("t") String t, @Param("p") String p);

@@ -13,6 +13,7 @@ import {
 import { WorkflowSubmitDialog } from '../workflow/workflow-submit-dialog';
 import { WorkflowStatusPanel } from '../workflow/workflow-instance-panel';
 import { financeErrorMessage } from './finance-feedback';
+import { FundedCorrectionTargets, FundingRestorationEvidence, type FundingRestoreTarget } from './funded-correction-targets';
 
 type Candidate = {
   entryId: string;
@@ -22,6 +23,7 @@ type Candidate = {
   sourcePeriod: string;
   targetPeriod: string;
   blockers: string[];
+  fundingRequired?: boolean;
 };
 type Correction = {
   id: string;
@@ -37,6 +39,7 @@ type Correction = {
   createdAt: string;
   completedBy?: string;
   reversalId?: string;
+  snapshot?: string;
 };
 const labels: Record<string, string> = {
   submitted: '审批中',
@@ -61,6 +64,7 @@ export function FrozenPaymentCorrections({ invoiceId }: { invoiceId: string }) {
     [notice, setNotice] = useState('');
   const keys = useRef(new Map<string, string>()),
     held = useRef(false);
+  const [fundingTargets,setFundingTargets]=useState<FundingRestoreTarget[]>([]),[fundingReady,setFundingReady]=useState(false);
   const candidates = useQuery({
     queryKey: [base + '/candidates'],
     queryFn: async () =>
@@ -203,6 +207,8 @@ export function FrozenPaymentCorrections({ invoiceId }: { invoiceId: string }) {
                                 className={btn + ' whitespace-nowrap'}
                                 onClick={() => {
                                   setSelected(c);
+                                  keys.current.clear();
+                                  setFundingTargets([]);setFundingReady(false);
                                   setReason('');
                                   setEvidence('');
                                   setError('');
@@ -294,7 +300,7 @@ export function FrozenPaymentCorrections({ invoiceId }: { invoiceId: string }) {
             className="space-y-4"
             onSubmit={(e) => {
               e.preventDefault();
-              if (reason.trim() && evidence.trim()) setReviewing(true);
+              if (reason.trim() && evidence.trim()&&(!selected.fundingRequired||fundingReady)) setReviewing(true);
             }}
           >
             <dl className="grid grid-cols-2 gap-3 text-sm">
@@ -335,11 +341,12 @@ export function FrozenPaymentCorrections({ invoiceId }: { invoiceId: string }) {
                 onChange={(e) => setReason(e.target.value)}
               />
             </label>
+            {selected.fundingRequired&&<FundedCorrectionTargets key={selected.entryId} base={base} entryId={selected.entryId} value={fundingTargets} onChange={setFundingTargets} onReady={setFundingReady}/>}
             <div className="flex justify-end">
               <button
                 type="submit"
                 className={btn}
-                disabled={busy || !reason.trim() || !evidence.trim()}
+                disabled={busy || !reason.trim() || !evidence.trim() || (!!selected.fundingRequired&&!fundingReady)}
               >
                 下一步
               </button>
@@ -361,6 +368,7 @@ export function FrozenPaymentCorrections({ invoiceId }: { invoiceId: string }) {
                   evidenceNo: evidence.trim(),
                   reason: reason.trim(),
                   formData,
+                  ...(selected.fundingRequired?{fundingTargets}:{}),
                 },
                 fingerprint = JSON.stringify(body);
               let requestKey = keys.current.get(fingerprint);
@@ -399,6 +407,7 @@ export function FrozenPaymentCorrections({ invoiceId }: { invoiceId: string }) {
             <p className="break-words">原流水：{detail.entryId}</p>
             <p className="break-words">更正凭据：{detail.evidenceNo}</p>
             <p className="whitespace-pre-wrap break-words">{detail.reason}</p>
+            <FundingRestorationEvidence snapshot={detail.snapshot}/>
             {detail.reversalId && (
               <p className="break-words">反向流水：{detail.reversalId}</p>
             )}

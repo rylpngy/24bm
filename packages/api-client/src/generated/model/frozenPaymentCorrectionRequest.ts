@@ -6,6 +6,7 @@
  * OpenAPI spec version: v1
  */
 import type { FrozenPaymentCorrectionRequestFormData } from './frozenPaymentCorrectionRequestFormData';
+import type { FrozenCorrectionFundingTarget } from './frozenCorrectionFundingTarget';
 
 export interface FrozenPaymentCorrectionRequest {
   /**
@@ -25,4 +26,9 @@ export interface FrozenPaymentCorrectionRequest {
    */
   reason: string;
   formData?: FrozenPaymentCorrectionRequestFormData;
+  /**
+   * @minItems 0
+   * @maxItems 30
+   */
+  fundingTargets?: FrozenCorrectionFundingTarget[];
 }

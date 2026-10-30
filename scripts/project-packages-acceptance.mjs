@@ -144,7 +144,7 @@ try {
     'project_initiation',
     'project_change',
     'project_carryover',
-    ...(process.env.PROJECT_FROZEN_CORRECTION_ACCEPTANCE === '1' ? ['frozen_payment_correction'] : []),
+    ...(process.env.PROJECT_FROZEN_CORRECTION_ACCEPTANCE === '1'||process.env.PROJECT_FUNDED_CORRECTION_ACCEPTANCE === '1' ? ['frozen_payment_correction'] : []),
     ...(process.env.PROJECT_FUNDING_ACCEPTANCE === '1' ? ['funding_change'] : []),
     'project_liquidation',
     'purchase_demand',

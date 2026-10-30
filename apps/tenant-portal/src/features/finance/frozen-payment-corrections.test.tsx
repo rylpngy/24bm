@@ -14,6 +14,7 @@ const state = vi.hoisted(() => ({
   post: vi.fn(),
   api: vi.fn(),
   fail: false,
+  funded:false,
 }));
 vi.mock('../../lib/use-buyer-permissions', () => ({
   useBuyerPermissions: () => ({
@@ -28,13 +29,16 @@ vi.mock('../workflow/workflow-submit-dialog', () => ({
     onSubmit,
     submissionError,
     busy,
+    onClose,
   }: {
     onSubmit: (d: object) => void;
     submissionError: string;
     busy: boolean;
+    onClose:()=>void;
   }) => (
     <div role="dialog">
       <p>{submissionError}</p>
+      <button onClick={onClose}>返回修改</button>
       <button disabled={busy} onClick={() => onSubmit({ checked: true })}>
         确认提交审批
       </button>
@@ -66,9 +70,11 @@ vi.mock('@24bid/api-client/http-client', () => ({
             sourcePeriod: '2024',
             targetPeriod: '2025',
             blockers: state.blockers,
+            fundingRequired:state.funded,
           },
         ],
       });
+    if(args.url.endsWith('/funding-options'))return Promise.resolve({data:{enabled:true,sources:[{fundId:'old',code:'OLD',name:'历史专项',period:'2024',amount:50}],choices:[{fundId:'current',code:'NOW',name:'当前专项',availableAmount:100}]}});
     return Promise.resolve({ data: { items: [], total: 21 } });
   },
 }));
@@ -76,6 +82,7 @@ beforeEach(() => {
   state.manage = true;
   state.blockers = [];
   state.fail = false;
+  state.funded=false;
   state.api.mockClear();
   state.post.mockClear();
 });
@@ -152,4 +159,21 @@ it('keeps the ledger readable without reverse permission and pages on the server
   await waitFor(() =>
     expect(state.api.mock.calls.some(([x]) => x.params?.page === 2)).toBe(true),
   );
+});
+it('requires an explicit current-year restoration target and submits the source mapping',async()=>{
+  state.funded=true;show();await expand();fireEvent.click(screen.getByRole('button',{name:'申请更正'}));
+  fireEvent.change(screen.getByLabelText('更正凭据号'),{target:{value:'BANK-FUND'}});fireEvent.change(screen.getByLabelText('更正原因'),{target:{value:'专项原付款更正'}});
+  expect((screen.getByRole('button',{name:'下一步'}) as HTMLButtonElement).disabled).toBe(true);
+  const source=await screen.findByLabelText('更正回补来源 OLD');fireEvent.change(source,{target:{value:'current'}});
+  await waitFor(()=>expect((screen.getByRole('button',{name:'下一步'}) as HTMLButtonElement).disabled).toBe(false));
+  fireEvent.click(screen.getByRole('button',{name:'下一步'}));fireEvent.click(screen.getByRole('button',{name:'确认提交审批'}));
+  await waitFor(()=>expect(state.post).toHaveBeenCalledTimes(1));expect(state.post.mock.calls[0][0].data.fundingTargets).toEqual([{sourceFundId:'old',targetFundId:'current'}]);
+});
+it('uses a fresh request key for a new dialog while retaining same-dialog network retries',async()=>{
+  state.fail=true;show();await expand();
+  const fill=()=>{fireEvent.change(screen.getByLabelText('更正凭据号'),{target:{value:'BANK-RETRY'}});fireEvent.change(screen.getByLabelText('更正原因'),{target:{value:'相同内容重新发起'}});fireEvent.click(screen.getByRole('button',{name:'下一步'}));fireEvent.click(screen.getByRole('button',{name:'确认提交审批'}));};
+  fireEvent.click(screen.getByRole('button',{name:'申请更正'}));fill();await waitFor(()=>expect(state.post).toHaveBeenCalledTimes(1));
+  await waitFor(()=>expect(screen.getAllByText('网络暂时中断').length).toBeGreaterThan(0));fireEvent.click(screen.getByRole('button',{name:'返回修改'}));fireEvent.click(screen.getByRole('button',{name:/^关闭$/}));
+  fireEvent.click(screen.getByRole('button',{name:'申请更正'}));fill();await waitFor(()=>expect(state.post).toHaveBeenCalledTimes(2));
+  expect(state.post.mock.calls[0][0].data.requestKey).not.toBe(state.post.mock.calls[1][0].data.requestKey);
 });
