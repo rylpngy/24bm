@@ -65,6 +65,7 @@ public final class PortalPermissionPolicy {
         case "suppliers", "supplier-invitations", "supplier-evaluation-templates" -> "supplier";
         case "analytics" -> "analytics";
         case "budgets" -> "budget";
+        case "funding" -> "budget";
         case "audit-logs" -> "audit";
         default -> null;
       };

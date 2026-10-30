@@ -17,6 +17,14 @@ public final class ProcurementExecutionPolicy {
   public static Evaluation evaluate(JsonNode data) {
     List<String> blockers = new ArrayList<>();
     List<Document> documents = new ArrayList<>();
+    for(var c:data.path("fundingChanges")){
+      if("project_plan".equals(text(c,"kind"))&&"submitted".equals(text(c,"status")))blockers.add("项目资金分摊审批中，暂不能归档");
+      if("approved".equals(text(c,"status"))&&list(data,"workflowHistory").stream().noneMatch(h->text(h.path("instance"),"id").equals(text(c,"workflowInstanceId"))&&"approved".equals(text(h.path("instance"),"status"))))blockers.add("专项资金缺少对应独立审批证据");
+    }
+    if(!list(data,"fundingPlans").isEmpty())for(var payment:data.path("payments")){
+      var funding=matching(data,"fundingPayments","entryId",text(payment,"id"));
+      if(funding.isEmpty()||sum(funding,"amount").compareTo(amount(payment,"amount"))!=0)blockers.add("付款 "+text(payment,"id")+" 缺少完整资金来源归属");
+    }
     for(var correction:data.path("frozenPaymentCorrections")) {
       if("submitted".equals(text(correction,"status")))blockers.add("存在跨年冻结付款更正审批，请先完成更正办理");
       if("approved".equals(text(correction,"status"))) {

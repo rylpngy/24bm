@@ -228,6 +228,7 @@ export function workflowBusinessHref(history: Pick<WorkflowInstanceHistory, 'bus
     project_liquidation: { module: 'projects', id: snapshot.projectId },
     order_settlement: { module: 'orders', id: snapshot.orderId },
     frozen_payment_correction: { module: 'invoices', id: snapshot.invoiceId },
+    funding_change: { module: snapshot.projectId ? 'projects' : 'budgets', id: snapshot.projectId || snapshot.fundId },
     budget_exception: { module: 'budgets', id: history.businessId },
     supplier_qualification_change: { module: 'suppliers', id: snapshot.relationId },
     purchase_demand: { module: 'demands', id: history.businessId },

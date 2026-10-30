@@ -145,6 +145,7 @@ try {
     'project_change',
     'project_carryover',
     ...(process.env.PROJECT_FROZEN_CORRECTION_ACCEPTANCE === '1' ? ['frozen_payment_correction'] : []),
+    ...(process.env.PROJECT_FUNDING_ACCEPTANCE === '1' ? ['funding_change'] : []),
     'project_liquidation',
     'purchase_demand',
     'budget_change',
@@ -1721,6 +1722,20 @@ try {
         }
         if (['refund', 'physical-return', 'physical-exchange', 'frozen-correction-ui'].includes(kind))
           await invoiceAndPay();
+        if (kind === 'funding-ui') {
+          const project = (await api('buyer/projects/' + c.projectId, b)).project;
+          const funds = [];
+          for (const code of ['A', 'B']) {
+            const f = await api('buyer/funding', b, { departmentId: project.departmentId, period: project.period, code, name: '专项资金 ' + code });
+            const request = await api('buyer/funding/changes', b, { requestKey: runId + code, kind: 'fund_limit', fundId: f.id, revision: f.revision, amount: 1000, reason: '年度专项额度审批', formData: {} });
+            await decide(r, 'funding_change', request.id);
+            funds.push(f);
+          }
+          invoice = await api(`supplier/orders/${order.id}/invoices`, s, { amount: order.amount, invoiceNo: 'FUND-' + runId, taxRate: 0 });
+          report.records.fundingUi = { ...c, contractId: contract.id, invoiceId: invoice.id, funds: funds.map(f => f.id), amount: project.plannedAmount, revision: project.revision };
+          check('funding: approved independent source limits and prepared unpaid project');
+          return;
+        }
         if (kind === 'frozen-correction-ui') {
           const endpoint='buyer/projects/'+c.projectId;
           const project=(await api(endpoint,b)).project;
@@ -2247,6 +2262,7 @@ try {
         for (const kind of ['installment', 'installment-ui'])
           await settlementCase(kind);
       if(process.env.PROJECT_FROZEN_CORRECTION_ACCEPTANCE==='1')await settlementCase('frozen-correction-ui');
+      if(process.env.PROJECT_FUNDING_ACCEPTANCE==='1')await settlementCase('funding-ui');
     }
     check(
       'Bilateral cancellation validates rejection, withdrawal ownership, pause, idempotent agreement, original amount/quantity, paginated history and 1200 responsibility release only after closeout',

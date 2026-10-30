@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class OrderSettlementService {
+  @org.springframework.beans.factory.annotation.Autowired private com.procurement.buyer.application.FundingService funding;
   private final OrderSettlementMapper mapper;
   private final PurchaseOrderMapper orders;
   private final OrderAccessService access;
@@ -173,6 +174,7 @@ public class OrderSettlementService {
   @Transactional
   public Entry propose(String id, Proposal r) {
     var o = order(id, false, true);
+    if(funding!=null)funding.requireUnfundedOrder(o.tenantId(),id);
     var old = mapper.byKey(o.tenantId(), id, r.requestKey());
     if (old != null) {
       var s = policy.tree(old.snapshot());

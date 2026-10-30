@@ -272,7 +272,7 @@ public class ProcurementExecutionApplicationService {
     List<String> ids=new ArrayList<>(); ids.add(data.path("rfq").path("id").asText());
     if(data.has("procurementProject"))ids.add(data.path("procurementProject").path("id").asText());
     for(var change:data.path("procurementProject").path("changeIds"))ids.add(change.asText());
-    for(String key : List.of("demands","orders","awards","contracts","invoices","paymentRequests","orderSettlements","frozenPaymentCorrections")) for(var item:data.path(key)) {
+    for(String key : List.of("demands","orders","awards","contracts","invoices","paymentRequests","orderSettlements","frozenPaymentCorrections","fundingChanges")) for(var item:data.path(key)) {
       ids.add(item.path("id").asText());
       if (item.hasNonNull("paymentBatchNo") && !item.path("paymentBatchNo").asText().isBlank()) ids.add(item.path("paymentBatchNo").asText());
     }

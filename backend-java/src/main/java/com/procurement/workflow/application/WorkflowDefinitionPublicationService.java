@@ -301,6 +301,7 @@ public class WorkflowDefinitionPublicationService {
       case "project_change" -> "立项变更";
       case "project_carryover" -> "跨年度承接";
       case "frozen_payment_correction" -> "跨年冻结付款更正";
+      case "funding_change" -> "专项资金与项目分摊";
       case "project_liquidation" -> "项目终止清算";
       case "order_settlement" -> "合同解除与订单清算";
       case "budget_exception" -> "超预算例外";

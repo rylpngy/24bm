@@ -28,6 +28,7 @@ const businessLabel: Record<string, string> = {
   project_change: '立项变更',
   project_carryover: '跨年度承接',
   frozen_payment_correction: '跨年冻结付款更正',
+  funding_change: '专项资金与项目分摊',
   project_liquidation: '项目终止清算',
   order_settlement: '合同解除与订单清算',
   supplier_qualification_change: '供应商资质变更',

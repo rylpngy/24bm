@@ -18,10 +18,12 @@ export interface PaymentLedgerSummary {
   invoiceAmount: number; paidAmount: number | null; remainingAmount: number | null;
   reconciliationRequired: boolean; warning: string; entries: PaymentAmountEntry[];
   frozenEntryIds?: string[];
+  funding?: {enabled:boolean;blocker:string;sources:{fundId:string;code:string;name:string;allocatedAmount:number;paidAmount:number;remainingAmount:number}[];entries:{entryId:string;fundId:string;code:string;amount:number;evidenceNo:string;createdBy:string;createdAt:string}[]}|null;
   milestones: { id: string; name: string; amount: number; paid: number | null; remaining: number | null; reached: boolean; verified: boolean }[];
 }
 export interface RecordPaymentAmount {
   idempotencyKey: string; amount: number; milestoneId?: string; evidenceNo: string; remark?: string;
+  fundingLines?:{fundId:string;amount:number}[];
 }
 const url = (id: string) => `/api/v1/buyer/invoices/${encodeURIComponent(id)}/payment-ledger`;
 export function usePaymentLedger(invoiceId: string) {

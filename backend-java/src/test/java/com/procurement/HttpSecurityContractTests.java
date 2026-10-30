@@ -277,6 +277,7 @@ import org.springframework.test.web.servlet.MvcResult;
     BuyerPaymentController.class,
     BuyerPaymentLedgerController.class,
     com.procurement.finance.api.FrozenPaymentCorrectionController.class,
+    com.procurement.buyer.api.FundingController.class,
     BuyerPaymentReviewController.class,
     SupplierInvoiceController.class,
     SupplierReceivableController.class,
@@ -337,6 +338,12 @@ class HttpSecurityContractTests {
   @MockBean private com.procurement.buyer.application.ProjectMallService projectMall;
   @MockBean private com.procurement.buyer.application.ProjectLifecycleService projectLifecycle;
   @MockBean private com.procurement.finance.application.FrozenPaymentCorrectionService frozenCorrections;
+  @MockBean private com.procurement.buyer.application.FundingService fundingService;
+  @Test void specialFundingRequiresAuthenticatedBudgetPermission() throws Exception {
+    mockMvc.perform(get("/api/v1/buyer/funding")).andExpect(status().isForbidden());
+    String supplier=loginAndExtractToken("{\"account\":\"supplier\",\"password\":\"demo123456\",\"scope\":\"SUPPLIER\",\"supplierId\":\"ent-supplier-sunrise\"}");
+    mockMvc.perform(get("/api/v1/buyer/funding").header("Authorization","Bearer "+supplier)).andExpect(status().isForbidden());
+  }
   @Test void frozenPaymentCorrectionsRequireAuthenticationAndBuyerScope() throws Exception {
     String url="/api/v1/buyer/invoices/inv-1/payment-ledger/corrections";
     mockMvc.perform(get(url)).andExpect(status().isForbidden());

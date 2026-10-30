@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.*;
 
 @Service
 public class ProjectExpansionService {
+  @org.springframework.beans.factory.annotation.Autowired private FundingService funding;
   private final ProcurementProjectMapper projects;
   private final ProjectExpansionMapper mapper;
   private final ProcurementProjectGuard guard;
@@ -664,6 +665,7 @@ public class ProjectExpansionService {
   @Transactional
   public Change saveChange(String project, String id, ChangeDraft a) {
     guard.lock();
+    funding.requireUnfundedProject(t(),project);
     var p = mutable(project);
     revision(p.revision(), a.projectRevision());
     policy.freezeLegacy(p);
@@ -705,6 +707,7 @@ public class ProjectExpansionService {
   @Transactional
   public Change submitChange(String project, String id, Action a) {
     guard.lock();
+    funding.requireUnfundedProject(t(),project);
     var p = mutable(project);
     var c = change(project, id, true);
     revision(c.revision(), a.revision());
