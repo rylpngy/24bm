@@ -608,7 +608,7 @@ export function ReceiptsPage() {
               </div>
             ))}
           >
-            <table aria-label="收货验收记录列表" className={cn(compactList.table, 'min-w-[960px]')}>
+            <table aria-label="收货验收记录列表" className={cn(compactList.table, 'min-w-[880px]')}>
               <colgroup><col className="w-12" /><col /><col className="w-[104px]" /><col className="w-16" /><col className="w-16" /><col className="w-[76px]" /><col className="w-[88px]" /><col className="w-[140px]" /><col className="w-40" /></colgroup>
               <thead className="bg-slate-50 text-xs font-black text-slate-500">
                 <tr>
