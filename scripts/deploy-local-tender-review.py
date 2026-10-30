@@ -59,6 +59,12 @@ def health(url):
         time.sleep(1)
     raise RuntimeError('Health check timeout')
 stop(processes, old)
+def wait_ports():
+    for _ in range(40):
+        if all(subprocess.run(['lsof','-nP','-iTCP:'+str(port),'-sTCP:LISTEN'],capture_output=True).returncode == 1 for port in [8080,5173,5174,5175,5176]): return
+        time.sleep(1)
+    raise RuntimeError('Release ports are still occupied; do not stop unidentified listeners')
+wait_ports()
 try:
     subprocess.run(['node', str(root/'start.mjs')], cwd=src, check=True, timeout=180)
     for port in range(5173, 5177): health('http://127.0.0.1:'+str(port)+'/')
@@ -66,6 +72,7 @@ try:
     compare()
 except Exception:
     if (root/'processes.json').exists(): stop(json.loads((root/'processes.json').read_text()), root)
+    wait_ports()
     subprocess.run(['node',str(old/'start.mjs')], cwd=src, check=True, timeout=180)
     raise
 result = {'sha':sha,'root':str(root),'previous':str(old),'backup':backup['root'],
