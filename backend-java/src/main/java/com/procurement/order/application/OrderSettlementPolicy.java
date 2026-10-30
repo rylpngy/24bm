@@ -10,12 +10,16 @@ import org.springframework.stereotype.Component;
 @Component
 public class OrderSettlementPolicy {
   public Entry sanitizedEntry(Entry entry) {
+    return sanitizedEntry(entry,false);
+  }
+  public Entry sanitizedEntry(Entry entry,boolean includeFunding) {
     ObjectNode node = json.valueToTree(entry);
     ObjectNode safe = json.createObjectNode();
     ObjectNode assessment = json.createObjectNode();
     assessment.set("lines", tree(entry.snapshot()).path("assessment").path("lines"));
     safe.set("assessment", assessment);
     if (tree(entry.snapshot()).has("invoicePlan")) safe.set("invoicePlan", tree(entry.snapshot()).path("invoicePlan"));
+    if(includeFunding&&tree(entry.snapshot()).has("funding"))safe.set("funding",tree(entry.snapshot()).path("funding"));
     node.put("snapshot", write(safe));
     return json.convertValue(node, Entry.class);
   }

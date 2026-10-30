@@ -61,6 +61,63 @@ class ProcurementProjectIT {
   @Autowired FundingService funding;
   @Autowired FundingCarryoverService fundingCarryover;
   record FundedCase(CancelCase order,String invoice,String entry,String a,String b){}
+  com.procurement.order.api.OrderSettlementContracts.Entry fundedSettlement(FundedCase f,String price,String target,String key)throws Exception{
+    settlementContract(f.order(),true);String proof=settlementProof(f.order());String line=jdbc.queryForObject("select id from order_line_items where order_id=?",String.class,f.order().order());
+    return settlements.propose(f.order().order(),new com.procurement.order.api.OrderSettlementContracts.Proposal(key,"原资金来源明确的专项订单清算",BigDecimal.ZERO,proof,List.of(new com.procurement.order.api.OrderSettlementContracts.Price(line,new BigDecimal(price))),List.of(new com.procurement.order.api.OrderSettlementContracts.Allocation(f.invoice(),new BigDecimal(target)))));
+  }
+  com.procurement.order.api.OrderSettlementContracts.EvidenceRequest fundEvidence(FundedCase f,String kind,String amount,String a,String b,String proof,String key){
+    var lines=new ArrayList<com.procurement.order.api.OrderSettlementContracts.FundingLine>();if(new BigDecimal(a).signum()>0)lines.add(new com.procurement.order.api.OrderSettlementContracts.FundingLine(f.a(),new BigDecimal(a)));if(new BigDecimal(b).signum()>0)lines.add(new com.procurement.order.api.OrderSettlementContracts.FundingLine(f.b(),new BigDecimal(b)));
+    return new com.procurement.order.api.OrderSettlementContracts.EvidenceRequest(key,kind,new BigDecimal(amount),"BANK-"+key,proof,"实际收付及原来源核验",f.invoice(),lines);
+  }
+  @Test void fundedOrderRefundRetainsOriginalCashAndClosesWithExactInvoiceSourceNet()throws Exception{
+    var f=fundedPaidCase();var old=jdbc.queryForList("select * from funding_payment_allocations where tenant_id=? order by fund_id",tenant);var e=fundedSettlement(f,"5","10","refund");String proof=e.agreementId();
+    assertThat(e.snapshot()).contains("funding","invoicePlan");assertThatThrownBy(()->fundedCash(f.invoice(),f.a(),f.b(),"1","1")).hasMessageContaining("清算");
+    assertThatThrownBy(()->funding.submit(reallocate(f,"locked","90","156.91"))).hasMessageContaining("清算");
+    var source=funding.funds(1,100).items().stream().filter(x->x.id().equals(f.a())).findFirst().orElseThrow();assertThatThrownBy(()->funding.submit(fundLimit(source,"400","locked-limit"))).hasMessageContaining("清算");
+    e=approveSettlement(f.order(),e);var approved=e;assertThatThrownBy(()->settlements.evidence(f.order().order(),approved.id(),fundEvidence(f,"refund","40","40","0",proof,"wrong"))).hasMessageContaining("该发票");
+    var request=fundEvidence(f,"refund","40","10","30",proof,"refund-cash");var cash=settlements.evidence(f.order().order(),e.id(),request);assertThat(settlements.evidence(f.order().order(),e.id(),request).id()).isEqualTo(cash.id());
+    assertThatThrownBy(()->settlements.evidence(f.order().order(),approved.id(),fundEvidence(f,"refund","40","20","20",proof,"refund-cash"))).hasMessageContaining("同一凭证");
+    settlements.evidence(f.order().order(),e.id(),new com.procurement.order.api.OrderSettlementContracts.EvidenceRequest("invoice","invoice",new BigDecimal("10"),"CREDIT",proof,"最终红冲核对",f.invoice()));
+    var done=settlements.act(f.order().order(),e.id(),settlementAction(e,"complete"),false);assertThat(done.status()).isEqualTo("settled");
+    assertThat(settlements.detail(f.order().order(),e.id(),false).netPaid()).isEqualByComparingTo("10");assertThat(settlements.detail(f.order().order(),e.id(),false).fundingEntries()).hasSize(2);
+    assertThat(funding.project(f.order().project()).sources().stream().map(x->x.paidAmount()).reduce(BigDecimal.ZERO,BigDecimal::add)).isEqualByComparingTo("10");
+    assertThat(jdbc.queryForList("select * from funding_payment_allocations where tenant_id=? order by fund_id",tenant)).isEqualTo(old);assertThat(paymentLedger.summary(f.invoice()).paidAmount()).isEqualByComparingTo("50");
+    supplier(f.order());assertThat(settlements.detail(f.order().order(),e.id(),true).fundingEntries()).isEmpty();assertThat(settlements.detail(f.order().order(),e.id(),true).record().snapshot()).doesNotContain("funding");
+  }
+  @Test void fundedOrderReplayAndDetailDoNotLeakSourcesAfterBudgetPermissionRemoval()throws Exception{
+    var f=fundedPaidCase();var e=fundedSettlement(f,"5","10","permission");String line=jdbc.queryForObject("select id from order_line_items where order_id=?",String.class,f.order().order());
+    jdbc.update("update roles set permissions='[\"buyer:order:read\",\"buyer:order:manage\",\"buyer:contract:manage\"]'::jsonb where id=?",role);
+    var replay=settlements.propose(f.order().order(),new com.procurement.order.api.OrderSettlementContracts.Proposal("permission","原资金来源明确的专项订单清算",BigDecimal.ZERO,e.agreementId(),List.of(new com.procurement.order.api.OrderSettlementContracts.Price(line,new BigDecimal("5"))),List.of(new com.procurement.order.api.OrderSettlementContracts.Allocation(f.invoice(),new BigDecimal("10")))));
+    assertThat(replay.snapshot()).doesNotContain("funding");var detail=settlements.detail(f.order().order(),e.id(),false);assertThat(detail.fundingRequired()).isTrue();assertThat(detail.fundingEntries()).isEmpty();assertThat(detail.record().snapshot()).doesNotContain("funding");
+  }
+  @Test void fundedOrderTopupRequiresExplicitCurrentSourcesAndRejectsNoncashAttribution()throws Exception{
+    var f=fundedPaidCase();var e=approveSettlement(f.order(),fundedSettlement(f,"50","100","topup"));var approved=e;String proof=e.agreementId();
+    assertThatThrownBy(()->settlements.evidence(f.order().order(),approved.id(),new com.procurement.order.api.OrderSettlementContracts.EvidenceRequest("missing","payment",new BigDecimal("50"),"NO-LINES",proof,"缺少来源",f.invoice()))).hasMessageContaining("明确");
+    settlements.evidence(f.order().order(),e.id(),fundEvidence(f,"payment","50","20","30",proof,"topup-cash"));
+    assertThatThrownBy(()->settlements.evidence(f.order().order(),approved.id(),fundEvidence(f,"invoice","100","50","50",proof,"noncash"))).hasMessageContaining("非专项现金");
+    settlements.evidence(f.order().order(),e.id(),new com.procurement.order.api.OrderSettlementContracts.EvidenceRequest("invoice","invoice",new BigDecimal("100"),"INV-FINAL",proof,"最终发票核对",f.invoice()));
+    settlements.act(f.order().order(),e.id(),settlementAction(e,"complete"),false);assertThat(settlements.detail(f.order().order(),e.id(),false).netPaid()).isEqualByComparingTo("100");
+  }
+  @Test void fundedOrderRejectedAndWithdrawnPlansLeaveSourceBalancesUnchanged()throws Exception{
+    var f=fundedPaidCase();var before=funding.project(f.order().project()).sources();var e=fundedSettlement(f,"50","100","withdraw");settlements.act(f.order().order(),e.id(),settlementAction(e,"withdraw"),false);
+    String line=jdbc.queryForObject("select id from order_line_items where order_id=?",String.class,f.order().order());var next=settlements.propose(f.order().order(),new com.procurement.order.api.OrderSettlementContracts.Proposal("reject","重新核对",BigDecimal.ZERO,e.agreementId(),List.of(new com.procurement.order.api.OrderSettlementContracts.Price(line,new BigDecimal("50"))),List.of(new com.procurement.order.api.OrderSettlementContracts.Allocation(f.invoice(),new BigDecimal("100")))));supplier(f.order());settlements.act(f.order().order(),next.id(),settlementAction(next,"reject"),true);context(author);assertThat(funding.project(f.order().project()).sources()).isEqualTo(before);
+  }
+  @Test void databaseRejectsFundedSettlementCashWithoutItsSourceLines()throws Exception{
+    var f=fundedPaidCase();var e=approveSettlement(f.order(),fundedSettlement(f,"50","100","raw"));var tx=new org.springframework.transaction.support.TransactionTemplate(txManager);
+    assertThatThrownBy(()->tx.executeWithoutResult(s->jdbc.update("insert into order_settlement_evidence(id,tenant_id,settlement_id,request_key,kind,amount,evidence_no,attachment_id,content_sha,remark,created_by,source) values(?,?,?,'raw','payment',50,'BANK-RAW',?,'hash','raw',?,?)","raw-"+UUID.randomUUID(),tenant,e.id(),e.agreementId(),author,f.invoice()))).hasStackTraceContaining("requires approved complete source lines");
+    assertThat(settlements.detail(f.order().order(),e.id(),false).evidence()).isEmpty();
+  }
+  @Test void fundedOrderMultipleInvoicesCannotOffsetRefundAndTopupWithoutExplicitSources()throws Exception{
+    var a=approvedFund("A","300");var b=approvedFund("B","300");var c=cancellationCase();var plan=funding.submit(fundPlan(c.project(),a.id(),b.id(),"plan"));decide(plan.id(),"approve");String line=receivedLine(c),proof=settlementProof(c);invoiceSupplier(c);
+    var first=invoiceService.create(c.order(),installmentRequest(line,"first",1,100));var second=invoiceService.create(c.order(),installmentRequest(line,"second",1,100));context(author);fundedCash(first.id(),a.id(),b.id(),"60","40");jdbc.update("update invoices set payment_status='已付款' where id=?",first.id());
+    var e=settlements.propose(c.order(),new com.procurement.order.api.OrderSettlementContracts.Proposal("multi","两票退款和补付分别核验",BigDecimal.ZERO,proof,List.of(new com.procurement.order.api.OrderSettlementContracts.Price(line,new BigDecimal("50"))),List.of(new com.procurement.order.api.OrderSettlementContracts.Allocation(first.id(),BigDecimal.ZERO),new com.procurement.order.api.OrderSettlementContracts.Allocation(second.id(),new BigDecimal("100")))));e=approveSettlement(c,e);var approved=e;
+    assertThat(settlements.detail(c.order(),e.id(),false).netPaid()).isEqualByComparingTo("100");assertThat(settlements.detail(c.order(),e.id(),false).refundDue()).isEqualByComparingTo("100");assertThat(settlements.detail(c.order(),e.id(),false).paymentDue()).isEqualByComparingTo("100");
+    assertThatThrownBy(()->settlements.act(c.order(),approved.id(),settlementAction(approved,"complete"),false)).hasMessageContaining("净付款");
+    var f=new FundedCase(c,first.id(),"",a.id(),b.id());settlements.evidence(c.order(),e.id(),fundEvidence(f,"refund","100","60","40",proof,"refund"));
+    settlements.evidence(c.order(),e.id(),new com.procurement.order.api.OrderSettlementContracts.EvidenceRequest("payment","payment",new BigDecimal("100"),"PAY-B",proof,"补付第二票",second.id(),List.of(new com.procurement.order.api.OrderSettlementContracts.FundingLine(b.id(),new BigDecimal("100")))));
+    settlements.evidence(c.order(),e.id(),new com.procurement.order.api.OrderSettlementContracts.EvidenceRequest("inv-a","invoice",BigDecimal.ZERO,"CREDIT-A",proof,"第一票全额红冲",first.id()));settlements.evidence(c.order(),e.id(),new com.procurement.order.api.OrderSettlementContracts.EvidenceRequest("inv-b","invoice",new BigDecimal("100"),"FINAL-B",proof,"第二票核验",second.id()));
+    settlements.act(c.order(),e.id(),settlementAction(e,"complete"),false);assertThat(settlements.detail(c.order(),e.id(),false).fundingEntries()).hasSize(3);assertThat(funding.project(c.project()).sources()).filteredOn(s->s.fundId().equals(b.id())).singleElement().satisfies(s->assertThat(s.paidAmount()).isEqualByComparingTo("100"));
+  }
   com.procurement.buyer.api.FundingContracts.Request reallocate(FundedCase f,String key,String a,String b){
     var view=funding.project(f.order().project());
     return new com.procurement.buyer.api.FundingContracts.Request(key,"project_reallocation",null,f.order().project(),projects.detail(f.order().project()).project().revision(),view.sources().stream().map(x->x.allocatedAmount()).reduce(BigDecimal.ZERO,BigDecimal::add),List.of(new com.procurement.buyer.api.FundingContracts.Share(f.a(),new BigDecimal(a)),new com.procurement.buyer.api.FundingContracts.Share(f.b(),new BigDecimal(b))),"调整未付责任，已支付归属不变",Map.of());

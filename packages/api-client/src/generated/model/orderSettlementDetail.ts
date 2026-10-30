@@ -7,6 +7,7 @@
  */
 import type { OrderSettlementRecord } from './orderSettlementRecord';
 import type { OrderSettlementEvidence } from './orderSettlementEvidence';
+import type { SettlementFundingEntry } from './settlementFundingEntry';
 
 export interface OrderSettlementDetail {
   record?: OrderSettlementRecord;
@@ -15,4 +16,6 @@ export interface OrderSettlementDetail {
   refundDue?: number;
   paymentDue?: number;
   blockers?: string[];
+  fundingEntries?: SettlementFundingEntry[];
+  fundingRequired?: boolean;
 }

@@ -712,6 +712,8 @@ export * from './saveTenderRequest';
 export * from './scanExpiryResponse';
 export * from './sendTenderInquiryRequest';
 export * from './setPrequalificationRequest';
+export * from './settlementFundingEntry';
+export * from './settlementFundingLine';
 export * from './specialFund';
 export * from './specialFundChange';
 export * from './specialFundChangePage';

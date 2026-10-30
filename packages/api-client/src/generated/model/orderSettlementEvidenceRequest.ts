@@ -5,6 +5,7 @@
  * 多租户采购协同管理 SaaS 后端契约（平台 / 采购方 / 供应商三端）。
  * OpenAPI spec version: v1
  */
+import type { SettlementFundingLine } from './settlementFundingLine';
 
 export interface OrderSettlementEvidenceRequest {
   /**
@@ -34,4 +35,9 @@ export interface OrderSettlementEvidenceRequest {
    * @maxLength 150
    */
   source?: string;
+  /**
+   * @minItems 0
+   * @maxItems 30
+   */
+  fundingLines?: SettlementFundingLine[];
 }

@@ -19,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class OrderSettlementService {
-  @org.springframework.beans.factory.annotation.Autowired private com.procurement.buyer.application.FundingService funding;
+  @org.springframework.beans.factory.annotation.Autowired private com.procurement.buyer.application.FundingSettlementService funding;
   private final OrderSettlementMapper mapper;
   private final PurchaseOrderMapper orders;
   private final OrderAccessService access;
@@ -101,6 +101,10 @@ public class OrderSettlementService {
     if (page < 1 || size < 1 || size > 100) throw new IllegalArgumentException("分页参数无效");
     var o = order(id, supplier, false);
     var a = policy.assess(mapper.baseline(o.tenantId(), id), null);
+    var metadata=new LinkedHashMap<String,Object>(Map.of("lines",policy.tree(a.snapshot()).path("lines"),"invoiceBasis",allocation().basis(policy.tree(a.snapshot()).path("baseline")),"allocationRequired",allocation().required(policy.tree(a.snapshot()).path("baseline"))));
+    var problems=new ArrayList<String>(supplier?List.of():blockers(o,a));
+    boolean canFunding=!supplier&&permissions.currentUserHas("buyer:budget:read");
+    if(!supplier&&!mapper.locked(o.tenantId(),id))try{var basis=funding.prepare(o.tenantId(),id,a.paid(),null,false);if(basis!=null){if(canFunding){metadata.put("funding",basis);metadata.put("allocationRequired",true);}else problems.add("专项清算需要预算查看权限");}}catch(IllegalStateException ex){problems.add(ex.getMessage());}
     return new View(
         new Preview(
             a.contractId(),
@@ -110,10 +114,10 @@ public class OrderSettlementService {
             a.invoiced(),
             supplier
                 ? "{}"
-                : policy.write(Map.of("lines", policy.tree(a.snapshot()).path("lines"), "invoiceBasis", allocation().basis(policy.tree(a.snapshot()).path("baseline")), "allocationRequired", allocation().required(policy.tree(a.snapshot()).path("baseline")))),
-            supplier ? List.of() : blockers(o, a)),
+                : policy.write(metadata),
+            problems),
         mapper.page(o.tenantId(), id, size, (long) (page - 1) * size).stream()
-            .map(policy::sanitizedEntry)
+            .map(e->policy.sanitizedEntry(e,canFunding))
             .toList(),
         mapper.count(o.tenantId(), id),
         page,
@@ -140,12 +144,14 @@ public class OrderSettlementService {
       }
     }
     return new Detail(
-        policy.sanitizedEntry(e),
+        policy.sanitizedEntry(e,!supplier&&permissions.currentUserHas("buyer:budget:read")),
         items,
         n,
         refundDue,
         paymentDue,
-        policy.completionBlockers(e, items));
+        policy.completionBlockers(e, items),
+        supplier||!permissions.currentUserHas("buyer:budget:read")?List.of():funding.entries(o.tenantId(),id).stream().map(x->new FundingEntry(x.evidenceId(),x.fundId(),x.code(),x.name(),x.amount())).toList(),
+        !supplier&&funding.read(e.snapshot())!=null);
   }
 
   private AttachmentApplicationService.ProcurementExecutionAttachmentMetadata proof(
@@ -174,7 +180,6 @@ public class OrderSettlementService {
   @Transactional
   public Entry propose(String id, Proposal r) {
     var o = order(id, false, true);
-    if(funding!=null)funding.requireUnfundedOrder(o.tenantId(),id);
     var old = mapper.byKey(o.tenantId(), id, r.requestKey());
     if (old != null) {
       var s = policy.tree(old.snapshot());
@@ -183,11 +188,12 @@ public class OrderSettlementService {
           || old.compensationAmount().compareTo(r.compensation()) != 0
           || !sameProposal(s.path("proposal"), r))
         throw new IllegalStateException("同一提交编号内容不同");
-      return policy.sanitizedEntry(old);
+      return policy.sanitizedEntry(old,permissions.currentUserHas("buyer:budget:read"));
     }
     var a = policy.assess(mapper.baseline(o.tenantId(), id), r.prices());
     if (a.contractId() != null) permissions.require("buyer:contract:manage");
     allowed(blockers(o, a));
+    var fundingBasis=funding.prepare(o.tenantId(),id,a.paid(),null,true);
     BigDecimal total = a.goods().add(r.compensation());
     if (total.compareTo(o.amount()) > 0) throw new IllegalStateException("清算金额不得超过原订单金额；增额须另行变更审批");
     var p = proof(o, r.agreementId());
@@ -196,6 +202,8 @@ public class OrderSettlementService {
     var snapshot = new LinkedHashMap<String, Object>();
     snapshot.put("assessment", policy.tree(a.snapshot()));
     snapshot.put("proposal", r);
+    if(fundingBasis!=null)snapshot.put("funding",fundingBasis);
+    if(fundingBasis!=null&&r.allocations()==null)throw new IllegalArgumentException("专项清算须明确填写逐票最终货款归属");
     var plan = allocation().plan(policy.tree(a.snapshot()).path("baseline"), a.goods(), r.compensation(), r.allocations());
     if (plan != null) snapshot.put("invoicePlan", plan);
     var v = new HashMap<String, Object>();
@@ -222,7 +230,7 @@ public class OrderSettlementService {
     mapper.insert(v);
     status(o, "清算协商中");
     event(o, "proposed", r.reason());
-    return policy.sanitizedEntry(mapper.find(o.tenantId(), v.get("id").toString()));
+    return policy.sanitizedEntry(mapper.find(o.tenantId(), v.get("id").toString()),true);
   }
 
   private void status(PurchaseOrder o, String next) {
@@ -240,6 +248,7 @@ public class OrderSettlementService {
     if (!old.equals(policy.tree(mapper.baseline(o.tenantId(), o.id()))))
       throw new IllegalStateException("履约或资金依据已变化，请驳回后重新申请");
     allowed(mapper.blockers(o.tenantId(), o.id()));
+    funding.validate(o.tenantId(),o.id(),e.id(),e.snapshot(),e.initialPaid());
   }
 
   @Transactional
@@ -318,7 +327,7 @@ public class OrderSettlementService {
     } else throw new IllegalArgumentException("无效操作");
     event(o, a, r.reason());
     var result = mapper.find(o.tenantId(), id);
-    return policy.sanitizedEntry(result);
+    return policy.sanitizedEntry(result,!supplier&&permissions.currentUserHas("buyer:budget:read"));
   }
 
   @Transactional
@@ -333,7 +342,8 @@ public class OrderSettlementService {
           || !previous.evidenceNo().equals(r.evidenceNo().strip())
           || !previous.attachmentId().equals(r.attachmentId())
           || !previous.remark().equals(r.remark().strip())
-          || !Objects.equals(previous.source(), r.source()))
+          || !Objects.equals(previous.source(), r.source())
+          || !funding.matches(o.tenantId(),previous.id(),fundingLines(r)))
         throw new IllegalStateException("同一凭证请求内容不同");
       return previous;
     }
@@ -371,6 +381,7 @@ public class OrderSettlementService {
     v.put("actor", actor());
     v.put("source", r.source());
     mapper.insertEvidence(v);
+    funding.record(o.tenantId(),order,id,v.get("id").toString(),e.snapshot(),r.kind(),r.source(),r.amount(),fundingLines(r),actor());
     event(o, "evidence", r.kind() + ":" + r.amount() + ":" + r.evidenceNo());
     return mapper.evidenceByKey(o.tenantId(), id, r.requestKey());
   }
@@ -412,6 +423,11 @@ public class OrderSettlementService {
 
   private OrderSettlementAllocationPolicy allocation() {
     return new OrderSettlementAllocationPolicy(new com.fasterxml.jackson.databind.ObjectMapper());
+  }
+
+  private List<com.procurement.buyer.application.FundingSettlementService.Allocation> fundingLines(EvidenceRequest r){
+    if(r.fundingLines()==null)return null;
+    return r.fundingLines().stream().map(x->{if(x==null)throw new IllegalArgumentException("资金来源不得为空");return new com.procurement.buyer.application.FundingSettlementService.Allocation(x.fundId(),x.amount());}).toList();
   }
 
   private boolean sameProposal(com.fasterxml.jackson.databind.JsonNode saved, Proposal request) {

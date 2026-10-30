@@ -150,8 +150,15 @@ values(#{id},#{tenantId},#{kind},#{fundId},#{projectId},#{departmentId},#{period
   @Select("select count(*) from frozen_payment_corrections where tenant_id=#{t} and project_id=#{p} and status='submitted'")
   int pendingCorrection(@Param("t")String t,@Param("p")String p);
 
-  @Select("select coalesce(sum(amount),0) from funding_payment_allocations where tenant_id=#{t} and project_id=#{p}")
+  @Select("select coalesce(sum(amount),0) from special_funding_cash where tenant_id=#{t} and project_id=#{p}")
   BigDecimal totalPaid(@Param("t") String t, @Param("p") String p);
+
+  @Select("select count(*) from order_settlements s where s.tenant_id=#{t} and s.status not in ('withdrawn','rejected','settled') and exists(select 1 from purchase_orders o join rfq_demands rd on rd.tenant_id=o.tenant_id and rd.rfq_id=o.rfq_id join procurement_project_demands d on d.tenant_id=rd.tenant_id and d.demand_id=rd.demand_id where o.tenant_id=s.tenant_id and o.id=s.order_id and d.project_id=#{p})")
+  int pendingSettlement(@Param("t")String t,@Param("p")String p);
+  @Select("select count(*) from order_settlements s where s.tenant_id=#{t} and s.status not in ('withdrawn','rejected','settled') and exists(select 1 from jsonb_array_elements(coalesce(s.snapshot->'funding'->'sources','[]'::jsonb)) x where x->>'fundId'=#{f})")
+  int pendingFundSettlement(@Param("t")String t,@Param("f")String f);
+  @Select("select exists(select 1 from order_settlements s join invoices i on i.tenant_id=s.tenant_id and i.order_id=s.order_id where i.tenant_id=#{t} and i.id=#{i} and s.status='settled')")
+  boolean settledInvoice(@Param("t")String t,@Param("i")String i);
 
   @Select("select exists(select 1 from funding_payment_allocations a where a.tenant_id=#{t} and a.entry_id=#{e} and a.change_id<>#{plan})")
   boolean historicalEntry(@Param("t") String t,@Param("e") String e,@Param("plan") String plan);

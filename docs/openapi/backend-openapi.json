@@ -45848,6 +45848,14 @@
             "maxLength": 150,
             "minLength": 0,
             "type": "string"
+          },
+          "fundingLines": {
+            "maxItems": 30,
+            "minItems": 0,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SettlementFundingLine"
+            }
           }
         }
       },
@@ -46016,6 +46024,15 @@
             "items": {
               "type": "string"
             }
+          },
+          "fundingEntries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SettlementFundingEntry"
+            }
+          },
+          "fundingRequired": {
+            "type": "boolean"
           }
         }
       },
@@ -47251,6 +47268,43 @@
             "type": "string"
           },
           "period": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          }
+        }
+      },
+      "SettlementFundingLine": {
+        "required": [
+          "amount",
+          "fundId"
+        ],
+        "type": "object",
+        "properties": {
+          "fundId": {
+            "type": "string"
+          },
+          "amount": {
+            "minimum": 0.01,
+            "exclusiveMinimum": false,
+            "type": "number"
+          }
+        }
+      },
+      "SettlementFundingEntry": {
+        "type": "object",
+        "properties": {
+          "evidenceId": {
+            "type": "string"
+          },
+          "fundId": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
             "type": "string"
           },
           "amount": {

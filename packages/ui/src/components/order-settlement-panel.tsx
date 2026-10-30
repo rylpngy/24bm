@@ -1,4 +1,9 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import {
+  SettlementFundingFields,
+  type SettlementFundingBasis,
+  type SettlementFundingEntry,
+} from './settlement-funding-fields';
 import { RefreshCw, Download, FileCheck2, Eye } from 'lucide-react';
 import { Pagination } from './pagination';
 interface Entry {
@@ -21,6 +26,8 @@ interface Entry {
   supplierComment?: string;
 }
 interface Detail {
+  fundingRequired?: boolean;
+  fundingEntries?: SettlementFundingEntry[];
   record: Entry;
   evidence: {
     source?: string | null;
@@ -91,6 +98,7 @@ const money = (n: number) =>
 function parse(s: string) {
   try {
     return JSON.parse(s) as {
+      funding?: SettlementFundingBasis;
       invoiceBasis?: {
         source: string;
         label: string;
@@ -167,10 +175,19 @@ export function OrderSettlementPanel({
     [reference, setReference] = useState(''),
     [proof, setProof] = useState(''),
     [remark, setRemark] = useState('');
+  const [fundingValues, setFundingValues] = useState<Record<string, string>>(
+      {},
+    ),
+    [fundingReady, setFundingReady] = useState(false);
   const e = s.detail?.record,
     lines = parse(s.data?.preview.baseline || '{}').lines || [];
   const basis = parse(s.data?.preview.baseline || '{}');
   const invoicePlan = e ? parse(e.snapshot).invoicePlan : undefined;
+  const funding = e ? parse(e.snapshot).funding : undefined;
+  useEffect(() => {
+    setFundingValues({});
+    setFundingReady(false);
+  }, [e?.id]);
   const mayManage =
     canManage &&
     (!(e?.contractId || s.data?.preview.contractId) || canContractManage);
@@ -594,135 +611,195 @@ export function OrderSettlementPanel({
                   </div>
                 )}
               {workflow?.(e)}
-              {!supplier && e.status === 'approved' && canFinance && (
-                <form
-                  className="space-y-3 border-t border-slate-100 pt-3"
-                  onSubmit={async (event) => {
-                    event.preventDefault();
-                    if (
-                      await s.evidence(e, {
-                        kind,
-                        amount: Number(amount),
-                        evidenceNo: reference,
-                        attachmentId: proof,
-                        remark,
-                        ...(invoicePlan ? { source } : {}),
-                      })
-                    ) {
-                      setReference('');
-                      setAmount('');
-                    }
-                  }}
-                >
-                  <h4 className="font-semibold">登记实际清算凭证</h4>
-                  {attachments}
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {invoicePlan && (
+              {!supplier && s.detail!.fundingRequired && !funding && (
+                <p role="alert" className="text-sm text-red-600">
+                  专项清算需要预算查看权限，当前仅可查看普通清算资料。
+                </p>
+              )}
+              {!supplier &&
+                e.status === 'approved' &&
+                canFinance &&
+                (!s.detail!.fundingRequired || !!funding) && (
+                  <form
+                    className="space-y-3 border-t border-slate-100 pt-3"
+                    onSubmit={async (event) => {
+                      event.preventDefault();
+                      if (
+                        funding &&
+                        ['payment', 'refund'].includes(kind) &&
+                        !fundingReady
+                      )
+                        return;
+                      if (
+                        await s.evidence(e, {
+                          kind,
+                          amount: Number(amount),
+                          evidenceNo: reference,
+                          attachmentId: proof,
+                          remark,
+                          ...(invoicePlan ? { source } : {}),
+                          ...(funding && ['payment', 'refund'].includes(kind)
+                            ? {
+                                fundingLines: funding.sources
+                                  .map((x) => ({
+                                    fundId: x.fundId,
+                                    amount: Number(
+                                      fundingValues[x.fundId] || 0,
+                                    ),
+                                  }))
+                                  .filter((x) => x.amount > 0),
+                              }
+                            : {}),
+                        })
+                      ) {
+                        setReference('');
+                        setAmount('');
+                        setFundingValues({});
+                        setFundingReady(false);
+                      }
+                    }}
+                  >
+                    <h4 className="font-semibold">登记实际清算凭证</h4>
+                    {attachments}
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {invoicePlan && (
+                        <label className="text-sm">
+                          发票或款项归属
+                          <select
+                            className={input}
+                            required
+                            value={source}
+                            onChange={(v) => {
+                              setSource(v.target.value);
+                              setFundingValues({});
+                              setFundingReady(false);
+                            }}
+                          >
+                            <option value="">请选择归属</option>
+                            {invoicePlan.map((row) => (
+                              <option key={row.source} value={row.source}>
+                                {row.label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      )}
                       <label className="text-sm">
-                        发票或款项归属
+                        类型
                         <select
                           className={input}
-                          required
-                          value={source}
-                          onChange={(v) => setSource(v.target.value)}
+                          value={kind}
+                          onChange={(v) => {
+                            setKind(v.target.value);
+                            setFundingValues({});
+                            setFundingReady(false);
+                          }}
                         >
-                          <option value="">请选择归属</option>
-                          {invoicePlan.map((row) => (
-                            <option key={row.source} value={row.source}>
-                              {row.label}
+                          {[
+                            'refund',
+                            'payment',
+                            'invoice',
+                            'compensation_receipt',
+                          ].map((k) => (
+                            <option key={k} value={k}>
+                              {labels[k]}
                             </option>
                           ))}
                         </select>
                       </label>
+                      <label className="text-sm">
+                        金额
+                        <input
+                          className={input}
+                          required
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={amount}
+                          onChange={(v) => setAmount(v.target.value)}
+                        />
+                      </label>
+                      <label className="text-sm">
+                        凭证编号
+                        <input
+                          className={input}
+                          required
+                          maxLength={150}
+                          value={reference}
+                          onChange={(v) => setReference(v.target.value)}
+                        />
+                      </label>
+                      <label className="text-sm">
+                        原件
+                        <select
+                          className={input}
+                          required
+                          value={proof}
+                          onChange={(v) => setProof(v.target.value)}
+                        >
+                          <option value="">请选择原件</option>
+                          {attachmentOptions.map((a) => (
+                            <option key={a.id} value={a.id}>
+                              {a.fileName}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="text-sm sm:col-span-2">
+                        核对说明
+                        <input
+                          className={input}
+                          required
+                          maxLength={1000}
+                          value={remark}
+                          onChange={(v) => setRemark(v.target.value)}
+                        />
+                      </label>
+                    </div>
+                    {funding && ['payment', 'refund'].includes(kind) && (
+                      <SettlementFundingFields
+                        basis={funding}
+                        entries={s.detail!.fundingEntries || []}
+                        evidence={s.detail!.evidence}
+                        kind={kind}
+                        source={source}
+                        amount={amount}
+                        value={fundingValues}
+                        onChange={setFundingValues}
+                        onReady={setFundingReady}
+                      />
                     )}
-                    <label className="text-sm">
-                      类型
-                      <select
-                        className={input}
-                        value={kind}
-                        onChange={(v) => setKind(v.target.value)}
-                      >
-                        {[
-                          'refund',
-                          'payment',
-                          'invoice',
-                          'compensation_receipt',
-                        ].map((k) => (
-                          <option key={k} value={k}>
-                            {labels[k]}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="text-sm">
-                      金额
-                      <input
-                        className={input}
-                        required
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={amount}
-                        onChange={(v) => setAmount(v.target.value)}
-                      />
-                    </label>
-                    <label className="text-sm">
-                      凭证编号
-                      <input
-                        className={input}
-                        required
-                        maxLength={150}
-                        value={reference}
-                        onChange={(v) => setReference(v.target.value)}
-                      />
-                    </label>
-                    <label className="text-sm">
-                      原件
-                      <select
-                        className={input}
-                        required
-                        value={proof}
-                        onChange={(v) => setProof(v.target.value)}
-                      >
-                        <option value="">请选择原件</option>
-                        {attachmentOptions.map((a) => (
-                          <option key={a.id} value={a.id}>
-                            {a.fileName}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="text-sm sm:col-span-2">
-                      核对说明
-                      <input
-                        className={input}
-                        required
-                        maxLength={1000}
-                        value={remark}
-                        onChange={(v) => setRemark(v.target.value)}
-                      />
-                    </label>
-                  </div>
-                  <button className={button} disabled={s.busy} type="submit">
-                    登记凭证
-                  </button>
-                  {s.detail!.blockers.map((b) => (
-                    <p className="text-sm text-amber-700" key={b}>
-                      {b}
-                    </p>
-                  ))}
-                  <button
-                    className={button}
-                    type="button"
-                    disabled={
-                      s.busy || !!s.detail!.blockers.length || !remark.trim()
-                    }
-                    onClick={() => void s.act(e, 'complete', remark)}
-                  >
-                    {e.contractId ? '完成清算并归档合同' : '完成订单清算'}
-                  </button>
-                </form>
-              )}
+                    <button
+                      className={button}
+                      disabled={
+                        s.busy ||
+                        !!(
+                          funding &&
+                          ['payment', 'refund'].includes(kind) &&
+                          !fundingReady
+                        )
+                      }
+                      type="submit"
+                    >
+                      登记凭证
+                    </button>
+                    {s.detail!.blockers.map((b) => (
+                      <p className="text-sm text-amber-700" key={b}>
+                        {b}
+                      </p>
+                    ))}
+                    <button
+                      className={button}
+                      type="button"
+                      disabled={
+                        s.busy || !!s.detail!.blockers.length || !remark.trim()
+                      }
+                      onClick={() => void s.act(e, 'complete', remark)}
+                    >
+                      {e.contractId ? '完成清算并归档合同' : '完成订单清算'}
+                    </button>
+                  </form>
+                )}
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[500px] text-left text-sm">
                   <thead>
@@ -752,6 +829,32 @@ export function OrderSettlementPanel({
                   </tbody>
                 </table>
               </div>
+              {!supplier && !!s.detail!.fundingEntries?.length && (
+                <section
+                  aria-label="清算来源分账明细"
+                  className="space-y-2 border-t border-slate-200 pt-3"
+                >
+                  <h4 className="font-semibold">清算来源分账</h4>
+                  {s.detail!.fundingEntries.map((x) => (
+                    <div
+                      key={x.evidenceId + ':' + x.fundId}
+                      className="flex flex-wrap justify-between gap-2 text-sm"
+                    >
+                      <span>
+                        {x.code} · {x.name}
+                      </span>
+                      <span>
+                        {x.amount < 0 ? '退款' : '补付'}{' '}
+                        {money(Math.abs(x.amount))} ·{' '}
+                        {
+                          s.detail!.evidence.find((p) => p.id === x.evidenceId)
+                            ?.evidenceNo
+                        }
+                      </span>
+                    </div>
+                  ))}
+                </section>
+              )}
             </>
           )}
         </div>
