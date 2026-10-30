@@ -46604,6 +46604,11 @@
             "items": {
               "$ref": "#/components/schemas/FrozenCorrectionFundingTarget"
             }
+          },
+          "amount": {
+            "minimum": 0.01,
+            "exclusiveMinimum": false,
+            "type": "number"
           }
         }
       },
@@ -46791,6 +46796,9 @@
           },
           "fundingRequired": {
             "type": "boolean"
+          },
+          "remainingAmount": {
+            "type": "number"
           }
         }
       },
@@ -47332,6 +47340,11 @@
           },
           "targetFundId": {
             "type": "string"
+          },
+          "amount": {
+            "minimum": 0.01,
+            "exclusiveMinimum": false,
+            "type": "number"
           }
         }
       },

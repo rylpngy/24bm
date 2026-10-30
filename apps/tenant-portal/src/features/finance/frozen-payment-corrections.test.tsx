@@ -14,7 +14,7 @@ const state = vi.hoisted(() => ({
   post: vi.fn(),
   api: vi.fn(),
   fail: false,
-  funded:false,
+  funded: false,
 }));
 vi.mock('../../lib/use-buyer-permissions', () => ({
   useBuyerPermissions: () => ({
@@ -34,7 +34,7 @@ vi.mock('../workflow/workflow-submit-dialog', () => ({
     onSubmit: (d: object) => void;
     submissionError: string;
     busy: boolean;
-    onClose:()=>void;
+    onClose: () => void;
   }) => (
     <div role="dialog">
       <p>{submissionError}</p>
@@ -65,16 +65,39 @@ vi.mock('@24bid/api-client/http-client', () => ({
           {
             entryId: 'p1',
             amount: 50,
+            remainingAmount: 30,
             evidenceNo: 'BANK-ORIGINAL',
             projectId: 'project',
             sourcePeriod: '2024',
             targetPeriod: '2025',
             blockers: state.blockers,
-            fundingRequired:state.funded,
+            fundingRequired: state.funded,
           },
         ],
       });
-    if(args.url.endsWith('/funding-options'))return Promise.resolve({data:{enabled:true,sources:[{fundId:'old',code:'OLD',name:'历史专项',period:'2024',amount:50}],choices:[{fundId:'current',code:'NOW',name:'当前专项',availableAmount:100}]}});
+    if (args.url.endsWith('/funding-options'))
+      return Promise.resolve({
+        data: {
+          enabled: true,
+          sources: [
+            {
+              fundId: 'old',
+              code: 'OLD',
+              name: '历史专项',
+              period: '2024',
+              amount: 50,
+            },
+          ],
+          choices: [
+            {
+              fundId: 'current',
+              code: 'NOW',
+              name: '当前专项',
+              availableAmount: 100,
+            },
+          ],
+        },
+      });
     return Promise.resolve({ data: { items: [], total: 21 } });
   },
 }));
@@ -82,7 +105,7 @@ beforeEach(() => {
   state.manage = true;
   state.blockers = [];
   state.fail = false;
-  state.funded=false;
+  state.funded = false;
   state.api.mockClear();
   state.post.mockClear();
 });
@@ -138,7 +161,9 @@ it('requires evidence and reason, preserves the request key on a network retry',
   });
   fireEvent.click(screen.getByRole('button', { name: '下一步' }));
   fireEvent.click(screen.getByRole('button', { name: '确认提交审批' }));
-  await waitFor(()=>expect(screen.getAllByText('网络暂时中断').length).toBeGreaterThan(0));
+  await waitFor(() =>
+    expect(screen.getAllByText('网络暂时中断').length).toBeGreaterThan(0),
+  );
   fireEvent.click(screen.getByRole('button', { name: '确认提交审批' }));
   await waitFor(() => expect(state.post).toHaveBeenCalledTimes(2));
   const a = state.post.mock.calls[0][0].data,
@@ -160,20 +185,126 @@ it('keeps the ledger readable without reverse permission and pages on the server
     expect(state.api.mock.calls.some(([x]) => x.params?.page === 2)).toBe(true),
   );
 });
-it('requires an explicit current-year restoration target and submits the source mapping',async()=>{
-  state.funded=true;show();await expand();fireEvent.click(screen.getByRole('button',{name:'申请更正'}));
-  fireEvent.change(screen.getByLabelText('更正凭据号'),{target:{value:'BANK-FUND'}});fireEvent.change(screen.getByLabelText('更正原因'),{target:{value:'专项原付款更正'}});
-  expect((screen.getByRole('button',{name:'下一步'}) as HTMLButtonElement).disabled).toBe(true);
-  const source=await screen.findByLabelText('更正回补来源 OLD');fireEvent.change(source,{target:{value:'current'}});
-  await waitFor(()=>expect((screen.getByRole('button',{name:'下一步'}) as HTMLButtonElement).disabled).toBe(false));
-  fireEvent.click(screen.getByRole('button',{name:'下一步'}));fireEvent.click(screen.getByRole('button',{name:'确认提交审批'}));
-  await waitFor(()=>expect(state.post).toHaveBeenCalledTimes(1));expect(state.post.mock.calls[0][0].data.fundingTargets).toEqual([{sourceFundId:'old',targetFundId:'current'}]);
+it('requires an explicit current-year restoration target and submits the source mapping', async () => {
+  state.funded = true;
+  show();
+  await expand();
+  fireEvent.click(screen.getByRole('button', { name: '申请更正' }));
+  fireEvent.change(screen.getByLabelText('更正凭据号'), {
+    target: { value: 'BANK-FUND' },
+  });
+  fireEvent.change(screen.getByLabelText('更正原因'), {
+    target: { value: '专项原付款更正' },
+  });
+  expect(
+    (screen.getByRole('button', { name: '下一步' }) as HTMLButtonElement)
+      .disabled,
+  ).toBe(true);
+  const source = await screen.findByLabelText('更正回补来源 OLD');
+  fireEvent.change(source, { target: { value: 'current' } });
+  fireEvent.change(screen.getByLabelText('来源更正金额 OLD'), {
+    target: { value: '30' },
+  });
+  await waitFor(() =>
+    expect(
+      (screen.getByRole('button', { name: '下一步' }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(false),
+  );
+  fireEvent.click(screen.getByRole('button', { name: '下一步' }));
+  fireEvent.click(screen.getByRole('button', { name: '确认提交审批' }));
+  await waitFor(() => expect(state.post).toHaveBeenCalledTimes(1));
+  expect(state.post.mock.calls[0][0].data.fundingTargets).toEqual([
+    { sourceFundId: 'old', targetFundId: 'current', amount: 30 },
+  ]);
 });
-it('uses a fresh request key for a new dialog while retaining same-dialog network retries',async()=>{
-  state.fail=true;show();await expand();
-  const fill=()=>{fireEvent.change(screen.getByLabelText('更正凭据号'),{target:{value:'BANK-RETRY'}});fireEvent.change(screen.getByLabelText('更正原因'),{target:{value:'相同内容重新发起'}});fireEvent.click(screen.getByRole('button',{name:'下一步'}));fireEvent.click(screen.getByRole('button',{name:'确认提交审批'}));};
-  fireEvent.click(screen.getByRole('button',{name:'申请更正'}));fill();await waitFor(()=>expect(state.post).toHaveBeenCalledTimes(1));
-  await waitFor(()=>expect(screen.getAllByText('网络暂时中断').length).toBeGreaterThan(0));fireEvent.click(screen.getByRole('button',{name:'返回修改'}));fireEvent.click(screen.getByRole('button',{name:/^关闭$/}));
-  fireEvent.click(screen.getByRole('button',{name:'申请更正'}));fill();await waitFor(()=>expect(state.post).toHaveBeenCalledTimes(2));
-  expect(state.post.mock.calls[0][0].data.requestKey).not.toBe(state.post.mock.calls[1][0].data.requestKey);
+it('uses remaining capacity, rejects invalid amounts and submits only the selected partial amount', async () => {
+  show();
+  await expand();
+  fireEvent.click(screen.getByRole('button', { name: '申请更正' }));
+  fireEvent.change(screen.getByLabelText('更正凭据号'), {
+    target: { value: 'PARTIAL-PROOF' },
+  });
+  fireEvent.change(screen.getByLabelText('更正原因'), {
+    target: { value: '核实其中部分金额登记有误' },
+  });
+  for (const value of ['0', '31', '0.001']) {
+    fireEvent.change(screen.getByLabelText('本次更正金额'), {
+      target: { value },
+    });
+    expect(
+      (screen.getByRole('button', { name: '下一步' }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(true);
+  }
+  fireEvent.change(screen.getByLabelText('本次更正金额'), {
+    target: { value: '12.34' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: '下一步' }));
+  fireEvent.click(screen.getByRole('button', { name: '确认提交审批' }));
+  await waitFor(() => expect(state.post).toHaveBeenCalledTimes(1));
+  expect(state.post.mock.calls[0][0].data.amount).toBe(12.34);
+});
+it('requires source totals to match the correction amount and remaining source capacity', async () => {
+  state.funded = true;
+  show();
+  await expand();
+  fireEvent.click(screen.getByRole('button', { name: '申请更正' }));
+  fireEvent.change(screen.getByLabelText('更正凭据号'), {
+    target: { value: 'PARTIAL-FUND' },
+  });
+  fireEvent.change(screen.getByLabelText('更正原因'), {
+    target: { value: '明确本次来源金额' },
+  });
+  fireEvent.change(await screen.findByLabelText('更正回补来源 OLD'), {
+    target: { value: 'current' },
+  });
+  fireEvent.change(screen.getByLabelText('本次更正金额'), {
+    target: { value: '20' },
+  });
+  fireEvent.change(screen.getByLabelText('来源更正金额 OLD'), {
+    target: { value: '30' },
+  });
+  expect(
+    (screen.getByRole('button', { name: '下一步' }) as HTMLButtonElement)
+      .disabled,
+  ).toBe(true);
+  fireEvent.change(screen.getByLabelText('来源更正金额 OLD'), {
+    target: { value: '20' },
+  });
+  await waitFor(() =>
+    expect(
+      (screen.getByRole('button', { name: '下一步' }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(false),
+  );
+});
+it('uses a fresh request key for a new dialog while retaining same-dialog network retries', async () => {
+  state.fail = true;
+  show();
+  await expand();
+  const fill = () => {
+    fireEvent.change(screen.getByLabelText('更正凭据号'), {
+      target: { value: 'BANK-RETRY' },
+    });
+    fireEvent.change(screen.getByLabelText('更正原因'), {
+      target: { value: '相同内容重新发起' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: '下一步' }));
+    fireEvent.click(screen.getByRole('button', { name: '确认提交审批' }));
+  };
+  fireEvent.click(screen.getByRole('button', { name: '申请更正' }));
+  fill();
+  await waitFor(() => expect(state.post).toHaveBeenCalledTimes(1));
+  await waitFor(() =>
+    expect(screen.getAllByText('网络暂时中断').length).toBeGreaterThan(0),
+  );
+  fireEvent.click(screen.getByRole('button', { name: '返回修改' }));
+  fireEvent.click(screen.getByRole('button', { name: /^关闭$/ }));
+  fireEvent.click(screen.getByRole('button', { name: '申请更正' }));
+  fill();
+  await waitFor(() => expect(state.post).toHaveBeenCalledTimes(2));
+  expect(state.post.mock.calls[0][0].data.requestKey).not.toBe(
+    state.post.mock.calls[1][0].data.requestKey,
+  );
 });

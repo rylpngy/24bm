@@ -16,7 +16,11 @@ public record FundingCorrectionService(
     ProjectLifecycleMapper lifecycle,
     AuditLogApplicationService audit) {
   @Schema(name = "FundingCorrectionTarget")
-  public record Target(String sourceFundId, String targetFundId) {}
+  public record Target(String sourceFundId, String targetFundId, BigDecimal amount) {
+    public Target(String sourceFundId, String targetFundId) {
+      this(sourceFundId, targetFundId, null);
+    }
+  }
 
   @Schema(name = "FundingCorrectionSource")
   public record Source(String fundId, String code, String name, String period, BigDecimal amount) {}
@@ -85,6 +89,16 @@ public record FundingCorrectionService(
 
   public Snapshot prepare(
       String t, String invoice, String entry, List<Target> targets, String ignore) {
+    return prepare(t, invoice, entry, targets, ignore, null);
+  }
+
+  public Snapshot prepare(
+      String t,
+      String invoice,
+      String entry,
+      List<Target> targets,
+      String ignore,
+      BigDecimal requested) {
     funds.lock(t);
     var old = corrections.original(t, invoice, entry);
     if (old.isEmpty()) {
@@ -107,20 +121,30 @@ public record FundingCorrectionService(
       throw new IllegalStateException("原付款专项来源金额与实际流水不一致");
     if (funds.priorPaid(t, p).compareTo(total) < 0)
       throw new IllegalStateException("历史已付基线不足，不能推算更正");
-    if (targets == null || targets.size() != old.size())
+    if (targets == null || targets.isEmpty())
       throw new IllegalArgumentException("请为每个原付款资金来源明确选择当前年度回补来源");
-    Map<String, String> selected = new HashMap<>();
+    Map<String, Target> selected = new HashMap<>();
     for (var target : targets)
       if (target == null
           || target.sourceFundId() == null
           || target.targetFundId() == null
-          || selected.putIfAbsent(target.sourceFundId(), target.targetFundId()) != null)
+          || selected.putIfAbsent(target.sourceFundId(), target) != null)
         throw new IllegalArgumentException("原付款来源不得重复或为空");
     var balances = funds.balances(t, p);
     var totals = new HashMap<String, BigDecimal>();
     var lines = new ArrayList<Line>();
     for (var o : old) {
-      String id = selected.remove(o.fundId());
+      var selection = selected.remove(o.fundId());
+      if (selection == null) {
+        if (requested == null) throw new IllegalArgumentException("请为每个原付款资金来源明确选择当前年度回补来源");
+        continue;
+      }
+      String id = selection.targetFundId();
+      BigDecimal amount = selection.amount() == null ? o.amount() : selection.amount();
+      if (amount.signum() <= 0
+          || amount.stripTrailingZeros().scale() > 2
+          || amount.compareTo(o.amount()) > 0)
+        throw new IllegalArgumentException("来源更正金额须大于零、不超过两位小数且不得超过该来源剩余金额");
       var fund = id == null ? null : funds.fund(t, id);
       if (fund == null
           || balances.stream().noneMatch(b -> b.fundId().equals(id))
@@ -128,7 +152,7 @@ public record FundingCorrectionService(
           || !period.equals(fund.period())
           || !"approved".equals(fund.status()))
         throw new IllegalArgumentException("回补来源须为项目当前版本中同部门、当前年度的已批准资金");
-      totals.merge(id, o.amount(), BigDecimal::add);
+      totals.merge(id, amount, BigDecimal::add);
       lines.add(
           new Line(
               o.fundId(),
@@ -140,9 +164,14 @@ public record FundingCorrectionService(
               fund.code(),
               fund.name(),
               fund.revision(),
-              o.amount()));
+              amount));
     }
     if (!selected.isEmpty()) throw new IllegalArgumentException("回补映射包含非原付款来源");
+    if (lines.stream()
+            .map(Line::amount)
+            .reduce(BigDecimal.ZERO, BigDecimal::add)
+            .compareTo(requested == null ? total : requested)
+        != 0) throw new IllegalArgumentException("各来源更正金额合计须等于本次更正金额");
     for (var target : totals.entrySet())
       if (target.getValue().compareTo(funds.fund(t, target.getKey()).availableAmount()) > 0)
         throw new IllegalStateException("当前年度回补来源可用额度不足，请先批准额度调整");

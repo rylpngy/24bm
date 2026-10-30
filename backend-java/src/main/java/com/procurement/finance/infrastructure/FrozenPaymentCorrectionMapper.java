@@ -72,7 +72,7 @@ group by p.id,p.tenant_id,p.department_id,p.revision,p.status,o.rfq_id,o.tenant_
 
   @Select(
       "select exists(select 1 from frozen_payment_corrections where tenant_id=#{tenant} and"
-          + " entry_id=#{entry} and status in ('submitted','approved'))")
+          + " entry_id=#{entry} and status='submitted')")
   boolean active(@Param("tenant") String tenant, @Param("entry") String entry);
 
   @Select("select id from payment_requests where tenant_id=#{tenant} and invoice_id=#{invoice}")

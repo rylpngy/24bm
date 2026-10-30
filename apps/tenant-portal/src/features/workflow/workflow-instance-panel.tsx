@@ -23,6 +23,7 @@ const eventLabel: Record<string, string> = {
 };
 
 import {ProjectReopenEvidence} from '../projects/project-reopen-evidence';
+import {FrozenCorrectionEvidence} from '../finance/frozen-correction-evidence';
 
 export function WorkflowStatusPanel({
   businessType,
@@ -112,6 +113,7 @@ export function WorkflowInstancePanel({
       )}
       {!compact&&!hideBusinessSnapshot&&history.businessType==='order_settlement'&&<SettlementSnapshot snapshot={history.businessSnapshot?.settlementSnapshot}/>}
       {!compact&&!hideBusinessSnapshot&&history.businessType==='project_reopen'&&<ProjectReopenEvidence snapshot={JSON.stringify(history.businessSnapshot)}/>}
+      {!compact&&!hideBusinessSnapshot&&history.businessType==='frozen_payment_correction'&&<FrozenCorrectionEvidence snapshot={JSON.stringify(history.businessSnapshot)}/>}
 
       {!compact && (
         <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_0.8fr]">
@@ -217,6 +219,7 @@ function fieldLabel(key: string) {
     contractNo: '合同编号', contractName: '合同名称', invoiceId: '发票编号', orderId: '订单编号', paymentBatchNo: '付款批次',
     exceptionType: '例外类型', exceptionReason: '例外原因', amount: '金额', requestCount: '申请数量', totalAmount: '总金额',
     contractId:'合同编号',finalAmount:'约定清算总额',goodsAmount:'结算货款',initialPaid:'原已付款',
+    correctionAmount:'本次更正金额',remainingAmount:'送审时可更正余额',
   };
   return labels[key] ?? key;
 }

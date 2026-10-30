@@ -149,8 +149,11 @@ public final class ProcurementExecutionPolicy {
         for (var entry : entries) {
           if (!text(entry,"reversalOf").isBlank()) {
             var original = entries.stream().filter(p -> text(p,"id").equals(text(entry,"reversalOf"))).findFirst().orElse(null);
-            if (original == null || amount(original,"amount").signum() <= 0 || !text(original,"reversalOf").isBlank()
-                || amount(original,"amount").add(amount(entry,"amount")).signum() != 0) blockers.add("发票 " + invoiceId + " 付款冲销关联或金额异常");
+            var reversals=matching(data,"payments","reversalOf",text(entry,"reversalOf"));
+            boolean approvedPartial=list(data,"frozenPaymentCorrections").stream().anyMatch(c->"approved".equals(text(c,"status"))&&text(c,"reversal_id").equals(text(entry,"id"))&&text(c,"entry_id").equals(text(entry,"reversalOf"))&&amount(c,"amount").compareTo(amount(entry,"amount").negate())==0);
+            if (original == null || amount(original,"amount").signum() <= 0 || !text(original,"reversalOf").isBlank()||amount(entry,"amount").signum()>=0
+                || amount(original,"amount").add(sum(reversals,"amount")).signum()<0
+                || (!approvedPartial&&(reversals.size()!=1||amount(original,"amount").add(amount(entry,"amount")).signum()!=0))) blockers.add("发票 " + invoiceId + " 付款冲销关联或金额异常");
           } else if (amount(entry,"amount").signum() <= 0) blockers.add("发票 " + invoiceId + " 付款流水金额异常");
         }
       }

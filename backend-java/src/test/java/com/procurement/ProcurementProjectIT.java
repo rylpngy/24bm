@@ -386,6 +386,93 @@ class ProcurementProjectIT {
     assertThat(budget.position(tenant,dept,year).paidAmount()).isZero();assertThat(budget.position(tenant,dept,nextYear(1)).committed()).isEqualByComparingTo("246.91");
     fundedCash(f.invoice(),a.id(),b.id(),"20","30");assertThat(funding.invoice(tenant,f.invoice()).blocker()).isEmpty();
   }
+  com.procurement.finance.api.FrozenPaymentCorrectionContracts.Request partial(String entry,String key,String amount,List<com.procurement.finance.api.FrozenPaymentCorrectionContracts.FundingTarget> sources){
+    return new com.procurement.finance.api.FrozenPaymentCorrectionContracts.Request(key,entry,"PARTIAL-"+key,"凭真实更正依据仅冲回本次金额",Map.of(),sources,new BigDecimal(amount));
+  }
+  com.procurement.finance.api.FrozenPaymentCorrectionContracts.FundingTarget correctionShare(String source,String target,String amount){
+    return new com.procurement.finance.api.FrozenPaymentCorrectionContracts.FundingTarget(source,target,new BigDecimal(amount));
+  }
+  @Test void partialFrozenCorrectionsKeepRemainderFrozenAndAllowSeveralIndependentApprovals(){
+    var f=paidProject();String carried=carry(f[0],1),snapshot=jdbc.queryForObject("select snapshot::text from procurement_project_lifecycle_requests where id=?",String.class,carried);
+    var original=jdbc.queryForMap("select * from invoice_payment_entries where id=?",f[3]);
+    var request=partial(f[3],"partial-one","12.34",null);var first=corrections.submit(f[2],request);
+    assertThat(first.amount()).isEqualByComparingTo("12.34");assertThat(corrections.submit(f[2],request).id()).isEqualTo(first.id());
+    assertThat(workflow.listCurrentUserTasks()).noneMatch(t->t.businessId().equals(first.id()));
+    assertThatThrownBy(()->corrections.submit(f[2],partial(f[3],"concurrent","1",null))).hasMessageContaining("在审");
+    decide(first.id(),"approve");assertThat(corrections.submit(f[2],request).id()).isEqualTo(first.id());
+    assertThat(paymentLedger.summary(f[2]).paidAmount()).isEqualByComparingTo("37.66");
+    assertThat(budget.position(tenant,dept,year).paidAmount()).isEqualByComparingTo("37.66");
+    assertThat(corrections.candidates(f[2]).getFirst().remainingAmount()).isEqualByComparingTo("37.66");
+    assertThat(corrections.candidates(f[2]).getFirst().blockers()).isEmpty();
+    var second=corrections.submit(f[2],partial(f[3],"partial-two","7.66",null));decide(second.id(),"approve");
+    assertThat(paymentLedger.summary(f[2]).paidAmount()).isEqualByComparingTo("30");
+    assertThat(lifecycle.preview(f[0]).carryoverBlockers()).isEmpty();carry(f[0],2);
+    assertThat(budget.position(tenant,dept,year).paidAmount()).isEqualByComparingTo("30");
+    assertThat(budget.position(tenant,dept,nextYear(2)).committed()).isEqualByComparingTo("216.91");
+    var last=corrections.submit(f[2],correction(f,"finish-remainder"));assertThat(last.amount()).isEqualByComparingTo("30");decide(last.id(),"approve");
+    assertThat(paymentLedger.summary(f[2]).paidAmount()).isZero();assertThat(budget.position(tenant,dept,year).paidAmount()).isZero();
+    assertThat(jdbc.queryForMap("select * from invoice_payment_entries where id=?",f[3])).isEqualTo(original);
+    assertThat(jdbc.queryForObject("select snapshot::text from procurement_project_lifecycle_requests where id=?",String.class,carried)).isEqualTo(snapshot);
+  }
+  @Test void partialFrozenCorrectionValidatesAmountAndIdempotencyAndWithdrawalDoesNotReserveCash(){
+    var f=paidProject();carry(f[0],1);
+    for(String amount:List.of("0","-1","50.01","0.001"))assertThatThrownBy(()->corrections.submit(f[2],partial(f[3],"invalid-"+amount,amount,null))).hasMessageContaining("本次更正金额");
+    var r=corrections.submit(f[2],partial(f[3],"key","15",null));
+    assertThatThrownBy(()->corrections.submit(f[2],partial(f[3],"key","16",null))).hasMessageContaining("不同更正内容");
+    corrections.withdraw(f[2],r.id(),"补充核对凭据");var rejected=corrections.submit(f[2],partial(f[3],"reject","15",null));decide(rejected.id(),"reject");
+    assertThat(paymentLedger.summary(f[2]).paidAmount()).isEqualByComparingTo("50");assertThat(corrections.candidates(f[2]).getFirst().remainingAmount()).isEqualByComparingTo("50");
+  }
+  @Test void partialFundedCorrectionUsesExplicitSourceSharesAndCarriesResidualResponsibility(){
+    var f=fundedPaidCase();var a=futureFund("A",1,"300");var b=futureFund("B",1,"300");
+    var carry=lifecycle.submit(f.order().project(),fundedCarry(f.order().project(),1,f.a(),f.b(),a.id(),b.id()));decide(carry.id(),"approve");
+    var original=jdbc.queryForList("select * from funding_payment_allocations where entry_id=? order by fund_id",f.entry());
+    var request=partial(f.entry(),"fund-partial","12.34",List.of(correctionShare(f.b(),b.id(),"12.34")));
+    var r=corrections.submit(f.invoice(),request);decide(r.id(),"approve");
+    assertThat(funding.project(f.order().project()).priorPaidAmount()).isEqualByComparingTo("37.66");
+    assertThat(funding.project(f.order().project()).sources().stream().map(s->s.allocatedAmount()).reduce(BigDecimal.ZERO,BigDecimal::add)).isEqualByComparingTo("209.25");
+    assertThat(corrections.fundingOptions(f.invoice(),f.entry()).sources()).anySatisfy(s->{if(s.fundId().equals(f.b()))assertThat(s.amount()).isEqualByComparingTo("17.66");});
+    var aa=futureFund("A",2,"300");var bb=futureFund("B",2,"300");var carry2=lifecycle.submit(f.order().project(),fundedCarry(f.order().project(),2,a.id(),b.id(),aa.id(),bb.id()));decide(carry2.id(),"approve");
+    assertThat(funding.project(f.order().project()).priorPaidAmount()).isEqualByComparingTo("37.66");
+    var second=corrections.submit(f.invoice(),partial(f.entry(),"second-source","20",List.of(correctionShare(f.a(),aa.id(),"20"))));decide(second.id(),"approve");
+    assertThat(funding.project(f.order().project()).priorPaidAmount()).isEqualByComparingTo("17.66");
+    assertThat(corrections.fundingOptions(f.invoice(),f.entry()).sources()).singleElement().satisfies(s->assertThat(s.fundId()).isEqualTo(f.b()));
+    var last=corrections.submit(f.invoice(),partial(f.entry(),"last-source","17.66",List.of(correctionShare(f.b(),bb.id(),"17.66"))));decide(last.id(),"approve");
+    assertThat(paymentLedger.summary(f.invoice()).paidAmount()).isZero();assertThat(funding.project(f.order().project()).priorPaidAmount()).isZero();
+    assertThat(jdbc.queryForList("select * from funding_payment_allocations where entry_id=? order by fund_id",f.entry())).isEqualTo(original);
+  }
+  @Test void partialFundedCorrectionRejectsOverdrawnOrUnbalancedSourceShares(){
+    var f=fundedPaidCase();var a=futureFund("A",1,"300");var b=futureFund("B",1,"300");var carry=lifecycle.submit(f.order().project(),fundedCarry(f.order().project(),1,f.a(),f.b(),a.id(),b.id()));decide(carry.id(),"approve");
+    assertThatThrownBy(()->corrections.submit(f.invoice(),partial(f.entry(),"over","25",List.of(correctionShare(f.a(),a.id(),"25"))))).hasMessageContaining("来源剩余金额");
+    assertThatThrownBy(()->corrections.submit(f.invoice(),partial(f.entry(),"sum","25",List.of(correctionShare(f.a(),a.id(),"10"))))).hasMessageContaining("合计");
+    var r=corrections.submit(f.invoice(),partial(f.entry(),"valid","20",List.of(correctionShare(f.a(),a.id(),"20"))));decide(r.id(),"approve");
+    assertThatThrownBy(()->corrections.submit(f.invoice(),partial(f.entry(),"spent-source","5",List.of(correctionShare(f.a(),a.id(),"5"))))).hasMessageContaining("非原付款来源");
+    assertThatThrownBy(()->corrections.submit(f.invoice(),partial(f.entry(),"over-rest","30.01",List.of(correctionShare(f.b(),b.id(),"30.01"))))).hasMessageContaining("剩余可更正");
+  }
+  @Test void partialCorrectionAlsoReversesOnlyTheRequestedContractMilestoneAmount(){
+    var f=fundedPaidCase();String contract=settlementContract(f.order(),true),m="partial-milestone-"+UUID.randomUUID();
+    jdbc.update("insert into contract_payment_milestones(id,tenant_id,contract_id,name,percent,amount,status,sort_no,reached) values (?,?,?,'合同总额',100,200,'待付',0,true)",m,tenant,contract);
+    var tx=new org.springframework.transaction.support.TransactionTemplate(txManager);tx.executeWithoutResult(s->contractInstallments.allocate(tenant,f.order().order(),f.order().supplier(),new BigDecimal("200"),f.entry(),new BigDecimal("50"),m,BigDecimal.ZERO));
+    var a=futureFund("A",1,"300");var b=futureFund("B",1,"300");var carry=lifecycle.submit(f.order().project(),fundedCarry(f.order().project(),1,f.a(),f.b(),a.id(),b.id()));decide(carry.id(),"approve");
+    var r=corrections.submit(f.invoice(),partial(f.entry(),"milestone","17.5",List.of(correctionShare(f.b(),b.id(),"17.5"))));decide(r.id(),"approve");
+    assertThat(contractInstallments.balances(tenant,f.order().order()).getFirst().paid()).isEqualByComparingTo("32.5");
+    var second=corrections.submit(f.invoice(),partial(f.entry(),"milestone-second","10",List.of(correctionShare(f.b(),b.id(),"10"))));decide(second.id(),"approve");
+    assertThat(contractInstallments.balances(tenant,f.order().order()).getFirst().paid()).isEqualByComparingTo("22.5");
+  }
+  @Test void databaseRejectsPartialReversalOutsideApprovedCorrection(){
+    var f=paidProject();carry(f[0],1);String id="illegal-partial-"+UUID.randomUUID();
+    assertThatThrownBy(()->jdbc.update("insert into invoice_payment_entries(id,tenant_id,invoice_id,idempotency_key,amount,evidence_no,reversal_of,created_by) values (?,?,?,?,-10,'BAD',?,?)",id,tenant,f[2],id,f[3],reviewer)).hasStackTraceContaining("requires approved frozen correction");
+    assertThat(paymentLedger.summary(f[2]).paidAmount()).isEqualByComparingTo("50");
+  }
+  @Test void partialCorrectionDoesNotGuessWhichOfSeveralContractMilestonesToReduce(){
+    var f=fundedPaidCase();String contract=settlementContract(f.order(),true),first="multi-first-"+UUID.randomUUID(),second="multi-second-"+UUID.randomUUID();
+    for(String m:List.of(first,second))jdbc.update("insert into contract_payment_milestones(id,tenant_id,contract_id,name,percent,amount,status,sort_no,reached) values (?,?,?,'待核对分项',50,100,'部分已付',0,true)",m,tenant,contract);
+    for(String m:List.of(first,second))jdbc.update("insert into contract_payment_allocations(id,tenant_id,entry_id,milestone_id,amount) values (?,?,?,?,25)",UUID.randomUUID().toString(),tenant,f.entry(),m);
+    var a=futureFund("A",1,"300");var b=futureFund("B",1,"300");var carry=lifecycle.submit(f.order().project(),fundedCarry(f.order().project(),1,f.a(),f.b(),a.id(),b.id()));decide(carry.id(),"approve");
+    assertThatThrownBy(()->corrections.submit(f.invoice(),partial(f.entry(),"ambiguous","10",List.of(correctionShare(f.b(),b.id(),"10"))))).hasMessageContaining("多个合同里程碑");
+    assertThat(corrections.history(f.invoice(),1,10).total()).isZero();assertThat(paymentLedger.summary(f.invoice()).paidAmount()).isEqualByComparingTo("50");
+    var full=corrections.submit(f.invoice(),fundedCorrection(f,"whole-is-known",a.id(),b.id()));decide(full.id(),"approve");
+    assertThat(contractInstallments.balances(tenant,f.order().order()).stream().map(m->m.paid()).reduce(BigDecimal.ZERO,BigDecimal::add)).isZero();
+  }
   @Test void fundedFrozenCorrectionAfterMultipleCarryoversDoesNotReassignOtherHistoricalCash(){
     var f=fundedPaidCase();var a=futureFund("A",1,"300");var b=futureFund("B",1,"300");var first=lifecycle.submit(f.order().project(),fundedCarry(f.order().project(),1,f.a(),f.b(),a.id(),b.id()));decide(first.id(),"approve");fundedCash(f.invoice(),a.id(),b.id(),"10","20");
     var aa=futureFund("A",2,"300");var bb=futureFund("B",2,"300");var second=lifecycle.submit(f.order().project(),fundedCarry(f.order().project(),2,a.id(),b.id(),aa.id(),bb.id()));decide(second.id(),"approve");
@@ -417,7 +504,7 @@ class ProcurementProjectIT {
       jdbc.update("insert into invoice_payment_entries(id,tenant_id,invoice_id,idempotency_key,amount,evidence_no,reversal_of,created_by) values (?,?,?,?,-50,'BAD',?,?)",id,tenant,f.invoice(),id,f.entry(),reviewer);
       jdbc.update("insert into funding_payment_allocations(tenant_id,entry_id,project_id,fund_id,change_id,amount,created_by) select tenant_id,?,project_id,fund_id,change_id,-amount,? from funding_payment_allocations where tenant_id=? and entry_id=?",id,reviewer,tenant,f.entry());
       jdbc.update("update frozen_payment_corrections set status='approved',revision=revision+1,reversal_id=?,completed_by=?,completed_at=now() where id=?",id,reviewer,r.id());
-    })).hasStackTraceContaining("Funding restoration must retain");
+    })).hasStackTraceContaining("independent workflow approval");
     assertThat(paymentLedger.summary(f.invoice()).paidAmount()).isEqualByComparingTo("50");assertThat(corrections.history(f.invoice(),1,10).items().getFirst().status()).isEqualTo("submitted");
   }
   com.procurement.buyer.api.FundingContracts.Request fundLimit(com.procurement.buyer.api.FundingContracts.Fund fund,String limit,String key){return new com.procurement.buyer.api.FundingContracts.Request(key,"fund_limit",fund.id(),null,fund.revision(),new BigDecimal(limit),null,"年度专项额度独立审批",Map.of());}

@@ -31,4 +31,8 @@ export interface FrozenPaymentCorrectionRequest {
    * @maxItems 30
    */
   fundingTargets?: FrozenCorrectionFundingTarget[];
+  /**
+   * @minimum 0.01
+   */
+  amount?: number;
 }
