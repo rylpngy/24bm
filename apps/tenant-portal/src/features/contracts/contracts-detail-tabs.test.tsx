@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { ContractsPage } from './contracts-page';
@@ -38,6 +38,22 @@ function show() {
   render(<QueryClientProvider client={new QueryClient()}><ContractsPage /></QueryClientProvider>);
   fireEvent.click(screen.getAllByRole('button', { name: '详情' })[0]);
 }
+
+it('keeps contract list columns compact without removing the approval and detail actions', () => {
+  render(<QueryClientProvider client={new QueryClient()}><ContractsPage /></QueryClientProvider>);
+  const table = screen.getByRole('table', { name: '采购合同列表' });
+  expect(table).toHaveClass('table-fixed', 'whitespace-nowrap');
+  expect(table.querySelectorAll('col')).toHaveLength(8);
+  expect(within(table).getByTitle('教学设备合同')).toHaveClass('truncate');
+  expect(within(table).getByTitle('HT-001')).toHaveClass('truncate');
+  const action = within(table).getByRole('button', { name: '提交审批' });
+  expect(action).toHaveClass('shrink-0', 'whitespace-nowrap');
+  expect(action.closest('td')).toHaveClass('sticky', 'right-0');
+  expect(within(table).getAllByRole('button', { name: '详情' })[0]).toHaveClass('w-14');
+  fireEvent.click(action);
+  expect(screen.getByText('合同条款')).toBeVisible();
+  expect(api.submit).not.toHaveBeenCalled();
+});
 
 it('separates all seven categories without showing approvals and attachments on the basic page', () => {
   show();

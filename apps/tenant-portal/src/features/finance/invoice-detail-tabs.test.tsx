@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { InvoicesPage } from './invoices-page';
@@ -28,6 +28,18 @@ vi.mock('../workflow/workflow-submit-dialog', () => ({WorkflowSubmitDialog:({chi
 beforeEach(()=>{api.matched=true;window.history.replaceState(null,'','/?solution=ludong-poc&module=invoices&recordId=invoice');});
 afterEach(()=>{cleanup();vi.clearAllMocks();});
 function show(){render(<QueryClientProvider client={new QueryClient()}><InvoicesPage/></QueryClientProvider>);}
+
+it('keeps invoice ledger actions compact without bypassing payment approval',()=>{
+  window.history.replaceState(null,'','/?solution=ludong-poc&module=invoices');show();
+  const table=screen.getByRole('table',{name:'发票付款列表'});
+  expect(table).toHaveClass('table-fixed','whitespace-nowrap');expect(table.querySelectorAll('col')).toHaveLength(8);
+  expect(within(table).getByTitle('INV-DEMO')).toHaveClass('truncate');
+  const payment=within(table).getByRole('button',{name:'去付款'});
+  expect(payment).toHaveClass('shrink-0','whitespace-nowrap');expect(payment.closest('td')).toHaveClass('sticky','right-0');
+  expect(within(table).getByRole('button',{name:'详情'})).toHaveClass('w-14');
+  fireEvent.click(payment);expect(screen.getByText('发票信息(增值税专用发票)')).toBeVisible();
+  expect(api.submit).not.toHaveBeenCalled();
+});
 
 it('opens the batch workbench from a workflow link and clears the subpage on return',()=>{
   window.history.replaceState(null,'','/?solution=ludong-poc&module=invoices&financeView=batches');

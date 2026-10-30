@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { portalHref } from '../../lib/portal-href';
+import { compactList } from '../../lib/compact-list';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Banknote, CalendarClock, FileDiff, FileSignature, FileText, History, Info, Paperclip, Plus, ScanText } from 'lucide-react';
 import {
@@ -543,11 +544,11 @@ export function ContractsPage() {
               <div key={c.id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="break-words font-black text-slate-950">
+                    <p className="truncate font-bold text-slate-950" title={c.contractName}>
                       <span className="mr-1.5 font-mono text-slate-400">{(safePage - 1) * PAGE_SIZE + i + 1}.</span>
                       {c.contractName}
                     </p>
-                    <p className="mt-1 font-mono text-xs font-bold text-slate-500">{c.contractNo}</p>
+                    <p className="mt-1 truncate font-mono text-xs font-bold text-slate-500" title={c.contractNo}>{c.contractNo}</p>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
                     {c.status && <StatusPill label={c.status} />}
@@ -559,12 +560,13 @@ export function ContractsPage() {
                   onClick={() => openDetail(c.id)}
                   className="mt-3 inline-flex h-8 w-full items-center justify-center rounded-md border border-slate-200 bg-white text-xs font-black text-slate-600 hover:bg-slate-50"
                 >
-                  查看详情
+                  详情
                 </button>
               </div>
             ))}
           >
-            <table className="w-full min-w-[920px] text-left text-sm">
+            <table aria-label="采购合同列表" className={cn(compactList.table, 'min-w-[880px]')}>
+              <colgroup><col className="w-12" /><col /><col className="w-28" /><col className="w-28" /><col className="w-20" /><col className="w-[88px]" /><col className="w-32" /><col className="w-40" /></colgroup>
               <thead className="bg-slate-50 text-xs font-black text-slate-500">
                 <tr>
                   <th className="w-12 px-2 py-4 text-center">序号</th>
@@ -574,49 +576,50 @@ export function ContractsPage() {
                   <th className="px-5 py-4">履约进度</th>
                   <th className="px-5 py-4">状态</th>
                   <th className="px-5 py-4 text-right">合同金额</th>
-                  <th className="px-5 py-4 text-right">操作</th>
+                  <th className="sticky right-0 bg-slate-50 text-right">操作</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {pageItems.map((c, i) => (
-                  <tr key={c.id} className="hover:bg-blue-50/30">
+                  <tr key={c.id} className="group hover:bg-blue-50/30">
                     <td className="px-2 py-5 text-center font-mono font-black text-slate-400">
                       {(safePage - 1) * PAGE_SIZE + i + 1}
                     </td>
                     <td className="px-5 py-5">
-                      <p className="flex items-center gap-2 font-black text-slate-950">
-                        {c.contractName}
+                      <div className="flex min-w-0 items-center gap-2">
+                        <p className="min-w-0 flex-1 truncate font-bold text-slate-950" title={c.contractName}>{c.contractName}</p>
                         <ExpiryChip expiryDate={c.expiryDate} archived={c.archiveStatus === '已归档'} />
-                      </p>
-                      <p className="mt-1 w-40 truncate font-mono text-[11px] font-bold text-slate-400" title={c.contractNo ?? undefined}>
+                      </div>
+                      <p className="mt-1 truncate font-mono text-[11px] font-bold text-slate-400" title={c.contractNo ?? undefined}>
                         {c.contractNo}
                       </p>
                     </td>
                     <td className="px-5 py-5">
-                      <p className="w-40 truncate font-mono text-xs font-black text-slate-500" title={c.relatedOrderId ?? undefined}>
+                      <p className="truncate font-mono text-xs font-bold text-slate-500" title={c.relatedOrderId ?? undefined}>
                         {c.relatedOrderId ?? '—'}
                       </p>
                     </td>
                     <td className="px-5 py-5 font-mono text-xs font-bold text-slate-600">
-                      {c.effectiveDate || c.expiryDate ? `${c.effectiveDate ?? '—'} ~ ${c.expiryDate ?? '—'}` : '—'}
+                      <p className="truncate" title={`生效日期：${c.effectiveDate ?? '—'}`}>{c.effectiveDate ?? '—'}</p>
+                      <p className="mt-1 truncate text-[11px] text-slate-400" title={`到期日期：${c.expiryDate ?? '—'}`}>至 {c.expiryDate ?? '—'}</p>
                     </td>
-                    <td className="px-5 py-5 text-sm font-bold text-slate-600">{c.fulfillmentProgress ?? '—'}</td>
+                    <td className="px-5 py-5 text-xs font-medium text-slate-600"><span className={compactList.text} title={c.fulfillmentProgress}>{c.fulfillmentProgress ?? '—'}</span></td>
                     <td className="px-5 py-5">
                       <div className="flex flex-col gap-1">
-                        {c.status && <StatusPill label={c.status} />}
+                        {c.status && <span title={c.status}><StatusPill label={c.status} className="overflow-hidden whitespace-nowrap" /></span>}
                         {c.archiveStatus === '已归档' && (
                           <span className="text-[11px] font-bold text-slate-400">· 已归档</span>
                         )}
                       </div>
                     </td>
-                    <td className="px-5 py-5 text-right font-mono font-black text-slate-900">{currency(c.amount)}</td>
-                    <td className="px-5 py-5 text-right">
-                      <div className="flex justify-end gap-2">
+                    <td className="px-5 py-5 text-right font-mono text-xs font-semibold tabular-nums text-slate-900"><span className={compactList.text} title={currency(c.amount)}>{currency(c.amount)}</span></td>
+                    <td className={compactList.actionCell}>
+                      <div className={compactList.actions}>
                         {c.status === '草案' && (
                           <button
                             type="button"
                             onClick={() => openDetail(c.id)}
-                            className="inline-flex h-8 items-center rounded-md bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700"
+                            className={compactList.primary}
                           >
                             提交审批
                           </button>
@@ -625,7 +628,7 @@ export function ContractsPage() {
                           <button
                             type="button"
                             onClick={() => openDetail(c.id)}
-                            className="inline-flex h-8 items-center rounded-md bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700"
+                            className={compactList.primary}
                           >
                             去复核
                           </button>
@@ -633,7 +636,7 @@ export function ContractsPage() {
                         <button
                           type="button"
                           onClick={() => openDetail(c.id)}
-                          className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50"
+                          className={compactList.detail}
                         >
                           详情
                         </button>

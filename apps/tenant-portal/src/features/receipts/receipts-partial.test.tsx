@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, expect, it, vi } from 'vitest';
 import { ReceiptsPage } from './receipts-page';
@@ -19,6 +19,23 @@ const open = () => {
   render(<QueryClientProvider client={new QueryClient()}><ReceiptsPage /></QueryClientProvider>);
   fireEvent.click(screen.getAllByTitle('登记收货验收')[0]);
 };
+
+it('keeps both receipt queues compact and preserves registration and historical detail entry', () => {
+  render(<QueryClientProvider client={new QueryClient()}><ReceiptsPage /></QueryClientProvider>);
+  const pending=screen.getByRole('table',{name:'待收货验收列表'});
+  expect(pending).toHaveClass('table-fixed','whitespace-nowrap');
+  expect(pending.querySelectorAll('col')).toHaveLength(8);
+  expect(within(pending).getByTitle('partial')).toHaveClass('truncate');
+  expect(within(pending).getByRole('button',{name:'验收登记'})).toHaveClass('shrink-0','whitespace-nowrap');
+  fireEvent.click(screen.getByRole('tab',{name:/验收记录/}));
+  const history=screen.getByRole('table',{name:'收货验收记录列表'});
+  expect(history).toHaveClass('table-fixed','whitespace-nowrap');
+  expect(history.querySelectorAll('col')).toHaveLength(9);
+  const details=within(history).getByRole('button',{name:'详情'});
+  expect(details).toHaveClass('w-14'); expect(details.closest('td')).toHaveClass('sticky','right-0');
+  fireEvent.click(details); expect(screen.getByText('收货验收详情')).toBeVisible();
+  expect(mutation.mutate).not.toHaveBeenCalled();
+});
 
 it('defaults the next receipt to shipped minus received and retains batch history', () => {
   open();

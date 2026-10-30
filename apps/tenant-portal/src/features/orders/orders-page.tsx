@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import {BuyerOrderSettlement} from './order-settlement';
 import { OrderAfterSales } from './order-after-sales';
+import { compactList } from '../../lib/compact-list';
 import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
 import { ArrowLeft, Info, Truck } from 'lucide-react';
 import {
@@ -391,11 +392,11 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
               <div key={o.id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="break-words font-mono font-black text-slate-950">
+                    <p className="truncate font-mono font-bold text-slate-950" title={o.id}>
                       <span className="mr-1.5 text-slate-400">{(safePage - 1) * PAGE_SIZE + i + 1}.</span>
                       {o.id}
                     </p>
-                    <p className="mt-1 text-xs font-bold text-slate-500">
+                    <p className="mt-1 truncate text-xs font-bold text-slate-500" title={o.supplierId ? (supplierNames[o.supplierId] ?? o.supplierId) : '—'}>
                       {o.supplierId ? (supplierNames[o.supplierId] ?? o.supplierId) : '—'}
                     </p>
                   </div>
@@ -414,8 +415,8 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
               </div>
             ))}
           >
-            <table className="w-full min-w-[800px] table-fixed text-left text-sm [&_td]:px-3 [&_th]:px-3 [&_td_p]:max-w-full">
-              <colgroup>{['5%', '21%', '16%', '13%', '12%', '16%', '17%'].map((width, i) => <col key={i} style={{ width }} />)}</colgroup>
+            <table aria-label="采购订单列表" className={cn(compactList.table, 'min-w-[860px]')}>
+              <colgroup><col className="w-12" /><col /><col className="w-40" /><col className="w-28" /><col className="w-24" /><col className="w-32" /><col className="w-[152px]" /></colgroup>
               <thead className="bg-slate-50 text-xs font-black text-slate-500">
                 <tr>
                   <th className="w-12 px-2 py-4 text-center">序号</th>
@@ -424,36 +425,36 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
                   <th className="px-5 py-4">预计到货</th>
                   <th className="px-5 py-4">状态</th>
                   <th className="px-5 py-4 text-right">订单金额</th>
-                  <th className="sticky right-0 w-40 whitespace-nowrap bg-slate-50 px-5 py-4 text-right">操作</th>
+                  <th className="sticky right-0 bg-slate-50 text-right">操作</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {pageItems.map((o, i) => (
-                  <tr key={o.id} className="hover:bg-blue-50/30">
+                  <tr key={o.id} className="group hover:bg-blue-50/30">
                     <td className="px-2 py-5 text-center font-mono font-black text-slate-400">
                       {(safePage - 1) * PAGE_SIZE + i + 1}
                     </td>
                     <td className="px-5 py-5">
-                      <p className="w-44 truncate font-mono text-xs font-black text-slate-900" title={o.id}>
+                      <p className="truncate font-mono text-xs font-bold text-slate-900" title={o.id}>
                         {o.id}
                       </p>
-                      <p className="mt-1 w-44 truncate font-mono text-[11px] font-bold text-slate-400" title={o.rfqId ?? undefined}>
+                      <p className="mt-1 truncate font-mono text-[11px] font-bold text-slate-400" title={o.rfqId ?? undefined}>
                         询比 {o.rfqId ?? '—'}
                       </p>
                     </td>
                     <td className="px-5 py-5 text-sm font-bold text-slate-600">
-                      {o.supplierId ? (supplierNames[o.supplierId] ?? o.supplierId) : '—'}
+                      <span className={compactList.text} title={o.supplierId ? (supplierNames[o.supplierId] ?? o.supplierId) : '—'}>{o.supplierId ? (supplierNames[o.supplierId] ?? o.supplierId) : '—'}</span>
                     </td>
                     <td className="px-5 py-5 font-mono text-xs font-bold text-slate-600">{o.expectedReceiptDate ?? '—'}</td>
-                    <td className="px-5 py-5">{o.status && <StatusPill label={o.status} />}</td>
-                    <td className="px-5 py-5 text-right font-mono font-black text-slate-900">{currency(o.amount)}</td>
-                    <td className="sticky right-0 bg-white px-5 py-5 text-right">
-                      <div className="flex justify-end gap-2 whitespace-nowrap">
+                    <td className="px-5 py-5" title={o.status}>{o.status && <StatusPill label={o.status} className="overflow-hidden whitespace-nowrap" />}</td>
+                    <td className="px-5 py-5 text-right font-mono text-xs font-semibold tabular-nums text-slate-900"><span className={compactList.text} title={currency(o.amount)}>{currency(o.amount)}</span></td>
+                    <td className={compactList.actionCell}>
+                      <div className={compactList.actions}>
                         {o.status === '已发货' && can('buyer:receipt:read') && (
                           <button
                             type="button"
                             onClick={() => onNavigate('receipts')}
-                            className="inline-flex h-8 items-center rounded-md bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700"
+                            className={compactList.primary}
                           >
                             去验收
                           </button>
@@ -461,7 +462,7 @@ export function OrdersPage({ onNavigate }: { onNavigate: (moduleId: string) => v
                         <button
                           type="button"
                           onClick={() => o.id && openOrder(o.id)}
-                          className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50"
+                          className={compactList.detail}
                         >
                           详情
                         </button>

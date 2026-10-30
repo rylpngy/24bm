@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { compactList } from '../../lib/compact-list';
 import { useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, ArrowLeft, Banknote, ClipboardCheck, Info, Receipt, Scale } from 'lucide-react';
 import {
@@ -18,6 +19,7 @@ import {
   SearchInput,
   StatusPill,
   Tabs,
+  cn,
 } from '@24bid/ui';
 import { ReconciliationVariancePanel } from './reconciliation-variance-panel';
 import { PaymentBatchesPage } from './payment-batches-page';
@@ -551,7 +553,7 @@ export function InvoicesPage() {
             <button
               type="button"
               onClick={() => setSubpage('batches')}
-              className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:bg-slate-50"
+              className="inline-flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
             >
               <Banknote size={15} className="text-blue-600" /> 付款批次
             </button>
@@ -582,11 +584,11 @@ export function InvoicesPage() {
                   <div key={inv.id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="break-words font-mono font-black text-slate-950">
+                        <p className="truncate font-mono font-bold text-slate-950" title={inv.invoiceNo ?? inv.id}>
                           <span className="mr-1.5 text-slate-400">{(safePage - 1) * PAGE_SIZE + i + 1}.</span>
                           {inv.invoiceNo ?? inv.id}
                         </p>
-                        <p className="mt-1 text-xs font-bold text-slate-500">订单 {inv.orderId}</p>
+                        <p className="mt-1 truncate text-xs font-bold text-slate-500" title={inv.orderId}>订单 {inv.orderId}</p>
                       </div>
                       <div className="flex shrink-0 flex-col items-end gap-1">
                         {inv.paymentStatus && <StatusPill label={inv.paymentStatus} />}
@@ -598,12 +600,13 @@ export function InvoicesPage() {
                       onClick={() => inv.id && openInvoice(inv.id)}
                       className="mt-3 inline-flex h-8 w-full items-center justify-center rounded-md border border-slate-200 bg-white text-xs font-black text-slate-600 hover:bg-slate-50"
                     >
-                      查看详情
+                      详情
                     </button>
                   </div>
                 ))}
               >
-                <table className="w-full min-w-[920px] text-left text-sm">
+                <table aria-label="发票付款列表" className={cn(compactList.table, 'min-w-[880px]')}>
+                  <colgroup><col className="w-12" /><col /><col className="w-28" /><col className="w-[100px]" /><col className="w-[100px]" /><col className="w-[104px]" /><col className="w-32" /><col className="w-[152px]" /></colgroup>
                   <thead className="bg-slate-50 text-xs font-black text-slate-500">
                     <tr>
                       <th className="w-12 px-2 py-4 text-center">序号</th>
@@ -613,7 +616,7 @@ export function InvoicesPage() {
                       <th className="px-5 py-4">三单匹配</th>
                       <th className="px-5 py-4">付款状态</th>
                       <th className="px-5 py-4 text-right">价税合计</th>
-                      <th className="px-5 py-4 text-right">操作</th>
+                      <th className="sticky right-0 bg-slate-50 text-right">操作</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -622,20 +625,20 @@ export function InvoicesPage() {
                       const matched = inv.reconciliationStatus === '三单一致';
                       const payable = inv.paymentStatus === '待付款' || inv.paymentStatus === '部分付款';
                       return (
-                        <tr key={inv.id} className="hover:bg-blue-50/30">
+                        <tr key={inv.id} className="group hover:bg-blue-50/30">
                           <td className="px-2 py-5 text-center font-mono font-black text-slate-400">
                             {(safePage - 1) * PAGE_SIZE + i + 1}
                           </td>
                           <td className="px-5 py-5">
-                            <p className="w-40 truncate font-mono text-xs font-black text-slate-900" title={inv.invoiceNo ?? undefined}>
+                            <p className="truncate font-mono text-xs font-bold text-slate-900" title={inv.invoiceNo ?? inv.id}>
                               {inv.invoiceNo ?? inv.id}
                             </p>
-                            <p className="mt-1 w-40 truncate font-mono text-[11px] font-bold text-slate-400" title={inv.invoiceCode ?? undefined}>
+                            <p className="mt-1 truncate font-mono text-[11px] font-bold text-slate-400" title={inv.invoiceCode ?? undefined}>
                               {inv.invoiceCode || '代码未填'}
                             </p>
                           </td>
                           <td className="px-5 py-5">
-                            <p className="w-36 truncate font-mono text-xs font-black text-slate-500" title={inv.orderId ?? undefined}>
+                            <p className="truncate font-mono text-xs font-bold text-slate-500" title={inv.orderId ?? undefined}>
                               {inv.orderId ?? '—'}
                             </p>
                           </td>
@@ -644,27 +647,27 @@ export function InvoicesPage() {
                             {matched ? (
                               <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-black text-emerald-700">已匹配</span>
                             ) : (
-                              <span className="rounded-md bg-amber-100 px-2 py-0.5 text-[11px] font-black text-amber-700">
+                              <span title={`差异 ${currency(variance)}`} className="block max-w-full truncate rounded-md bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-700">
                                 差异 {currency(variance)}
                               </span>
                             )}
                           </td>
                           <td className="px-5 py-5">
                             <div className="flex flex-col gap-1">
-                              {inv.paymentStatus && <StatusPill label={inv.paymentStatus} />}
+                              {inv.paymentStatus && <span title={inv.paymentStatus}><StatusPill label={inv.paymentStatus} className="overflow-hidden whitespace-nowrap" /></span>}
                               {inv.overdue && (
-                                <span className="text-[11px] font-black text-red-600">· 逾期 {inv.overdueDays} 天</span>
+                                <span className="truncate text-[11px] font-bold text-red-600" title={`逾期 ${inv.overdueDays} 天`}>· 逾期 {inv.overdueDays} 天</span>
                               )}
                             </div>
                           </td>
-                          <td className="px-5 py-5 text-right font-mono font-black text-slate-900">{currency(inv.amount)}</td>
-                          <td className="px-5 py-5 text-right">
-                            <div className="flex justify-end gap-2">
+                          <td className="px-5 py-5 text-right font-mono text-xs font-semibold tabular-nums text-slate-900"><span className={compactList.text} title={currency(inv.amount)}>{currency(inv.amount)}</span></td>
+                          <td className={compactList.actionCell}>
+                            <div className={compactList.actions}>
                               {payable && (
                                 <button
                                   type="button"
                                   onClick={() => inv.id && openInvoice(inv.id)}
-                                  className="inline-flex h-8 items-center rounded-md bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700"
+                                  className={compactList.primary}
                                 >
                                   去付款
                                 </button>
@@ -672,7 +675,7 @@ export function InvoicesPage() {
                               <button
                                 type="button"
                                 onClick={() => inv.id && openInvoice(inv.id)}
-                                className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50"
+                                className={compactList.detail}
                               >
                                 详情
                               </button>
