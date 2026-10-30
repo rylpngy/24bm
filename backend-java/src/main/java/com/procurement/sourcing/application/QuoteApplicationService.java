@@ -47,6 +47,7 @@ public class QuoteApplicationService {
   private final AuditLogApplicationService auditLogApplicationService;
   private final NotificationApplicationService notificationApplicationService;
   private final ApplicationEventPublisher eventPublisher;
+  private final QuoteVersionService versions;
 
   public QuoteApplicationService(
       RfqMapper rfqMapper,
@@ -58,7 +59,8 @@ public class QuoteApplicationService {
       RfqItemQueryService rfqItemQueryService,
       AuditLogApplicationService auditLogApplicationService,
       NotificationApplicationService notificationApplicationService,
-      ApplicationEventPublisher eventPublisher) {
+      ApplicationEventPublisher eventPublisher,
+      QuoteVersionService versions) {
     this.rfqMapper = rfqMapper;
     this.rfqDemandMapper = rfqDemandMapper;
     this.rfqInviteMapper = rfqInviteMapper;
@@ -69,6 +71,7 @@ public class QuoteApplicationService {
     this.auditLogApplicationService = auditLogApplicationService;
     this.notificationApplicationService = notificationApplicationService;
     this.eventPublisher = eventPublisher;
+    this.versions = versions;
   }
 
   public List<RfqResponse> listSupplierRfqs() {
@@ -134,6 +137,7 @@ public class QuoteApplicationService {
 
     String quoteId = newId("quote");
     requireQuoteFollowsRfqItems(rfq, request.lineItems());
+    boolean complete=versions.validate(rfq,supplierId,request.details(),request.taxRate(),request.deliveryDays(),request.lineItems());
     BigDecimal amount = effectiveAmount(request.amount(), request.lineItems());
     RfqAuctionPolicy.requireValidBid(
         rfq.method(),
@@ -158,6 +162,7 @@ public class QuoteApplicationService {
       throw exception;
     }
     persistLineItems(rfq.tenantId(), quoteId, request.lineItems());
+    versions.record(rfq,toResponse(quoteMapper.findByTenantAndId(rfq.tenantId(),quoteId)),request.details(),complete);
     publishAuctionEvent(rfq, AuctionEvent.KIND_BID);
     maybeExtendAuctionDeadline(rfq);
 
@@ -192,6 +197,9 @@ public class QuoteApplicationService {
     RfqAuctionPolicy.requireStarted(rfq.method(), rfq.auctionPlannedStart(), java.time.OffsetDateTime.now());
 
     requireQuoteFollowsRfqItems(rfq, request.lineItems());
+    versions.checkVersion(rfq,quote,request.expectedVersion());
+    boolean complete=versions.validate(rfq,supplierId,request.details(),request.taxRate(),request.deliveryDays(),request.lineItems());
+    versions.captureLegacy(rfq,quote,toResponse(quote));
     BigDecimal amount = effectiveAmount(request.amount(), request.lineItems());
     RfqAuctionPolicy.requireValidBid(
         rfq.method(),
@@ -212,6 +220,7 @@ public class QuoteApplicationService {
       throw new IllegalStateException("Only submitted supplier quote can be updated: " + quoteId);
     }
     persistLineItems(quote.tenantId(), quoteId, request.lineItems());
+    versions.record(rfq,toResponse(quoteMapper.findByTenantAndId(quote.tenantId(),quoteId)),request.details(),complete);
     publishAuctionEvent(rfq, AuctionEvent.KIND_BID);
     maybeExtendAuctionDeadline(rfq);
 

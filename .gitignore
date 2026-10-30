@@ -37,3 +37,4 @@ backend-java/target
 scripts/dept.xlsx
 scripts/mat.xlsx
 infra/observability/secrets/
+/.ludong-tender-runtime/

@@ -190,6 +190,12 @@ public class RfqApplicationService {
     }
     requireWriteAccess(rfq);
     rfqSourcingStatusTransition.requireQuotingForOpen(rfq.status(), rfqId);
+    var quotationPolicy=quoteMapper.quotationPolicy(tenantId,rfqId);
+    if(quotationPolicy!=null&&quotationPolicy.autoExtend()
+        &&quoteMapper.automaticExtensions(tenantId,rfqId,rfq.currentRound())<quotationPolicy.maxAutoExtensions()
+        &&quoteMapper.validQuotationCount(tenantId,rfqId,rfq.currentRound(),quotationPolicy.fullQuoteRequired())<3){
+      throw new IllegalStateException("有效报价不足三家，已启用自动延期；请等待延期或通过延期规则处理，不得提前解封");
+    }
     if (RfqAuctionPolicy.isAuction(rfq.method()) && rfq.deadlineAt() == null) {
       throw new IllegalStateException("竞价缺少可核验的截止时间");
     }
@@ -411,6 +417,13 @@ public class RfqApplicationService {
     if (request.invitedSupplierIds() != null) validateSuppliers(tenantId, supplierIds);
     requireSingleSource(rfq, supplierIds, draft);
     RfqAuctionPolicy.requireValidSchedule(rfq.method(), rfq.auctionPlannedStart(), request.deadlineAt());
+    var managedQuotePolicy=quoteMapper.quotationPolicy(tenantId,rfqId);
+    if(!draft&&managedQuotePolicy!=null&&(managedQuotePolicy.fullQuoteRequired()||managedQuotePolicy.autoExtend())){
+      if(!quoteMapper.listByTenantAndRfqAndRound(tenantId,rfqId,rfq.currentRound()).isEmpty())
+        throw new IllegalStateException("本轮已有报价，不能直接修改询价内容或名单；补遗请发公告，延期请使用报价延期入口");
+      if(request.deadlineAt()==null||!request.deadlineAt().toInstant().equals(rfq.deadlineAt().toInstant()))
+        throw new IllegalStateException("本项目已配置报价规则，变更截止时间请使用报价延期入口并填写原因");
+    }
     boolean fixedInvitations = !draft && (RfqAuctionPolicy.isAuction(rfq.method())
         || RfqMethod.SINGLE_SOURCE.equals(rfq.method()));
     if (fixedInvitations && request.invitedSupplierIds() != null
@@ -796,6 +809,7 @@ public class RfqApplicationService {
   }
 
   private RfqResponse toResponse(Rfq rfq) {
+    boolean sealed=rfq.openedAt()==null&&Boolean.TRUE.equals(quoteMapper.fullQuotationRequired(rfq.tenantId(),rfq.id()));
     return new RfqResponse(
         rfq.id(),
         rfq.tenantId(),
@@ -808,7 +822,7 @@ public class RfqApplicationService {
         rfq.updatedAt(),
         rfqDemandMapper.listDemandIds(rfq.tenantId(), rfq.id()),
         rfqInviteMapper.listSupplierIds(rfq.tenantId(), rfq.id()),
-        quoteMapper.listByTenantAndRfqAndRound(rfq.tenantId(), rfq.id(), rfq.currentRound()).stream()
+        sealed?List.of():quoteMapper.listByTenantAndRfqAndRound(rfq.tenantId(), rfq.id(), rfq.currentRound()).stream()
             .map(this::toQuoteResponse)
             .toList(),
         rfq.quoteRequirement(),

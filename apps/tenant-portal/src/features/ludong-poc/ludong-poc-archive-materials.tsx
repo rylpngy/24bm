@@ -6,7 +6,7 @@ import {
   ResponsiveTableFrame, StatusPill,
 } from '@24bid/ui';
 import {
-  ludongApi, ludongArchiveMaterialCategories,
+  ludongApi,
   type LudongArchiveMaterialCategory,
 } from './api';
 
@@ -25,6 +25,9 @@ export function LudongPocArchiveMaterials({
     queryKey: ['ludong-poc', 'archive-materials', applicationId],
     queryFn: () => ludongApi.listArchiveMaterials(applicationId),
   });
+  const categoryQuery = useQuery({ queryKey: ['ludong-poc', 'attachment-categories', applicationId],
+    queryFn: () => ludongApi.listArchiveMaterialCategories(applicationId) });
+  const categories = categoryQuery.data ?? [];
   const upload = useMutation({
     mutationFn: (file: File) => ludongApi.uploadArchiveMaterial(applicationId, category, file),
     onSuccess: () => {
@@ -37,7 +40,8 @@ export function LudongPocArchiveMaterials({
     },
   });
   const materials = query.data ?? [];
-  const readyRequired = ludongArchiveMaterialCategories
+  const requiredCount = categories.filter((item) => item.required).length;
+  const readyRequired = categories
     .filter((item) => item.required)
     .filter((item) => materials.some((material) => material.category === item.id)).length;
 
@@ -47,9 +51,9 @@ export function LudongPocArchiveMaterials({
         <div className="flex flex-wrap items-center gap-2">
           <StatusPill label={'已归集 ' + materials.length + ' 份'} />
           <span className="text-xs font-bold text-slate-500">
-            必备材料 {readyRequired}/3 类
+            必备材料 {readyRequired}/{requiredCount} 类
           </span>
-          {readyRequired === 3 && (
+          {requiredCount > 0 && readyRequired === requiredCount && (
             <span className="inline-flex items-center gap-1 text-xs font-black text-emerald-700">
               <CheckCircle2 size={14} /> 材料齐备
             </span>
@@ -62,13 +66,13 @@ export function LudongPocArchiveMaterials({
               onChange={(event) => setCategory(event.target.value as LudongArchiveMaterialCategory)}
               className="h-9 rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 outline-none focus:border-blue-500"
             >
-              {ludongArchiveMaterialCategories.map((item) => (
+              {categories.map((item) => (
                 <option key={item.id} value={item.id}>{item.label}{item.required ? '（必备）' : ''}</option>
               ))}
             </select>
             <PrimaryActionButton
               icon={Upload}
-              disabled={upload.isPending}
+              disabled={upload.isPending || categoryQuery.isPending || categoryQuery.isError}
               onClick={() => fileInput.current?.click()}
             >
               {upload.isPending ? '上传中' : '上传材料'}
@@ -86,8 +90,9 @@ export function LudongPocArchiveMaterials({
         )}
       </div>
       {error && <FeedbackNotice tone="error" message={error} />}
+      {(query.isError || categoryQuery.isError) && <FeedbackNotice tone="error" message="附件台账加载失败，请刷新后重试。" />}
       <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-        {ludongArchiveMaterialCategories.map((item) => {
+        {categories.map((item) => {
           const count = materials.filter((material) => material.category === item.id).length;
           return (
             <div key={item.id} className="rounded-lg border border-slate-200 bg-white px-3 py-3">
@@ -104,7 +109,7 @@ export function LudongPocArchiveMaterials({
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <StatusPill label={
-                ludongArchiveMaterialCategories.find((item) => item.id === material.category)?.label ?? '其他材料'
+                categories.find((item) => item.id === material.category)?.label ?? '其他材料'
               } />
               <p className="mt-2 break-words text-sm font-black text-slate-800">{material.fileName}</p>
               <p className="mt-1 text-xs font-bold text-slate-400">
@@ -131,7 +136,7 @@ export function LudongPocArchiveMaterials({
               <tr key={material.id} className="text-sm">
                 <td className="px-4 py-3 font-bold text-slate-400">{index + 1}</td>
                 <td className="px-4 py-3"><StatusPill label={
-                  ludongArchiveMaterialCategories.find((item) => item.id === material.category)?.label ?? '其他材料'
+                  categories.find((item) => item.id === material.category)?.label ?? '其他材料'
                 } /></td>
                 <td className="truncate px-4 py-3 font-black text-slate-800" title={material.fileName}>
                   {material.fileName}

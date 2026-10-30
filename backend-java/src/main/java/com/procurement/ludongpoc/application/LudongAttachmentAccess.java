@@ -13,7 +13,8 @@ import org.springframework.stereotype.Component;
 public record LudongAttachmentAccess(LudongPocApplicationMapper mapper, PermissionService permissions,
     DataScopeService scopes) implements AttachmentOwnerAccess {
   public Set<String> ownerTypes() {
-    return Set.of("ludong_poc_project_attachment", "ludong_poc_mall_confirmation", "ludong_poc_supplementary_evidence");
+    return LudongPocArchiveMaterialCatalog.supported().stream().map(LudongPocArchiveMaterialCatalog.Category::ownerType)
+        .collect(java.util.stream.Collectors.toSet());
   }
 
   public void requireAccess(String id, boolean write) {

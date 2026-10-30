@@ -53,6 +53,7 @@ public class LudongPocApplicationService {
   private final LudongPocReviewRecordMapper reviewRecordMapper;
   private final MaterialApplicationService materialApplicationService;
   private final DepartmentApplicationService departmentApplicationService;
+  private final com.procurement.attachment.application.AttachmentApplicationService attachments;
 
   public LudongPocApplicationService(
       LudongPocApplicationMapper mapper,
@@ -63,7 +64,8 @@ public class LudongPocApplicationService {
       ObjectMapper objectMapper,
       LudongPocReviewRecordMapper reviewRecordMapper,
       MaterialApplicationService materialApplicationService,
-      DepartmentApplicationService departmentApplicationService) {
+      DepartmentApplicationService departmentApplicationService,
+      com.procurement.attachment.application.AttachmentApplicationService attachments) {
     this.mapper = mapper;
     this.publicationService = publicationService;
     this.workflowService = workflowService;
@@ -73,6 +75,40 @@ public class LudongPocApplicationService {
     this.reviewRecordMapper = reviewRecordMapper;
     this.materialApplicationService = materialApplicationService;
     this.departmentApplicationService = departmentApplicationService;
+    this.attachments = attachments;
+  }
+
+  public List<LudongPocArchiveMaterialCatalog.Category> archiveCategories(String id) {
+    requireRead();
+    return archiveCategories(requireApplication(tenant(), id));
+  }
+
+  public List<LudongPocArchiveMaterialCatalog.Category> archiveCategories(LudongPocApplication application) {
+    String schema = attachmentFormSchema(application);
+    List<LudongPocArchiveMaterialCatalog.Category> configured = LudongPocArchiveMaterialCatalog.parse(readTree(schema));
+    var result = new java.util.ArrayList<>(configured);
+    for (var category : LudongPocArchiveMaterialCatalog.supported()) {
+      if (result.stream().noneMatch(item -> item.ownerType().equals(category.ownerType()))
+          && !attachments.listCurrentTenantAttachmentEntities(category.ownerType(), application.id()).isEmpty()) {
+        result.add(category);
+      }
+    }
+    return List.copyOf(result);
+  }
+
+  private String attachmentFormSchema(LudongPocApplication application) {
+    if (!List.of("draft", "rejected").contains(application.status())) {
+      String frozen = mapper.latestWorkflowFormSchema(application.tenantId(), application.id());
+      if (frozen != null) return frozen;
+      return "{}";
+    }
+    var published = publicationService.findPublishedVersion(application.tenantId(), LudongPocWorkflowDefinition.BUSINESS_TYPE);
+    return published == null ? "{}" : published.formSchema();
+  }
+
+  private JsonNode readTree(String source) {
+    try { return objectMapper.readTree(source == null ? "{}" : source); }
+    catch (Exception exception) { throw new IllegalStateException("已发布附件配置无法解析", exception); }
   }
 
   public List<LudongPocApplicationResponse> list() {
@@ -89,20 +125,45 @@ public class LudongPocApplicationService {
   public List<LudongPocPriorApprovalEvidence> listPriorApprovals(String id) {
     requireRead();
     LudongPocApplication application = requireApplication(tenant(), id);
-    return reviewRecordMapper.listByApplication(application.tenantId(), application.id()).stream()
+    return reviewRecordMapper.listEffectiveByApplication(application.tenantId(), application.id()).stream()
         .map(review -> new LudongPocPriorApprovalEvidence(
             review.nodeId(), review.reviewerId(), review.decision(),
             readMap(review.reviewDataJson()), review.comment(), review.reviewedAt()))
         .toList();
   }
 
+  public List<LudongPocReviewRecord> reviewHistory(String applicationId, String instanceId) {
+    requireRead();
+    requireApplication(tenant(), applicationId);
+    workflowService.requireCurrentTenantBusinessInstanceReadAccess(instanceId,LudongPocWorkflowDefinition.BUSINESS_TYPE,applicationId);
+    return reviewRecordMapper.listByInstance(tenant(), applicationId, instanceId);
+  }
+
   @Transactional
   public LudongPocApplicationResponse create(LudongPocApplicationRequest request) {
+    return create(request, false);
+  }
+
+  @Transactional
+  public LudongPocApplicationResponse saveDraft(String id, LudongPocApplicationRequest request) {
     permissionService.require("buyer:ludong-poc:write");
-    List<Map<String, Object>> normalizedItems = prepareApplicationItems(request.items());
+    if (request.formData() == null || request.items() == null
+        || request.projectName() == null || request.applicantUnit() == null) {
+      throw new IllegalArgumentException("草稿必须包含表单和设备清单，未填写的内容可留空");
+    }
+    if (request.departmentId() != null && !request.departmentId().isBlank()
+        && departmentApplicationService.findCurrentTenantActiveDepartment(request.departmentId()) == null) {
+      throw new IllegalArgumentException("申报单位不存在或不属于当前租户");
+    }
+    return id == null ? create(request, true) : update(id, request, true);
+  }
+
+  private LudongPocApplicationResponse create(LudongPocApplicationRequest request, boolean draft) {
+    permissionService.require("buyer:ludong-poc:write");
+    List<Map<String, Object>> normalizedItems = prepareApplicationItems(request.items(), draft);
     Map<String, Object> normalizedForm = prepareApplicationForm(request.formData(), normalizedItems);
-    validate(request, normalizedForm, normalizedItems);
-    BigDecimal budgetAmount = calculateBudget(normalizedItems);
+    if (!draft) validate(request, normalizedForm, normalizedItems);
+    BigDecimal budgetAmount = calculateBudget(normalizedItems, draft);
     String tenantId = tenant();
     String userId = user();
     String id = "ldu-poc-" + UUID.randomUUID();
@@ -119,11 +180,15 @@ public class LudongPocApplicationService {
 
   @Transactional
   public LudongPocApplicationResponse update(String id, LudongPocApplicationRequest request) {
+    return update(id, request, false);
+  }
+
+  private LudongPocApplicationResponse update(String id, LudongPocApplicationRequest request, boolean draft) {
     permissionService.require("buyer:ludong-poc:write");
-    List<Map<String, Object>> normalizedItems = prepareApplicationItems(request.items());
+    List<Map<String, Object>> normalizedItems = prepareApplicationItems(request.items(), draft);
     Map<String, Object> normalizedForm = prepareApplicationForm(request.formData(), normalizedItems);
-    validate(request, normalizedForm, normalizedItems);
-    BigDecimal budgetAmount = calculateBudget(normalizedItems);
+    if (!draft) validate(request, normalizedForm, normalizedItems);
+    BigDecimal budgetAmount = calculateBudget(normalizedItems, draft);
     requireApplication(tenant(), id);
     int changed = mapper.updateDraft(
         tenant(), id, request.projectName().trim(), request.applicantUnit().trim(),
@@ -141,12 +206,29 @@ public class LudongPocApplicationService {
     permissionService.require("buyer:ludong-poc:write");
     String tenantId = tenant();
     String userId = user();
-    LudongPocApplication application = requireApplication(tenantId, id);
+    LudongPocApplication application = mapper.findByTenantAndIdForUpdate(tenantId, id);
+    if (application == null) throw new IllegalArgumentException("申报不存在或不在当前企业范围内");
     Map<String, Object> form = readMap(application.formDataJson());
+    LudongPocTaskFormCatalog.clearApprovalFields(form);
+    List<Map<String, Object>> items = readItems(application.itemsJson());
+    validate(new LudongPocApplicationRequest(application.projectName(), application.applicantUnit(),
+        application.departmentId(), application.budgetAmount(), form, items), form, items);
+    BigDecimal total = items.stream().map(item -> new BigDecimal(String.valueOf(item.get("quantity")))
+        .multiply(new BigDecimal(String.valueOf(item.get("unitPrice"))))).reduce(BigDecimal.ZERO, BigDecimal::add);
+    if (total.compareTo(application.budgetAmount()) != 0) throw new IllegalArgumentException("设备清单合计与预算不一致，请编辑并重新保存");
     validateWorkflowFlags(form);
     // 默认流程只在首次启用时初始化。后续必须使用管理员在配置器中
     // 发布的版本，不能在业务提交时用代码内默认 schema 覆盖租户配置。
     ensureRequiredWorkflowDefinition(tenantId, userId);
+    var published = publicationService.findPublishedVersion(tenantId, LudongPocWorkflowDefinition.BUSINESS_TYPE);
+    JsonNode attachmentConfig = readTree(published == null ? "{}" : published.formSchema());
+    if (attachmentConfig.has("attachmentCategories")) {
+      for (var category : LudongPocArchiveMaterialCatalog.parse(attachmentConfig)) {
+        if (category.required() && attachments.listCurrentTenantAttachmentEntities(category.ownerType(), id).isEmpty()) {
+          throw new IllegalArgumentException("请先上传必备材料：" + category.label());
+        }
+      }
+    }
     if (mapper.markSubmitted(tenantId, id, userId) == 0) {
       throw new IllegalStateException("当前申报状态不允许提交审批");
     }
@@ -163,7 +245,10 @@ public class LudongPocApplicationService {
         Map.of(
             "applicationNo", application.applicationNo(),
             "projectName", application.projectName(),
-            "applicantUnit", application.applicantUnit())));
+            "applicantUnit", application.applicantUnit(),
+            "departmentId", application.departmentId(),
+            "budgetAmount", application.budgetAmount(),
+            "formData", form, "items", items)));
     auditService.recordCurrentTenantAction(
         "ludong_poc.submitted", "ludong_project_application", id, "提交统一 Flowable 审批");
     return get(id);
@@ -540,6 +625,10 @@ public class LudongPocApplicationService {
   }
 
   private List<Map<String, Object>> prepareApplicationItems(List<Map<String, Object>> items) {
+    return prepareApplicationItems(items, false);
+  }
+
+  private List<Map<String, Object>> prepareApplicationItems(List<Map<String, Object>> items, boolean draft) {
     List<String> materialIds = items.stream()
         .map(item -> item.get("materialId") == null ? "" : String.valueOf(item.get("materialId")).trim())
         .filter(id -> !id.isBlank())
@@ -562,20 +651,25 @@ public class LudongPocApplicationService {
       }
       BigDecimal quantity;
       try {
-        quantity = new BigDecimal(String.valueOf(item.get("quantity")));
+        String raw = String.valueOf(item.getOrDefault("quantity", ""));
+        quantity = new BigDecimal(draft && raw.isBlank() ? "0" : raw);
       } catch (NumberFormatException exception) {
         throw new IllegalArgumentException("设备数量必须为有效数字: " + item.get("name"), exception);
       }
-      if (quantity.signum() <= 0) {
+      if (quantity.signum() < 0 || (!draft && quantity.signum() == 0)) {
         throw new IllegalArgumentException("设备数量必须大于 0: " + item.get("name"));
       }
       BigDecimal researchedPrice;
       try {
-        researchedPrice = new BigDecimal(String.valueOf(item.get("unitPrice")));
+        String raw = String.valueOf(item.getOrDefault("unitPrice", ""));
+        researchedPrice = new BigDecimal(draft && raw.isBlank() ? "0" : raw);
       } catch (NumberFormatException exception) {
         throw new IllegalArgumentException("市场调研单价必须为有效数字: " + item.get("name"), exception);
       }
       Map<String, Object> normalized = new LinkedHashMap<>(item);
+      if (researchedPrice.signum() < 0) throw new IllegalArgumentException("市场调研单价不能为负数");
+      normalized.put("quantity", quantity.toPlainString());
+      normalized.put("unitPrice", researchedPrice.toPlainString());
       normalized.entrySet().removeIf(entry -> entry.getValue() == null);
       if ("行政".equals(String.valueOf(normalized.get("usageDirection")))) {
         normalized.put("usageDirection", "行政办公");
@@ -609,7 +703,7 @@ public class LudongPocApplicationService {
       normalized.remove("configurationLimit");
       return Map.copyOf(normalized);
     }).toList();
-    for (int index = 0; index < normalizedItems.size(); index++) {
+    for (int index = 0; !draft && index < normalizedItems.size(); index++) {
       Map<String, Object> item = normalizedItems.get(index);
       if ("是".equals(String.valueOf(item.get("governmentMallCatalog")))) {
         requireItemText(item, index, "selectedBrand", "商城最终品牌");
@@ -629,6 +723,7 @@ public class LudongPocApplicationService {
         .filter(item -> "是".equals(String.valueOf(item.get("governmentMallCatalog"))))
         .count();
     Map<String, Object> normalized = new LinkedHashMap<>(formData);
+    LudongPocTaskFormCatalog.clearApprovalFields(normalized);
     normalized.entrySet().removeIf(entry -> entry.getValue() == null);
     normalized.remove("sameFundingUnit");
     normalized.remove("configurationStandard");
@@ -656,10 +751,14 @@ public class LudongPocApplicationService {
   }
 
   private static BigDecimal calculateBudget(List<Map<String, Object>> items) {
+    return calculateBudget(items, false);
+  }
+
+  private static BigDecimal calculateBudget(List<Map<String, Object>> items, boolean draft) {
     BigDecimal total = items.stream()
         .map(item -> new BigDecimal(String.valueOf(item.get("totalPrice"))))
         .reduce(BigDecimal.ZERO, BigDecimal::add);
-    if (total.signum() <= 0) {
+    if (!draft && total.signum() <= 0) {
       throw new IllegalArgumentException("根据设备清单计算的预算金额必须大于 0");
     }
     return total;
@@ -694,7 +793,8 @@ public class LudongPocApplicationService {
 
   private Map<String, Object> accumulatedData(LudongPocApplication value) {
     Map<String, Object> result = new LinkedHashMap<>(readMap(value.formDataJson()));
-    for (var review : reviewRecordMapper.listByApplication(value.tenantId(), value.id())) {
+    LudongPocTaskFormCatalog.clearApprovalFields(result);
+    for (var review : reviewRecordMapper.listEffectiveByApplication(value.tenantId(), value.id())) {
       if ("approve".equals(review.decision())) {
         result.putAll(readMap(review.reviewDataJson()));
       }

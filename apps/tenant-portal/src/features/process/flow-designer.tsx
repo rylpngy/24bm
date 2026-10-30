@@ -291,6 +291,11 @@ function StepNode({
             roles={roles}
             onChange={(assignment) => onUpdate({ assignment, assignee: undefined })}
           />
+          <label className="block text-[11px] font-black text-slate-500">办理时限（自然小时）
+            <input aria-label="办理时限（自然小时）" type="number" min={1} max={8760} step={1}
+              placeholder="不限制" className={inputCls} value={step.deadlineHours ?? ''}
+              onChange={(event) => onUpdate({deadlineHours: event.target.value ? Number(event.target.value) : undefined})} />
+          </label>
         </div>
       )}
     </div>

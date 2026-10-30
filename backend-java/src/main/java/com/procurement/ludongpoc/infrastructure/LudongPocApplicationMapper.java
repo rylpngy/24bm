@@ -11,6 +11,13 @@ import org.apache.ibatis.annotations.Update;
 
 @Mapper
 public interface LudongPocApplicationMapper {
+  @Select("""
+      select v.form_schema::text from workflow_business_instances w
+      join workflow_definition_versions v on v.tenant_id=w.tenant_id and v.id=w.definition_version_id
+      where w.tenant_id=#{tenantId} and w.business_type='ludong_project_application' and w.business_id=#{id}
+      order by w.created_at desc, w.id desc limit 1
+      """)
+  String latestWorkflowFormSchema(@Param("tenantId") String tenantId, @Param("id") String id);
   String COLUMNS = """
       id, tenant_id, application_no, project_name, applicant_unit, department_id,
       budget_amount, status, form_data::text as form_data_json, items::text as items_json,
@@ -22,6 +29,9 @@ public interface LudongPocApplicationMapper {
 
   @Select("select " + COLUMNS + " from ludong_poc_applications where tenant_id = #{tenantId} and id = #{id}")
   LudongPocApplication findByTenantAndId(@Param("tenantId") String tenantId, @Param("id") String id);
+
+  @Select("select " + COLUMNS + " from ludong_poc_applications where tenant_id = #{tenantId} and id = #{id} for update")
+  LudongPocApplication findByTenantAndIdForUpdate(@Param("tenantId") String tenantId, @Param("id") String id);
 
   @Insert("""
       insert into ludong_poc_applications (

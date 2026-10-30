@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { compactList } from '../../lib/compact-list';
 import { useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, ArrowLeft, Banknote, ClipboardCheck, Info, Receipt, Scale } from 'lucide-react';
 import {
@@ -6,6 +7,7 @@ import {
   useBuyerPaymentPaymentAuditLogs,
   useBuyerSupplierList,
   useWorkflowPaymentRequestCreate,
+  useBuyerFinanceActionPaymentRequests,
 } from '@24bid/api-client';
 import {
   FeedbackNotice,
@@ -16,6 +18,8 @@ import {
   ResponsiveTableFrame,
   SearchInput,
   StatusPill,
+  Tabs,
+  cn,
 } from '@24bid/ui';
 import { ReconciliationVariancePanel } from './reconciliation-variance-panel';
 import { PaymentBatchesPage } from './payment-batches-page';
@@ -71,14 +75,45 @@ function PaymentExecutionTimeline({ invoiceId }: { invoiceId: string }) {
   );
 }
 
+function InvoiceApprovalRecords({ invoiceId }: { invoiceId: string }) {
+  const requests = useBuyerFinanceActionPaymentRequests({ invoiceId });
+  const list = requests.data?.data ?? [];
+  if (requests.isError) return <FeedbackNotice tone="error" message={financeErrorMessage(requests.error, '付款审批记录加载失败')} />;
+  if (requests.isLoading) return <p role="status" className="p-4 text-sm text-slate-500">正在加载付款审批记录…</p>;
+  return <div className="space-y-4">
+    {!list.length && <FeedbackNotice tone="info" message="该发票尚无付款申请审批记录。" />}
+    {list.map(request => <section key={request.id} className="space-y-3">
+      <h3 className="break-words text-sm font-bold text-slate-700">付款申请 {request.id} · {request.requestStatus}</h3>
+      {request.id && <WorkflowStatusPanel businessType="payment_request" businessId={request.id} />}
+    </section>)}
+    {[...new Set(list.map(request => request.paymentBatchNo).filter((value): value is string => !!value))].map(batch => <section key={batch} className="space-y-3">
+      <h3 className="break-words text-sm font-bold text-slate-700">付款批次 {batch}</h3>
+      <WorkflowStatusPanel businessType="payment_batch" businessId={batch} />
+    </section>)}
+  </div>;
+}
+
 // S6:发票付款 + 三单匹配。表格台账 → 对账详情页(发票信息/三单匹配/行级对账/付款流水)。
 // 二级页:对账差异处理(从对账详情进入,返回详情)、付款批次(从台账进入,返回台账)。
 export function InvoicesPage() {
   const queryClient = useQueryClient();
-  const [subpage, setSubpage] = useState<'none' | 'variance' | 'batches' | 'reviews'>(() => new URLSearchParams(window.location.search).get('financeView') === 'reviews' ? 'reviews' : 'none');
+  const [subpage, setSubpage] = useState<'none' | 'variance' | 'batches' | 'reviews'>(() => {
+    const view = new URLSearchParams(window.location.search).get('financeView');
+    return view === 'reviews' || view === 'batches' ? view : 'none';
+  });
   const [feedback, setFeedback] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(() => new URLSearchParams(window.location.search).get('recordId'));
+  const [detailTab, setDetailTab] = useState('info');
+  const [visitedTabs, setVisitedTabs] = useState<string[]>(['info']);
+  const selectDetailTab = (id: string) => { setDetailTab(id); setVisitedTabs(visited => visited.includes(id) ? visited : [...visited, id]); };
+  const openInvoice = (id: string) => { setSelectedId(id); setDetailTab('info'); setVisitedTabs(['info']); };
+  const leaveSubpage = () => {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('financeView');
+    window.history.replaceState(null, '', url);
+    setSubpage('none');
+  };
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState('全部');
   const [page, setPage] = useState(1);
@@ -135,7 +170,7 @@ export function InvoicesPage() {
     return <FeedbackNotice tone="error" message={financeErrorMessage(query.error, '发票数据加载失败，请刷新重试。')} />;
   }
 
-  if (subpage === 'reviews') return <PaymentReviewsPage onBack={() => setSubpage('none')} onInvoice={id => { setSelectedId(id); setSubpage('none'); }} />;
+  if (subpage === 'reviews') return <PaymentReviewsPage onBack={leaveSubpage} onInvoice={id => { openInvoice(id); leaveSubpage(); }} />;
 
   // ── 二级页:付款批次(发票付款的批量执行工作台) ─────────────
   if (subpage === 'batches') {
@@ -145,7 +180,7 @@ export function InvoicesPage() {
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              onClick={() => setSubpage('none')}
+              onClick={leaveSubpage}
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-50"
               aria-label="返回发票台账"
             >
@@ -207,7 +242,7 @@ export function InvoicesPage() {
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              onClick={() => setSelectedId(null)}
+              onClick={() => { const url = new URL(window.location.href); url.searchParams.delete('recordId'); window.history.replaceState(null, '', url); setSelectedId(null); }}
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-50"
               aria-label="返回发票台账"
             >
@@ -239,12 +274,11 @@ export function InvoicesPage() {
         {actionError ? <FeedbackNotice tone="error" message={actionError} />
           : feedback && <FeedbackNotice tone="success" message={feedback} />}
 
-        {inv.id && <WorkflowStatusPanel businessType="payment_request" businessId={inv.id} />}
-
-        <div className="grid gap-4 xl:grid-cols-[1fr_20rem]">
+        <Tabs items={[{id:'info',label:'基本信息'},{id:'match',label:'三单匹配'},{id:'variance',label:'差异处理'},{id:'payment',label:'付款登记'},{id:'execution',label:'执行记录'},{id:'approval',label:'审批记录'}]} value={detailTab} onChange={selectDetailTab} />
+        <div className="min-w-0 space-y-4">
           <div className="min-w-0 space-y-4">
             {/* 发票信息 */}
-            <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
+            <section hidden={detailTab !== 'info'} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
               <h3 className="text-base font-black text-slate-950">发票信息(增值税专用发票)</h3>
               <div className="mt-3 grid gap-2 sm:grid-cols-4">
                 <MiniFact label="发票代码" value={inv.invoiceCode || '—'} />
@@ -290,7 +324,7 @@ export function InvoicesPage() {
             </section>
 
             {/* 三单匹配 */}
-            <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
+            <section hidden={detailTab !== 'match'} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
               <h3 className="text-base font-black text-slate-950">三单匹配</h3>
               <p className="mt-3 text-xs font-black text-slate-500">金额维度</p>
               <div className="mt-2 grid gap-2 sm:grid-cols-4">
@@ -315,13 +349,13 @@ export function InvoicesPage() {
               {inv.id && (
                 <div className="mt-3">
                   <p className="text-xs font-black text-slate-500">行级对账(逐行匹配)</p>
-                  <InvoiceLineMatchPanel invoiceId={inv.id} />
+                  {visitedTabs.includes('match') && <InvoiceLineMatchPanel key={inv.id} invoiceId={inv.id} />}
                 </div>
               )}
             </section>
 
             {/* 对账差异处理引导 */}
-            {!matched && (
+            <div hidden={detailTab !== 'match'}>{!matched && (
               <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50/60 px-4 py-3">
                 <p className="flex items-center gap-2 text-xs font-black text-amber-800">
                   <AlertTriangle size={14} className="shrink-0" />
@@ -329,22 +363,28 @@ export function InvoicesPage() {
                 </p>
                 <button
                   type="button"
-                  onClick={() => setSubpage('variance')}
+                  onClick={() => selectDetailTab('variance')}
                   className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-amber-600 px-4 text-xs font-black text-white transition hover:bg-amber-700"
                 >
                   <Scale size={13} /> 去处理差异
                 </button>
               </section>
-            )}
+            )}</div>
+            {visitedTabs.includes('variance') && <div hidden={detailTab !== 'variance'}>
+              <ReconciliationVariancePanel key={inv.id} focusInvoiceId={inv.id} />
+            </div>}
 
             {/* 付款执行记录 */}
-            {inv.id && <PaymentLedgerPanel key={inv.id} invoiceId={inv.id} />}
-            {inv.id && <FrozenPaymentCorrections key={'corrections-'+inv.id} invoiceId={inv.id} />}
-            {inv.id && <PaymentExecutionTimeline invoiceId={inv.id} />}
+            {visitedTabs.includes('payment') && <div hidden={detailTab !== 'payment'}>
+              {inv.id && <PaymentLedgerPanel key={inv.id} invoiceId={inv.id} />}
+              {inv.id && <FrozenPaymentCorrections key={'corrections-'+inv.id} invoiceId={inv.id} />}
+            </div>}
+            {visitedTabs.includes('execution') && <div hidden={detailTab !== 'execution'}>{inv.id && <PaymentExecutionTimeline key={inv.id} invoiceId={inv.id} />}</div>}
+            {visitedTabs.includes('approval') && <div hidden={detailTab !== 'approval'}>{inv.id && <InvoiceApprovalRecords key={inv.id} invoiceId={inv.id} />}</div>}
           </div>
 
           {/* 右栏:关键信息 */}
-          <div className="space-y-4">
+          <div hidden={detailTab !== 'info'}><div className="grid items-start gap-4 lg:grid-cols-2">
             <section className="rounded-lg bg-slate-900 p-5 text-white shadow-sm">
               <p className="flex items-center gap-2 text-sm font-black">
                 <Info size={15} className="text-blue-400" /> 关键信息
@@ -372,6 +412,7 @@ export function InvoicesPage() {
                 <p className="mt-1 text-[11px] font-bold text-slate-600">请尽快完成付款登记,避免影响供应商合作关系。</p>
               </section>
             )}
+          </div>
           </div>
         </div>
 
@@ -409,7 +450,7 @@ export function InvoicesPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => document.getElementById('payment-amount-ledger')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+                  onClick={() => { selectDetailTab('payment'); requestAnimationFrame(() => document.getElementById('payment-amount-ledger')?.scrollIntoView({ behavior: 'smooth', block: 'center' })); }}
                   disabled={busy}
                   className="inline-flex h-10 items-center rounded-lg bg-emerald-600 px-5 text-sm font-black text-white transition hover:bg-emerald-700 disabled:bg-slate-300"
                 >
@@ -516,7 +557,7 @@ export function InvoicesPage() {
             <button
               type="button"
               onClick={() => setSubpage('batches')}
-              className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:bg-slate-50"
+              className="inline-flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
             >
               <Banknote size={15} className="text-blue-600" /> 付款批次
             </button>
@@ -547,11 +588,11 @@ export function InvoicesPage() {
                   <div key={inv.id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="break-words font-mono font-black text-slate-950">
+                        <p className="truncate font-mono font-bold text-slate-950" title={inv.invoiceNo ?? inv.id}>
                           <span className="mr-1.5 text-slate-400">{(safePage - 1) * PAGE_SIZE + i + 1}.</span>
                           {inv.invoiceNo ?? inv.id}
                         </p>
-                        <p className="mt-1 text-xs font-bold text-slate-500">订单 {inv.orderId}</p>
+                        <p className="mt-1 truncate text-xs font-bold text-slate-500" title={inv.orderId}>订单 {inv.orderId}</p>
                       </div>
                       <div className="flex shrink-0 flex-col items-end gap-1">
                         {inv.paymentStatus && <StatusPill label={inv.paymentStatus} />}
@@ -560,15 +601,16 @@ export function InvoicesPage() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => inv.id && setSelectedId(inv.id)}
+                      onClick={() => inv.id && openInvoice(inv.id)}
                       className="mt-3 inline-flex h-8 w-full items-center justify-center rounded-md border border-slate-200 bg-white text-xs font-black text-slate-600 hover:bg-slate-50"
                     >
-                      查看详情
+                      详情
                     </button>
                   </div>
                 ))}
               >
-                <table className="w-full min-w-[920px] text-left text-sm">
+                <table aria-label="发票付款列表" className={cn(compactList.table, 'min-w-[880px]')}>
+                  <colgroup><col className="w-12" /><col /><col className="w-28" /><col className="w-[100px]" /><col className="w-[100px]" /><col className="w-[104px]" /><col className="w-32" /><col className="w-[152px]" /></colgroup>
                   <thead className="bg-slate-50 text-xs font-black text-slate-500">
                     <tr>
                       <th className="w-12 px-2 py-4 text-center">序号</th>
@@ -578,7 +620,7 @@ export function InvoicesPage() {
                       <th className="px-5 py-4">三单匹配</th>
                       <th className="px-5 py-4">付款状态</th>
                       <th className="px-5 py-4 text-right">价税合计</th>
-                      <th className="px-5 py-4 text-right">操作</th>
+                      <th className="sticky right-0 bg-slate-50 text-right">操作</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -587,20 +629,20 @@ export function InvoicesPage() {
                       const matched = inv.reconciliationStatus === '三单一致';
                       const payable = inv.paymentStatus === '待付款' || inv.paymentStatus === '部分付款';
                       return (
-                        <tr key={inv.id} className="hover:bg-blue-50/30">
+                        <tr key={inv.id} className="group hover:bg-blue-50/30">
                           <td className="px-2 py-5 text-center font-mono font-black text-slate-400">
                             {(safePage - 1) * PAGE_SIZE + i + 1}
                           </td>
                           <td className="px-5 py-5">
-                            <p className="w-40 truncate font-mono text-xs font-black text-slate-900" title={inv.invoiceNo ?? undefined}>
+                            <p className="truncate font-mono text-xs font-bold text-slate-900" title={inv.invoiceNo ?? inv.id}>
                               {inv.invoiceNo ?? inv.id}
                             </p>
-                            <p className="mt-1 w-40 truncate font-mono text-[11px] font-bold text-slate-400" title={inv.invoiceCode ?? undefined}>
+                            <p className="mt-1 truncate font-mono text-[11px] font-bold text-slate-400" title={inv.invoiceCode ?? undefined}>
                               {inv.invoiceCode || '代码未填'}
                             </p>
                           </td>
                           <td className="px-5 py-5">
-                            <p className="w-36 truncate font-mono text-xs font-black text-slate-500" title={inv.orderId ?? undefined}>
+                            <p className="truncate font-mono text-xs font-bold text-slate-500" title={inv.orderId ?? undefined}>
                               {inv.orderId ?? '—'}
                             </p>
                           </td>
@@ -609,35 +651,35 @@ export function InvoicesPage() {
                             {matched ? (
                               <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-black text-emerald-700">已匹配</span>
                             ) : (
-                              <span className="rounded-md bg-amber-100 px-2 py-0.5 text-[11px] font-black text-amber-700">
+                              <span title={`差异 ${currency(variance)}`} className="block max-w-full truncate rounded-md bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-700">
                                 差异 {currency(variance)}
                               </span>
                             )}
                           </td>
                           <td className="px-5 py-5">
                             <div className="flex flex-col gap-1">
-                              {inv.paymentStatus && <StatusPill label={inv.paymentStatus} />}
+                              {inv.paymentStatus && <span title={inv.paymentStatus}><StatusPill label={inv.paymentStatus} className="overflow-hidden whitespace-nowrap" /></span>}
                               {inv.overdue && (
-                                <span className="text-[11px] font-black text-red-600">· 逾期 {inv.overdueDays} 天</span>
+                                <span className="truncate text-[11px] font-bold text-red-600" title={`逾期 ${inv.overdueDays} 天`}>· 逾期 {inv.overdueDays} 天</span>
                               )}
                             </div>
                           </td>
-                          <td className="px-5 py-5 text-right font-mono font-black text-slate-900">{currency(inv.amount)}</td>
-                          <td className="px-5 py-5 text-right">
-                            <div className="flex justify-end gap-2">
+                          <td className="px-5 py-5 text-right font-mono text-xs font-semibold tabular-nums text-slate-900"><span className={compactList.text} title={currency(inv.amount)}>{currency(inv.amount)}</span></td>
+                          <td className={compactList.actionCell}>
+                            <div className={compactList.actions}>
                               {payable && (
                                 <button
                                   type="button"
-                                  onClick={() => inv.id && setSelectedId(inv.id)}
-                                  className="inline-flex h-8 items-center rounded-md bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700"
+                                  onClick={() => inv.id && openInvoice(inv.id)}
+                                  className={compactList.primary}
                                 >
                                   去付款
                                 </button>
                               )}
                               <button
                                 type="button"
-                                onClick={() => inv.id && setSelectedId(inv.id)}
-                                className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50"
+                                onClick={() => inv.id && openInvoice(inv.id)}
+                                className={compactList.detail}
                               >
                                 详情
                               </button>

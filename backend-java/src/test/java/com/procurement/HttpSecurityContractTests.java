@@ -317,8 +317,13 @@ import org.springframework.test.web.servlet.MvcResult;
     com.procurement.buyer.api.ProjectCloseoutController.class,
     com.procurement.buyer.api.ProjectMallController.class,
     com.procurement.buyer.api.ProjectLifecycleController.class
+    ,com.procurement.contract.api.ContractReviewController.class
+    ,com.procurement.sourcing.api.RfqQuotationController.class
+    ,com.procurement.workflow.api.WorkflowTaskOperationController.class
+    ,com.procurement.workflow.api.WorkflowReworkController.class
 })
 @Import({
+    HttpSecurityContractTests.QuotationExportFixture.class,
     SecurityConfig.class,
     JwtAuthenticationFilter.class,
     JwtTokenService.class,
@@ -331,6 +336,27 @@ import org.springframework.test.web.servlet.MvcResult;
     "procurement.security.jwt-expires-in-seconds=7200"
 })
 class HttpSecurityContractTests {
+  @MockBean private com.procurement.contract.application.ContractReviewRulesService contractReviewRules;
+  @MockBean private com.procurement.contract.application.ContractReviewService contractReview;
+  @MockBean private com.procurement.sourcing.application.RfqQuotationService rfqQuotation;
+  @org.springframework.boot.test.context.TestConfiguration(proxyBeanMethods=false)
+  static class QuotationExportFixture {
+    @org.springframework.context.annotation.Bean
+    com.procurement.sourcing.application.QuotationComparisonExport quotationExport(com.procurement.sourcing.application.RfqQuotationService service) {
+      return new com.procurement.sourcing.application.QuotationComparisonExport(service,
+          org.mockito.Mockito.mock(com.procurement.sourcing.application.RfqItemQueryService.class),
+          org.mockito.Mockito.mock(com.procurement.sourcing.infrastructure.QuotationMapper.class));
+    }
+  }
+  @MockBean private com.procurement.workflow.application.WorkflowTaskOperationService workflowOperations;
+  @MockBean private com.procurement.workflow.application.WorkflowReworkService workflowRework;
+  @Test void mergedPocInterfacesRequireAuthenticationAndCorrectPortal() throws Exception {
+    String supplier=loginAndExtractToken("{\"account\":\"supplier\",\"password\":\"demo123456\",\"scope\":\"SUPPLIER\",\"supplierId\":\"ent-supplier-sunrise\"}");
+    for(String path:java.util.List.of("/api/v1/buyer/contract-review/rule-sets","/api/v1/buyer/rfqs/r/quotation-package","/api/v1/buyer/workflow/tasks/t/recipients","/api/v1/buyer/workflow/tasks/t/return-targets")) {
+      mockMvc.perform(get(path)).andExpect(status().isForbidden());
+      mockMvc.perform(get(path).header("Authorization","Bearer "+supplier)).andExpect(status().isForbidden());
+    }
+  }
   @MockBean private com.procurement.order.application.OrderCancellationService orderCancellation;
   @MockBean private com.procurement.order.application.OrderSettlementService orderSettlement;
   @MockBean private com.procurement.buyer.application.ProcurementProjectService procurementProjects;

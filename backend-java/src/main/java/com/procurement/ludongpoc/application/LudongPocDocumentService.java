@@ -99,7 +99,7 @@ public class LudongPocDocumentService {
       add(zip, "01-生成表格/01-采购需求表（货物类）.docx", demand);
       add(zip, "01-生成表格/02-货物类项目采购及招标申请单、受理单.docx", applicationForm);
       for (LudongPocArchiveMaterialCatalog.Category category
-          : LudongPocArchiveMaterialCatalog.CATEGORIES) {
+          : archiveCategories(application)) {
         List<ArchiveMaterial> categoryMaterials = materials.stream()
             .filter(material -> material.category().ownerType().equals(category.ownerType()))
             .toList();
@@ -123,10 +123,15 @@ public class LudongPocDocumentService {
     }
   }
 
+  private List<LudongPocArchiveMaterialCatalog.Category> archiveCategories(LudongPocApplication application) {
+    var categories = applicationService.archiveCategories(application);
+    return categories.isEmpty() ? LudongPocArchiveMaterialCatalog.CATEGORIES : categories;
+  }
+
   private List<ArchiveMaterial> loadArchiveMaterials(LudongPocApplication application) {
     List<ArchiveMaterial> result = new ArrayList<>();
     for (LudongPocArchiveMaterialCatalog.Category category
-        : LudongPocArchiveMaterialCatalog.CATEGORIES) {
+        : archiveCategories(application)) {
       for (Attachment attachment : attachmentService.listCurrentTenantAttachmentEntities(
           category.ownerType(), application.id())) {
         try {
@@ -159,7 +164,7 @@ public class LudongPocDocumentService {
         .append("二、原始材料台账\n");
     int sequence = 1;
     for (LudongPocArchiveMaterialCatalog.Category category
-        : LudongPocArchiveMaterialCatalog.CATEGORIES) {
+        : archiveCategories(application)) {
       List<ArchiveMaterial> categoryMaterials = materials.stream()
           .filter(material -> material.category().ownerType().equals(category.ownerType()))
           .toList();
@@ -366,7 +371,8 @@ public class LudongPocDocumentService {
     table.getRow(0).setRepeatHeader(true);
     set(table, 0, 10, "使用方向\n（教学、科研、行政办公）");
     set(table, 0, 12, "存放地点");
-    int count = Math.min(items.size(), table.getNumberOfRows() - 1);
+    int count = items.size();
+    ensureItemRows(table, count);
     String[] keys = {"name", "quantity", "unitPrice", "totalPrice", "technicalParameters",
         "referenceBrands", "imported", "importLeadTime", "purpose", "usageDirection", "userName", "installationLocation"};
     for (int row = 1; row <= count; row++) {
@@ -386,7 +392,8 @@ public class LudongPocDocumentService {
     List<Map<String, Object>> mallItems = hasCatalogSnapshot
         ? items.stream().filter(item -> "是".equals(value(item, "governmentMallCatalog"))).toList()
         : items;
-    int count = Math.min(mallItems.size(), table.getNumberOfRows() - 1);
+    int count = mallItems.size();
+    ensureItemRows(table, count);
     for (int row = 1; row <= count; row++) {
       Map<String, Object> item = mallItems.get(row - 1);
       set(table, row, 0, String.valueOf(row));
@@ -412,6 +419,20 @@ public class LudongPocDocumentService {
     }
   }
 
+  private static void ensureItemRows(XWPFTable table, int count) {
+    if (table.getNumberOfRows() < 2) throw new IllegalStateException("采购清单模板缺少明细行");
+    var template = table.getRow(1);
+    while (table.getNumberOfRows() < count + 1) {
+      var row = table.createRow();
+      while (row.getTableCells().size() < template.getTableCells().size()) row.createCell();
+      for (int col=0;col<template.getTableCells().size();col++) {
+        var properties=template.getCell(col).getCTTc().getTcPr();
+        if(properties!=null)row.getCell(col).getCTTc().setTcPr(
+            (org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTcPr)properties.copy());
+      }
+    }
+  }
+
   private Map<String, String> signatures(LudongPocApplication application) {
     Map<String, String> result = new LinkedHashMap<>();
     for (WorkflowApprovalSignature signature : workflowService.listApprovalSignatures(
@@ -429,7 +450,8 @@ public class LudongPocDocumentService {
   private Map<String, Object> data(LudongPocApplication application) {
     try {
       Map<String, Object> result = new LinkedHashMap<>(objectMapper.readValue(application.formDataJson(), MAP_TYPE));
-      for (LudongPocReviewRecord review : reviewRecordMapper.listByApplication(application.tenantId(), application.id())) {
+      LudongPocTaskFormCatalog.clearApprovalFields(result);
+      for (LudongPocReviewRecord review : reviewRecordMapper.listEffectiveByApplication(application.tenantId(), application.id())) {
         if ("approve".equals(review.decision())) {
           result.putAll(objectMapper.readValue(review.reviewDataJson(), MAP_TYPE));
         }

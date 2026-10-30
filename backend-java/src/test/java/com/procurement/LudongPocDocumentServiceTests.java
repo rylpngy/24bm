@@ -39,6 +39,31 @@ class LudongPocDocumentServiceTests {
   private static final OffsetDateTime ACTED_AT = OffsetDateTime.parse("2026-08-28T10:00:00+08:00");
 
   @Test
+  void equipmentAndMallRowsGrowBeyondTheOriginalTemplateWithoutDroppingItems() throws Exception {
+    var json = new ObjectMapper();
+    var original = application(json);
+    List<Map<String,Object>> items = new ArrayList<>();
+    for (int index=1;index<=12;index++) items.add(Map.of("name","完整明细-"+index,"quantity","1","unitPrice","100",
+        "totalPrice","100","governmentMallCatalog","是","selectedBrand","演示品牌","selectedModel","型号-"+index));
+    var app = new LudongPocApplication(original.id(),original.tenantId(),original.applicationNo(),original.projectName(),
+        original.applicantUnit(),original.departmentId(),original.budgetAmount(),original.status(),original.formDataJson(),
+        json.writeValueAsString(items),original.createdBy(),original.submittedBy(),original.submittedAt(),original.approvedAt(),
+        original.archivedAt(),original.createdAt(),original.updatedAt());
+    var apps=mock(LudongPocApplicationService.class);var workflow=mock(UnifiedWorkflowApplicationService.class);
+    var reviews=mock(LudongPocReviewRecordMapper.class);
+    when(apps.requireForExport(APPLICATION_ID)).thenReturn(app);
+    when(reviews.listEffectiveByApplication(TENANT_ID,APPLICATION_ID)).thenReturn(List.of());
+    when(workflow.listApprovalSignatures("ludong_project_application",APPLICATION_ID)).thenReturn(List.of());
+    var service=new LudongPocDocumentService(apps,workflow,json,reviews,mock(AttachmentApplicationService.class));
+    byte[] bytes=service.generate(APPLICATION_ID,LudongPocDocumentService.DocumentType.APPLICATION);
+    try(var doc=new XWPFDocument(new ByteArrayInputStream(bytes))){
+      assertThat(doc.getTables().get(1).getNumberOfRows()).isEqualTo(13);
+      assertThat(doc.getTables().get(2).getNumberOfRows()).isEqualTo(13);
+      assertThat(doc.getTables().get(2).getRow(12).getCell(1).getText()).isEqualTo("完整明细-12");
+    }
+  }
+
+  @Test
   void approvedApplicationDataPopulatesBothOfficialTemplatesAndRejectedDataIsExcluded() throws Exception {
     ObjectMapper objectMapper = new ObjectMapper();
     LudongPocApplicationService applicationService = mock(LudongPocApplicationService.class);
@@ -46,7 +71,7 @@ class LudongPocDocumentServiceTests {
     LudongPocReviewRecordMapper reviewMapper = mock(LudongPocReviewRecordMapper.class);
     LudongPocApplication application = application(objectMapper);
     when(applicationService.requireForExport(APPLICATION_ID)).thenReturn(application);
-    when(reviewMapper.listByApplication(TENANT_ID, APPLICATION_ID)).thenReturn(reviews(objectMapper));
+    when(reviewMapper.listEffectiveByApplication(TENANT_ID, APPLICATION_ID)).thenReturn(reviews(objectMapper));
     when(workflowService.listApprovalSignatures("ludong_project_application", APPLICATION_ID))
         .thenReturn(signatures());
     LudongPocDocumentService service = new LudongPocDocumentService(
@@ -113,7 +138,7 @@ class LudongPocDocumentServiceTests {
     UnifiedWorkflowApplicationService workflowService = mock(UnifiedWorkflowApplicationService.class);
     LudongPocReviewRecordMapper reviewMapper = mock(LudongPocReviewRecordMapper.class);
     when(applicationService.requireForExport(APPLICATION_ID)).thenReturn(application(objectMapper));
-    when(reviewMapper.listByApplication(TENANT_ID, APPLICATION_ID)).thenReturn(List.of());
+    when(reviewMapper.listEffectiveByApplication(TENANT_ID, APPLICATION_ID)).thenReturn(List.of());
     when(workflowService.listApprovalSignatures("ludong_project_application", APPLICATION_ID))
         .thenReturn(List.of());
     LudongPocDocumentService service = new LudongPocDocumentService(
@@ -145,7 +170,7 @@ class LudongPocDocumentServiceTests {
     AttachmentApplicationService attachmentService = mock(AttachmentApplicationService.class);
     LudongPocApplication application = application(objectMapper);
     when(applicationService.requireForExport(APPLICATION_ID)).thenReturn(application);
-    when(reviewMapper.listByApplication(TENANT_ID, APPLICATION_ID)).thenReturn(reviews(objectMapper));
+    when(reviewMapper.listEffectiveByApplication(TENANT_ID, APPLICATION_ID)).thenReturn(reviews(objectMapper));
     when(workflowService.listApprovalSignatures("ludong_project_application", APPLICATION_ID))
         .thenReturn(signatures());
 

@@ -54,12 +54,20 @@ final class LudongPocTaskFormCatalog {
     return taskDefinitionKey.startsWith("task_") ? taskDefinitionKey.substring(5) : taskDefinitionKey;
   }
 
+  static void clearApprovalFields(Map<String, Object> form) {
+    FORMS.values().forEach(node -> node.allowed().forEach(form::remove));
+    form.remove("customNodeOpinion");
+    form.remove("customNodeComment");
+  }
+
+  private static NodeForm nodeForm(String nodeId) {
+    return FORMS.getOrDefault(nodeId, new NodeForm(
+        Set.of("customNodeOpinion", "customNodeComment"), Set.of("customNodeOpinion")));
+  }
+
   static Map<String, Object> validate(
       String nodeId, String action, Map<String, Object> reviewData) {
-    NodeForm form = FORMS.get(nodeId);
-    if (form == null) {
-      throw new IllegalArgumentException("鲁东 POC 未配置节点表单: " + nodeId);
-    }
+    NodeForm form = nodeForm(nodeId);
     Map<String, Object> source = reviewData == null ? Map.of() : reviewData;
     for (String key : source.keySet()) {
       if (!form.allowed().contains(key)) {
@@ -85,6 +93,12 @@ final class LudongPocTaskFormCatalog {
         && "不同意".equals(String.valueOf(normalized.get("argumentationOpinion")))) {
       throw new IllegalArgumentException("论证结论为不同意时只能驳回，不能审批通过");
     }
+    if ("approve".equals(action) && "不同意".equals(normalized.get("customNodeOpinion"))) {
+      throw new IllegalArgumentException("结论为不同意时只能驳回，不能审批通过");
+    }
+    if (normalized.containsKey("customNodeOpinion") && !Set.of("同意", "不同意").contains(String.valueOf(normalized.get("customNodeOpinion")))) {
+      throw new IllegalArgumentException("自定义节点结论只能选择同意或不同意");
+    }
     return Map.copyOf(normalized);
   }
 
@@ -94,10 +108,7 @@ final class LudongPocTaskFormCatalog {
    */
   static Map<String, Object> reusedApprovalData(
       String nodeId, String sourceNodeId, Map<String, Object> sourceData) {
-    NodeForm form = FORMS.get(nodeId);
-    if (form == null) {
-      throw new IllegalArgumentException("鲁东 POC 未配置节点表单: " + nodeId);
-    }
+    NodeForm form = nodeForm(nodeId);
     Map<String, Object> source = sourceData == null ? Map.of() : sourceData;
     Map<String, Object> reused = new LinkedHashMap<>();
     for (String field : form.allowed()) {

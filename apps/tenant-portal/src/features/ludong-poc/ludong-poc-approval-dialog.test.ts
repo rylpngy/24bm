@@ -37,6 +37,9 @@ const application: LudongApplication = {
 };
 
 describe('createTaskReviewData', () => {
+  it('initializes a blank bounded opinion form for administrator-added nodes',()=>{
+    expect(createTaskReviewData(task('new_special_review'),application)).toEqual({customNodeOpinion:'',customNodeComment:''});
+  });
   it('keeps argumentation focused on reviewer conclusion instead of editing applicant data', () => {
     const data = createTaskReviewData(task('argumentation_review'), application);
 

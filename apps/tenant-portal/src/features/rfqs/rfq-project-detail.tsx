@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import type { QuotationPackage } from '@24bid/shared/quotation';
 import {
   ArrowLeft,
   Ban,
@@ -15,6 +16,7 @@ import {
 } from 'lucide-react';
 import {
   type RfqResponse,
+  axiosInstance,
   useRfqAbort,
   useRfqAnnounceResult,
   useRfqOpen,
@@ -29,12 +31,14 @@ import {
 } from '@24bid/api-client';
 import { ConfirmDialog, FeedbackNotice, StatusPill, cn } from '@24bid/ui';
 import { QuoteComparisonTable } from './quote-comparison-table';
+import { RfqQuotationPackage } from './rfq-quotation-package';
 import { RfqClarificationsBuyer } from './rfq-clarifications';
 import { RfqResultBuyer } from './rfq-result';
 import { RfqSupplierPerformance } from './rfq-supplier-performance';
 import { BidEvaluationPanel } from '../quotes/bid-evaluation-panel';
 import { WorkflowSubmitDialog } from '../workflow/workflow-submit-dialog';
 import { WorkflowStatusPanel } from '../workflow/workflow-instance-panel';
+import { defaultRfqTab, RfqDetailTabs } from './rfq-detail-tabs';
 
 const inputCls =
   'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100';
@@ -76,7 +80,7 @@ const awardGateHint = (method?: string, bidders = 0): string => {
   if (method === '商城') return '商城采购按商品目录/货架规则执行，不强制供应商报价定标。';
   if (method === '单一来源') return bidders >= 1 ? '单一来源已收到报价，可定标。' : '单一来源须有 1 家有效报价。';
   return bidders >= 3
-    ? `已收到 ${bidders} 家有效报价,满足法定家数。`
+    ? `已收到 ${bidders} 家报价，达到参考报价家数；仍需人工核验技术响应及采购规则。`
     : `${method ?? '询比'}参考定标家数为 3 家有效报价(当前 ${bidders} 家)。依法必须招标/政府采购项目应予流标;民企等非依法必招项目可继续定标,系统将自动留痕。`;
 };
 
@@ -120,6 +124,8 @@ export function RfqProjectDetail({
   const [roundForm, setRoundForm] = useState<{ deadline: string; final: boolean; note: string } | null>(null);
   const [confirmAction, setConfirmAction] = useState<'open-early' | 'no-bid' | 'abort' | null>(null);
   const [awardDraft, setAwardDraft] = useState<{ quoteId: string; reason: string } | null>(null);
+  const [activeTab, setActiveTab] = useState(() => defaultRfqTab(rfq.status));
+  useEffect(() => { setActiveTab(defaultRfqTab(rfq.status)); }, [rfq.id, rfq.status]);
 
   const quoting = rfq.status === '报价中';
   const terminal = TERMINAL[rfq.status ?? ''];
@@ -127,7 +133,13 @@ export function RfqProjectDetail({
   const isDraft = rfq.status === '草稿';
   const invited = rfq.invitedSupplierIds ?? [];
   const quotes = rfq.quotes ?? [];
-  const quotedSuppliers = new Set(quotes.map((q) => q.supplierId));
+  const quotation=useQuery({queryKey:['quotation-package',rfq.id],enabled:!!rfq.id&&rfq.method==='询比',
+    queryFn:async()=>(await axiosInstance.get<{data:QuotationPackage}>(`/api/v1/buyer/rfqs/${rfq.id}/quotation-package`)).data.data});
+  const receivedCount=quotation.data?.policy.fullQuoteRequired?quotation.data.validQuoteCount:quotes.length;
+  const quotedSuppliers = new Set([...quotes.map((q) => q.supplierId),...(quotation.data?.submittedSupplierIds??[])]);
+  useEffect(()=>{if(quotation.data?.deadlineAt&&quotation.data.deadlineAt!==rfq.deadlineAt)
+    void queryClient.invalidateQueries({predicate:q=>typeof q.queryKey[0]==='string'&&(q.queryKey[0] as string).includes('/buyer/rfqs')});
+  },[quotation.data?.deadlineAt,rfq.deadlineAt,queryClient]);
   const countdown = useCountdown(rfq.deadlineAt, quoting);
   const deadlinePassed = rfq.deadlineAt ? new Date(rfq.deadlineAt).getTime() <= Date.now() : false;
 
@@ -148,7 +160,7 @@ export function RfqProjectDetail({
       <div className="rounded-lg border border-slate-200 bg-white px-5 py-4 shadow-sm shadow-slate-200/50">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
-            <button type="button" onClick={onBack} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-50">
+            <button type="button" aria-label="返回询比项目列表" onClick={onBack} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-50">
               <ArrowLeft size={18} />
             </button>
             <div className="min-w-0">
@@ -169,8 +181,10 @@ export function RfqProjectDetail({
         </div>
       </div>
 
-      {rfq.id && <WorkflowStatusPanel businessType="rfq_award" businessId={rfq.id} />}
-
+      {feedback && <FeedbackNotice tone="success" message={feedback} />}
+      {error && <FeedbackNotice tone="error" message={error} />}
+      <RfqDetailTabs value={activeTab} onChange={setActiveTab}>
+      <div hidden={activeTab !== 'overview'} className="space-y-4">
       <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/50">
         {terminal && (
           <div className="mb-4 rounded-lg border border-red-100 bg-red-50/60 px-3 py-2 text-xs font-black text-red-700">
@@ -204,7 +218,7 @@ export function RfqProjectDetail({
                           : index === 2
                             ? isDraft ? '草稿 · 待发布' : '待发布'
                             : index === 3
-                              ? `${quotes.length}/${invited.length || '不限'} 家已报`
+                              ? `${receivedCount}/${invited.length || '不限'} 家已报`
                               : rfq.status === '定标审批中' ? '定标审批中' : rfq.status === '已定标' ? (rfq.resultAnnouncedAt ? '已定标·已公告' : '已定标·待公告') : '比价定标中'
                         : '待开始'}
                 </p>
@@ -240,7 +254,7 @@ export function RfqProjectDetail({
       {isDraft && draftEdit && <form className="space-y-3 rounded-lg border bg-white p-5" onSubmit={(event) => {
         event.preventDefault(); if (!rfq.id || !draftEdit.deadline || !draftEdit.title.trim()) return;
         update.mutate({ rfqId: rfq.id, data: { title: draftEdit.title.trim(), invitedSupplierIds: invited,
-          deadlineAt: new Date(draftEdit.deadline).toISOString(), quoteRequirement: draftEdit.quote,
+          deadlineAt: draftEdit.deadline===rfq.deadlineAt?.slice(0,16)?rfq.deadlineAt:new Date(draftEdit.deadline).toISOString(), quoteRequirement: draftEdit.quote,
           deliveryRequirement: draftEdit.delivery, evaluationMethod: draftEdit.evaluation } }, {
           onSuccess: () => { setDraftEdit(null); refresh(); }, onError: reportError,
         });
@@ -278,7 +292,7 @@ export function RfqProjectDetail({
           <CheckCircle2 size={18} className="mx-auto text-emerald-600" />
           <p className="mt-1 text-xs font-black text-slate-400">已报价 / 受邀</p>
           <p className="mt-1 font-mono text-2xl font-black text-slate-950">
-            {quotes.length} / {invited.length || '公开'}
+            {receivedCount} / {invited.length || '公开'}
           </p>
         </div>
         <div className="rounded-lg border border-slate-200 bg-white p-4 text-center shadow-sm">
@@ -301,17 +315,20 @@ export function RfqProjectDetail({
         </div>
       )}
 
-      {feedback && <FeedbackNotice tone="success" message={feedback} />}
-      {error && <FeedbackNotice tone="error" message={error} />}
+      </div>
+      <div hidden={!['overview', 'quotations', 'technical'].includes(activeTab)}>
+        {rfq.id&&rfq.method==='询比'&&<RfqQuotationPackage rfqId={rfq.id} status={rfq.status} supplierNames={supplierNames} items={rfq.items}
+          view={activeTab === 'overview' ? 'rules' : activeTab === 'quotations' ? 'versions' : 'comparison'} />}
+      </div>
+      {activeTab === 'technical' && (rfq.method !== '询比' || quotation.data?.policy.fullQuoteRequired === false) && <FeedbackNotice tone="info" message="本项目未启用完整分项报价，暂无独立技术响应矩阵。可在报价与版本中查看现有报价明细。" />}
 
-      {/* 参考智能审批详情布局:主栏(参与进度/澄清/定标)+ 右栏(商机报名紧凑卡) */}
-      <div className={(enrollments.data?.data ?? []).length > 0 ? 'grid items-start gap-4 xl:grid-cols-[1fr_22rem]' : undefined}>
       <div className="min-w-0 space-y-4">
+      <div hidden={activeTab !== 'suppliers'}>
       <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/50">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h3 className="text-base font-black text-slate-950">供应商参与进度</h3>
           {quoting && (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 disabled={remind.isPending}
@@ -356,7 +373,7 @@ export function RfqProjectDetail({
         </div>
         <div className="mt-3 divide-y divide-slate-100">
           {invited.length === 0 && (
-            <p className="py-3 text-xs font-bold text-slate-400">公开征集,不预先限定供应商;已收到 {quotes.length} 家报价。</p>
+            <p className="py-3 text-xs font-bold text-slate-400">公开征集,不预先限定供应商;已收到 {receivedCount} 家报价。</p>
           )}
           {invited.map((supplierId) => {
             const submitted = quotedSuppliers.has(supplierId);
@@ -402,8 +419,10 @@ export function RfqProjectDetail({
           })}
         </div>
       </div>
+      </div>
 
       {/* 采购清单:项目要采购什么(源自关联需求),供应商按此逐行报价——买卖双方同一份 */}
+      <div hidden={activeTab !== 'overview'}>
       {(rfq.items ?? []).length > 0 && (
         <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/50">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -412,8 +431,8 @@ export function RfqProjectDetail({
               共 {(rfq.items ?? []).length} 行 · 供应商按此逐行报价
             </span>
           </div>
-          <div className="mt-3 overflow-hidden rounded-lg border border-slate-100">
-            <table className="w-full text-left text-xs">
+          <div className="mt-3 overflow-x-auto rounded-lg border border-slate-100">
+            <table className="w-full min-w-[560px] text-left text-xs">
               <thead className="bg-slate-50 text-[11px] font-black text-slate-400">
                 <tr>
                   <th className="px-3 py-2">物资名称</th>
@@ -436,7 +455,9 @@ export function RfqProjectDetail({
           </div>
         </div>
       )}
+      </div>
 
+      <div hidden={activeTab !== 'announcements'} className="space-y-4">
       {rfq.id && <RfqClarificationsBuyer rfqId={rfq.id} canBulletin={quoting} />}
 
       {/* 公告记录:发布/补遗/再次报价/定标/终止时自动生成,同步门户公告中心公示 */}
@@ -468,13 +489,15 @@ export function RfqProjectDetail({
           </div>
         </div>
       )}
+      </div>
 
-
+      <div hidden={activeTab !== 'comparison'}>
+      {(quoting || isDraft || terminal) && <FeedbackNotice tone="info" message={terminal ? '项目已终止，可在项目概览查看终止信息。' : '尚未开标，报价保持封存；开标后可在此进行比价与定标。'} />}
       {!quoting && !terminal && (
         <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm shadow-slate-200/50">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h3 className="text-base font-black text-slate-950">定标决策 · 报价对比</h3>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {rfq.status === '已开标' && !rfq.finalRound && (
                 <button
                   type="button"
@@ -555,7 +578,11 @@ export function RfqProjectDetail({
           )}
         </div>
       )}
+      </div>
 
+      <div hidden={activeTab !== 'result'} className="space-y-4">
+      {rfq.id && <WorkflowStatusPanel businessType="rfq_award" businessId={rfq.id} />}
+      {!['定标审批中', '已定标'].includes(rfq.status ?? '') && <FeedbackNotice tone="info" message="尚未形成定标结果，提交定标审批后可在此查看审批进度及结果。" />}
       {rfq.status === '已定标' && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-emerald-100 bg-emerald-50/60 px-4 py-3">
           {rfq.resultAnnouncedAt ? (
@@ -587,8 +614,10 @@ export function RfqProjectDetail({
       )}
       {rfq.status === '已定标' && rfq.id && <RfqResultBuyer rfqId={rfq.id} supplierNames={supplierNames} />}
       </div>
+      </div>
 
-      {/* 商机报名:门户报名登记 → 受理(转正式邀请)/ 忽略;紧凑卡置于右栏 */}
+      {/* 报名与正式受邀供应商归入同一业务分类。 */}
+      <div hidden={activeTab !== 'suppliers'}>
       {(enrollments.data?.data ?? []).length > 0 && (
         <aside className="rounded-lg border border-amber-200 bg-white shadow-sm shadow-slate-200/50">
           <div className="flex items-center justify-between rounded-t-md border-b border-amber-100 bg-amber-50/70 px-4 py-3">
@@ -661,9 +690,13 @@ export function RfqProjectDetail({
           </div>
         </aside>
       )}
+      {(enrollments.data?.data ?? []).length === 0 && <p className="px-1 text-sm text-slate-500">暂无商机报名记录。</p>}
       </div>
-
-
+      {activeTab === 'quotations' && (rfq.method !== '询比' || quotation.data?.policy.fullQuoteRequired === false) && <div className="rounded-lg border border-slate-200 bg-white p-5">
+        <h3 className="mb-3 font-bold text-slate-950">供应商报价</h3>
+        {quoting || isDraft ? <FeedbackNotice tone="info" message="报价尚未开标，金额及明细暂不可查看。" /> : <QuoteComparisonTable quotes={quotes} supplierNames={supplierNames} canAward={false} awardingQuoteId={null} onAward={() => {}} />}
+      </div>}
+      </RfqDetailTabs>
 
       <ConfirmDialog
         open={confirmAction === 'open-early'}

@@ -25,5 +25,6 @@ public record WorkflowInstanceHistoryResponse(
     UnifiedWorkflowTaskResponse currentTask,
     OffsetDateTime createdAt,
     OffsetDateTime completedAt,
-    List<WorkflowTaskEventResponse> events) {
+    List<WorkflowTaskEventResponse> events,
+    String flowSchema) {
 }

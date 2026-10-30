@@ -1,0 +1,28 @@
+name: 24bid-ludong-tender-poc
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    ports: ["127.0.0.1:26432:5432"]
+    environment:
+      POSTGRES_DB: ludong_tender_poc
+      POSTGRES_USER: ludong_poc
+      POSTGRES_PASSWORD: ${POC_DB_PASSWORD:?Use the environment script}
+    volumes: ["postgres:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ludong_poc -d ludong_tender_poc"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: ["server", "/data", "--console-address", ":9001"]
+    ports: ["127.0.0.1:29000:9000", "127.0.0.1:29001:9001"]
+    environment:
+      MINIO_ROOT_USER: ludong-tender-poc
+      MINIO_ROOT_PASSWORD: ${POC_STORAGE_PASSWORD:?Use the environment script}
+    volumes: ["attachments:/data"]
+volumes:
+  postgres:
+  attachments:

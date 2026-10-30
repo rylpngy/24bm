@@ -87,17 +87,24 @@ export function buildMallSelectionRows(app: LudongApplication) {
   return app.items.filter((item) => item.governmentMallCatalog === '是');
 }
 
-export function LudongPocApplicationSnapshot({ app, includeApprovals = true }: {
+export type SnapshotView = 'all' | 'basic' | 'requirements' | 'delivery' | 'equipment' | 'mall' | 'approvals';
+const sectionViews: Record<string, SnapshotView> = {
+  '项目与经费': 'basic', '负责人及编制人员': 'basic', '采购需求与政策信息': 'requirements',
+  '交付、服务与验收要求': 'delivery', '评审现场与补充要求': 'delivery', '流程判定信息': 'approvals',
+};
+
+export function LudongPocApplicationSnapshot({ app, includeApprovals = true, view = 'all' }: {
   app: LudongApplication;
   includeApprovals?: boolean;
+  view?: SnapshotView;
 }) {
   const mallItems = buildMallSelectionRows(app);
   const approvals = includeApprovals ? buildApprovalSnapshotSections(app) : [];
   return <div className="space-y-6">
-    {buildApplicationSnapshotSections(app).map((section) => <SnapshotFacts key={section.title} section={section} />)}
-    <EquipmentList items={app.items} />
-    <MallSelectionList items={mallItems} />
-    {approvals.length > 0 && <div className="space-y-3 border-t border-slate-200 pt-5">
+    {buildApplicationSnapshotSections(app).filter(section => view === 'all' || sectionViews[section.title] === view).map((section) => <SnapshotFacts key={section.title} section={section} />)}
+    {(view === 'all' || view === 'equipment') && <EquipmentList items={app.items} />}
+    {(view === 'all' || view === 'mall') && <MallSelectionList items={mallItems} />}
+    {(view === 'all' || view === 'approvals') && approvals.length > 0 && <div className="space-y-3 border-t border-slate-200 pt-5">
       <div><h3 className="text-sm font-black text-slate-950">审批内容</h3><p className="mt-1 text-xs font-bold text-slate-500">展示各已办节点留存的结论与补充意见。</p></div>
       {approvals.map((section) => <SnapshotFacts key={section.title} section={section} />)}
     </div>}

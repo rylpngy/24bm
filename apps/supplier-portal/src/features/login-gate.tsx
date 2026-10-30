@@ -10,6 +10,7 @@ import { useAuthStore } from '../lib/auth-store';
 const SELF_LOGIN_FALLBACK = (import.meta.env.VITE_SELF_LOGIN ?? 'true') !== 'false';
 
 const KEYCLOAK_URL = import.meta.env.VITE_KEYCLOAK_URL ?? 'http://localhost:8081';
+const KEYCLOAK_LOGIN_ENABLED = import.meta.env.VITE_KEYCLOAK_ENABLED !== 'false';
 
 // 供应商登录门:自研 JWT 与 Keycloak(OIDC)双路径,SUPPLIER scope。
 export function LoginGate() {
@@ -91,9 +92,9 @@ export function LoginGate() {
             <label className="block text-sm font-semibold text-slate-700">密码<input aria-label="密码" type="password" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3" /></label>
             {SELF_LOGIN_FALLBACK && <label className="block text-sm font-semibold text-slate-700">企业编号<input aria-label="企业编号" value={supplierId} onChange={e => setSupplierId(e.target.value)} className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3" /></label>}
           </div>
-          <PrimaryActionButton onClick={handleKeycloakLogin} disabled={!account.trim() || !password || login.isPending} busy={kcBusy} pendingLabel={t('登录中')} icon={KeyRound} fullWidth>
+          {KEYCLOAK_LOGIN_ENABLED && <PrimaryActionButton onClick={handleKeycloakLogin} disabled={!account.trim() || !password || login.isPending} busy={kcBusy} pendingLabel={t('登录中')} icon={KeyRound} fullWidth>
             {t('用 Keycloak 登录')}
-          </PrimaryActionButton>
+          </PrimaryActionButton>}
           {kcError && (
             <div className="mt-3">
               <FeedbackNotice tone="error" message="Keycloak 登录失败：请确认 Keycloak 已在 8081 运行。" />
@@ -102,9 +103,9 @@ export function LoginGate() {
 
           {SELF_LOGIN_FALLBACK && (
             <div className="mt-4 border-t border-slate-100 pt-4">
-              <p className="mb-2 text-[11px] font-black uppercase tracking-widest text-slate-400">
+              {KEYCLOAK_LOGIN_ENABLED && <p className="mb-2 text-[11px] font-black uppercase tracking-widest text-slate-400">
                 自研 JWT（已退役 · 仅 CI/开发后备）
-              </p>
+              </p>}
               <button type="button" onClick={handleLogin} disabled={login.isPending || kcBusy || !account.trim() || !password || !supplierId.trim()}
                 className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-sm font-black text-slate-700 transition hover:bg-slate-50 disabled:opacity-50">
                 <LogIn size={16} /> {login.isPending ? '登录中…' : '账号登录'}

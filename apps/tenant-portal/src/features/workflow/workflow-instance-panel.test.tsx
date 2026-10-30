@@ -2,9 +2,17 @@ import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { describe, expect, it } from 'vitest';
 import type { WorkflowInstanceHistory } from '@24bid/api-client';
-import { WorkflowInstancePanel, workflowFormLabels } from './workflow-instance-panel';
+import { WorkflowInstancePanel, workflowBusinessHref, workflowFormLabels } from './workflow-instance-panel';
 
 describe('workflow history form display', () => {
+  it('retains the active solution in business links and directs batches to their workbench', () => {
+    window.history.replaceState(null, '', '/?solution=ludong-poc&module=contracts&recordId=old');
+    const request = new URL(workflowBusinessHref({ businessType: 'payment_request', businessId: 'request-1', businessSnapshot: { invoiceId: 'invoice-1' } })!, window.location.origin);
+    expect(Object.fromEntries(request.searchParams)).toEqual({ module: 'invoices', recordId: 'invoice-1', solution: 'ludong-poc' });
+    const batch = new URL(workflowBusinessHref({ businessType: 'payment_batch', businessId: 'batch-1', businessSnapshot: {} })!, window.location.origin);
+    expect(Object.fromEntries(batch.searchParams)).toEqual({ module: 'invoices', financeView: 'batches', solution: 'ludong-poc' });
+    window.history.replaceState(null, '', '/');
+  });
   it('shows settlement line evidence rather than a raw financial JSON blob',()=>{
     const history:WorkflowInstanceHistory={workflowInstanceId:'settlement-flow',businessType:'order_settlement',businessId:'settlement-1',definitionVersionId:'v1',flowableProcessInstanceId:'f1',status:'approved',initiatorId:'buyer',formData:{},businessSnapshot:{orderId:'order-1',finalAmount:250,settlementSnapshot:{assessment:{baseline:{internal:'DO-NOT-RENDER'},lines:[{id:'line-1',description:'Settlement computer',quantity:3,retainedQuantity:1,cancelledQuantity:2,unitPrice:300,settlementUnitPrice:250}]}}},attachments:[],events:[]};
     render(<WorkflowInstancePanel history={history}/>);

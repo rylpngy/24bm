@@ -6,6 +6,7 @@ import {
   useWorkflowBusinessHistory,
 } from '@24bid/api-client';
 import { FeedbackNotice, StatusPill } from '@24bid/ui';
+import { portalHref } from '../../lib/portal-href';
 
 const statusLabel: Record<string, string> = {
   processing: '审批中',
@@ -250,8 +251,10 @@ export function workflowBusinessHref(history: Pick<WorkflowInstanceHistory, 'bus
   const item = target[history.businessType];
   if (!item) return null;
   const params = new URLSearchParams({ module: item.module });
-  if (item.id != null && String(item.id)) params.set('recordId', String(item.id));
+  if (history.businessType === 'payment_batch' || history.businessType === 'payment_archive_exception') {
+    params.set('financeView', 'batches');
+  } else if (item.id != null && String(item.id)) params.set('recordId', String(item.id));
   if (history.businessType === 'supplier_qualification_change') params.set('tab', 'qualifications');
   if (history.businessType === 'project_change') params.set('changeId', history.businessId);
-  return `/?${params.toString()}`;
+  return portalHref(Object.fromEntries(params));
 }

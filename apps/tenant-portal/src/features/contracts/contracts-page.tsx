@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
+import { portalHref } from '../../lib/portal-href';
+import { compactList } from '../../lib/compact-list';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Banknote, CalendarClock, FileDiff, FileSignature, FileText, Info, Plus } from 'lucide-react';
+import { ArrowLeft, Banknote, CalendarClock, FileDiff, FileSignature, FileText, History, Info, Paperclip, Plus, ScanText } from 'lucide-react';
 import {
   useBuyerContractCreate,
   useBuyerContractList,
@@ -34,6 +36,7 @@ import { ContractPaymentReconciliationPanel, ContractReconciliationDetail } from
 import { ContractEsignPanel } from './contract-esign-panel';
 import { WorkflowSubmitDialog } from '../workflow/workflow-submit-dialog';
 import { WorkflowStatusPanel } from '../workflow/workflow-instance-panel';
+import { ContractReviewWorkspace } from './review/contract-review-workspace';
 
 const currency = (v?: number) =>
   v == null ? '—' : `¥${v.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
@@ -83,6 +86,7 @@ export function ContractsPage() {
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
+  const [reviewMode,setReviewMode]=useState(()=>new URLSearchParams(window.location.search).get('view')==='review');
 
   const query = useBuyerContractList();
   const orders = usePurchaseOrderList();
@@ -149,13 +153,23 @@ export function ContractsPage() {
   };
 
   const [detailTab, setDetailTab] = useState('info');
+  const [visitedTabs, setVisitedTabs] = useState<string[]>(['info']);
+  const changeDetailTab = (tab: string) => {
+    setDetailTab(tab);
+    setVisitedTabs((visited) => visited.includes(tab) ? visited : [...visited, tab]);
+  };
   const openDetail = (id?: string) => {
     if (!id) return;
     setDetailTab('info');
+    setVisitedTabs(['info']);
     setSelectedId(id);
   };
 
   const selected = selectedId ? contracts.find((c) => c.id === selectedId) : undefined;
+
+  if(reviewMode)return <ContractReviewWorkspace canManage={canManage} onBack={()=>{
+    const url=new URL(window.location.href);url.searchParams.delete('view');url.searchParams.delete('reviewDocument');window.history.replaceState(null,'',url);setReviewMode(false);
+  }}/>;
 
   if (query.isError) return <FeedbackNotice tone="error" message={financeErrorMessage(query.error, '合同加载失败')} />;
   const failedAction = [create, submit, reviewApproval, renew, updateStatus, archive].find((action) => action.isError);
@@ -172,7 +186,12 @@ export function ContractsPage() {
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              onClick={() => setSelectedId(null)}
+              onClick={() => {
+                const url = new URL(window.location.href);
+                url.searchParams.delete('recordId');
+                window.history.replaceState(null, '', url);
+                setSelectedId(null);
+              }}
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-50"
               aria-label="返回合同台账"
             >
@@ -189,7 +208,7 @@ export function ContractsPage() {
                 )}
               </div>
               <p className="mt-1 font-mono text-xs font-bold text-slate-500">
-                {c.contractNo} · 关联订单 {c.relatedOrderId ?? '—'}
+                {c.contractNo} · 关联订单 {c.relatedOrderId ? <a className="break-all text-blue-700 hover:underline" href={`?${new URLSearchParams({ ...(new URLSearchParams(window.location.search).get('solution') === 'ludong-poc' ? { solution: 'ludong-poc' } : {}), module: 'orders', recordId: c.relatedOrderId })}`}>{c.relatedOrderId}</a> : '—'}
               </p>
             </div>
             <p className="shrink-0 font-mono text-xl font-black text-slate-950">{currency(c.amount)}</p>
@@ -199,25 +218,24 @@ export function ContractsPage() {
         {feedback && <FeedbackNotice tone="success" message={feedback} />}
         {failedAction && <FeedbackNotice tone="error" message={financeErrorMessage(failedAction.error, '合同操作失败')} />}
 
-        {c.id && <WorkflowStatusPanel businessType="contract_approval" businessId={c.id} />}
-        {c.relatedOrderId&&<a href={`?module=orders&recordId=${encodeURIComponent(c.relatedOrderId)}`} className="inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">关联订单与合同清算</a>}
-
-        <div className="grid gap-4 xl:grid-cols-[1fr_20rem]">
-          <div className="min-w-0 space-y-4">
-            {/* 详情分区按业务操作类型拆分为 TAB:信息/付款对账/履约/变更 */}
+        <div className="min-w-0 space-y-4">
             <Tabs
               items={[
-                { id: 'info', label: '合同信息', icon: FileText },
+                { id: 'info', label: '基本信息', icon: FileText },
+                { id: 'fulfillment', label: '履约记录', icon: CalendarClock },
                 { id: 'reconciliation', label: '付款对账', icon: Banknote },
-                { id: 'fulfillment', label: '履约时间轴', icon: CalendarClock },
                 { id: 'amendments', label: '合同变更', icon: FileDiff },
+                { id: 'review', label: '智能审查', icon: ScanText },
+                { id: 'approval', label: '审批记录', icon: History },
+                { id: 'files', label: '附件与签署', icon: Paperclip },
               ]}
               value={detailTab}
-              onChange={setDetailTab}
+              onChange={changeDetailTab}
             />
 
-            {detailTab === 'info' && (
-              <>
+            <div hidden={detailTab !== 'info'} className="space-y-4">
+            {c.relatedOrderId && <a href={portalHref({ module: 'orders', recordId: c.relatedOrderId })} className="inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">关联订单与合同清算</a>}
+            <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_18rem]">
             {/* 合同条款 */}
             <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
               <h3 className="text-base font-black text-slate-950">合同条款</h3>
@@ -242,33 +260,7 @@ export function ContractsPage() {
                 </div>
               </div>
             </section>
-                {c.id && <ContractEsignPanel contractId={c.id} />}
-                {c.id && (
-                  <OwnerAttachments
-                    ownerType="contract"
-                    ownerId={c.id}
-                    title="合同附件"
-                    emptyHint="暂无附件,点击右上角上传合同正本、补充协议等。"
-                  />
-                )}
-              </>
-            )}
-
-            {detailTab === 'reconciliation' && (
-              <>
-                {/* 合同-付款对账 + 行项与付款计划:同属资金口径 */}
-                <ContractReconciliationDetail contract={c} />
-                {c.id && <ContractScheduleSection contractId={c.id} />}
-              </>
-            )}
-
-            {detailTab === 'fulfillment' && c.id && <ContractFulfillmentEvents contractId={c.id} />}
-
-            {detailTab === 'amendments' && c.id && <ContractAmendments contractId={c.id} status={c.status} archiveStatus={c.archiveStatus} />}
-          </div>
-
-          {/* 右栏:关键信息 */}
-          <div className="space-y-4">
+          <div className="min-w-0 space-y-4">
             <section className="rounded-lg bg-slate-900 p-5 text-white shadow-sm">
               <p className="flex items-center gap-2 text-sm font-black">
                 <Info size={15} className="text-blue-400" /> 关键信息
@@ -299,6 +291,32 @@ export function ContractsPage() {
               </section>
             )}
           </div>
+            </div>
+            </div>
+
+            {/* 仅首次访问时加载，之后隐藏而不卸载，保留未保存的输入。 */}
+            {visitedTabs.includes('fulfillment') && <div hidden={detailTab !== 'fulfillment'}>
+              {c.id && <ContractFulfillmentEvents key={c.id} contractId={c.id} />}
+            </div>}
+            {visitedTabs.includes('reconciliation') && <div hidden={detailTab !== 'reconciliation'} className="space-y-4">
+              <ContractReconciliationDetail contract={c} />
+              {c.id && <ContractScheduleSection key={c.id} contractId={c.id} />}
+            </div>}
+            {visitedTabs.includes('amendments') && <div hidden={detailTab !== 'amendments'}>
+              {c.id && <ContractAmendments key={c.id} contractId={c.id} status={c.status} archiveStatus={c.archiveStatus} />}
+            </div>}
+            {visitedTabs.includes('review') && <div hidden={detailTab !== 'review'} className="space-y-4">
+              <FeedbackNotice tone="info" message="仅展示本合同关联的审查材料；校对稿与原件分别保留，不自动覆盖正式合同。" />
+              <ContractReviewWorkspace key={c.id} contractId={c.id} embedded canManage={canManage} onBack={() => changeDetailTab('info')} />
+            </div>}
+            {visitedTabs.includes('approval') && <div hidden={detailTab !== 'approval'}>
+              {c.id && <WorkflowStatusPanel key={c.id} businessType="contract_approval" businessId={c.id} />}
+            </div>}
+            {visitedTabs.includes('files') && <div hidden={detailTab !== 'files'} className="space-y-4">
+              {c.id && <ContractEsignPanel key={`esign-${c.id}`} contractId={c.id} />}
+              {c.id && <OwnerAttachments key={`attachments-${c.id}`} ownerType="contract" ownerId={c.id} title="合同附件"
+                emptyHint="暂无附件,点击右上角上传合同正本、补充协议等。" />}
+            </div>}
         </div>
 
         {/* 底部悬浮操作条:阶段化动作常驻可见 */}
@@ -449,7 +467,8 @@ export function ContractsPage() {
             setPage(1);
           }}
         />
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <button type="button" onClick={()=>setReviewMode(true)} className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md border border-blue-200 bg-blue-50 px-3 text-xs font-bold text-blue-700"><ScanText size={14}/>智能审查</button>
           <SearchInput
             className="mb-0"
             placeholder="按合同名称 / 编号 / 订单号搜索"
@@ -525,11 +544,11 @@ export function ContractsPage() {
               <div key={c.id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="break-words font-black text-slate-950">
+                    <p className="truncate font-bold text-slate-950" title={c.contractName}>
                       <span className="mr-1.5 font-mono text-slate-400">{(safePage - 1) * PAGE_SIZE + i + 1}.</span>
                       {c.contractName}
                     </p>
-                    <p className="mt-1 font-mono text-xs font-bold text-slate-500">{c.contractNo}</p>
+                    <p className="mt-1 truncate font-mono text-xs font-bold text-slate-500" title={c.contractNo}>{c.contractNo}</p>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
                     {c.status && <StatusPill label={c.status} />}
@@ -541,12 +560,13 @@ export function ContractsPage() {
                   onClick={() => openDetail(c.id)}
                   className="mt-3 inline-flex h-8 w-full items-center justify-center rounded-md border border-slate-200 bg-white text-xs font-black text-slate-600 hover:bg-slate-50"
                 >
-                  查看详情
+                  详情
                 </button>
               </div>
             ))}
           >
-            <table className="w-full min-w-[920px] text-left text-sm">
+            <table aria-label="采购合同列表" className={cn(compactList.table, 'min-w-[880px]')}>
+              <colgroup><col className="w-12" /><col /><col className="w-28" /><col className="w-28" /><col className="w-20" /><col className="w-[88px]" /><col className="w-32" /><col className="w-40" /></colgroup>
               <thead className="bg-slate-50 text-xs font-black text-slate-500">
                 <tr>
                   <th className="w-12 px-2 py-4 text-center">序号</th>
@@ -556,49 +576,50 @@ export function ContractsPage() {
                   <th className="px-5 py-4">履约进度</th>
                   <th className="px-5 py-4">状态</th>
                   <th className="px-5 py-4 text-right">合同金额</th>
-                  <th className="px-5 py-4 text-right">操作</th>
+                  <th className="sticky right-0 bg-slate-50 text-right">操作</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {pageItems.map((c, i) => (
-                  <tr key={c.id} className="hover:bg-blue-50/30">
+                  <tr key={c.id} className="group hover:bg-blue-50/30">
                     <td className="px-2 py-5 text-center font-mono font-black text-slate-400">
                       {(safePage - 1) * PAGE_SIZE + i + 1}
                     </td>
                     <td className="px-5 py-5">
-                      <p className="flex items-center gap-2 font-black text-slate-950">
-                        {c.contractName}
+                      <div className="flex min-w-0 items-center gap-2">
+                        <p className="min-w-0 flex-1 truncate font-bold text-slate-950" title={c.contractName}>{c.contractName}</p>
                         <ExpiryChip expiryDate={c.expiryDate} archived={c.archiveStatus === '已归档'} />
-                      </p>
-                      <p className="mt-1 w-40 truncate font-mono text-[11px] font-bold text-slate-400" title={c.contractNo ?? undefined}>
+                      </div>
+                      <p className="mt-1 truncate font-mono text-[11px] font-bold text-slate-400" title={c.contractNo ?? undefined}>
                         {c.contractNo}
                       </p>
                     </td>
                     <td className="px-5 py-5">
-                      <p className="w-40 truncate font-mono text-xs font-black text-slate-500" title={c.relatedOrderId ?? undefined}>
+                      <p className="truncate font-mono text-xs font-bold text-slate-500" title={c.relatedOrderId ?? undefined}>
                         {c.relatedOrderId ?? '—'}
                       </p>
                     </td>
                     <td className="px-5 py-5 font-mono text-xs font-bold text-slate-600">
-                      {c.effectiveDate || c.expiryDate ? `${c.effectiveDate ?? '—'} ~ ${c.expiryDate ?? '—'}` : '—'}
+                      <p className="truncate" title={`生效日期：${c.effectiveDate ?? '—'}`}>{c.effectiveDate ?? '—'}</p>
+                      <p className="mt-1 truncate text-[11px] text-slate-400" title={`到期日期：${c.expiryDate ?? '—'}`}>至 {c.expiryDate ?? '—'}</p>
                     </td>
-                    <td className="px-5 py-5 text-sm font-bold text-slate-600">{c.fulfillmentProgress ?? '—'}</td>
+                    <td className="px-5 py-5 text-xs font-medium text-slate-600"><span className={compactList.text} title={c.fulfillmentProgress}>{c.fulfillmentProgress ?? '—'}</span></td>
                     <td className="px-5 py-5">
                       <div className="flex flex-col gap-1">
-                        {c.status && <StatusPill label={c.status} />}
+                        {c.status && <span title={c.status}><StatusPill label={c.status} className="overflow-hidden whitespace-nowrap" /></span>}
                         {c.archiveStatus === '已归档' && (
                           <span className="text-[11px] font-bold text-slate-400">· 已归档</span>
                         )}
                       </div>
                     </td>
-                    <td className="px-5 py-5 text-right font-mono font-black text-slate-900">{currency(c.amount)}</td>
-                    <td className="px-5 py-5 text-right">
-                      <div className="flex justify-end gap-2">
+                    <td className="px-5 py-5 text-right font-mono text-xs font-semibold tabular-nums text-slate-900"><span className={compactList.text} title={currency(c.amount)}>{currency(c.amount)}</span></td>
+                    <td className={compactList.actionCell}>
+                      <div className={compactList.actions}>
                         {c.status === '草案' && (
                           <button
                             type="button"
                             onClick={() => openDetail(c.id)}
-                            className="inline-flex h-8 items-center rounded-md bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700"
+                            className={compactList.primary}
                           >
                             提交审批
                           </button>
@@ -607,7 +628,7 @@ export function ContractsPage() {
                           <button
                             type="button"
                             onClick={() => openDetail(c.id)}
-                            className="inline-flex h-8 items-center rounded-md bg-blue-600 px-3 text-xs font-black text-white transition hover:bg-blue-700"
+                            className={compactList.primary}
                           >
                             去复核
                           </button>
@@ -615,7 +636,7 @@ export function ContractsPage() {
                         <button
                           type="button"
                           onClick={() => openDetail(c.id)}
-                          className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50"
+                          className={compactList.detail}
                         >
                           详情
                         </button>

@@ -73,7 +73,7 @@ export function ContractScheduleSection({ contractId }: { contractId: string }) 
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs font-black text-violet-700">付款计划（里程碑）</p>
-        <a href="?module=invoices" className="inline-flex h-8 shrink-0 items-center gap-1 whitespace-nowrap rounded-md border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 hover:bg-slate-50">
+        <a href={new URLSearchParams(window.location.search).get('solution') === 'ludong-poc' ? '?solution=ludong-poc&module=invoices' : '?module=invoices'} className="inline-flex h-8 shrink-0 items-center gap-1 whitespace-nowrap rounded-md border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 hover:bg-slate-50">
           付款台账<ArrowUpRight size={14} aria-hidden="true" />
         </a>
         {ms.length === 0 && (
