@@ -98,7 +98,7 @@ public interface ThreeWayMatchMapper {
   String MATCH_BODY = """
         i.tenant_id, i.id, i.supplier_id, i.order_id, checks.order_amount,
         case when f.blocking_reason is null then '已收货' else '待核验' end,
-        i.amount, i.amount-checks.order_amount,
+        i.amount, case when checks.blocking_reason is null then 0 else i.amount-checks.order_amount end,
         case when checks.blocking_reason is null then '三单匹配通过'
              when checks.blocking_reason like '%金额%' then '金额差异' else '履约待核验' end,
         coalesce(checks.blocking_reason,'订单、收货、发票一致'),

@@ -60,6 +60,55 @@ class ProcurementProjectIT {
   @Autowired com.procurement.finance.infrastructure.InvoiceMapper invoiceMapper;
   @Autowired com.procurement.buyer.infrastructure.BudgetLifecycleMapper budgetMapper;
   String tenant, dept, author, reviewer, role, material;
+  @Autowired com.procurement.finance.application.InvoiceApplicationService invoiceService;
+  @Autowired com.procurement.finance.application.FinanceActionApplicationService financeActions;
+  @Autowired com.procurement.contract.application.ContractInstallmentService contractInstallments;
+  @Autowired org.springframework.transaction.PlatformTransactionManager txManager;
+  @Test void multipleInvoicePaymentsShareContractMilestonesWithoutConfusingInvoiceLocalBalances(){
+    var c=cancellationCase();String line=receivedLine(c),contract=settlementContract(c,true);invoiceSupplier(c);
+    var a=invoiceService.create(c.order(),installmentRequest(line,"milestone-a",1,100));var b=invoiceService.create(c.order(),installmentRequest(line,"milestone-b",1,100));context(author);
+    String m1="milestone-"+UUID.randomUUID(),m2="milestone-"+UUID.randomUUID();jdbc.update("insert into contract_payment_milestones(id,tenant_id,contract_id,name,percent,amount,status,sort_no,reached) values (?,?,?,'第一批',50,100,'待付',0,true),(?,?,?,'第二批',50,100,'待付',1,false)",m1,tenant,contract,m2,tenant,contract);
+    var tx=new org.springframework.transaction.support.TransactionTemplate(txManager);
+    java.util.function.BiConsumer<String,String> pay=(invoice,milestone)->tx.executeWithoutResult(status->{String entry="payment-"+UUID.randomUUID();
+      if(invoice.equals(b.id()))jdbc.update("update invoices set payment_status='已付款' where id=?",invoice);
+      jdbc.update("insert into invoice_payment_entries(id,tenant_id,invoice_id,idempotency_key,amount,evidence_no,created_by) values (?,?,?,? ,100,?,?)",entry,tenant,invoice,entry,"BANK-"+entry,author);
+      contractInstallments.allocate(tenant,c.order(),c.supplier(),new BigDecimal("100"),entry,new BigDecimal("100"),milestone,BigDecimal.ZERO);
+      jdbc.update("update invoices set payment_status='已付款' where id=?",invoice);
+    });
+    pay.accept(a.id(),m1);assertThatThrownBy(()->pay.accept(b.id(),m2)).hasMessageContaining("已达成里程碑");
+    assertThat(jdbc.queryForObject("select count(*) from invoice_payment_entries where tenant_id=?",Integer.class,tenant)).isEqualTo(1);
+    jdbc.update("update contract_payment_milestones set reached=true,reached_at=now() where id=?",m2);pay.accept(b.id(),m2);
+    assertThat(contractInstallments.balances(tenant,c.order())).allMatch(x->x.verified()&&x.remaining().signum()==0);
+    assertThat(jdbc.queryForObject("select blocking_reason from contract_closeout_checks where contract_id=?",String.class,contract)).isNull();
+  }
+  void invoiceSupplier(CancelCase c){jdbc.update("update roles set permissions=permissions||'[\"supplier:invoice:read\",\"supplier:invoice:manage\"]'::jsonb where id=?",c.user()+"role");supplier(c);}
+  com.procurement.finance.api.CreateInvoiceRequest installmentRequest(String line,String key,int quantity,int amount){return new com.procurement.finance.api.CreateInvoiceRequest(BigDecimal.valueOf(amount),"INV-"+key,"",null,BigDecimal.ZERO,key,List.of(new com.procurement.finance.api.CreateInvoiceRequest.Line(line,BigDecimal.valueOf(quantity))));}
+  @Test void installmentInvoicesRetainEachLineAndCanBePaidWithoutFalseFullOrderVariance(){
+    var c=cancellationCase();String line=receivedLine(c);invoiceSupplier(c);var first=installmentRequest(line,"first",1,100);var invoice=invoiceService.create(c.order(),first);
+    assertThat(invoice.amount()).isEqualByComparingTo("100");assertThat(invoice.taxRate()).isZero();assertThat(invoice.varianceAmount()).isZero();assertThat(invoice.reconciliationStatus()).isEqualTo("分次开票已核对");
+    assertThat(invoiceService.create(c.order(),first).id()).isEqualTo(invoice.id());assertThat(invoiceService.issuancePreview(c.order()).remainingAmount()).isEqualByComparingTo("100");
+    assertThatThrownBy(()->invoiceService.create(c.order(),installmentRequest(line,"first",2,200))).hasMessageContaining("提交编号内容不同");
+    assertThatThrownBy(()->invoiceService.create(c.order(),installmentRequest(line,"excess",2,200))).hasMessageContaining("剩余");
+    var second=invoiceService.create(c.order(),installmentRequest(line,"second",1,100));assertThat(second.id()).isNotEqualTo(invoice.id());assertThat(invoiceService.issuancePreview(c.order()).blockers()).contains("本订单已足额开票");
+    context(author);assertThat(financeActions.listCurrentTenantThreeWayMatchLines(invoice.id()).getFirst().lineMatchStatus()).isEqualTo("本票分次匹配");
+    assertThat(jdbc.queryForObject("select blocking_reason from finance_invoice_closeout_checks where invoice_id=?",String.class,invoice.id())).isNull();assertThat(jdbc.queryForObject("select sum(amount) from invoices where order_id=?",BigDecimal.class,c.order())).isEqualByComparingTo("200");
+    supplier(c);assertThatThrownBy(()->invoiceService.create(c.order(),new com.procurement.finance.api.CreateInvoiceRequest(new BigDecimal("200"),"LEGACY",null,null,null))).isInstanceOf(IllegalStateException.class);
+    jdbc.update("update purchase_orders set status='已清算' where id=?",c.order());assertThat(invoiceService.create(c.order(),first).id()).isEqualTo(invoice.id());
+  }
+  @Test void installmentIssuanceBlocksUnattributableLegacyInvoicesAndWrongSupplier(){
+    var c=cancellationCase();String line=receivedLine(c);jdbc.update("insert into invoices(id,tenant_id,supplier_id,order_id,amount,invoice_no,payment_status) values (?,?,?,?,100,'LEGACY','待付款')","legacy-"+UUID.randomUUID(),tenant,c.supplier(),c.order());invoiceSupplier(c);
+    assertThat(invoiceService.issuancePreview(c.order()).blockers()).anyMatch(b->b.contains("历史发票"));assertThatThrownBy(()->invoiceService.create(c.order(),installmentRequest(line,"new",1,100))).hasMessageContaining("历史发票");
+    TenantContext.set(null,"other-supplier",c.user());assertThatThrownBy(()->invoiceService.issuancePreview(c.order())).isInstanceOf(RuntimeException.class);assertThat(jdbc.queryForObject("select count(*) from invoices where order_id=?",Integer.class,c.order())).isEqualTo(1);
+  }
+  @Test void concurrentFullRemainderRequestsNeverDoubleInvoice() throws Exception {
+    var c=cancellationCase();String line=receivedLine(c);invoiceSupplier(c);
+    try(var pool=java.util.concurrent.Executors.newFixedThreadPool(2)){
+      java.util.concurrent.Callable<String> run=()->{supplier(c);try{return invoiceService.create(c.order(),installmentRequest(line,"retry",2,200)).id();}finally{TenantContext.clear();}};
+      var first=pool.submit(run);var second=pool.submit(run);assertThat(first.get(20,java.util.concurrent.TimeUnit.SECONDS)).isEqualTo(second.get(20,java.util.concurrent.TimeUnit.SECONDS));
+    }
+    assertThat(jdbc.queryForObject("select count(*) from invoices where order_id=?",Integer.class,c.order())).isEqualTo(1);assertThat(jdbc.queryForObject("select sum(quantity) from invoice_line_items where order_line_id=?",BigDecimal.class,line)).isEqualByComparingTo("2");
+  }
+  @Test void existingInvoiceNumberCannotBeReusedWithANewRequestKey(){var c=cancellationCase();String line=receivedLine(c);invoiceSupplier(c);var r=installmentRequest(line,"number",1,100);invoiceService.create(c.order(),r);var duplicate=new com.procurement.finance.api.CreateInvoiceRequest(r.amount(),r.invoiceNo(),r.invoiceCode(),null,r.taxRate(),"other-key",r.lineItems());assertThatThrownBy(()->invoiceService.create(c.order(),duplicate)).hasMessageContaining("号码");}
   @Autowired com.procurement.order.application.OrderCancellationService cancellations;
   @Autowired com.procurement.order.application.PurchaseOrderApplicationService orderService;
   @Autowired com.procurement.contract.application.ContractApplicationService contractService;

@@ -269,6 +269,8 @@ public class PaymentApplicationService {
     if (order == null) {
       throw new IllegalArgumentException("Purchase order not found for invoice payment: " + invoice.orderId());
     }
+    if(InvoiceAmountPolicy.isInstallment(invoice.amount(), order.amount())
+        && invoiceMapper.verifiedInstallment(tenantId,invoice.id()))return;
     InvoiceAmountPolicy.requirePaymentAmountStillMatchesOrder(invoice.amount(), order.amount(), invoice.id());
   }
 

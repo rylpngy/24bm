@@ -1688,9 +1688,12 @@ try {
             invoiceNo: 'REF-' + kind + '-' + runId,
             taxRate: 0,
           });
-          const batch = 'SET-BATCH-' + kind + '-' + runId;
+          await payIssued(invoice, 900, kind);
+        }
+        async function payIssued(doc, amount, suffix) {
+          const batch = 'SET-BATCH-' + suffix + '-' + runId;
           const pay = await api('buyer/payment-requests', b, {
-            invoiceId: invoice.id,
+            invoiceId: doc.id,
             requestStatus: '付款申请待提交',
             paymentBatchNo: batch,
             remark: '隔离清算验收',
@@ -1709,20 +1712,173 @@ try {
             'PUT',
           );
           await decide(r, 'payment_batch', batch);
-          await api(`buyer/invoices/${invoice.id}/payment-ledger`, b, {
+          await api(`buyer/invoices/${doc.id}/payment-ledger`, b, {
             idempotencyKey: 'original-' + runId,
-            amount: 900,
-            evidenceNo: 'ORIGINAL-' + runId,
+            amount,
+            evidenceNo: 'ORIGINAL-' + suffix + '-' + runId,
           });
         }
         if (['refund', 'physical-return', 'physical-exchange'].includes(kind))
           await invoiceAndPay();
         if (kind === 'allocation-ui') {
+          let issued = {};
+          if (process.env.PROJECT_INSTALLMENT_INVOICE_ACCEPTANCE === '1') {
+            const first = {
+              amount: 600,
+              invoiceNo: '分次发票A',
+              taxRate: 0,
+              requestKey: 'allocation-first-' + runId,
+              lineItems: [{ orderLineId: order.lineItems[0].id, quantity: 2 }],
+            };
+            const a = await api(
+              `supplier/orders/${order.id}/invoices`,
+              s,
+              first,
+            );
+            assert.equal(
+              (await api(`supplier/orders/${order.id}/invoices`, s, first)).id,
+              a.id,
+            );
+            const second = await api(
+              `supplier/orders/${order.id}/invoices`,
+              s,
+              {
+                amount: 300,
+                invoiceNo: '分次发票B',
+                taxRate: 0,
+                requestKey: 'allocation-second-' + runId,
+                lineItems: [
+                  { orderLineId: order.lineItems[0].id, quantity: 1 },
+                ],
+              },
+            );
+            await payIssued(a, 600, 'allocation-first');
+            issued = {
+              invoiceA: a.id,
+              invoiceB: second.id,
+              invoiceANo: a.invoiceNo,
+              invoiceBNo: second.invoiceNo,
+              actualApiIssuance: true,
+            };
+          }
           report.records.allocationUi = {
             ...c,
             contractId: contract.id,
             lineId: order.lineItems[0].id,
+            ...issued,
           };
+          return;
+        }
+        if (kind === 'installment-ui') {
+          report.records.installmentUi = {
+            ...c,
+            contractId: contract.id,
+            lineId: order.lineItems[0].id,
+          };
+          return;
+        }
+        if (kind === 'installment') {
+          const endpoint = `supplier/orders/${order.id}/invoices`,
+            first = {
+              amount: 300,
+              invoiceNo: 'INSTALLMENT-A-' + runId,
+              taxRate: 0,
+              requestKey: 'installment-A-' + runId,
+              lineItems: [{ orderLineId: order.lineItems[0].id, quantity: 1 }],
+            };
+          const a = await api(endpoint, s, first);
+          assert.equal(a.varianceAmount, 0);
+          assert.equal(a.reconciliationStatus, '分次开票已核对');
+          assert.equal((await api(endpoint, s, first)).id, a.id);
+          assert.equal(
+            (await api(endpoint + '/preview', s)).remainingAmount,
+            600,
+          );
+          await api(
+            endpoint,
+            s,
+            {
+              ...first,
+              amount: 600,
+              lineItems: [{ orderLineId: order.lineItems[0].id, quantity: 2 }],
+            },
+            'POST',
+            [400, 409],
+            /提交编号内容不同/,
+          );
+          await api(
+            endpoint,
+            s,
+            {
+              ...first,
+              invoiceNo: 'OVER-' + runId,
+              requestKey: 'OVER-' + runId,
+              amount: 900,
+              lineItems: [{ orderLineId: order.lineItems[0].id, quantity: 3 }],
+            },
+            'POST',
+            [400, 409],
+            /剩余/,
+          );
+          await payIssued(a, 300, 'installment-A');
+          await api(
+            `buyer/contracts/${contract.id}/archive-status`,
+            b,
+            { archiveStatus: '已归档' },
+            'PUT',
+            [400, 409],
+          );
+          const second = await api(endpoint, s, {
+            amount: 600,
+            invoiceNo: 'INSTALLMENT-B-' + runId,
+            taxRate: 0,
+            requestKey: 'installment-B-' + runId,
+            lineItems: [{ orderLineId: order.lineItems[0].id, quantity: 2 }],
+          });
+          await payIssued(second, 600, 'installment-B');
+          assert.equal(
+            (await api(endpoint + '/preview', s)).remainingAmount,
+            0,
+          );
+          await api(
+            `buyer/contracts/${contract.id}/archive-status`,
+            b,
+            { archiveStatus: '已归档' },
+            'PUT',
+          );
+          const trace = await api(`buyer/rfqs/${c.rfqId}/execution`, b);
+          assert.equal(trace.canArchive, true, JSON.stringify(trace.blockers));
+          const ep = `buyer/projects/${c.projectId}`,
+            lot = (await api(ep + '/packages', b)).find(
+              (l) => l.info.id === c.packageId,
+            );
+          await api(ep + '/packages/' + c.packageId + '/close', b, {
+            revision: lot.info.revision,
+            reason: '两次开票、逐票付款、合同履约已核验',
+          });
+          const parent = await api(ep, b);
+          await api(ep + '/close', b, {
+            revision: parent.project.revision,
+            reason: '采购履约及累计开票付款归档',
+          });
+          const zip = await fetch(
+            base + '/api/v1/' + ep + '/archive/download',
+            { headers: { Authorization: 'Bearer ' + b } },
+          );
+          assert.equal(zip.status, 200);
+          writeFileSync(
+            report.downloadDirectory + '/installment.zip',
+            Buffer.from(await zip.arrayBuffer()),
+          );
+          report.records.installment = {
+            ...c,
+            contractId: contract.id,
+            invoiceA: a.id,
+            invoiceB: second.id,
+          };
+          check(
+            'Installment invoices: real line quantities, retry deduplication, over-issue guards, separate approved payments, full contract/project archive',
+          );
           return;
         }
         if (kind.startsWith('physical-') || quality) {
@@ -2075,6 +2231,9 @@ try {
           await settlementCase(kind);
       if (process.env.PROJECT_ALLOCATION_SETTLEMENT_ACCEPTANCE === '1')
         for (const kind of ['no-contract', 'allocation-ui'])
+          await settlementCase(kind);
+      if (process.env.PROJECT_INSTALLMENT_INVOICE_ACCEPTANCE === '1')
+        for (const kind of ['installment', 'installment-ui'])
           await settlementCase(kind);
     }
     check(

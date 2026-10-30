@@ -1,5 +1,6 @@
 import { Fragment, useState } from 'react';
 import {SupplierOrderSettlement} from './order-settlement';
+import {InvoiceIssuanceForm} from './invoice-issuance-form';
 import { useQueryClient } from '@tanstack/react-query';
 import { ShoppingCart } from 'lucide-react';
 import { OrderCheckoutNote } from './order-checkout-note';
@@ -7,7 +8,6 @@ import {
   type PurchaseOrderResponse,
   useSupplierDeliveryCreate,
   useSupplierDeliveryList,
-  useSupplierInvoiceCreate,
   useSupplierOrderConfirm,
   useSupplierOrderList,
   useOrderCancellation,
@@ -47,16 +47,12 @@ export function OrdersPage({ canConfirm = false, canShip = false, canInvoice = f
   const confirm = useSupplierOrderConfirm();
   const ship = useSupplierDeliveryCreate();
   const deliveries = useSupplierDeliveryList();
-  const issue = useSupplierInvoiceCreate();
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [shipForm, setShipForm] = useState<{ orderId: string; carrier: string; trackingNo: string; quantities: Record<string, string> } | null>(null);
   const [invForm, setInvForm] = useState<{
     orderId: string;
-    invoiceNo: string;
-    invoiceCode: string;
-    taxRate: string;
   } | null>(null);
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState('全部');
@@ -89,37 +85,6 @@ export function OrdersPage({ canConfirm = false, canShip = false, canInvoice = f
         typeof q.queryKey[0] === 'string' &&
         /\/supplier\/(orders|deliveries|invoices|receivables)/.test(q.queryKey[0] as string),
     });
-
-  const onIssueInvoice = (orderId: string, orderAmount?: number) => {
-    const f = invForm?.orderId === orderId ? invForm : null;
-    setFeedback(null);
-    setError(null);
-    if (!f || !canInvoice) return;
-    const taxRate = f.taxRate.trim() === '' ? 13 : Number(f.taxRate);
-    if (!Number.isFinite(taxRate) || taxRate < 0 || taxRate > 100) {
-      setError('税率应为 0 至 100 之间的数值。');
-      return;
-    }
-    issue.mutate(
-      {
-        orderId,
-        data: {
-          amount: orderAmount ?? 0,
-          invoiceNo: f.invoiceNo.trim(),
-          invoiceCode: f?.invoiceCode || undefined,
-          taxRate,
-        },
-      },
-      {
-        onSuccess: () => {
-          setFeedback(`订单 ${orderId} 已开具发票`);
-          setInvForm(null);
-          refresh();
-        },
-        onError: reportError,
-      },
-    );
-  };
 
   const reportError = (failure: unknown) => setError(
     (failure as { response?: { data?: { message?: string } } })?.response?.data?.message
@@ -167,7 +132,6 @@ export function OrdersPage({ canConfirm = false, canShip = false, canInvoice = f
   // 展开区:行项明细 + 收货/付款信息 + 发货/开票表单(仅展开行渲染)。
   const renderExpanded = (o: PurchaseOrderResponse) => {
     const busyS = ship.isPending && ship.variables?.orderId === o.id;
-    const busyI = issue.isPending && issue.variables?.orderId === o.id;
     const editing = shipForm?.orderId === o.id;
     const invEditing = invForm?.orderId === o.id;
     return (
@@ -248,31 +212,7 @@ export function OrdersPage({ canConfirm = false, canShip = false, canInvoice = f
         )}
 
         {canInvoice && invEditing && (
-          <div className="rounded-lg border border-blue-100 bg-blue-50/40 p-3">
-            <p className="text-xs font-black text-blue-800">开具发票(金额须与订单一致 {currency(o.amount)})</p>
-            <div className="mt-2 grid gap-2 sm:grid-cols-3">
-              <input className={inputCls} placeholder="发票号码" value={invForm!.invoiceNo}
-                onChange={(e) => setInvForm({ ...invForm!, invoiceNo: e.target.value })} />
-              <input className={inputCls} placeholder="发票代码" value={invForm!.invoiceCode}
-                onChange={(e) => setInvForm({ ...invForm!, invoiceCode: e.target.value })} />
-              <input className={inputCls} type="number" min="0" max="100" step="0.01" placeholder="税率%" value={invForm!.taxRate}
-                onChange={(e) => setInvForm({ ...invForm!, taxRate: e.target.value })} />
-            </div>
-            <div className="mt-2 flex gap-2">
-              <PrimaryActionButton
-                onClick={() => onIssueInvoice(o.id!, o.amount)}
-                busy={busyI}
-                pendingLabel="开票中"
-                disabled={!invForm?.invoiceNo?.trim()}
-              >
-                提交开票
-              </PrimaryActionButton>
-              <button type="button" onClick={() => setInvForm(null)}
-                className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-4 text-xs font-black text-slate-600 hover:bg-slate-50">
-                取消
-              </button>
-            </div>
-          </div>
+          <InvoiceIssuanceForm key={o.id} orderId={o.id!} onClose={()=>setInvForm(null)} onSaved={()=>{setFeedback(`订单 ${o.id} 本次发票已保存`);setInvForm(null);void refresh();}}/>
         )}
       </div>
     );
@@ -311,7 +251,7 @@ export function OrdersPage({ canConfirm = false, canShip = false, canInvoice = f
           <button
             type="button"
             onClick={() => {
-              setInvForm({ orderId: o.id!, invoiceNo: '', invoiceCode: '', taxRate: '13' });
+              setInvForm({ orderId: o.id! });
               setShipForm(null);
               setExpandedId(o.id!);
             }}

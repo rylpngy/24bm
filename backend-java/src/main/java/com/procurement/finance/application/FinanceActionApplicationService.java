@@ -366,10 +366,12 @@ public class FinanceActionApplicationService {
     BigDecimal amountVariance =
         invoiceLineAmount == null
             ? BigDecimal.ZERO
-            : invoiceLineAmount.subtract(row.orderLineAmount());
+            : invoiceLineAmount.subtract(row.invoicedQuantity()==null?row.orderLineAmount():row.invoicedQuantity().multiply(row.orderUnitPrice()).setScale(2,java.math.RoundingMode.HALF_UP));
     String status;
     if (invoiceLineAmount == null) {
       status = "未开票";
+    } else if (row.invoicedQuantity()!=null && row.invoicedQuantity().compareTo(row.orderedQuantity())>0) {
+      status = "数量超开";
     } else if (amountVariance.compareTo(BigDecimal.ZERO) != 0) {
       status = "金额差异";
     } else if (row.receivedQuantity() == null) {
@@ -379,7 +381,7 @@ public class FinanceActionApplicationService {
         && row.qualifiedQuantity().compareTo(row.orderedQuantity()) < 0) {
       status = "数量短缺";
     } else {
-      status = "三单一致";
+      status = row.invoicedQuantity()!=null && row.invoicedQuantity().compareTo(row.orderedQuantity())<0 ? "本票分次匹配" : "三单一致";
     }
     return new ThreeWayMatchLineResponse(
         row.orderLineId(),

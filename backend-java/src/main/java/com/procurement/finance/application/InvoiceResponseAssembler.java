@@ -48,12 +48,19 @@ final class InvoiceResponseAssembler {
         : ("已收货".equals(order.status()) || "已完成".equals(order.status()) ? "已收货" : "待收货");
     String reconciliationStatus = blockingReason == null
         ? toReconciliationStatus(orderAmount, varianceAmount, receiptStatus) : "履约待核验";
+    boolean checkedInstallment = blockingReason == null && orderAmount != null && invoice.amount().signum()>0
+        && invoice.amount().compareTo(orderAmount)<0 && lineItems!=null && !lineItems.isEmpty()
+        && lineItems.stream().allMatch(l->l.quantity()!=null && l.quantity().signum()>0 && l.unitPrice()!=null && l.lineAmount()!=null
+          && l.quantity().multiply(l.unitPrice()).setScale(2,java.math.RoundingMode.HALF_UP).compareTo(l.lineAmount())==0)
+        && lineItems.stream().map(InvoiceLineItemResponse::lineAmount).reduce(BigDecimal.ZERO,BigDecimal::add).compareTo(invoice.amount())==0;
+    if(checkedInstallment){varianceAmount=BigDecimal.ZERO;reconciliationStatus="已收货".equals(receiptStatus)?"分次开票已核对":"待收货";}
     String reconciliationStage = toReconciliationStage(invoice.paymentStatus(), reconciliationStatus);
     String nextReconciliationAction = toNextReconciliationAction(reconciliationStage);
     boolean settled=order!=null&&"已清算".equals(order.status());
     boolean settling=order!=null&&java.util.Set.of("清算协商中","待清算").contains(order.status());
     if(settling){reconciliationStatus="合同清算中";reconciliationStage="合同清算中";nextReconciliationAction="原始发票与付款已冻结，请至订单清算台账办理";}
     if(settled){overdue=false;overdueDays=0;receiptStatus="按清算结果归档";reconciliationStatus="按清算结果归档";reconciliationStage="已清算";nextReconciliationAction="原始票面额留档，请至订单清算台账查看调账凭证及实际净结算额";}
+    if(settled)varianceAmount=null;
 
     // 价税合计(amount)与税率推导税额与不含税金额：税额 = 价税合计 × 税率 / (100 + 税率)。
     BigDecimal taxRate = invoice.taxRate() == null ? BigDecimal.ZERO : invoice.taxRate();

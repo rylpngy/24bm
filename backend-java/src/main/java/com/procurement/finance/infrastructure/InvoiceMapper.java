@@ -12,6 +12,8 @@ import org.apache.ibatis.annotations.Update;
 
 @Mapper
 public interface InvoiceMapper {
+  @Select("select exists(select 1 from invoices i join finance_invoice_closeout_checks c on c.tenant_id=i.tenant_id and c.invoice_id=i.id where i.tenant_id=#{tenant} and i.id=#{id} and i.submission_key is not null and i.submission_fingerprint is not null and c.blocking_reason is null)")
+  boolean verifiedInstallment(@Param("tenant")String tenant,@Param("id")String id);
   @Select("select status from purchase_orders where tenant_id=#{tenantId} and id=#{orderId} for update")
   String lockOrder(@Param("tenantId") String tenantId, @Param("orderId") String orderId);
   @Select("""

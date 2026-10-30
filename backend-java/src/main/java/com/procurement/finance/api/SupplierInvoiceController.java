@@ -20,6 +20,11 @@ public class SupplierInvoiceController {
     this.invoiceApplicationService = invoiceApplicationService;
   }
 
+  @org.springframework.web.bind.annotation.GetMapping("/{orderId}/invoices/preview")
+  public ApiResponse<InvoiceIssuancePreview> preview(@PathVariable String orderId) {
+    return ApiResponse.ok(invoiceApplicationService.issuancePreview(orderId));
+  }
+
   @PostMapping("/{orderId}/invoices")
   @ResponseStatus(HttpStatus.CREATED)
   public ApiResponse<InvoiceResponse> create(@PathVariable String orderId, @Valid @RequestBody CreateInvoiceRequest request) {

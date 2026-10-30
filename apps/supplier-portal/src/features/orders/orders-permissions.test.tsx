@@ -5,6 +5,7 @@ import { OrdersPage } from './orders-page';
 
 const mutations = vi.hoisted(() => ({ confirm: vi.fn(), ship: vi.fn(), issue: vi.fn() }));
 beforeEach(() => vi.clearAllMocks());
+vi.mock('./invoice-issuance-form',()=>({InvoiceIssuanceForm:({orderId,onClose,onSaved}:{orderId:string;onClose:()=>void;onSaved:()=>void})=><section aria-label="分次开票"><p>{orderId}</p><button onClick={onClose}>取消开票</button><button onClick={onSaved}>保存本次发票</button></section>}));
 vi.mock('@24bid/api-client', () => ({
   useOrderCancellation: () => ({data:{blockers:[],items:[],total:0,actorId:'viewer'},loading:false,loadError:false,error:'',busy:false,page:1,setPage:vi.fn(),refresh:vi.fn(),act:vi.fn()}),
   useSupplierOrderList: () => ({ data: { data: [
@@ -39,22 +40,12 @@ describe('supplier order actions', () => {
     expect(screen.queryByRole('button', { name: '登记发货' })).toBeNull();
     expect(screen.queryByRole('button', { name: '开具发票' })).toBeNull();
   });
-  it('preserves an explicitly selected zero tax rate', () => {
+  it('opens the scoped installment form for authorized invoice operators', () => {
     show({ canInvoice: true });
     fireEvent.click(screen.getAllByRole('button', { name: '开具发票' })[0]);
-    for (const input of screen.getAllByPlaceholderText('发票号码')) fireEvent.change(input, { target: { value: 'ZERO-TAX' } });
-    for (const input of screen.getAllByPlaceholderText('税率%')) fireEvent.change(input, { target: { value: '0' } });
-    fireEvent.click(screen.getAllByRole('button', { name: '提交开票' })[0]);
-    expect(mutations.issue).toHaveBeenCalledWith({ orderId: 'invoice-me', data: expect.objectContaining({ taxRate: 0 }) }, expect.any(Object));
-  });
-  it('shows failed invoice submission as an error, never a success', () => {
-    mutations.issue.mockImplementationOnce((_, callbacks) => callbacks.onError({ response: { data: { message: '订单已开票' } } }));
-    show({ canInvoice: true });
-    fireEvent.click(screen.getAllByRole('button', { name: '开具发票' })[0]);
-    for (const input of screen.getAllByPlaceholderText('发票号码')) fireEvent.change(input, { target: { value: 'DUPLICATE' } });
-    fireEvent.click(screen.getAllByRole('button', { name: '提交开票' })[0]);
-    expect(screen.getByText('订单已开票').className).toContain('red');
-    expect(screen.queryByText(/已开具发票/)).toBeNull();
+    expect(screen.getAllByRole('region',{name:'分次开票'}).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getAllByRole('button',{name:'保存本次发票'})[0]);
+    expect(screen.getByText('订单 invoice-me 本次发票已保存')).toBeTruthy();
   });
   it('does not silently discard an invalid zero shipment quantity', () => {
     show({ canShip: true });
