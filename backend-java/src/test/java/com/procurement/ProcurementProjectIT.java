@@ -61,6 +61,49 @@ class ProcurementProjectIT {
   @Autowired FundingService funding;
   @Autowired FundingCarryoverService fundingCarryover;
   record FundedCase(CancelCase order,String invoice,String entry,String a,String b){}
+  com.procurement.buyer.api.FundingContracts.Request reallocate(FundedCase f,String key,String a,String b){
+    var view=funding.project(f.order().project());
+    return new com.procurement.buyer.api.FundingContracts.Request(key,"project_reallocation",null,f.order().project(),projects.detail(f.order().project()).project().revision(),view.sources().stream().map(x->x.allocatedAmount()).reduce(BigDecimal.ZERO,BigDecimal::add),List.of(new com.procurement.buyer.api.FundingContracts.Share(f.a(),new BigDecimal(a)),new com.procurement.buyer.api.FundingContracts.Share(f.b(),new BigDecimal(b))),"调整未付责任，已支付归属不变",Map.of());
+  }
+  @Test void unpaidReallocationApprovesIndependentlyWithoutChangingCashOrPlanVersion(){
+    var f=fundedPaidCase();var before=jdbc.queryForList("select * from funding_payment_allocations where tenant_id=? order by entry_id,fund_id",tenant);var plan=funding.project(f.order().project()).planId();
+    var request=reallocate(f,"adjust","90","156.91");var r=funding.submit(request);assertThat(funding.submit(request).id()).isEqualTo(r.id());
+    assertThat(workflow.listCurrentUserTasks()).noneMatch(t->t.businessId().equals(r.id()));assertThatThrownBy(()->fundedCash(f.invoice(),f.a(),f.b(),"1","1")).hasMessageContaining("审批中");
+    decide(r.id(),"approve");assertThat(funding.project(f.order().project()).planId()).isEqualTo(plan);assertThat(jdbc.queryForList("select * from funding_payment_allocations where tenant_id=? order by entry_id,fund_id",tenant)).isEqualTo(before);
+    assertThat(funding.project(f.order().project()).sources()).filteredOn(x->x.fundId().equals(f.a())).singleElement().satisfies(x->{assertThat(x.allocatedAmount()).isEqualByComparingTo("90");assertThat(x.paidAmount()).isEqualByComparingTo("20");});
+    fundedCash(f.invoice(),f.a(),f.b(),"10","20");assertThat(paymentLedger.summary(f.invoice()).paidAmount()).isEqualByComparingTo("80");
+    var second=funding.submit(reallocate(f,"adjust-again","80","166.91"));decide(second.id(),"approve");
+    assertThat(funding.history(f.a(),f.order().project(),1,100).items()).filteredOn(x->x.kind().equals("project_reallocation")).hasSize(2);
+    assertThat(jdbc.queryForObject("select count(*) from funding_reallocation_lines where tenant_id=?",Integer.class,tenant)).isEqualTo(4);
+  }
+  @Test void unpaidReallocationCannotReassignPaidCashOrAddSourcesOrExceedCapacity(){
+    var f=fundedPaidCase();assertThatThrownBy(()->funding.submit(reallocate(f,"under-paid","19","227.91"))).hasMessageContaining("不能低于");
+    assertThatThrownBy(()->funding.submit(reallocate(f,"no-change","100","146.91"))).hasMessageContaining("未变化");
+    assertThatThrownBy(()->funding.submit(reallocate(f,"total","90","150"))).hasMessageContaining("总额");
+    var third=approvedFund("C","300");var input=reallocate(f,"foreign","90","156.91");
+    assertThatThrownBy(()->funding.submit(new com.procurement.buyer.api.FundingContracts.Request(input.requestKey(),input.kind(),null,input.projectId(),input.revision(),input.amount(),List.of(new com.procurement.buyer.api.FundingContracts.Share(f.a(),new BigDecimal("20")),new com.procurement.buyer.api.FundingContracts.Share(f.b(),new BigDecimal("30")),new com.procurement.buyer.api.FundingContracts.Share(third.id(),new BigDecimal("196.91"))),input.reason(),Map.of()))).hasMessageContaining("当前版本");
+    var r=funding.submit(reallocate(f,"capacity","90","156.91"));var b=funding.funds(1,100).items().stream().filter(x->x.id().equals(f.b())).findFirst().orElseThrow();var lower=funding.submit(fundLimit(b,"146.91","lower"));decide(lower.id(),"approve");
+    assertThatThrownBy(()->decide(r.id(),"approve")).hasMessageContaining("额度不足");context(author);assertThat(jdbc.queryForObject("select count(*) from funding_reallocation_lines where tenant_id=?",Integer.class,tenant)).isZero();
+  }
+  @Test void unpaidReallocationWithdrawalAndRejectionPreserveResponsibilityAndCash(){
+    var f=fundedPaidCase();var original=funding.project(f.order().project()).sources();var r=funding.submit(reallocate(f,"withdraw","90","156.91"));funding.withdraw(r.id(),"重新核对");r=funding.submit(reallocate(f,"reject","90","156.91"));decide(r.id(),"reject");
+    assertThat(funding.project(f.order().project()).sources()).isEqualTo(original);assertThat(paymentLedger.summary(f.invoice()).paidAmount()).isEqualByComparingTo("50");
+  }
+  @Test void unpaidReallocationAfterCarryPreservesHistoricalBasisAndFlowsIntoNextCarry(){
+    var f=fundedPaidCase();var a=futureFund("A",1,"300");var b=futureFund("B",1,"300");var c=lifecycle.submit(f.order().project(),fundedCarry(f.order().project(),1,f.a(),f.b(),a.id(),b.id()));decide(c.id(),"approve");
+    var current=new FundedCase(f.order(),f.invoice(),f.entry(),a.id(),b.id());var before=jdbc.queryForObject("select snapshot::text from procurement_project_lifecycle_requests where id=?",String.class,c.id());
+    var r=funding.submit(reallocate(current,"after-carry","70","126.91"));decide(r.id(),"approve");assertThat(funding.project(f.order().project()).priorPaidAmount()).isEqualByComparingTo("50");
+    assertThat(jdbc.queryForObject("select snapshot::text from procurement_project_lifecycle_requests where id=?",String.class,c.id())).isEqualTo(before);
+    var aa=futureFund("A",2,"300");var bb=futureFund("B",2,"300");var next=lifecycle.submit(f.order().project(),fundedCarry(f.order().project(),2,a.id(),b.id(),aa.id(),bb.id()));decide(next.id(),"approve");
+    assertThat(funding.project(f.order().project()).sources()).filteredOn(x->x.fundId().equals(aa.id())).singleElement().satisfies(x->assertThat(x.allocatedAmount()).isEqualByComparingTo("70"));
+  }
+  @Test void databaseRejectsApprovedUnpaidReallocationWithMissingSourceEvidence(){
+    var f=fundedPaidCase();var r=funding.submit(reallocate(f,"incomplete","90","156.91"));var tx=new org.springframework.transaction.support.TransactionTemplate(txManager);
+    assertThatThrownBy(()->tx.executeWithoutResult(s->jdbc.update("update special_funding_changes set status='approved',completed_by=?,completed_at=now(),revision=revision+1 where id=?",reviewer,r.id()))).hasStackTraceContaining("Reallocation must preserve");
+    assertThat(funding.history(null,f.order().project(),1,100).items()).filteredOn(x->x.id().equals(r.id())).singleElement().satisfies(x->assertThat(x.status()).isEqualTo("submitted"));
+    var plan=funding.project(f.order().project()).planId();
+    assertThatThrownBy(()->tx.executeWithoutResult(s->jdbc.update("insert into funding_reallocation_lines(tenant_id,change_id,project_id,plan_id,fund_id,before_amount,after_amount,created_by) values(?,?,?,?,?,100,100,?)",tenant,plan,f.order().project(),plan,f.a(),reviewer))).hasStackTraceContaining("require reallocation business type");
+  }
   com.procurement.buyer.api.FundingContracts.Fund futureFund(String code,int offset,String limit){
     var f=funding.create(new com.procurement.buyer.api.FundingContracts.Draft(dept,nextYear(offset),code,"年度专项 "+code));
     var c=funding.submit(fundLimit(f,limit,"future-"+code+"-"+offset));decide(c.id(),"approve");return f;

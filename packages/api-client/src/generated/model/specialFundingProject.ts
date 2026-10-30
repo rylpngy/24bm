@@ -17,4 +17,5 @@ export interface SpecialFundingProject {
   blocker?: string;
   effectivePeriod?: string;
   priorPaidAmount?: number;
+  reallocationBlocker?: string;
 }

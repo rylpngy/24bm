@@ -26,7 +26,7 @@ public final class FundingContracts {
   @Schema(name = "SpecialFundChangeRequest")
   public record Request(
       @NotBlank @Size(max = 100) String requestKey,
-      @NotBlank @Pattern(regexp = "fund_limit|project_plan") String kind,
+      @NotBlank @Pattern(regexp = "fund_limit|project_plan|project_reallocation") String kind,
       String fundId,
       String projectId,
       @Min(1) int revision,
@@ -108,5 +108,6 @@ public final class FundingContracts {
       List<Balance> sources,
       String blocker,
       String effectivePeriod,
-      BigDecimal priorPaidAmount) {}
+      BigDecimal priorPaidAmount,
+      String reallocationBlocker) {}
 }
