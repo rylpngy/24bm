@@ -17,6 +17,14 @@ public final class ProcurementExecutionPolicy {
   public static Evaluation evaluate(JsonNode data) {
     List<String> blockers = new ArrayList<>();
     List<Document> documents = new ArrayList<>();
+    for(var correction:data.path("frozenPaymentCorrections")) {
+      if("submitted".equals(text(correction,"status")))blockers.add("存在跨年冻结付款更正审批，请先完成更正办理");
+      if("approved".equals(text(correction,"status"))) {
+        boolean workflow=list(data,"workflowHistory").stream().anyMatch(h->text(h.path("instance"),"id").equals(text(correction,"workflowInstanceId"))&&"approved".equals(text(h.path("instance"),"status")));
+        boolean reversal=list(data,"payments").stream().anyMatch(p->text(p,"id").equals(text(correction,"reversal_id"))&&text(p,"reversalOf").equals(text(correction,"entry_id"))&&amount(p,"amount").compareTo(amount(correction,"amount").negate())==0&&!text(p,"evidenceNo").isBlank());
+        if(!workflow||!reversal)blockers.add("跨年冻结付款更正缺少审批或反向资金凭据");
+      }
+    }
     var rfq = data.path("rfq");
     if (!"已定标".equals(text(rfq,"status")) || text(rfq,"awardedSupplierId").isBlank()) blockers.add("采购项目尚未完成定标");
     for (var d : data.path("demands")) documents.add(doc(d,"需求：" + text(d,"title"),"status","budget","demands","id"));

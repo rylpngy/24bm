@@ -39,6 +39,7 @@ export * from './contract-schedule-controller/contract-schedule-controller';
 export * from './department-controller/department-controller';
 export * from './dictionary-controller/dictionary-controller';
 export * from './external-identity-controller/external-identity-controller';
+export * from './frozen-payment-correction-controller/frozen-payment-correction-controller';
 export * from './health-controller/health-controller';
 export * from './ludong-poc-controller/ludong-poc-controller';
 export * from './mall-checkout-note-controller/mall-checkout-note-controller';

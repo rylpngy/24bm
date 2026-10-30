@@ -21,7 +21,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class PaymentLedgerApplicationService {
   public record Summary(BigDecimal invoiceAmount, BigDecimal paidAmount, BigDecimal remainingAmount,
       boolean reconciliationRequired, String warning, List<PaymentEntry> entries,
-      List<ContractInstallmentService.Balance> milestones) {}
+      List<ContractInstallmentService.Balance> milestones, List<String> frozenEntryIds) {
+    public Summary(BigDecimal invoiceAmount,BigDecimal paidAmount,BigDecimal remainingAmount,boolean reconciliationRequired,String warning,List<PaymentEntry> entries,List<ContractInstallmentService.Balance> milestones){this(invoiceAmount,paidAmount,remainingAmount,reconciliationRequired,warning,entries,milestones,List.of());}
+  }
 
   private final InvoiceMapper invoices;
   private final PaymentEntryMapper entries;
@@ -52,13 +54,17 @@ public class PaymentLedgerApplicationService {
     try { PaymentAuthorizationService.requireKnownBalance(invoice, paid); }
     catch (IllegalStateException e) { warning = e.getMessage(); }
     if (schedule.stream().anyMatch(m -> !m.verified())) warning = "历史合同付款缺少金额流水或计划已变更，请先核对";
-    if (!schedule.isEmpty() && schedule.stream().allMatch(m -> m.verified())
-        && schedule.stream().map(ContractInstallmentService.Balance::paid).reduce(BigDecimal.ZERO, BigDecimal::add).compareTo(paid) != 0) {
-      warning = "合同已分配金额与发票付款流水不一致，请先核对付款计划";
+    if (!schedule.isEmpty() && schedule.stream().allMatch(m -> m.verified())) {
+      try {
+        if(schedule.stream().map(ContractInstallmentService.Balance::paid).reduce(BigDecimal.ZERO, BigDecimal::add)
+            .compareTo(installments.verifiedOrderPaid(invoice.tenantId(),invoice.orderId()))!=0)
+          warning = "合同已分配金额与整单付款流水不一致，请先核对付款计划";
+      } catch(IllegalStateException e){warning=e.getMessage();}
     }
     boolean unknown = !warning.isEmpty();
     return new Summary(invoice.amount(), unknown ? null : paid, unknown ? null : invoice.amount().subtract(paid),
-        unknown, warning, entries.list(invoice.tenantId(), invoice.id()), schedule);
+        unknown, warning, entries.list(invoice.tenantId(), invoice.id()), schedule,
+        entries.list(invoice.tenantId(),invoice.id()).stream().filter(e->e.amount().signum()>0&&invoices.carriedPayment(invoice.tenantId(),invoice.id(),e.id())).map(PaymentEntry::id).toList());
   }
 
   @Transactional

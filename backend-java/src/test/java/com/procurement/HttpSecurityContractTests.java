@@ -276,6 +276,7 @@ import org.springframework.test.web.servlet.MvcResult;
     BuyerFinanceReportController.class,
     BuyerPaymentController.class,
     BuyerPaymentLedgerController.class,
+    com.procurement.finance.api.FrozenPaymentCorrectionController.class,
     BuyerPaymentReviewController.class,
     SupplierInvoiceController.class,
     SupplierReceivableController.class,
@@ -335,6 +336,13 @@ class HttpSecurityContractTests {
   @MockBean private com.procurement.buyer.application.ProjectCloseoutService projectCloseout;
   @MockBean private com.procurement.buyer.application.ProjectMallService projectMall;
   @MockBean private com.procurement.buyer.application.ProjectLifecycleService projectLifecycle;
+  @MockBean private com.procurement.finance.application.FrozenPaymentCorrectionService frozenCorrections;
+  @Test void frozenPaymentCorrectionsRequireAuthenticationAndBuyerScope() throws Exception {
+    String url="/api/v1/buyer/invoices/inv-1/payment-ledger/corrections";
+    mockMvc.perform(get(url)).andExpect(status().isForbidden());
+    String supplier=loginAndExtractToken("{\"account\":\"supplier\",\"password\":\"demo123456\",\"scope\":\"SUPPLIER\",\"supplierId\":\"ent-supplier-sunrise\"}");
+    mockMvc.perform(get(url).header("Authorization","Bearer "+supplier)).andExpect(status().isForbidden());
+  }
   @MockBean private com.procurement.identity.application.ExternalIdentityService externalIdentities;
   @Test
   void projectLibraryRequiresBuyerPortalAndSpecificPermission() throws Exception {

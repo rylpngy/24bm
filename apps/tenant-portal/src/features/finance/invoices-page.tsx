@@ -22,6 +22,7 @@ import { PaymentBatchesPage } from './payment-batches-page';
 import { financeErrorMessage } from './finance-feedback';
 import { InvoiceLineMatchPanel } from './invoice-line-match-panel';
 import { PaymentLedgerPanel } from './payment-ledger-panel';
+import { FrozenPaymentCorrections } from './frozen-payment-corrections';
 import { PaymentReviewsPage } from './payment-reviews-page';
 import { WorkflowSubmitDialog } from '../workflow/workflow-submit-dialog';
 import { WorkflowStatusPanel } from '../workflow/workflow-instance-panel';
@@ -338,6 +339,7 @@ export function InvoicesPage() {
 
             {/* 付款执行记录 */}
             {inv.id && <PaymentLedgerPanel key={inv.id} invoiceId={inv.id} />}
+            {inv.id && <FrozenPaymentCorrections key={'corrections-'+inv.id} invoiceId={inv.id} />}
             {inv.id && <PaymentExecutionTimeline invoiceId={inv.id} />}
           </div>
 

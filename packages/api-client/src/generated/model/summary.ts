@@ -16,4 +16,5 @@ export interface Summary {
   warning?: string;
   entries?: PaymentEntry[];
   milestones?: Balance[];
+  frozenEntryIds?: string[];
 }

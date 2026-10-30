@@ -88,7 +88,7 @@ export function PaymentLedgerPanel({ invoiceId }: { invoiceId: string }) {
             <td className="px-3 py-3 whitespace-nowrap">{entry.reversalOf ? '冲销' : reversed ? '已冲销' : '付款'}</td>
             <td className="px-3 py-3 whitespace-nowrap font-bold">{money(entry.amount)}</td>
             <td className="max-w-60 break-words px-3 py-3"><p>{entry.evidenceNo || '未提供凭据'}</p><p className="mt-1 text-slate-500">{entry.remark}</p></td>
-            <td className="px-3 py-3">{!entry.reversalOf && !reversed && !data.reconciliationRequired && <button type="button" disabled={busy} onClick={() => { setReverseId(entry.id); setReason(''); record.reset(); reverse.reset(); }} className="inline-flex h-8 items-center gap-1 whitespace-nowrap rounded-md border border-red-200 px-2 text-red-700"><RotateCcw size={14} />冲销</button>}</td>
+            <td className="px-3 py-3">{!entry.reversalOf && !reversed && data.frozenEntryIds?.includes(entry.id) ? <span className="whitespace-nowrap text-amber-700" title="请在下方跨年冻结付款更正台账申请审批">跨年冻结</span> : !entry.reversalOf && !reversed && !data.reconciliationRequired && <button type="button" disabled={busy} onClick={() => { setReverseId(entry.id); setReason(''); record.reset(); reverse.reset(); }} className="inline-flex h-8 items-center gap-1 whitespace-nowrap rounded-md border border-red-200 px-2 text-red-700"><RotateCcw size={14} />冲销</button>}</td>
           </tr>;
         })}</tbody>
       </table>

@@ -28828,6 +28828,252 @@
           }
         }
       }
+    },
+    "/api/v1/buyer/invoices/{invoice}/payment-ledger/corrections": {
+      "get": {
+        "tags": [
+          "frozen-payment-correction-controller"
+        ],
+        "operationId": "frozenPaymentCorrectionHistory",
+        "parameters": [
+          {
+            "name": "invoice",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseFrozenPaymentCorrectionPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "frozen-payment-correction-controller"
+        ],
+        "operationId": "frozenPaymentCorrectionSubmit",
+        "parameters": [
+          {
+            "name": "invoice",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FrozenPaymentCorrectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseFrozenPaymentCorrection"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/invoices/{invoice}/payment-ledger/corrections/{id}/withdraw": {
+      "post": {
+        "tags": [
+          "frozen-payment-correction-controller"
+        ],
+        "operationId": "frozenPaymentCorrectionWithdraw",
+        "parameters": [
+          {
+            "name": "invoice",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FrozenPaymentCorrectionWithdrawRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseFrozenPaymentCorrection"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/invoices/{invoice}/payment-ledger/corrections/candidates": {
+      "get": {
+        "tags": [
+          "frozen-payment-correction-controller"
+        ],
+        "operationId": "frozenPaymentCorrectionCandidates",
+        "parameters": [
+          {
+            "name": "invoice",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListFrozenPaymentCorrectionCandidate"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -37306,6 +37552,12 @@
             "items": {
               "$ref": "#/components/schemas/Balance"
             }
+          },
+          "frozenEntryIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -45667,6 +45919,225 @@
             "items": {
               "$ref": "#/components/schemas/InvoiceIssuanceBalance"
             }
+          },
+          "blockers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "FrozenPaymentCorrectionRequest": {
+        "required": [
+          "entryId",
+          "evidenceNo",
+          "reason",
+          "requestKey"
+        ],
+        "type": "object",
+        "properties": {
+          "requestKey": {
+            "maxLength": 100,
+            "minLength": 0,
+            "type": "string"
+          },
+          "entryId": {
+            "type": "string"
+          },
+          "evidenceNo": {
+            "maxLength": 200,
+            "minLength": 0,
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 1000,
+            "minLength": 0,
+            "type": "string"
+          },
+          "formData": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "ApiResponseFrozenPaymentCorrection": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/FrozenPaymentCorrection"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "FrozenPaymentCorrection": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "invoiceId": {
+            "type": "string"
+          },
+          "entryId": {
+            "type": "string"
+          },
+          "requestKey": {
+            "type": "string"
+          },
+          "projectId": {
+            "type": "string"
+          },
+          "departmentId": {
+            "type": "string"
+          },
+          "rfqId": {
+            "type": "string"
+          },
+          "sourcePeriod": {
+            "type": "string"
+          },
+          "targetPeriod": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "evidenceNo": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "snapshot": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "workflowInstanceId": {
+            "type": "string"
+          },
+          "reversalId": {
+            "type": "string"
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completedBy": {
+            "type": "string"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "FrozenPaymentCorrectionWithdrawRequest": {
+        "required": [
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "maxLength": 1000,
+            "minLength": 0,
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseFrozenPaymentCorrectionPage": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/FrozenPaymentCorrectionPage"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "FrozenPaymentCorrectionPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FrozenPaymentCorrection"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ApiResponseListFrozenPaymentCorrectionCandidate": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FrozenPaymentCorrectionCandidate"
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "FrozenPaymentCorrectionCandidate": {
+        "type": "object",
+        "properties": {
+          "entryId": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "evidenceNo": {
+            "type": "string"
+          },
+          "projectId": {
+            "type": "string"
+          },
+          "sourcePeriod": {
+            "type": "string"
+          },
+          "targetPeriod": {
+            "type": "string"
           },
           "blockers": {
             "type": "array",

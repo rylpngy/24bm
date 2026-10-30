@@ -48,6 +48,7 @@ const BUSINESS_TYPES = [
   { id: 'project_initiation', label: '项目立项' },
   { id: 'project_change', label: '立项变更' },
   { id: 'project_carryover', label: '跨年度承接' },
+  { id: 'frozen_payment_correction', label: '跨年冻结付款更正' },
   { id: 'project_liquidation', label: '项目终止清算' },
   { id: 'order_settlement', label: '合同解除与订单清算' },
   { id: 'budget_exception', label: '超预算例外' },
