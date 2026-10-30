@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
   Plus,
-  Search,
+  FolderKanban,
   Trash2,
   Save,
   Send,
@@ -26,7 +26,7 @@ import {
   type ProcProjectDraft,
   type ProcProjectLine,
 } from '@24bid/api-client';
-import { FeedbackNotice, Pagination, ConfirmDialog } from '@24bid/ui';
+import { FeedbackNotice, Pagination, ConfirmDialog, Panel, ResponsiveTableFrame, SearchInput, StatusPill, cn } from '@24bid/ui';
 import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
 import { useAuthStore } from '../../lib/auth-store';
 import { OwnerAttachments } from '../attachments/owner-attachments';
@@ -39,6 +39,7 @@ import { ProjectLifecyclePanel } from './project-lifecycle-panel';
 import { ProjectReopenPanel } from './project-reopen-panel';
 import { ProjectFundingPanel } from '../budgets/special-funding';
 
+const PAGE_SIZE = 8;
 const states: Record<string, string> = {
   draft: '草稿',
   submitted: '立项审批中',
@@ -81,7 +82,6 @@ function ProjectWorkspace() {
   );
   const [page, setPage] = useState(1),
     [status, setStatus] = useState(''),
-    [search, setSearch] = useState(''),
     [keyword, setKeyword] = useState('');
   const [message, setMessage] = useState<{
       tone: 'success' | 'error';
@@ -98,8 +98,8 @@ function ProjectWorkspace() {
   const [packageCount, setPackageCount] = useState<number | null>(null);
   const [draft, setDraft] = useState<ProcProjectDraft | null>(null);
   const list = useQuery({
-    queryKey: ['project-list', page, status, keyword],
-    queryFn: () => projectList(page, status, keyword),
+    queryKey: ['project-list', page, status, keyword, PAGE_SIZE],
+    queryFn: () => projectList(page, status, keyword, PAGE_SIZE),
   });
   const detail = useQuery({
     queryKey: ['project-detail', id],
@@ -223,11 +223,17 @@ function ProjectWorkspace() {
     patch({
       lines: draft!.lines.map((l, n) => (n === i ? { ...l, ...value } : l)),
     });
+  const createProject = () => {
+    setId(null);
+    setDraft({ title: '', departmentId: '', ownerId: '', period: String(new Date().getFullYear()),
+      fundingSource: '', purpose: '', lines: [], revision: 0 });
+    setMode('edit');
+    setMessage(null);
+  };
   return (
-    <div className="space-y-4">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4">
+    <div className="mx-auto w-full max-w-7xl space-y-5">
+      {mode !== 'list' && <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4">
         <div className="flex min-w-0 items-center gap-3">
-          {mode !== 'list' && (
             <button
               type="button"
               className={btn}
@@ -237,7 +243,6 @@ function ProjectWorkspace() {
             >
               <ArrowLeft size={16} />
             </button>
-          )}
           <div className="min-w-0">
             <h1 className="break-words text-xl font-bold text-slate-950">
               {mode === 'edit'
@@ -256,30 +261,6 @@ function ProjectWorkspace() {
           </div>
         </div>
         <div className="flex gap-2">
-          {mode === 'list' && can('buyer:project:manage') && (
-            <button
-              type="button"
-              className={btn}
-              onClick={() => {
-                setId(null);
-                setDraft({
-                  title: '',
-                  departmentId: '',
-                  ownerId: '',
-                  period: String(new Date().getFullYear()),
-                  fundingSource: '',
-                  purpose: '',
-                  lines: [],
-                  revision: 0,
-                });
-                setMode('edit');
-                setMessage(null);
-              }}
-            >
-              <Plus size={14} />
-              新建项目
-            </button>
-          )}
           {mode === 'detail' &&
             p &&
             editable(p.status) &&
@@ -342,56 +323,56 @@ function ProjectWorkspace() {
             </button>
           )}
         </div>
-      </header>
+      </header>}
       {message && <FeedbackNotice {...message} />}
       {mode === 'list' && (
-        <section className="space-y-4 rounded-lg border border-slate-200 bg-white p-5">
-          <form
-            className="flex flex-wrap gap-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              setPage(1);
-              setKeyword(search.trim());
-            }}
-          >
-            <input
-              aria-label="搜索项目"
-              placeholder="项目编号、名称、资金来源"
-              className={input + ' sm:max-w-sm'}
-              value={search}
-              maxLength={200}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            <select
-              aria-label="项目状态"
-              className={input + ' sm:max-w-40'}
-              value={status}
-              onChange={(e) => {
-                setStatus(e.target.value);
-                setPage(1);
-              }}
-            >
-              <option value="">全部状态</option>
-              {Object.entries(states).map(([k, v]) => (
-                <option key={k} value={k}>
-                  {v}
-                </option>
+        <Panel title="项目库" icon={FolderKanban} subtitle="项目申报 · 立项审批 · 执行跟踪">
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap gap-2" role="group" aria-label="项目状态">
+              {Object.entries({ '': '全部', ...states }).map(([value, label]) => (
+                <button key={value} type="button" aria-pressed={status === value}
+                  onClick={() => { setStatus(value); setPage(1); }}
+                  className={cn('h-8 rounded-md border px-3 text-xs font-black transition',
+                    status === value ? 'border-blue-200 bg-blue-50 text-blue-700'
+                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50')}>
+                  {label}
+                </button>
               ))}
-            </select>
-            <button type="submit" className={btn}>
-              <Search size={14} />
-              搜索
-            </button>
-          </form>
+            </div>
+            <SearchInput className="mb-0 ml-auto max-w-full flex-wrap" placeholder="按编号 / 标题 / 资金来源搜索"
+              onSearch={(value) => { setKeyword(value.slice(0, 200)); setPage(1); }} />
+            {can('buyer:project:manage') && <button type="button" onClick={createProject}
+              className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-slate-900 px-4 text-xs font-black text-white transition hover:bg-slate-800">
+              <Plus size={14} /> 新建项目
+            </button>}
+          </div>
           {list.isError ? (
             <FeedbackNotice
               tone="error"
               message="项目列表加载失败，请刷新重试。"
             />
+          ) : rows.length === 0 ? (
+            <FeedbackNotice tone="info" message={list.isLoading ? '正在加载项目…' : '当前筛选下暂无项目。'} />
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[900px] table-fixed text-left text-sm">
-                <thead className="bg-slate-50 text-xs text-slate-500">
+            <ResponsiveTableFrame mobileCards={rows.map((r, i) => (
+              <article key={r.id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="break-words text-sm font-black text-slate-950">{(page - 1) * PAGE_SIZE + i + 1}. {r.title}</p>
+                    <p className="mt-1 break-all font-mono text-xs font-black text-slate-500">{r.projectNo}</p>
+                  </div>
+                  <StatusPill label={states[r.status] ?? r.status} className="shrink-0 whitespace-nowrap" />
+                </div>
+                <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
+                  <div><dt className="font-bold text-slate-400">部门 / 负责人</dt><dd className="mt-1 break-words font-bold text-slate-600">{r.departmentName} · {r.ownerName}</dd></div>
+                  <div><dt className="font-bold text-slate-400">立项金额</dt><dd className="mt-1 break-all font-mono font-black text-slate-900">{money(r.plannedAmount)}</dd></div>
+                  <div className="col-span-2"><dt className="font-bold text-slate-400">年度 / 资金来源</dt><dd className="mt-1 break-words font-bold text-slate-600">{r.period} · {r.fundingSource}</dd></div>
+                </dl>
+                <button type="button" onClick={() => open(r.id)} className="mt-4 inline-flex h-8 w-full items-center justify-center rounded-md border border-slate-200 bg-white text-xs font-black text-slate-600 hover:bg-slate-50">详情</button>
+              </article>
+            ))}>
+              <table className="w-full min-w-[1000px] table-fixed text-left text-sm">
+                <thead className="bg-slate-50 text-xs font-black text-slate-500">
                   <tr>
                     {[
                       '序号',
@@ -405,14 +386,16 @@ function ProjectWorkspace() {
                       <th
                         key={h}
                         className={
-                          'p-3 ' +
+                          'px-5 py-4 whitespace-nowrap ' +
                           (i === 0
-                            ? 'w-14'
+                            ? 'w-12 px-2 text-center'
                             : i === 1
-                              ? 'w-60'
+                              ? 'w-[28%]'
                               : i === 6
-                                ? 'w-32'
-                                : '')
+                                ? 'w-24 text-right'
+                                : i === 4
+                                  ? 'w-40 text-right'
+                                  : i === 5 ? 'w-28' : '')
                         }
                       >
                         {h}
@@ -420,46 +403,46 @@ function ProjectWorkspace() {
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 bg-white">
                   {rows.map((r, i) => (
-                    <tr key={r.id}>
-                      <td className="p-3 text-slate-400">
-                        {(page - 1) * 10 + i + 1}
+                    <tr key={r.id} className="hover:bg-blue-50/30">
+                      <td className="px-2 py-5 text-center font-mono font-black text-slate-400">
+                        {(page - 1) * PAGE_SIZE + i + 1}
                       </td>
-                      <td className="p-3">
-                        <p title={r.title} className="truncate font-bold">
+                      <td className="px-5 py-5">
+                        <p title={r.title} className="truncate font-black text-slate-950">
                           {r.title}
                         </p>
-                        <p className="mt-1 truncate text-xs text-slate-400">
+                        <p className="mt-1 truncate font-mono text-xs font-black text-slate-500">
                           {r.projectNo}
                         </p>
                       </td>
-                      <td className="p-3">
-                        <p className="truncate">{r.departmentName}</p>
-                        <p className="mt-1 text-xs text-slate-400">
+                      <td className="px-5 py-5">
+                        <p className="truncate font-bold text-slate-600" title={r.departmentName}>{r.departmentName}</p>
+                        <p className="mt-1 truncate text-xs font-bold text-slate-400" title={r.ownerName}>
                           {r.ownerName}
                         </p>
                       </td>
-                      <td className="p-3">
-                        <p>{r.period}</p>
+                      <td className="px-5 py-5">
+                        <p className="font-bold text-slate-600">{r.period}</p>
                         <p
                           title={r.fundingSource}
-                          className="mt-1 truncate text-xs text-slate-400"
+                          className="mt-1 truncate text-xs font-bold text-slate-400"
                         >
                           {r.fundingSource}
                         </p>
                       </td>
-                      <td className="whitespace-nowrap p-3">
+                      <td className="whitespace-nowrap px-5 py-5 text-right font-mono font-black text-slate-900">
                         {money(r.plannedAmount)}
                       </td>
-                      <td className="whitespace-nowrap p-3">
-                        {states[r.status]}
+                      <td className="whitespace-nowrap px-5 py-5">
+                        <StatusPill label={states[r.status] ?? r.status} className="whitespace-nowrap" />
                       </td>
-                      <td className="p-3">
-                        <div className="flex gap-2">
+                      <td className="px-5 py-5 text-right">
+                        <div className="flex justify-end gap-2">
                           <button
                             type="button"
-                            className={btn}
+                            className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50"
                             onClick={() => open(r.id)}
                           >
                             详情
@@ -468,27 +451,17 @@ function ProjectWorkspace() {
                       </td>
                     </tr>
                   ))}
-                  {!rows.length && (
-                    <tr>
-                      <td
-                        colSpan={7}
-                        className="p-10 text-center text-slate-400"
-                      >
-                        {list.isLoading ? '加载中…' : '暂无项目。'}
-                      </td>
-                    </tr>
-                  )}
                 </tbody>
               </table>
-            </div>
+            </ResponsiveTableFrame>
           )}
           <Pagination
             page={page}
-            pageSize={10}
+            pageSize={PAGE_SIZE}
             total={list.data?.total || 0}
             onPageChange={setPage}
           />
-        </section>
+        </Panel>
       )}
       {mode === 'edit' && draft && (
         <form

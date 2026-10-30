@@ -118,24 +118,26 @@ const show = () =>
 describe('project workspace', () => {
   it('loads server pagination and applies search without local truncation', async () => {
     show();
-    await screen.findByText('设备更新项目');
-    fireEvent.change(screen.getByLabelText('搜索项目'), {
+    await screen.findAllByText(/设备更新项目/);
+    fireEvent.change(screen.getByPlaceholderText('按编号 / 标题 / 资金来源搜索'), {
       target: { value: '设备' },
     });
     fireEvent.click(screen.getByRole('button', { name: '搜索' }));
-    await waitFor(() => expect(f.list).toHaveBeenCalledWith(1, '', '设备'));
+    await waitFor(() => expect(f.list).toHaveBeenCalledWith(1, '', '设备', 8));
     await waitFor(() =>
       expect(
         screen.getByRole('button', { name: /下一页/ }).hasAttribute('disabled'),
       ).toBe(false),
     );
     fireEvent.click(screen.getByRole('button', { name: /下一页/ }));
-    await waitFor(() => expect(f.list).toHaveBeenCalledWith(2, '', '设备'));
+    await waitFor(() => expect(f.list).toHaveBeenCalledWith(2, '', '设备', 8));
+    fireEvent.click(screen.getByRole('button', { name: '立项审批中' }));
+    await waitFor(() => expect(f.list).toHaveBeenCalledWith(1, 'submitted', '设备', 8));
   });
   it('separates detail from editing and shows unavailable financial data as an error', async () => {
     show();
-    await screen.findByText('设备更新项目');
-    fireEvent.click(screen.getByRole('button', { name: '详情' }));
+    await screen.findAllByText(/设备更新项目/);
+    fireEvent.click(screen.getAllByRole('button', { name: '详情' })[0]);
     await screen.findByText('立项审批历史');
     expect(screen.queryByRole('form', { name: '项目申报表' })).toBeNull();
     await screen.findByText('预算读取失败，请刷新重试。');
@@ -147,7 +149,7 @@ describe('project workspace', () => {
   it('hides creation for read-only users and denies unpermitted pages', async () => {
     f.manage = false;
     show();
-    await screen.findByText('设备更新项目');
+    await screen.findAllByText(/设备更新项目/);
     expect(screen.queryByRole('button', { name: '新建项目' })).toBeNull();
     cleanup();
     f.read = false;

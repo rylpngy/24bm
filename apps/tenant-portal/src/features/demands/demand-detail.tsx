@@ -41,6 +41,7 @@ const ACTION_LABELS: Record<string, string> = {
   'purchase_demand.submitted': '提交审批',
   'purchase_demand.approved': '审批通过',
   'purchase_demand.rejected': '审批驳回',
+  'purchase_demand.direct_registered': '直录登记',
 };
 
 const departmentMap: Record<string, string> = {
@@ -52,6 +53,7 @@ const departmentMap: Record<string, string> = {
 };
 
 const approvalSteps = ['需求编制', '提交审批', '需求审批'];
+const workflowStatusLabels: Record<string, string> = { processing: '审批中', approved: '已通过', rejected: '已驳回', cancelled: '已取消' };
 
 function dateTimeText(value?: string) {
   return value?.slice(0, 16).replace('T', ' ') ?? '--';
@@ -114,11 +116,35 @@ function approvalStepDetail(status?: string, index = 0) {
   if (index === 1) {
     if (status === '草稿') return '待申请人提交审批。';
     if (status === '已驳回') return '审批已驳回，需补充后重新提交。';
+    if (status === '已通过') return '需求已提交，本次审批已结束。';
     return '需求已提交，等待审批处理。';
   }
   if (status === '已通过') return '审批已通过，可进入采购计划合并。';
   if (status === '已驳回') return '待重新提交后进入审批。';
   return '待审批人完成审核。';
+}
+
+interface DemandProgressStep {
+  title: string;
+  done: boolean;
+  current: boolean;
+  label: string;
+  detail: string;
+}
+
+function progressSteps(demand: PurchaseDemandResponse, workflowStatus?: string): DemandProgressStep[] {
+  if (demand.source === '直录登记' && demand.status === '已通过' && !workflowStatus) return [
+    { title: '需求登记', done: true, current: false, label: '已登记', detail: '由采购计划或询比环节直录创建，未单独发起需求审批。' },
+    { title: '关联采购计划', done: !!demand.linkedRfqId, current: !demand.linkedRfqId,
+      label: demand.linkedRfqId ? '已关联' : '待关联', detail: demand.linkedRfqId ? '已关联采购计划，后续按采购计划执行。' : '等待关联采购计划。' },
+  ];
+  if (!workflowStatus && demand.status !== '草稿') return [
+    { title: '需求登记', done: true, current: false, label: '已登记', detail: '需求基础信息及物料明细已登记。' },
+    { title: '业务状态', done: false, current: true, label: demand.status ?? '待核对', detail: '未查询到独立审批流程记录，不能据此认定审批节点已完成。' },
+  ];
+  const status = ['草稿', '已取消'].includes(demand.status ?? '') ? demand.status
+    : workflowStatusLabels[workflowStatus ?? ''] ?? demand.status;
+  return approvalSteps.map((title, index) => ({ title, ...approvalStepMeta(status, index), detail: approvalStepDetail(status, index) }));
 }
 
 function stayDuration(updatedAt?: string) {
@@ -149,27 +175,26 @@ function StageFact({ label, value, hint }: { label: string; value: string; hint?
   );
 }
 
-function ProgressTracker({ demand }: { demand: PurchaseDemandResponse }) {
+function ProgressTracker({ demand, steps, direct, workflowStatus }: { demand: PurchaseDemandResponse; steps: DemandProgressStep[]; direct: boolean; workflowStatus?: string }) {
   if(demand.status==='已取消')return <FeedbackNotice tone="info" message="该需求已取消，采购办理已停止，原审批与采购关联记录保留供追溯。"/>;
-  const status = demand.status;
+  const status = demand.status === '草稿' ? demand.status : workflowStatusLabels[workflowStatus ?? ''] ?? demand.status;
   const linkedRfqId = demand.linkedRfqId;
   const linkedRfqStatus = demand.linkedRfqStatus;
   const linked = !!linkedRfqId;
   const approved = status === '已通过';
   const stay = stayDuration(demand.updatedAt);
-  const next = nextActionFor(status);
+  const next = direct ? { node: linked ? '采购计划执行' : '需求直录登记', action: '由采购计划或询比环节直录生成，不重复发起需求审批。' } : nextActionFor(status);
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/50">
       <div className="mb-5 flex items-center gap-2">
         <Timer size={18} className="text-blue-600" />
         <h3 className="text-base font-black text-slate-950">需求流转进度</h3>
       </div>
-      <div className="grid grid-cols-3 items-start gap-3">
-        {approvalSteps.map((step, index) => {
-          const { done, current, label } = approvalStepMeta(status, index);
+      <div className={cn('grid items-start gap-3', steps.length === 2 ? 'grid-cols-2' : 'grid-cols-3')}>
+        {steps.map(({ title: step, done, current, label }, index) => {
           return (
             <div key={step} className="relative text-center">
-              {index < approvalSteps.length - 1 && <div className="absolute left-1/2 top-5 h-1 w-full bg-slate-100" />}
+              {index < steps.length - 1 && <div className="absolute left-1/2 top-5 h-1 w-full bg-slate-100" />}
               <span
                 className={cn(
                   'relative z-10 mx-auto flex h-10 w-10 items-center justify-center rounded-full border-4 bg-white',
@@ -248,6 +273,9 @@ export function DemandDetail({
   const userId = useAuthStore((state) => state.session?.userId);
   const workflow = useWorkflowBusinessHistory('purchase_demand', demand.id);
   const instance = workflow.isError ? undefined : workflow.data?.data;
+  const direct = demand.source === '直录登记' && demand.status === '已通过' && !instance && !workflow.isLoading && !workflow.isError;
+  const steps = workflow.isLoading || workflow.isError ? [] : progressSteps(demand, instance?.status);
+  const displayStatus = direct && demand.status === '已通过' ? '已登记' : demand.status ?? '草稿';
   const withdraw = useMutation({
     mutationFn: ({ id, reason }: { id: string; reason: string }) => axiosInstance.post(
       `/api/v1/buyer/workflow/instances/${encodeURIComponent(id)}/withdraw-purchase-demand`, { reason }),
@@ -333,10 +361,10 @@ export function DemandDetail({
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-3">
                 <h2 className="break-words text-xl font-black text-slate-950">{demand.title ?? '--'}</h2>
-                <StatusPill label={demand.status ?? '草稿'} />
+                <StatusPill label={displayStatus} />
                 {demand.source === '直录登记' && (
                   <span className="rounded bg-amber-50 px-2 py-1 text-xs font-black text-amber-700">
-                    直录登记 · 由采购计划/询价直接创建
+                    直录登记 · 由采购计划/询比直接创建
                   </span>
                 )}
               </div>
@@ -357,7 +385,7 @@ export function DemandDetail({
               </PrimaryActionButton>
             ) : (
               <span role="status" className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-slate-100 px-3 text-xs font-bold text-slate-600">
-                <CheckCircle2 size={15} /> {demand.status === '已通过' ? '审批通过' : demand.status === '已取消' ? '已取消' : demand.status === '已转询价' ? '已转采购' : '处理中'}
+                <CheckCircle2 size={15} /> {direct ? '无需单独审批' : demand.status === '已通过' ? instance?.status === 'approved' ? '审批通过' : '业务状态已通过' : demand.status === '已取消' ? '已取消' : demand.status === '已转询价' ? '已转采购' : '处理中'}
               </span>
             )}
           </div>
@@ -373,18 +401,24 @@ export function DemandDetail({
             <MetricCard icon={Layers3} label="优先级" value={demand.priority ?? '常规'} tone="bg-amber-50 text-amber-600" />
           </div>
 
-          <ProgressTracker demand={demand} />
+          {workflow.isLoading ? <FeedbackNotice tone="info" message="正在核对需求流转记录…" />
+            : workflow.isError ? <FeedbackNotice tone="error" message="流转记录加载失败，暂无法确认审批进度，请刷新重试。" />
+              : <ProgressTracker demand={demand} steps={steps} direct={direct} workflowStatus={instance?.status} />}
 
           {instance && ['草稿','已取消'].includes(demand.status||'') && <FeedbackNotice tone="info" message={demand.status==='草稿'?'需求当前为草稿，下方为历史审批记录；本次修改必须重新提交审批，原通过意见不代表本次已批准。':'需求已经取消，下方审批记录仅作为历史留痕，不代表需求仍在执行。'}/>}
 
-          {demand.id && <WorkflowStatusPanel businessType="purchase_demand" businessId={demand.id} />}
+          {demand.id && (direct && !workflow.isError && !workflow.isLoading
+            ? <FeedbackNotice tone="info" message="该需求为采购计划或询比环节直录登记，无需单独发起需求审批。系统业务状态为「已通过」以支持采购关联，不表示已执行需求审批。" />
+            : !instance && !workflow.isError && !workflow.isLoading && demand.status === '已通过'
+              ? <FeedbackNotice tone="info" message="需求业务状态为已通过，但未查询到统一审批流程记录。请结合操作历史核对，不将业务状态推断为审批节点记录。" />
+              : <WorkflowStatusPanel businessType="purchase_demand" businessId={demand.id} />)}
 
           <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/50">
             <div className="mb-5 flex flex-wrap items-center gap-2">
               <ClipboardCheck size={18} className="text-violet-600" />
               <h3 className="text-base font-black text-slate-950">需求基础信息</h3>
               <span className="rounded bg-blue-50 px-2 py-1 text-xs font-black text-blue-700">
-                {demand.status ?? '草稿'}
+                {displayStatus}
               </span>
             </div>
             <p className="border-t border-slate-100 pt-5 text-sm font-semibold leading-6 text-slate-600">
@@ -531,23 +565,22 @@ export function DemandDetail({
               <div className="flex items-center gap-2">
                 <ShieldCheck size={18} className="text-blue-600" />
                 <div>
-                  <h3 className="text-base font-black text-slate-950">审批流转</h3>
-                  <p className="mt-1 text-xs font-bold text-slate-400">基于真实审批状态生成</p>
+                  <h3 className="text-base font-black text-slate-950">{direct ? '登记流转' : instance ? '审批流转' : '业务状态'}</h3>
+                  <p className="mt-1 text-xs font-bold text-slate-400">{direct ? '依据登记来源与采购关联记录' : instance ? '基于真实审批流程生成' : '不以业务状态推断审批记录'}</p>
                 </div>
               </div>
-              <StatusPill label={demand.status ?? '草稿'} />
+              <StatusPill label={displayStatus} />
             </div>
 
             <div className="space-y-5 border-l border-slate-100 pl-5">
-              {approvalSteps.map((step, index) => {
-                const meta = approvalStepMeta(demand.status, index);
+              {steps.map(({ title: step, ...meta }) => {
                 return (
                   <div key={step} className="relative">
                     <i className={cn('absolute -left-[1.45rem] top-1 h-2 w-2 rounded-full',
                       meta.done ? 'bg-emerald-500' : meta.current ? 'bg-blue-600' : 'bg-slate-300')} />
                     <p className="text-sm font-black text-slate-950">{step}</p>
                     <p className="mt-1 break-words text-xs font-bold text-slate-500">
-                      {meta.label} · {approvalStepDetail(demand.status, index)}
+                      {meta.label} · {meta.detail}
                     </p>
                     {meta.current && (
                       <span className="mt-2 inline-flex rounded bg-blue-50 px-2 py-1 text-[11px] font-black text-blue-700">当前节点</span>
@@ -558,9 +591,11 @@ export function DemandDetail({
             </div>
 
             <div className="mt-4 rounded-lg border border-slate-100 bg-slate-50 p-4">
-              <p className="text-xs font-black text-slate-400">当前处理人</p>
+              <p className="text-xs font-black text-slate-400">{direct ? '办理方式' : '当前处理人'}</p>
               <p className="mt-1.5 text-sm font-black text-slate-950">
-                {demand.status === '审批中' ? '智能审批中心待处理' : demand.status === '已通过' ? '审批已完成' : '申请人'}
+                {workflow.isError || workflow.isLoading ? '暂无法确认' : direct ? '无需单独审批' : instance?.status === 'processing' ? instance.currentTask?.assigneeId ?? '按审批节点角色办理'
+                  : instance?.status === 'approved' ? '审批已完成' : instance?.status === 'rejected' ? '审批已驳回'
+                    : !instance && demand.status !== '草稿' ? '暂无审批办理人记录' : '申请人'}
               </p>
             </div>
           </div>
@@ -612,7 +647,10 @@ export function DemandDetail({
           </div>
 
           {demand.status === '已通过' && (
-            <FeedbackNotice tone="success" message="需求已审批通过，可在采购需求列表中与其他需求合并生成采购计划。" />
+            <FeedbackNotice tone="success" message={direct
+              ? demand.linkedRfqId ? '直录需求已关联采购计划，可在采购计划中查看后续执行。' : '直录需求已完成登记，可关联采购计划。'
+              : instance?.status === 'approved' ? '需求已审批通过，可在采购需求列表中与其他需求合并生成采购计划。'
+                : '需求业务状态为已通过，审批依据请结合流程记录与操作历史核对。'} />
           )}
         </div>
       </div>

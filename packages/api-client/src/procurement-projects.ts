@@ -92,9 +92,9 @@ async function call<T>(
     })
   ).data as T;
 }
-export const projectList = (page: number, status: string, keyword: string) =>
+export const projectList = (page: number, status: string, keyword: string, pageSize = 10) =>
   call<{ items: ProcProject[]; total: number; page: number; pageSize: number }>(
-    `?page=${page}&pageSize=10&status=${encodeURIComponent(status)}&keyword=${encodeURIComponent(keyword)}`,
+    `?page=${page}&pageSize=${pageSize}&status=${encodeURIComponent(status)}&keyword=${encodeURIComponent(keyword)}`,
   );
 export const projectDetail = (id: string) =>
   call<ProcProjectDetail>('/' + encodeURIComponent(id));
