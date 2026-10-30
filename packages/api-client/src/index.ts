@@ -36,6 +36,7 @@ export * from './qualification-workflow';
 export * from './generated/model';
 export * from './generated/controllers';
 export * from './external-identity';
+export * from './tender-document-review';
 export * from './procurement-projects';
 export * from './project-expansion';
 export * from './project-closeout';

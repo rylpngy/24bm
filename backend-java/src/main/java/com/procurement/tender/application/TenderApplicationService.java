@@ -62,6 +62,9 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class TenderApplicationService {
+  private TenderDocumentReviewService documentReviews;
+  @org.springframework.beans.factory.annotation.Autowired
+  void setDocumentReviews(TenderDocumentReviewService reviews) { this.documentReviews=reviews; }
   private com.procurement.buyer.application.ProcurementProjectGuard projects;
   @org.springframework.beans.factory.annotation.Autowired
   void setProcurementProjects(com.procurement.buyer.application.ProcurementProjectGuard projects){this.projects=projects;}
@@ -169,6 +172,7 @@ public class TenderApplicationService {
     String tenantId = TenantAccessGuard.requireTenantId("buyer tender APIs");
     Tender tender = requireTenderForUpdate(tenantId, tenderId);
     TenderPolicy.requireDrafting(tender.status(), tenderId);
+    if(documentReviews!=null) documentReviews.requireNotProcessing(tenantId,tenderId);
     requireTenderType(request.tenderType());
     tenderMapper.updateDraft(
         tenantId, tenderId, request.title(), request.tenderType(), request.budget(),
@@ -189,6 +193,7 @@ public class TenderApplicationService {
       throw new IllegalArgumentException("评标办法须为综合评分法或最低评标价法");
     }
     TenderPolicy.requirePublishable(tender, OffsetDateTime.now());
+    if(documentReviews!=null) documentReviews.requireApproved(tender);
     tenderMapper.updateStatus(tenantId, tenderId, TenderPolicy.STATUS_ON_SALE, OffsetDateTime.now());
     auditLogApplicationService.recordCurrentTenantAction(
         "tender.published", AUDIT_TARGET, tenderId,
@@ -253,6 +258,7 @@ public class TenderApplicationService {
     String tenantId = TenantAccessGuard.requireTenantId("buyer tender APIs");
     Tender tender = requireTenderForUpdate(tenantId, tenderId);
     TenderPrequalificationPolicy.requireToggleable(tender);
+    if(documentReviews!=null) documentReviews.requireNotProcessing(tenantId,tenderId);
     tenderMapper.updatePrequalificationRequired(tenantId, tenderId, request.required());
     auditLogApplicationService.recordCurrentTenantAction(
         "tender.prequalification_set", AUDIT_TARGET, tenderId,

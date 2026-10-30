@@ -60,6 +60,7 @@ const BUSINESS_TYPES = [
   { id: 'buyer_supplier_exit', label: '供应商退出' },
   { id: 'rfq_award', label: '询价定标' },
   { id: 'contract_approval', label: '合同审批' },
+  { id: 'tender_document_review', label: '采购文件审查' },
   { id: 'payment_request', label: '付款申请' },
   { id: 'payment_batch', label: '付款批次' },
   { id: 'payment_archive_exception', label: '付款归档例外' },

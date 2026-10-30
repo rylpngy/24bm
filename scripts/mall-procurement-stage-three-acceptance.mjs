@@ -6,6 +6,7 @@ import { dirname, isAbsolute, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { createAcceptanceQualification } from './acceptance-supplier-qualification.mjs';
+import { approveAcceptanceTender } from './acceptance-tender-review.mjs';
 
 const HELP = `Stage-three real HTTP acceptance (macOS, Node 20+). No SQL, mocks, or server startup.
 
@@ -218,7 +219,10 @@ async function run(config) {
     const role = (await api('buyer/roles', b)).find(r => r.permissions?.includes('buyer:*'));
     assert.ok(role?.id, 'Fresh tenant needs a real buyer administrator role.');
     report.records.definitions = {};
-    for (const businessType of ['buyer_supplier_admission', 'rfq_award']) {
+    const reviewerAccount=`review-${runId}@example.com`;
+    await api('buyer/users',b,{name:'独立文件审查人',email:reviewerAccount,status:'active',departmentId:department.id,roleId:role.id,initialPassword:config.password});
+    const documentReviewer=(await login(reviewerAccount,'BUYER',{tenantId})).accessToken;
+    for (const businessType of ['buyer_supplier_admission', 'rfq_award', 'tender_document_review']) {
       const definition = await api('buyer/process-definitions', b, { name: `${runId} ${businessType}`, businessType, icon: 'file-text' });
       report.records.definitions[businessType] = definition.id;
       await api(`buyer/process-definitions/${definition.id}`, b, { name: definition.name, businessType, status: 'draft',
@@ -287,6 +291,7 @@ async function run(config) {
     const tenderId = tender.id;
     report.records.tender = { tenderId };
     await api(`buyer/tenders/${tenderId}/prequalification`, b, { required: true }, 'PUT');
+    await approveAcceptanceTender(api,b,documentReviewer,tenderId);
     await api(`buyer/tenders/${tenderId}/publish`, b, {});
     await api(`buyer/tenders/${tenderId}/distribute`, b, { supplierIds: [config.supplierId] });
     const supplierTender = async () => (await api('supplier/tenders', s)).find(t => t.id === tenderId) ?? assert.fail('Missing supplier tender');

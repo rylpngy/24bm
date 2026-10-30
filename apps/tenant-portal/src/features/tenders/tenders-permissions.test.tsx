@@ -6,6 +6,7 @@ import { TendersPage } from './tenders-page';
 const state = vi.hoisted(() => ({ manage: false, failed: false, suppliersEnabled: false, awarded: false, mixed: false,
   noneEligible: false, evaluatorCounts: [1], submitScores: vi.fn(),
 }));
+vi.mock('./tender-document-review-panel', () => ({ TenderDocumentReviewPanel: () => <p>采购文件审查</p> }));
 vi.mock('../../lib/use-buyer-permissions', () => ({ useBuyerPermissions: () => ({ can: () => state.manage }) }));
 vi.mock('@24bid/api-client', async (original) => {
   const api = await original<Record<string, unknown>>();
@@ -14,6 +15,7 @@ vi.mock('@24bid/api-client', async (original) => {
     mocks[`useBuyerTender${name}`] = () => ({});
   }
   return { ...api, ...mocks,
+    tenderDocumentReviews: vi.fn().mockResolvedValue({ data: { reviews: [], currentApproved: false } }),
     useBuyerTenderSubmitScores: () => ({ mutate: state.submitScores }),
     useBuyerTenderList: () => ({ isError: state.failed, data: { data: [{ id: 't-1', title: '只读招标', status: state.mixed ? '评标中' : state.awarded ? '已定标' : '编制中', tenderNo: 'T001',
       awardedBidId: state.awarded ? 'b-1' : null,

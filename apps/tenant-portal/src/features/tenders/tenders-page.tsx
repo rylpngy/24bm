@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
+import { TenderDocumentReviewPanel } from './tender-document-review-panel';
 import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Award, CheckCircle2, ClipboardCheck, FileBadge, Gavel, Info, Megaphone, Plus, Send, Timer, Trophy, Users } from 'lucide-react';
 import {
   useBuyerEsignList,
@@ -21,6 +22,7 @@ import {
   useBuyerTenderSendInquiry,
   useBuyerTenderSubmitScores,
   useBuyerTenderUpdate,
+  tenderDocumentReviews,
   useRfqListAnnouncements,
   type SaveTenderRequest,
   type TenderResponse,
@@ -734,6 +736,8 @@ export function TendersPage() {
 
   const all = tenders.isError ? [] : tenders.data?.data ?? [];
   const selected = selectedId ? all.find((t) => t.id === selectedId) : undefined;
+  const documentReview = useQuery({ queryKey: ['tender-document-review', selectedId], enabled: !!selectedId,
+    queryFn: () => tenderDocumentReviews(selectedId!) });
   const showDetail = (id: string) => {
     const url = new URL(window.location.href);
     url.searchParams.set('recordId', id);
@@ -753,7 +757,7 @@ export function TendersPage() {
     queryClient.invalidateQueries({
       // 公告记录(/buyer/rfqs/{tenderId}/announcements)随业务节点新增,须一并失效。
       predicate: (q) => typeof q.queryKey[0] === 'string'
-        && /\/buyer\/(tenders|rfqs\/[^/]+\/announcements)/.test(q.queryKey[0] as string),
+        && (/\/buyer\/(tenders|rfqs\/[^/]+\/announcements)/.test(q.queryKey[0] as string) || q.queryKey[0] === 'tender-document-review'),
     });
 
   const reportError = (e: unknown) =>
@@ -776,17 +780,9 @@ export function TendersPage() {
     setError(null);
     const after = (t?: TenderResponse) => {
       if (thenPublish && t?.id) {
-        publish.mutate(
-          { tenderId: t.id },
-          {
-            onSuccess: () => {
-              setFeedback(`招标项目「${t.title}」已发布,招标文件开始发售。`);
-              setView('list');
-              refresh();
-            },
-            onError: reportError,
-          },
-        );
+        setFeedback('文件已保存，请提交采购文件审查，通过后方可发布。');
+        showDetail(t.id);
+        refresh();
       } else {
         setFeedback('招标项目已保存(编制中)。');
         setView('list');
@@ -930,7 +926,7 @@ export function TendersPage() {
         <div className="sticky bottom-4 z-30 rounded-lg border border-slate-200 bg-white/95 px-5 py-4 shadow-lg shadow-slate-300/40 backdrop-blur">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs font-bold text-slate-500">
-              保存草稿可稍后继续编制;发布发售须已填写正文与三个时间节点(获取截止 ≤ 递交截止 ≤ 开标时间)。
+              保存后提交采购文件审查；发布须审查通过并填写三个时间节点(获取截止 ≤ 递交截止 ≤ 开标时间)。
             </p>
             <div className="flex shrink-0 gap-2">
               <button type="button" disabled={!formValid || create.isPending || update.isPending}
@@ -941,7 +937,7 @@ export function TendersPage() {
               <PrimaryActionButton flushTop size="md" onClick={() => saveDraft(true)}
                 busy={create.isPending || update.isPending || publish.isPending} pendingLabel="发布中"
                 disabled={!formValid}>
-                <Send size={14} /> 保存并发布发售
+                <Send size={14} /> 保存并进入审查
               </PrimaryActionButton>
             </div>
           </div>
@@ -984,6 +980,7 @@ export function TendersPage() {
 
         {/* 组织流程步进器:编制→发售→开标→评标→定标(与供应商端参与视图同口径) */}
         <BuyerTenderStepper tender={t} />
+        <TenderDocumentReviewPanel tenderId={t.id!} drafting={t.status === '编制中'} canManage={canManage} />
 
         <div className="grid gap-4 xl:grid-cols-[1fr_20rem]">
           <div className="min-w-0 space-y-4">
@@ -998,6 +995,7 @@ export function TendersPage() {
 
             {t.id && (
               <OwnerAttachments ownerType="tender" ownerId={t.id} title="招标文件附件"
+                readOnly={!canManage || t.status !== '编制中' || documentReview.data?.data?.reviews[0]?.status === 'processing'} onChanged={refresh}
                 emptyHint="上传图纸、工程量清单、资格审查表等附件。" />
             )}
 
@@ -1324,7 +1322,7 @@ export function TendersPage() {
                 当前状态 <StatusPill label={t.status ?? '—'} />
                 <span className="ml-2">
                   {t.status === '编制中'
-                    ? '正文与时间节点齐备后即可发布发售。'
+                    ? '正文与时间节点齐备且采购文件审查通过后方可发布发售。'
                     : t.status === '发售中'
                       ? t.openingAt && new Date(t.openingAt) <= new Date()
                         ? '已到达约定开标时间,可执行开标唱标(解封密封投标并核验指纹)。'
@@ -1343,14 +1341,15 @@ export function TendersPage() {
             </div>
             {canManage && t.status === '编制中' && (
               <div className="flex shrink-0 gap-2">
-                <button type="button" onClick={() => openEdit(t)}
+                <button type="button" onClick={() => openEdit(t)} disabled={documentReview.data?.data?.reviews[0]?.status === 'processing'}
                   className="inline-flex h-10 items-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-black text-slate-600 hover:bg-slate-50">
                   继续编制
                 </button>
                 <PrimaryActionButton flushTop size="md" onClick={() =>
                   t.id && publish.mutate({ tenderId: t.id },
                     { onSuccess: () => { setFeedback('招标文件已发布发售。'); refresh(); }, onError: reportError })}
-                  busy={publish.isPending} pendingLabel="发布中">
+                  busy={publish.isPending} pendingLabel="发布中" disabled={!documentReview.data?.data?.currentApproved}
+                  disabledReason="当前采购文件尚未审查通过">
                   <Megaphone size={14} /> 发布发售
                 </PrimaryActionButton>
               </div>

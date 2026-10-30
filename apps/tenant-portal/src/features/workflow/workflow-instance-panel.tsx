@@ -5,7 +5,7 @@ import {
   type WorkflowInstanceHistory,
   useWorkflowBusinessHistory,
 } from '@24bid/api-client';
-import { FeedbackNotice, StatusPill } from '@24bid/ui';
+import { FeedbackNotice, RichTextView, StatusPill } from '@24bid/ui';
 import { portalHref } from '../../lib/portal-href';
 
 const statusLabel: Record<string, string> = {
@@ -55,7 +55,8 @@ export function WorkflowInstancePanel({
   hideBusinessSnapshot?: boolean;
 }) {
   const [downloadError, setDownloadError] = useState<string | null>(null);
-  const snapshotEntries = hideBusinessSnapshot ? [] : visibleEntries(history.businessSnapshot).filter(([key])=>history.businessType!=='order_settlement'||key!=='settlementSnapshot');
+  const snapshotEntries = hideBusinessSnapshot ? [] : visibleEntries(history.businessSnapshot).filter(([key])=>(history.businessType!=='order_settlement'||key!=='settlementSnapshot')
+    && (history.businessType!=='tender_document_review'||!['documentHtml','attachmentIds','fingerprint'].includes(key)));
   const formEntries = visibleEntries(history.formData);
   const formLabels = workflowFormLabels(history.formSchema);
   const detailHref = workflowBusinessHref(history);
@@ -113,6 +114,8 @@ export function WorkflowInstancePanel({
         </div>
       )}
       {!compact&&!hideBusinessSnapshot&&history.businessType==='order_settlement'&&<SettlementSnapshot snapshot={history.businessSnapshot?.settlementSnapshot}/>}
+      {!compact&&!hideBusinessSnapshot&&history.businessType==='tender_document_review'&&typeof history.businessSnapshot?.documentHtml==='string'&&
+        <section className="mt-4 rounded-lg border border-slate-200 p-4"><h3 className="mb-3 text-sm font-black">送审采购文件快照</h3><RichTextView html={history.businessSnapshot.documentHtml}/></section>}
       {!compact&&!hideBusinessSnapshot&&history.businessType==='project_reopen'&&<ProjectReopenEvidence snapshot={JSON.stringify(history.businessSnapshot)}/>}
       {!compact&&!hideBusinessSnapshot&&history.businessType==='frozen_payment_correction'&&<FrozenCorrectionEvidence snapshot={JSON.stringify(history.businessSnapshot)}/>}
 
@@ -218,6 +221,7 @@ function fieldLabel(key: string) {
     qualificationType: '资质类型', certificateNo: '证书编号', expiresAt: '有效期至', fileName: '原件名称', contentSha256: '原件SHA256',
     exitReason: '退出原因', unreceivedOrderCount: '未收货订单数', unpaidInvoiceCount: '未付清发票数',
     contractNo: '合同编号', contractName: '合同名称', invoiceId: '发票编号', orderId: '订单编号', paymentBatchNo: '付款批次',
+    tenderId: '招标项目编号', tenderNo: '招标编号',
     exceptionType: '例外类型', exceptionReason: '例外原因', amount: '金额', requestCount: '申请数量', totalAmount: '总金额',
     contractId:'合同编号',finalAmount:'约定清算总额',goodsAmount:'结算货款',initialPaid:'原已付款',
     correctionAmount:'本次更正金额',remainingAmount:'送审时可更正余额',
@@ -244,6 +248,7 @@ export function workflowBusinessHref(history: Pick<WorkflowInstanceHistory, 'bus
     buyer_supplier_exit: { module: 'suppliers', id: history.businessId },
     rfq_award: { module: 'rfqs', id: snapshot.rfqId },
     contract_approval: { module: 'contracts', id: history.businessId },
+    tender_document_review: { module: 'tenders', id: snapshot.tenderId },
     payment_request: { module: 'invoices', id: snapshot.invoiceId },
     payment_batch: { module: 'invoices', id: history.businessId },
     payment_archive_exception: { module: 'invoices', id: snapshot.paymentBatchNo },

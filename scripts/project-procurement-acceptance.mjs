@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { approveAcceptanceTender } from './acceptance-tender-review.mjs';
 
 const base = process.env.JAVA_API_BASE_URL;
 assert.ok(
@@ -134,6 +135,7 @@ try {
     'buyer_supplier_admission',
     'rfq_award',
     'contract_approval',
+    'tender_document_review',
     'payment_request',
     'payment_batch',
   ]) {
@@ -498,6 +500,7 @@ try {
     },
     'PUT',
   );
+  await approveAcceptanceTender(api,b,r,tenderId);
   await api(`buyer/tenders/${tenderId}/publish`, b, {});
   await api(`buyer/tenders/${tenderId}/distribute`, b, {
     supplierIds: [supplierId],
