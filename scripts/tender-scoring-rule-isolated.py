@@ -4,7 +4,7 @@ src = pathlib.Path(__file__).resolve().parent.parent
 assert os.environ.get('ACCEPTANCE_LOCAL_WRITES') == '1', 'Explicit isolated-write opt-in required'
 release = pathlib.Path(os.environ['ACCEPTANCE_RELEASE_DIR'])
 out = src / '.tmp' / ('tender-scoring-' + str(int(time.time())))
-out.mkdir(parents=True)
+out.mkdir(parents=True, mode=0o700)
 cfg = json.loads((release / 'runtime.json').read_text())
 with socket.socket() as sock:
     sock.bind(('127.0.0.1', 0))
@@ -19,6 +19,7 @@ def docker(*args, **kwargs):
     return subprocess.run(['docker', 'exec', '-i', container, *args], check=True, **kwargs)
 docker('createdb', '-U', 'procurement', db)
 with (out / 'database.dump').open('wb') as f:
+    (out / 'database.dump').chmod(0o600)
     subprocess.run(['docker','exec','procurement-saas-postgres','pg_dump','-U','procurement','-d','procurement_saas_base','-Fc'],stdout=f,check=True)
 with (out / 'database.dump').open('rb') as f:
     docker('pg_restore', '-U', 'procurement', '-d', db, '--no-owner', '--no-acl', stdin=f)
