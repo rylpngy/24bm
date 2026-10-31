@@ -18,6 +18,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class TenderDocumentReviewService {
+  private com.procurement.tender.infrastructure.TenderScoringRuleMapper scoringRules;
+  @org.springframework.beans.factory.annotation.Autowired
+  void setScoringRules(com.procurement.tender.infrastructure.TenderScoringRuleMapper rules) { this.scoringRules=rules; }
   public static final String TYPE = "tender_document_review";
   private final TenderMapper tenders;
   private final TenderDocumentReviewMapper reviews;
@@ -70,16 +73,25 @@ public class TenderDocumentReviewService {
     reviews.insert(id,tenantId,tenderId,fingerprint(tender),TenantAccessGuard.requireUserId("tender review"));
     workflows.start(new WorkflowStartCommand(TYPE,id,null,tender.budget(),formData==null?Map.of():formData,
         Map.of("title",tender.title(),"tenderId",tenderId,"tenderNo",tender.tenderNo(),"documentHtml",tender.documentHtml(),"fingerprint",fingerprint(tender),
-          "attachmentIds",attachments.listActiveByTenantAndOwner(tenantId,"tender",tenderId).stream().map(a->a.id()).toList())));
+          "attachmentIds",attachments.listActiveByTenantAndOwner(tenantId,"tender",tenderId).stream().map(a->a.id()).toList(),
+          "scoringRule",scoringSnapshot(tender))));
     audit.recordTenantAction("tender.document_review.submitted","tender",tenderId);
     return reviews.list(tenantId,tenderId);
   }
 
   String fingerprint(Tender tender) {
     StringBuilder content=new StringBuilder(tender.toString());
+    var rule=scoringSnapshot(tender);
+    for(var key:List.of("revision","technicalWeight","commercialWeight","priceWeight")) content.append('|').append(key).append('=').append(rule.get(key));
     attachments.listActiveByTenantAndOwner(tender.tenantId(),"tender",tender.id()).stream()
       .sorted(Comparator.comparing(a->a.id())).forEach(a->content.append('|').append(a).append('|').append(attachments.fingerprint(tender.tenantId(),a.id())));
     try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(content.toString().getBytes(StandardCharsets.UTF_8))); }
     catch(java.security.NoSuchAlgorithmException e) { throw new IllegalStateException(e); }
+  }
+  private Map<String,Object> scoringSnapshot(Tender tender) {
+    var rule=scoringRules==null?null:scoringRules.latest(tender.tenantId(),tender.id());
+    var weights=rule==null?com.procurement.tender.domain.TenderScoringWeights.DEFAULT:rule.weights();
+    return Map.of("revision",rule==null?0:rule.revision(),"technicalWeight",weights.technical().setScale(2),
+        "commercialWeight",weights.commercial().setScale(2),"priceWeight",weights.price().setScale(2));
   }
 }

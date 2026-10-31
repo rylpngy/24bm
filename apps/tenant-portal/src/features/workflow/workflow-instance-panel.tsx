@@ -222,6 +222,7 @@ function fieldLabel(key: string) {
     exitReason: '退出原因', unreceivedOrderCount: '未收货订单数', unpaidInvoiceCount: '未付清发票数',
     contractNo: '合同编号', contractName: '合同名称', invoiceId: '发票编号', orderId: '订单编号', paymentBatchNo: '付款批次',
     tenderId: '招标项目编号', tenderNo: '招标编号',
+    scoringRule: '送审评分规则（版本及技术/商务/价格权重）',
     exceptionType: '例外类型', exceptionReason: '例外原因', amount: '金额', requestCount: '申请数量', totalAmount: '总金额',
     contractId:'合同编号',finalAmount:'约定清算总额',goodsAmount:'结算货款',initialPaid:'原已付款',
     correctionAmount:'本次更正金额',remainingAmount:'送审时可更正余额',

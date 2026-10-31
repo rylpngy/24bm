@@ -61,6 +61,42 @@ class TenderStageThreeTests {
   @AfterEach
   void clear() { TenantContext.clear(); }
 
+  @Test
+  void rebidCopiesConfiguredWeightsAsANewRuleVersion() {
+    var origin=tender("已流标",null,false);current(origin);
+    when(tenders.findByTenantAndId(eq("tenant-1"),anyString())).thenReturn(origin);
+    when(tenders.allocateSequence(anyString())).thenReturn(1L);
+    var rules=mock(TenderScoringRuleMapper.class);
+    var rule=new TenderScoringRuleMapper.Rule(2,new BigDecimal("60"),new BigDecimal("10"),new BigDecimal("30"),"原规则","user-1",now);
+    when(rules.latest("tenant-1","t-1")).thenReturn(rule);
+    org.springframework.test.util.ReflectionTestUtils.setField(service,"scoringRules",rules);
+    service.rebidTender("t-1");
+    verify(rules).insert(eq("tenant-1"),argThat(id->!id.equals("t-1")),eq(1),eq(rule.weights()),contains("版本2"),eq("user-1"));
+  }
+
+  @Test
+  void savedProjectWeightsDriveActualRanking() throws Exception {
+    Tender evaluating=tender("评标中",null,false);current(evaluating);
+    when(tenders.listVisibleByTenant(eq("tenant-1"),any())).thenReturn(List.of(evaluating));
+    committee(true);
+    var first=bid(null);var second=evaluationBid("b-2","s-2",now.minusDays(3),null);
+    when(bids.listByTender("tenant-1","t-1")).thenReturn(List.of(first,second));
+    when(acquisitions.listByTender("tenant-1","t-1")).thenReturn(List.of(first,second).stream().map(b->new TenderAcquisition("a-"+b.id(),"tenant-1","t-1",b.supplierId(),"邀请发放",now.minusDays(4),now.minusDays(4))).toList());
+    var scores=new java.util.ArrayList<TenderScore>();
+    for(int i=1;i<=3;i++) {
+      scores.add(new TenderScore("s-a"+i,"tenant-1","t-1","b-1","e-"+i,new BigDecimal("10"),new BigDecimal("90"),"评分",now));
+      scores.add(new TenderScore("s-b"+i,"tenant-1","t-1","b-2","e-"+i,new BigDecimal("90"),new BigDecimal("10"),"评分",now));
+    }
+    when(evaluations.listScores("tenant-1","t-1")).thenReturn(scores);
+    assertThat(service.listCurrentTenantTenders().getFirst().evaluationSummary().getFirst().bidId()).isEqualTo("b-2");
+    var rules=mock(TenderScoringRuleMapper.class);
+    when(rules.latest("tenant-1","t-1")).thenReturn(new TenderScoringRuleMapper.Rule(1,new BigDecimal("10"),new BigDecimal("60"),new BigDecimal("30"),"商务优先","user-1",now));
+    org.springframework.test.util.ReflectionTestUtils.setField(service,"scoringRules",rules);
+    var ranking=service.listCurrentTenantTenders().getFirst().evaluationSummary();
+    assertThat(ranking.getFirst().bidId()).isEqualTo("b-1");
+    assertThat(ranking.getFirst().recommended()).isTrue();
+  }
+
   private Tender tender(String status, String orderId, boolean prequalified) {
     return new Tender("t-1", "tenant-1", "ZB001", "Tender", "邀请招标", BigDecimal.TEN,
         status, "doc", "综合评分法", null, now.minusDays(3), now.minusDays(2), now.minusDays(1),

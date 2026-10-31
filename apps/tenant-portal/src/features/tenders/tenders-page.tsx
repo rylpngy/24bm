@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { TenderDocumentReviewPanel } from './tender-document-review-panel';
+import { TenderScoringRulePanel, tenderScoringRuleKey } from './tender-scoring-rule-panel';
 import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Award, CheckCircle2, ClipboardCheck, FileBadge, Gavel, Info, Megaphone, Plus, Send, Timer, Trophy, Users } from 'lucide-react';
@@ -23,6 +24,7 @@ import {
   useBuyerTenderSubmitScores,
   useBuyerTenderUpdate,
   tenderDocumentReviews,
+  tenderScoringRule,
   useRfqListAnnouncements,
   type SaveTenderRequest,
   type TenderResponse,
@@ -114,6 +116,7 @@ function EvaluationSection({
   refresh: () => void;
 }) {
   const formCommittee = useBuyerTenderFormCommittee();
+  const scoringRule=useQuery({queryKey:tenderScoringRuleKey(t.id!),queryFn:()=>tenderScoringRule(t.id!),enabled:!!t.id});
   const { can } = useBuyerPermissions();
   const canManage = can('buyer:tender:manage');
   const submitScores = useBuyerTenderSubmitScores();
@@ -301,7 +304,9 @@ function EvaluationSection({
               </table>
               <div className="flex items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/60 px-3 py-2.5">
                 <p className="text-[11px] font-bold text-slate-400">
-                  价格分由系统按最低有效报价自动折算;{t.evaluationMethod === '最低评标价法' ? '本项目按最低评标价法以报价升序排名。' : '综合得分 = 技术×50% + 商务×20% + 价格×30%。'}
+                  价格分由系统按最低有效报价自动折算;{t.evaluationMethod === '最低评标价法' ? '本项目按最低评标价法以报价升序排名。' : scoringRule.data?.data
+                    ? `综合得分 = 技术×${scoringRule.data.data.weights.technical}% + 商务×${scoringRule.data.data.weights.commercial}% + 价格×${scoringRule.data.data.weights.price}%。`
+                    : '请先确认上方评审规则，规则读取失败时请刷新重试。'}
                 </p>
                 <PrimaryActionButton size="sm" onClick={doSubmitScores} busy={submitScores.isPending}
                   pendingLabel="提交中" disabled={!sheetComplete || validBids.length === 0}>
@@ -757,7 +762,7 @@ export function TendersPage() {
     queryClient.invalidateQueries({
       // 公告记录(/buyer/rfqs/{tenderId}/announcements)随业务节点新增,须一并失效。
       predicate: (q) => typeof q.queryKey[0] === 'string'
-        && (/\/buyer\/(tenders|rfqs\/[^/]+\/announcements)/.test(q.queryKey[0] as string) || q.queryKey[0] === 'tender-document-review'),
+        && (/\/buyer\/(tenders|rfqs\/[^/]+\/announcements)/.test(q.queryKey[0] as string) || q.queryKey[0] === 'tender-document-review' || q.queryKey[0] === 'tender-scoring-rule'),
     });
 
   const reportError = (e: unknown) =>
@@ -981,6 +986,7 @@ export function TendersPage() {
         {/* 组织流程步进器:编制→发售→开标→评标→定标(与供应商端参与视图同口径) */}
         <BuyerTenderStepper tender={t} />
         <TenderDocumentReviewPanel tenderId={t.id!} drafting={t.status === '编制中'} canManage={canManage} />
+        <TenderScoringRulePanel tenderId={t.id!} editable={canManage && t.status === '编制中' && !!documentReview.data?.data && documentReview.data.data.reviews[0]?.status !== 'processing'} />
 
         <div className="grid gap-4 xl:grid-cols-[1fr_20rem]">
           <div className="min-w-0 space-y-4">

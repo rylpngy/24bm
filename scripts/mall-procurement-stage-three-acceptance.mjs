@@ -291,12 +291,15 @@ async function run(config) {
     const tenderId = tender.id;
     report.records.tender = { tenderId };
     await api(`buyer/tenders/${tenderId}/prequalification`, b, { required: true }, 'PUT');
+    const scoring=await api(`buyer/tenders/${tenderId}/scoring-rule`,b,{technicalWeight:40,commercialWeight:30,priceWeight:30,reason:'隔离验收：验证项目权重参与实际计算',expectedRevision:0},'PUT');
+    assert.equal(scoring.revision,1);
     await approveAcceptanceTender(api,b,documentReviewer,tenderId);
     await api(`buyer/tenders/${tenderId}/publish`, b, {});
     await api(`buyer/tenders/${tenderId}/distribute`, b, { supplierIds: [config.supplierId] });
     const supplierTender = async () => (await api('supplier/tenders', s)).find(t => t.id === tenderId) ?? assert.fail('Missing supplier tender');
     const buyerTender = async () => own((await api('buyer/tenders', b)).find(t => t.id === tenderId) ?? assert.fail('Missing buyer tender'));
     assert.equal((await supplierTender()).documentHtml, null);
+    await api(`supplier/tenders/${tenderId}/scoring-rule`,s,undefined,'GET',[400,403]);
     await api(`supplier/tenders/${tenderId}/acquire`, s, {}, 'POST', [400, 409], /预审/);
     await api(`supplier/tenders/${tenderId}/prequalification`, s, { application: `资格声明 ${runId}` });
     tender = await buyerTender();
@@ -304,6 +307,10 @@ async function run(config) {
     assert.ok(application?.id);
     await api(`buyer/tenders/${tenderId}/prequalifications/${application.id}/review`, b, { status: '已通过', reviewComment: '隔离验收材料审查通过' });
     assert.ok((await api(`supplier/tenders/${tenderId}/acquire`, s, {})).documentHtml?.includes(runId));
+    const disclosedRule=await api(`supplier/tenders/${tenderId}/scoring-rule`,s);
+    assert.equal(Number(disclosedRule.weights.technical),40);
+    assert.equal(disclosedRule.revision,1);
+    assert.ok(!('history' in disclosedRule),'Supplier must not receive internal editing history');
     const bid = await api(`supplier/tenders/${tenderId}/bids`, s, { bidAmount: 1000, documentHtml: `<p>Supplier bid ${runId}</p>` });
     report.records.tender.bidId = bid.id;
     assert.equal(bid.sealedStatus, '已密封');
@@ -395,6 +402,7 @@ async function run(config) {
           lines: eligible.map(item => ({ bidId: item.id, technicalScore: 80, commercialScore: 90, comment: `评审记录 ${runId}` })) }));
         assert.equal(scored.evaluators.find(e => e.id === evaluator.id).scoredCount, 1);
         assert.equal(scored.evaluationSummary.some(row => row.recommended), i === 2);
+        assert.equal(Number(scored.evaluationSummary.find(row=>row.bidId===bid.id).compositeScore),89,'Configured 40/30/30 must replace fixed 50/20/30');
       }
       tender = own(await api(`buyer/tenders/${tenderId}/award`, b, awardBody));
       assert.equal(tender.awardedBidId, bid.id);

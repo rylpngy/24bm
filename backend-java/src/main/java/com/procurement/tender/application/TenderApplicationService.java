@@ -48,6 +48,7 @@ import com.procurement.tender.infrastructure.TenderEvaluationMapper;
 import com.procurement.tender.infrastructure.TenderInquiryMapper;
 import com.procurement.tender.infrastructure.TenderPrequalificationMapper;
 import com.procurement.tender.infrastructure.TenderMapper;
+import com.procurement.tender.infrastructure.TenderScoringRuleMapper;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
@@ -62,6 +63,9 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class TenderApplicationService {
+  private TenderScoringRuleMapper scoringRules;
+  @org.springframework.beans.factory.annotation.Autowired
+  void setScoringRules(TenderScoringRuleMapper rules) { this.scoringRules=rules; }
   private TenderDocumentReviewService documentReviews;
   @org.springframework.beans.factory.annotation.Autowired
   void setDocumentReviews(TenderDocumentReviewService reviews) { this.documentReviews=reviews; }
@@ -411,6 +415,8 @@ public class TenderApplicationService {
         origin.bidBondAmount(), null, null, null, userId);
     tenderMapper.markRebidOf(tenantId, id, origin.id());
     tenderMapper.updatePrequalificationRequired(tenantId, id, origin.prequalificationRequired());
+    var originalRule=scoringRules==null?null:scoringRules.latest(tenantId,origin.id());
+    if(originalRule!=null) scoringRules.insert(tenantId,id,1,originalRule.weights(),"由原项目规则版本"+originalRule.revision()+"复用，重招后重新审查",userId);
     auditLogApplicationService.recordCurrentTenantAction(
         "tender.rebid", AUDIT_TARGET, id, "由流标项目「" + origin.title() + "」(" + origin.tenderNo() + ")重新招标");
     return toResponse(requireTender(tenantId, id), List.of(), true);
@@ -612,6 +618,16 @@ public class TenderApplicationService {
             Tender::createdAt, java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder())))
         .map(t -> supplierView(t, mineByTender.get(t.id()), supplierId))
         .toList();
+  }
+
+  public com.procurement.tender.api.TenderSupplierScoringRuleResponse supplierScoringRule(String tenderId) {
+    permissions.require("supplier:tender:read");
+    String supplierId=TenantAccessGuard.requireSupplierId("supplier tender scoring");
+    var tender=findTenderForSupplier(tenderId,supplierId);
+    var acquisition=myAcquisition(tenderId,supplierId);
+    if(acquisition==null || acquisition.acquiredAt()==null) throw new com.procurement.common.tenant.PermissionDeniedException("领取招标文件后方可查看评分规则");
+    var rule=scoringRules.latest(tender.tenantId(),tenderId);
+    return new com.procurement.tender.api.TenderSupplierScoringRuleResponse(tender.evaluationMethod(),rule==null?0:rule.revision(),rule==null?com.procurement.tender.domain.TenderScoringWeights.DEFAULT:rule.weights());
   }
 
   @Transactional
@@ -886,7 +902,7 @@ public class TenderApplicationService {
   }
 
   // 评标汇总(实时计算):价格分=最低有效报价/本报价×100;
-  // 综合评分法 综合=技术均分×50%+商务均分×20%+价格分×30%;最低评标价法按报价升序。
+  // 综合评分使用发布前确定的项目权重；未配置的历史项目保留50/20/30。
   // 全体评委对全部有效投标交卷后,第一名标记为推荐中标人。
   private List<TenderBidEvaluationSummary> evaluationSummary(
       Tender tender, List<TenderEvaluator> evaluators, List<TenderScore> scores) {
@@ -908,6 +924,8 @@ public class TenderApplicationService {
         && validBids.stream().allMatch(b -> evaluators.stream().allMatch(e ->
             scores.stream().anyMatch(s -> s.bidId().equals(b.id()) && s.evaluatorId().equals(e.id())
                 && validScore(s.technicalScore()) && validScore(s.commercialScore()))));
+    var configured=scoringRules==null?null:scoringRules.latest(tender.tenantId(),tender.id());
+    var weights=configured==null?com.procurement.tender.domain.TenderScoringWeights.DEFAULT:configured.weights();
 
     record Row(TenderBid bid, BigDecimal avgTech, BigDecimal avgComm, BigDecimal priceScore, BigDecimal composite, BigDecimal effective) {}
     List<Row> rows = validBids.stream().map(b -> {
@@ -920,12 +938,7 @@ public class TenderApplicationService {
       BigDecimal priceScore = lowest == null || effective == null || effective.signum() <= 0
           ? null
           : lowest.multiply(BigDecimal.valueOf(100)).divide(effective, 2, RoundingMode.HALF_UP);
-      BigDecimal composite = avgTech == null || avgComm == null || priceScore == null
-          ? null
-          : avgTech.multiply(new BigDecimal("0.5"))
-              .add(avgComm.multiply(new BigDecimal("0.2")))
-              .add(priceScore.multiply(new BigDecimal("0.3")))
-              .setScale(2, RoundingMode.HALF_UP);
+      BigDecimal composite = weights.composite(avgTech,avgComm,priceScore);
       return new Row(b, avgTech, avgComm, priceScore, composite, effective);
     }).toList();
 

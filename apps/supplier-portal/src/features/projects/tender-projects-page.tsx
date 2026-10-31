@@ -31,6 +31,7 @@ import {
 } from '@24bid/ui';
 import { useAuthStore } from '../../lib/auth-store';
 import { currency, shortTime } from './shared';
+import { SupplierTenderScoringRule } from './tender-scoring-rule';
 
 const PAGE_SIZE = 10;
 
@@ -644,6 +645,7 @@ export function TenderProjectsPage() {
                 <h3 className="text-base font-black text-slate-950">招标文件正文</h3>
                 <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-black text-slate-500">阶段一 · 招标</span>
               </div>
+              {t.documentHtml && t.id && <SupplierTenderScoringRule tenderId={t.id} />}
               {t.documentHtml ? (
                 <RichTextView html={t.documentHtml} className="mt-3" />
               ) : (
