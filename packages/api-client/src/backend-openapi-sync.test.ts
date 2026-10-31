@@ -6,6 +6,19 @@ const root = process.cwd();
 const read = (path: string) => readFileSync(join(root, path), 'utf8');
 
 describe('backend OpenAPI generated client sync', () => {
+  it('keeps unrelated review, rule, document and role contracts distinct', () => {
+    const spec = JSON.parse(read('docs/openapi/backend-openapi.json'));
+    const schemas = spec.components.schemas;
+    for (const [name, field] of [
+      ['TenderDocumentReviewRecord', 'fingerprint'], ['TenderScoringRuleView', 'weights'],
+      ['TenderScoringRuleVersion', 'technicalWeight'], ['SaveTenderScoringRuleRequest', 'technicalWeight'],
+      ['ContractReviewDocument', 'originalSha256'], ['ContractReviewFinding', 'clause'],
+      ['AiReviewFinding', 'evidenceIds'], ['AiReviewResult', 'sourceRevision'],
+      ['Review', 'approved'], ['Document', 'module'], ['Save', 'permissions'],
+    ]) expect(schemas[name]?.properties[field], `${name}.${field}`).toBeDefined();
+    expect(schemas.SaveTenderScoringRuleRequest.properties.permissions).toBeUndefined();
+    expect(schemas.ContractReviewDocument.properties.module).toBeUndefined();
+  });
   it('keeps tenant-private supplier profile fields aligned with the backend contract', () => {
     const spec = JSON.parse(read('docs/openapi/backend-openapi.json'));
     const schema = spec.components.schemas.ChangeBuyerSupplierProfileRequest;

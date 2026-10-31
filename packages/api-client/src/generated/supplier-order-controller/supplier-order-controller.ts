@@ -97,6 +97,66 @@ const {mutation: mutationOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
+    export const supplierOrderCancellationDecision = (
+    orderId: string,
+    requestId: string,
+    orderCancellationDecision: BodyType<OrderCancellationDecision>,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseOrderCancellationEntry>(
+      {url: `/api/v1/supplier/orders/${orderId}/cancellations/${requestId}`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: orderCancellationDecision, signal
+    },
+      );
+    }
+
+
+
+export const getSupplierOrderCancellationDecisionMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierOrderCancellationDecision>>, TError,{orderId: string;requestId: string;data: BodyType<OrderCancellationDecision>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof supplierOrderCancellationDecision>>, TError,{orderId: string;requestId: string;data: BodyType<OrderCancellationDecision>}, TContext> => {
+
+const mutationKey = ['supplierOrderCancellationDecision'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierOrderCancellationDecision>>, {orderId: string;requestId: string;data: BodyType<OrderCancellationDecision>}> = (props) => {
+          const {orderId,requestId,data} = props ?? {};
+
+          return  supplierOrderCancellationDecision(orderId,requestId,data,)
+        }
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SupplierOrderCancellationDecisionMutationResult = NonNullable<Awaited<ReturnType<typeof supplierOrderCancellationDecision>>>
+    export type SupplierOrderCancellationDecisionMutationBody = BodyType<OrderCancellationDecision>
+    export type SupplierOrderCancellationDecisionMutationError = ErrorType<ApiResponseVoid>
+
+    export const useSupplierOrderCancellationDecision = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierOrderCancellationDecision>>, TError,{orderId: string;requestId: string;data: BodyType<OrderCancellationDecision>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof supplierOrderCancellationDecision>>,
+        TError,
+        {orderId: string;requestId: string;data: BodyType<OrderCancellationDecision>},
+        TContext
+      > => {
+
+      const mutationOptions = getSupplierOrderCancellationDecisionMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
     export const supplierOrderList = (
     params?: SupplierOrderListParams,
  signal?: AbortSignal
@@ -184,67 +244,7 @@ export function useSupplierOrderList<TData = Awaited<ReturnType<typeof supplierO
 
 
 
-export const supplierOrderCancellationDecision = (
-    orderId: string,
-    requestId: string,
-    orderCancellationDecision: BodyType<OrderCancellationDecision>,
- signal?: AbortSignal
-) => {
-
-
-      return customInstance<ApiResponseOrderCancellationEntry>(
-      {url: `/api/v1/supplier/orders/${orderId}/cancellations/${requestId}`, method: 'POST',
-      headers: {'Content-Type': 'application/json', },
-      data: orderCancellationDecision, signal
-    },
-      );
-    }
-
-
-
-export const getSupplierOrderCancellationDecisionMutationOptions = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierOrderCancellationDecision>>, TError,{orderId: string;requestId: string;data: BodyType<OrderCancellationDecision>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof supplierOrderCancellationDecision>>, TError,{orderId: string;requestId: string;data: BodyType<OrderCancellationDecision>}, TContext> => {
-
-const mutationKey = ['supplierOrderCancellationDecision'];
-const {mutation: mutationOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof supplierOrderCancellationDecision>>, {orderId: string;requestId: string;data: BodyType<OrderCancellationDecision>}> = (props) => {
-          const {orderId,requestId,data} = props ?? {};
-
-          return  supplierOrderCancellationDecision(orderId,requestId,data,)
-        }
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type SupplierOrderCancellationDecisionMutationResult = NonNullable<Awaited<ReturnType<typeof supplierOrderCancellationDecision>>>
-    export type SupplierOrderCancellationDecisionMutationBody = BodyType<OrderCancellationDecision>
-    export type SupplierOrderCancellationDecisionMutationError = ErrorType<ApiResponseVoid>
-
-    export const useSupplierOrderCancellationDecision = <TError = ErrorType<ApiResponseVoid>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supplierOrderCancellationDecision>>, TError,{orderId: string;requestId: string;data: BodyType<OrderCancellationDecision>}, TContext>, }
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof supplierOrderCancellationDecision>>,
-        TError,
-        {orderId: string;requestId: string;data: BodyType<OrderCancellationDecision>},
-        TContext
-      > => {
-
-      const mutationOptions = getSupplierOrderCancellationDecisionMutationOptions(options);
-
-      return useMutation(mutationOptions, queryClient);
-    }
-    export const supplierOrderCancellations = (
+export const supplierOrderCancellations = (
     orderId: string,
     params?: SupplierOrderCancellationsParams,
  signal?: AbortSignal

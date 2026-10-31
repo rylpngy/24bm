@@ -5,9 +5,11 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 
 const base = process.env.JAVA_API_BASE_URL;
-assert.equal(base, 'http://127.0.0.1:8095'); assert.equal(process.env.ACCEPTANCE_LOCAL_WRITES, '1');
-const database = process.env.ACCEPTANCE_EXPECTED_DB; assert.match(database ?? '', /^srm_deepening_\d+$/);
-const pid = execFileSync('lsof', ['-tiTCP:8095', '-sTCP:LISTEN'], { encoding: 'utf8' }).trim(); assert.match(pid, /^\d+$/);
+const port = process.env.ACCEPTANCE_API_PORT ?? '8095';
+assert.match(port, /^\d+$/); assert.notEqual(port, '8080');
+assert.equal(base, 'http://127.0.0.1:' + port); assert.equal(process.env.ACCEPTANCE_LOCAL_WRITES, '1');
+const database = process.env.ACCEPTANCE_EXPECTED_DB; assert.match(database ?? '', /^(srm_deepening|procurement_stage3_acceptance)_\d+$/);
+const pid = execFileSync('lsof', ['-tiTCP:' + port, '-sTCP:LISTEN'], { encoding: 'utf8' }).trim(); assert.match(pid, /^\d+$/);
 const runtime = execFileSync('ps', ['eww', '-p', pid, '-o', 'command='], { encoding: 'utf8' });
 assert.ok(runtime.includes(`DB_URL=jdbc:postgresql://127.0.0.1:25432/${database} `), 'Wrong isolated database');
 assert.ok(!/SPRING_APPLICATION_JSON=|SPRING_DATASOURCE_URL=|--spring\.|-Dspring\./.test(runtime), 'Unsupported overrides');

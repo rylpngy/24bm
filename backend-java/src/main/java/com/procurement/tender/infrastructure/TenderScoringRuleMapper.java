@@ -8,6 +8,7 @@ import org.apache.ibatis.annotations.*;
 
 @Mapper
 public interface TenderScoringRuleMapper {
+  @io.swagger.v3.oas.annotations.media.Schema(name = "TenderScoringRuleVersion")
   record Rule(int revision, BigDecimal technicalWeight, BigDecimal commercialWeight, BigDecimal priceWeight,
       String reason, String createdBy, OffsetDateTime createdAt) {
     public TenderScoringWeights weights() { return new TenderScoringWeights(technicalWeight, commercialWeight, priceWeight); }

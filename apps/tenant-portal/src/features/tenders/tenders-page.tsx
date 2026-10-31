@@ -616,7 +616,8 @@ const BUYER_TENDER_STAGES = ['编制', '发售', '开标', '评标', '定标'] a
 function buyerTenderStageIndex(t: TenderResponse): number {
   if (t.status === '已定标') return 4;
   if (t.status === '评标中') return 3;
-  if (t.status === '已开标' || t.status === '已流标') return 2;
+  if (t.status === '已流标') return (t.evaluators ?? []).length > 0 ? 3 : t.openedAt ? 2 : 1;
+  if (t.status === '已开标') return 2;
   if (t.status === '发售中') return 1;
   return 0;
 }
@@ -649,9 +650,9 @@ function BuyerTenderStepper({ tender: t }: { tender: TenderResponse }) {
       )}
       <div className="grid grid-cols-5 items-start gap-2">
         {BUYER_TENDER_STAGES.map((stage, index) => {
-          const done = !failed && index < currentIndex;
+          const done = index < currentIndex;
           const current = !failed && index === currentIndex;
-          const deadHere = failed && index === 2;
+          const deadHere = failed && index === currentIndex;
           return (
             <div key={stage} className="relative text-center">
               {index < BUYER_TENDER_STAGES.length - 1 && <div className="absolute left-1/2 top-5 h-1 w-full bg-slate-100" />}
@@ -665,7 +666,7 @@ function BuyerTenderStepper({ tender: t }: { tender: TenderResponse }) {
               </span>
               <p className={cn('mt-2 text-xs font-black', done || current ? 'text-blue-700' : deadHere ? 'text-red-600' : 'text-slate-500')}>{stage}</p>
               <p className="mt-0.5 text-[11px] font-bold text-slate-400">
-                {deadHere ? '已流标' : failed && index > 2 ? '流程终止' : done || current ? captions[index] : '待开始'}
+                {deadHere ? '已流标' : failed && index > currentIndex ? '流程终止' : done || current ? captions[index] : '待开始'}
               </p>
             </div>
           );
@@ -975,6 +976,10 @@ export function TendersPage() {
               <p className="mt-1 font-mono text-xs font-bold text-slate-500">
                 {t.tenderNo} · 递交截止 {shortTime(t.submissionDeadline)} · 开标 {shortTime(t.openingAt)}
               </p>
+              {t.rebidOfTenderId && <button type="button" onClick={() => showDetail(t.rebidOfTenderId!)}
+                className="mt-2 inline-flex h-8 items-center gap-1 text-xs font-bold text-blue-700 hover:underline">
+                <ArrowLeft size={13} /> 查看原流标项目
+              </button>}
             </div>
             <p className="shrink-0 font-mono text-xl font-black text-slate-950">{currency(t.budget)}</p>
           </div>
@@ -1270,12 +1275,29 @@ export function TendersPage() {
                   <MiniFact label="流标原因" value={t.failureReason ?? '—'} />
                 </div>
                 <p className="mt-2 text-[11px] font-bold text-slate-400">
-                  发放/投标/评分记录保留在本项目备查;重新招标将复制标的要素与正文新建草稿(时间节点须重新设定)。
+                  发放、投标、评分及审批记录保留在原项目。重招仅复用基本信息、正文和评分权重；附件须重新上传，时间须重新设置，采购文件须重新送审。关联项目分包请从项目库发起重采。
                 </p>
+                {(t.scores ?? []).length > 0 && <details className="my-3 border-y border-slate-100 py-3">
+                  <summary className="cursor-pointer text-sm font-bold text-slate-700">历史评分记录（只读）</summary>
+                  <div className="mt-3 overflow-x-auto">
+                    <table className="w-full min-w-[600px] text-left text-xs">
+                      <thead className="bg-slate-50 text-slate-500"><tr>
+                        {['评委', '供应商', '技术分', '商务分', '评审意见', '评分时间'].map(label => <th key={label} className="px-3 py-2 whitespace-nowrap">{label}</th>)}
+                      </tr></thead>
+                      <tbody className="divide-y divide-slate-100">{(t.scores ?? []).map((score, index) => <tr key={index}>
+                        <td className="px-3 py-2">{t.evaluators?.find(e => e.id === score.evaluatorId)?.evaluatorName ?? '—'}</td>
+                        <td className="px-3 py-2">{t.bids?.find(b => b.id === score.bidId)?.supplierName ?? '—'}</td>
+                        <td className="px-3 py-2">{score.technicalScore}</td><td className="px-3 py-2">{score.commercialScore}</td>
+                        <td className="max-w-64 break-words px-3 py-2">{score.comment ?? '—'}</td>
+                        <td className="px-3 py-2 whitespace-nowrap">{shortTime(score.scoredAt)}</td>
+                      </tr>)}</tbody>
+                    </table>
+                  </div>
+                </details>}
                 <PrimaryActionButton size="sm" disabled={!canManage} onClick={() =>
                   t.id && rebidTender.mutate({ tenderId: t.id }, {
                     onSuccess: (r) => {
-                      setFeedback(`已按流标项目重新立项:「${r.data?.title}」(${r.data?.tenderNo}),请补齐时间节点后发布。`);
+                      setFeedback(`已创建重招草稿:「${r.data?.title}」(${r.data?.tenderNo}),请核对附件、重新设置时间并提交采购文件审查。`);
                       refresh();
                       if (r.data) openEdit(r.data);
                     },
@@ -1368,12 +1390,13 @@ export function TendersPage() {
                 <Gavel size={14} /> 开标唱标
               </PrimaryActionButton>
             )}
-            {canManage && (t.status === '已开标' || t.status === '评标中') && (
+            {canManage && (t.status === '已开标' || t.status === '评标中' ||
+              (t.status === '发售中' && t.submissionDeadline && new Date(t.submissionDeadline) <= new Date())) && (
               failing ? (
                 <div className="flex shrink-0 flex-wrap items-center gap-2">
                   <input
                     className="h-10 w-64 rounded-lg border border-amber-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none focus:border-amber-400"
-                    placeholder="流标原因(必填留痕)" aria-label="流标原因" value={failReason}
+                    placeholder="流标原因(必填留痕)" aria-label="流标原因" maxLength={1000} value={failReason}
                     onChange={(e) => setFailReason(e.target.value)} />
                   <button type="button" disabled={!failReason.trim() || failTender.isPending}
                     onClick={() => t.id && failTender.mutate(

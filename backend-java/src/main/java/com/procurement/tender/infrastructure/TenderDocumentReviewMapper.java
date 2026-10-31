@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.*;
 
 @Mapper
 public interface TenderDocumentReviewMapper {
+  @io.swagger.v3.oas.annotations.media.Schema(name = "TenderDocumentReviewRecord")
   record Review(String id, String tenantId, String tenderId, String fingerprint, String status,
       String requestedBy, String completedBy, String comment, OffsetDateTime createdAt, OffsetDateTime completedAt) {}
 

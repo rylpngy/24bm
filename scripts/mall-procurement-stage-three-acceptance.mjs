@@ -320,6 +320,23 @@ async function run(config) {
     await api(`buyer/tenders/${tenderId}/open`, b, {}, 'POST', [400, 409], /开标时间|提前/);
     check('real tender invitation/prequalification/acquisition/sealed bid; buyer cannot see bid content early');
 
+    const failureDraft = { title: `${runId} exception evidence`, tenderType: '邀请招标', budget: 1200,
+      documentHtml: `<p>Failure evidence ${runId}</p>`, evaluationMethod: '综合评分法',
+      acquisitionDeadline: deadline, submissionDeadline: deadline, openingAt: deadline };
+    const emptyTender = own(await api('buyer/tenders', b, failureDraft));
+    const partialTender = own(await api('buyer/tenders', b, { ...failureDraft, title: `${runId} partial evaluation` }));
+    for (const draft of [emptyTender, partialTender]) {
+      await api(`buyer/tenders/${draft.id}/scoring-rule`, b, { technicalWeight: 60, commercialWeight: 10,
+        priceWeight: 30, reason: '重招规则来源', expectedRevision: 0 }, 'PUT');
+      await approveAcceptanceTender(api, b, documentReviewer, draft.id);
+      await api(`buyer/tenders/${draft.id}/publish`, b, {});
+      await api(`buyer/tenders/${draft.id}/fail`, b, { reason: '截止前不允许流标' }, 'POST', [400,409]);
+    }
+    await api(`buyer/tenders/${partialTender.id}/distribute`, b, { supplierIds: [config.supplierId] });
+    await api(`supplier/tenders/${partialTender.id}/acquire`, s, {});
+    const partialBid = await api(`supplier/tenders/${partialTender.id}/bids`, s,
+      { bidAmount: 950, documentHtml: `<p>Immutable failed bid ${runId}</p>` });
+
     const cutoff = Date.parse(deadline);
     let lastLog = 0;
     while ((await guard.verify()) <= cutoff + 250) {
@@ -339,6 +356,60 @@ async function run(config) {
     assert.equal(openedBid.digestVerified, true); assert.equal(openedBid.evaluationEligible, true);
     assert.equal(Number(openedBid.bidAmount), 1000);
     check('actual deadlines elapsed; both RFQs and tender opened; fingerprint and authoritative eligibility verified');
+
+    await scenario('failure and rebid', async () => {
+      const partial = await api(`buyer/tenders/${partialTender.id}/open`, b, {});
+      const committee = await api(`buyer/tenders/${partial.id}/committee`, b, { members: [
+        { name: `${runId}-failure-A`, role: '组长' }, { name: `${runId}-failure-B`, role: '成员' },
+        { name: `${runId}-failure-C`, role: '成员' },
+      ] });
+      await api(`buyer/tenders/${partial.id}/scores`, b, { evaluatorId: committee.evaluators[0].id,
+        lines: [{ bidId: partialBid.id, technicalScore: 70, commercialScore: 80, comment: '部分评审历史保留' }] });
+      report.records.rebids = [];
+      for (const source of [emptyTender, partialTender]) {
+        const failed = own(await api(`buyer/tenders/${source.id}/fail`, b, { reason: '隔离业务验收：重新组织采购' }));
+        assert.equal(failed.status, '已流标');
+        const [first, replay] = await Promise.all([
+          api(`buyer/tenders/${source.id}/rebid`, b, {}), api(`buyer/tenders/${source.id}/rebid`, b, {}),
+        ]);
+        assert.equal(first.id, replay.id, 'Concurrent rebid must return the same successor');
+        assert.equal(first.rebidOfTenderId, source.id);
+        assert.equal(first.status, '编制中');
+        assert.equal(first.acquisitionDeadline, null); assert.equal(first.submissionDeadline, null); assert.equal(first.openingAt, null);
+        assert.equal(first.executionOrderId, null); assert.equal(first.awardedBidId, null);
+        assert.equal(first.bids.length, 0); assert.equal(first.acquisitions.length, 0);
+        assert.equal(first.evaluators.length, 0); assert.equal(first.evaluationSummary.length, 0);
+        const review = await api(`buyer/tenders/${first.id}/document-reviews`, b);
+        assert.equal(review.reviews.length, 0); assert.equal(review.currentApproved, false);
+        const inherited = await api(`buyer/tenders/${first.id}/scoring-rule`, b);
+        assert.equal(inherited.revision, 1); assert.equal(Number(inherited.weights.technical), 60);
+        await api(`buyer/tenders/${first.id}/publish`, b, {}, 'POST', [400,409]);
+        const dates = new Date(Date.now() + 86400000).toISOString();
+        await api(`buyer/tenders/${first.id}`, b, { ...failureDraft, acquisitionDeadline: dates,
+          submissionDeadline: dates, openingAt: dates }, 'PUT');
+        await api(`buyer/tenders/${first.id}/publish`, b, {}, 'POST', [400,409]);
+        await approveAcceptanceTender(api, b, documentReviewer, first.id);
+        assert.equal((await api(`buyer/tenders/${first.id}/publish`, b, {})).status, '发售中');
+        await api(`buyer/tenders/${source.id}/open`, b, {}, 'POST', [400,409]);
+        await api(`buyer/tenders/${source.id}/fail`, b, { reason: '重复流标' }, 'POST', [400,409]);
+        await api(`supplier/tenders/${source.id}/bids`, s, { bidAmount: 800, documentHtml: '不得覆盖旧投标' }, 'POST', [400,403,409]);
+        await api(`buyer/tenders/${source.id}/rebid`, foreign.accessToken, {}, 'POST', [400,403,404]);
+        const rows = await api('buyer/tenders', b);
+        assert.equal(rows.filter(t => t.rebidOfTenderId === source.id).length, 1);
+        const original = rows.find(t => t.id === source.id);
+        assert.equal(original.status, '已流标');
+        assert.equal(original.bids.length, source.id === partialTender.id ? 1 : 0);
+        if (source.id === partialTender.id) {
+          assert.equal(Number(original.bids[0].bidAmount), 950);
+          assert.equal(original.scores.length, 1);
+        }
+        assert.equal((await api(`buyer/tenders/${source.id}/document-reviews`, b)).reviews.length, 1);
+        const announcements = (await api('public/procurement-announcements')).filter(a => a.rfqId === source.id && a.type === '终止公告');
+        assert.equal(announcements.length, 1, 'Exactly one termination announcement must retain the failure reason');
+        report.records.rebids.push({ originalId: source.id, successorId: first.id });
+      }
+      check('deadline failure without opening and partially scored failure; concurrent rebid, original evidence, clean successor, new approval/publication and tenant isolation');
+    });
 
     async function verifyOrder(order, method, amount, expectedRfq) {
       own(order);
@@ -406,6 +477,8 @@ async function run(config) {
       }
       tender = own(await api(`buyer/tenders/${tenderId}/award`, b, awardBody));
       assert.equal(tender.awardedBidId, bid.id);
+      await api(`buyer/tenders/${tenderId}/fail`, b, { reason: '不得对已定标项目流标' }, 'POST', [400,409]);
+      await api(`buyer/tenders/${tenderId}/rebid`, b, {}, 'POST', [400,409]);
       assert.equal(Number(tender.evaluationSummary.find(row => row.bidId === bid.id).effectiveAmount), 800);
       assert.equal((await supplierTender()).awardNoticeHtml, awardBody.awardNoticeHtml);
       const announcements = (await api('public/procurement-announcements')).filter(a => a.rfqId === tenderId && a.type === '定标公告');

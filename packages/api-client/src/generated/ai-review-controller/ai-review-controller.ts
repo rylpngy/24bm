@@ -26,10 +26,10 @@ import type {
 
 import type {
   AiReviewHistoryParams,
+  ApiResponseAiReviewResult,
+  ApiResponseListAiReviewResult,
   ApiResponseListPolicy,
-  ApiResponseListReview,
   ApiResponsePolicy,
-  ApiResponseReview,
   ApiResponseVoid,
   CreatePolicy,
   CreateReview,
@@ -48,7 +48,7 @@ export const aiReviewHistory = (
 ) => {
 
 
-      return customInstance<ApiResponseListReview>(
+      return customInstance<ApiResponseListAiReviewResult>(
       {url: `/api/v1/buyer/ai/reviews`, method: 'GET',
         params, signal
     },
@@ -135,7 +135,7 @@ export const aiReviewCreate = (
 ) => {
 
 
-      return customInstance<ApiResponseReview>(
+      return customInstance<ApiResponseAiReviewResult>(
       {url: `/api/v1/buyer/ai/reviews`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: createReview, signal
@@ -194,7 +194,7 @@ const {mutation: mutationOptions} = options ?
 ) => {
 
 
-      return customInstance<ApiResponseReview>(
+      return customInstance<ApiResponseAiReviewResult>(
       {url: `/api/v1/buyer/ai/reviews/${id}/feedback`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
       data: submitFeedback, signal
@@ -508,7 +508,7 @@ const {mutation: mutationOptions} = options ?
 ) => {
 
 
-      return customInstance<ApiResponseReview>(
+      return customInstance<ApiResponseAiReviewResult>(
       {url: `/api/v1/buyer/ai/reviews/${id}`, method: 'GET', signal
     },
       );

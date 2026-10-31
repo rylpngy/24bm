@@ -7,5 +7,9 @@
  */
 
 export interface FailTenderRequest {
+  /**
+   * @minLength 0
+   * @maxLength 1000
+   */
   reason: string;
 }

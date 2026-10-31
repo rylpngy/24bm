@@ -37,7 +37,11 @@ export * from './generated/model';
 export * from './generated/controllers';
 export * from './external-identity';
 export * from './tender-document-review';
+export type { TenderDocumentReviewState } from './tender-document-review';
 export * from './tender-scoring-rule';
+// Keep the validated wrapper contract when generated names overlap.
+export { supplierTenderScoringRule } from './tender-scoring-rule';
+export type { TenderScoringWeights, TenderScoringRuleView } from './tender-scoring-rule';
 export * from './procurement-projects';
 export * from './project-expansion';
 export * from './project-closeout';

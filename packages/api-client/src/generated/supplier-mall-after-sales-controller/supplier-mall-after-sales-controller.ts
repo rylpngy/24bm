@@ -37,92 +37,6 @@ import type { ErrorType , BodyType } from '../../http-client';
 
 
 
-export const supplierMallAfterSalesHistory = (
-    id: string,
- signal?: AbortSignal
-) => {
-
-
-      return customInstance<ApiResponseListMallAfterSalesEvent>(
-      {url: `/api/v1/supplier/mall/after-sales/${id}/history`, method: 'GET', signal
-    },
-      );
-    }
-
-
-
-
-export const getSupplierMallAfterSalesHistoryQueryKey = (id?: string,) => {
-    return [
-    `/api/v1/supplier/mall/after-sales/${id}/history`
-    ] as const;
-    }
-
-
-export const getSupplierMallAfterSalesHistoryQueryOptions = <TData = Awaited<ReturnType<typeof supplierMallAfterSalesHistory>>, TError = ErrorType<ApiResponseVoid>>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierMallAfterSalesHistory>>, TError, TData>>, }
-) => {
-
-const {query: queryOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getSupplierMallAfterSalesHistoryQueryKey(id);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierMallAfterSalesHistory>>> = ({ signal }) => supplierMallAfterSalesHistory(id, signal);
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierMallAfterSalesHistory>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type SupplierMallAfterSalesHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof supplierMallAfterSalesHistory>>>
-export type SupplierMallAfterSalesHistoryQueryError = ErrorType<ApiResponseVoid>
-
-
-export function useSupplierMallAfterSalesHistory<TData = Awaited<ReturnType<typeof supplierMallAfterSalesHistory>>, TError = ErrorType<ApiResponseVoid>>(
- id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierMallAfterSalesHistory>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof supplierMallAfterSalesHistory>>,
-          TError,
-          Awaited<ReturnType<typeof supplierMallAfterSalesHistory>>
-        > , 'initialData'
-      >, }
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useSupplierMallAfterSalesHistory<TData = Awaited<ReturnType<typeof supplierMallAfterSalesHistory>>, TError = ErrorType<ApiResponseVoid>>(
- id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierMallAfterSalesHistory>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof supplierMallAfterSalesHistory>>,
-          TError,
-          Awaited<ReturnType<typeof supplierMallAfterSalesHistory>>
-        > , 'initialData'
-      >, }
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useSupplierMallAfterSalesHistory<TData = Awaited<ReturnType<typeof supplierMallAfterSalesHistory>>, TError = ErrorType<ApiResponseVoid>>(
- id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierMallAfterSalesHistory>>, TError, TData>>, }
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function useSupplierMallAfterSalesHistory<TData = Awaited<ReturnType<typeof supplierMallAfterSalesHistory>>, TError = ErrorType<ApiResponseVoid>>(
- id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierMallAfterSalesHistory>>, TError, TData>>, }
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getSupplierMallAfterSalesHistoryQueryOptions(id,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = queryOptions.queryKey ;
-
-  return query;
-}
-
-
-
-
 export const supplierMallAfterSalesPhysical = (
     id: string,
  signal?: AbortSignal
@@ -350,6 +264,92 @@ export function useSupplierMallAfterSalesPhysicalFile<TData = Awaited<ReturnType
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getSupplierMallAfterSalesPhysicalFileQueryOptions(id,event,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const supplierMallAfterSalesHistory = (
+    id: string,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseListMallAfterSalesEvent>(
+      {url: `/api/v1/supplier/mall/after-sales/${id}/history`, method: 'GET', signal
+    },
+      );
+    }
+
+
+
+
+export const getSupplierMallAfterSalesHistoryQueryKey = (id?: string,) => {
+    return [
+    `/api/v1/supplier/mall/after-sales/${id}/history`
+    ] as const;
+    }
+
+
+export const getSupplierMallAfterSalesHistoryQueryOptions = <TData = Awaited<ReturnType<typeof supplierMallAfterSalesHistory>>, TError = ErrorType<ApiResponseVoid>>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierMallAfterSalesHistory>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSupplierMallAfterSalesHistoryQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierMallAfterSalesHistory>>> = ({ signal }) => supplierMallAfterSalesHistory(id, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierMallAfterSalesHistory>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type SupplierMallAfterSalesHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof supplierMallAfterSalesHistory>>>
+export type SupplierMallAfterSalesHistoryQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useSupplierMallAfterSalesHistory<TData = Awaited<ReturnType<typeof supplierMallAfterSalesHistory>>, TError = ErrorType<ApiResponseVoid>>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierMallAfterSalesHistory>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof supplierMallAfterSalesHistory>>,
+          TError,
+          Awaited<ReturnType<typeof supplierMallAfterSalesHistory>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSupplierMallAfterSalesHistory<TData = Awaited<ReturnType<typeof supplierMallAfterSalesHistory>>, TError = ErrorType<ApiResponseVoid>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierMallAfterSalesHistory>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof supplierMallAfterSalesHistory>>,
+          TError,
+          Awaited<ReturnType<typeof supplierMallAfterSalesHistory>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSupplierMallAfterSalesHistory<TData = Awaited<ReturnType<typeof supplierMallAfterSalesHistory>>, TError = ErrorType<ApiResponseVoid>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierMallAfterSalesHistory>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useSupplierMallAfterSalesHistory<TData = Awaited<ReturnType<typeof supplierMallAfterSalesHistory>>, TError = ErrorType<ApiResponseVoid>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierMallAfterSalesHistory>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getSupplierMallAfterSalesHistoryQueryOptions(id,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

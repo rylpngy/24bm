@@ -35,6 +35,7 @@ export * from './buyer-supplier-invitation-controller/buyer-supplier-invitation-
 export * from './buyer-tender-controller/buyer-tender-controller';
 export * from './buyer-user-controller/buyer-user-controller';
 export * from './buyer-workspace-controller/buyer-workspace-controller';
+export * from './contract-review-controller/contract-review-controller';
 export * from './contract-schedule-controller/contract-schedule-controller';
 export * from './department-controller/department-controller';
 export * from './dictionary-controller/dictionary-controller';
@@ -75,6 +76,7 @@ export * from './qualification-ledger-controller/qualification-ledger-controller
 export * from './qualification-review-controller/qualification-review-controller';
 export * from './rfq-award-controller/rfq-award-controller';
 export * from './rfq-controller/rfq-controller';
+export * from './rfq-quotation-controller/rfq-quotation-controller';
 export * from './session-permission-controller/session-permission-controller';
 export * from './supplier-announcement-controller/supplier-announcement-controller';
 export * from './supplier-cooperation-invitation-controller/supplier-cooperation-invitation-controller';
@@ -104,4 +106,8 @@ export * from './supplier-team-role-controller/supplier-team-role-controller';
 export * from './supplier-tender-controller/supplier-tender-controller';
 export * from './supplier-user-controller/supplier-user-controller';
 export * from './supplier-workspace-controller/supplier-workspace-controller';
+export * from './tender-document-review-controller/tender-document-review-controller';
+export * from './tender-scoring-rule-controller/tender-scoring-rule-controller';
 export * from './unified-workflow-controller/unified-workflow-controller';
+export * from './workflow-rework-controller/workflow-rework-controller';
+export * from './workflow-task-operation-controller/workflow-task-operation-controller';

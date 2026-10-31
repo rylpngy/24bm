@@ -21,6 +21,7 @@ public class TenderScoringRuleService {
       TenderReadAccess access,PermissionService permissions,AuditLogApplicationService audit) {
     this.tenders=tenders;this.rules=rules;this.reviews=reviews;this.access=access;this.permissions=permissions;this.audit=audit;
   }
+  @io.swagger.v3.oas.annotations.media.Schema(name = "TenderScoringRuleView")
   public record View(String evaluationMethod,int revision,TenderScoringWeights weights,List<TenderScoringRuleMapper.Rule> history) {}
   public View read(String tenderId) {
     access.require(tenderId);

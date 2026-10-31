@@ -6,10 +6,17 @@
  * OpenAPI spec version: v1
  */
 import type { QuoteLineItemRequest } from './quoteLineItemRequest';
+import type { QuotationDetails } from './quotationDetails';
 
 export interface UpdateQuoteRequest {
   amount?: number;
+  /**
+   * @minimum 0
+   * @maximum 100
+   */
   taxRate?: number;
   deliveryDays?: number;
   lineItems?: QuoteLineItemRequest[];
+  details?: QuotationDetails;
+  expectedVersion?: number;
 }

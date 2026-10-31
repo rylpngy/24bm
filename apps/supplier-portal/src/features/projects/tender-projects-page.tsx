@@ -68,7 +68,8 @@ function tenderStageIndex(t: TenderResponse): number {
   if (t.executionOrderId) return 5;
   if (t.status === '已定标') return 4;
   if (t.status === '评标中') return 3;
-  if (t.status === '已开标' || t.status === '已流标') return 2;
+  if (t.status === '已流标') return t.openedAt ? 2 : 1;
+  if (t.status === '已开标') return 2;
   if (acquisitionState(t) === '已领取') return 1;
   return 0;
 }
@@ -94,9 +95,9 @@ function TenderStageStepper({ tender: t }: { tender: TenderResponse }) {
       )}
       <div className="grid grid-cols-6 items-start gap-2">
         {TENDER_STAGES.map((stage, index) => {
-          const done = !failed && index < currentIndex;
+          const done = index < currentIndex;
           const current = !failed && index === currentIndex;
-          const deadHere = failed && index === 2;
+          const deadHere = failed && index === currentIndex;
           return (
             <div key={stage} className="relative text-center">
               {index < TENDER_STAGES.length - 1 && <div className="absolute left-1/2 top-5 h-1 w-full bg-slate-100" />}
@@ -110,7 +111,7 @@ function TenderStageStepper({ tender: t }: { tender: TenderResponse }) {
               </span>
               <p className={cn('mt-2 text-xs font-black', done || current ? 'text-blue-700' : deadHere ? 'text-red-600' : 'text-slate-500')}>{stage}</p>
               <p className="mt-0.5 text-[11px] font-bold text-slate-400">
-                {deadHere ? '已流标' : failed && index > 2 ? '流程终止' : done || current ? captions[index] : '待开始'}
+                {deadHere ? '已流标' : failed && index > currentIndex ? '流程终止' : done || current ? captions[index] : '待开始'}
               </p>
             </div>
           );

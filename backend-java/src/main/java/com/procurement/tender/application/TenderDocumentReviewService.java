@@ -41,6 +41,7 @@ public class TenderDocumentReviewService {
     access.require(tenderId);
     return reviews.list(TenantAccessGuard.requireTenantId("tender review"),tenderId);
   }
+  @io.swagger.v3.oas.annotations.media.Schema(name = "TenderDocumentReviewState")
   public record State(List<TenderDocumentReviewMapper.Review> reviews, boolean currentApproved) {}
   public State state(String tenderId) {
     var history=history(tenderId);

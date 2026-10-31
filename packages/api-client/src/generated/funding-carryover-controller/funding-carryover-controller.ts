@@ -37,15 +37,15 @@ export const specialFundingCarryoverOptions = (
     params: SpecialFundingCarryoverOptionsParams,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseFundingCarryoverOptions>(
       {url: `/api/v1/buyer/projects/${id}/funding/carryover`, method: 'GET',
         params, signal
     },
       );
     }
-  
+
 
 
 
@@ -56,7 +56,7 @@ export const getSpecialFundingCarryoverOptionsQueryKey = (id?: string,
     ] as const;
     }
 
-    
+
 export const getSpecialFundingCarryoverOptionsQueryOptions = <TData = Awaited<ReturnType<typeof specialFundingCarryoverOptions>>, TError = ErrorType<ApiResponseVoid>>(id: string,
     params: SpecialFundingCarryoverOptionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof specialFundingCarryoverOptions>>, TError, TData>>, }
 ) => {
@@ -65,13 +65,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getSpecialFundingCarryoverOptionsQueryKey(id,params);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof specialFundingCarryoverOptions>>> = ({ signal }) => specialFundingCarryoverOptions(id,params, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof specialFundingCarryoverOptions>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -111,7 +111,7 @@ export function useSpecialFundingCarryoverOptions<TData = Awaited<ReturnType<typ
 export function useSpecialFundingCarryoverOptions<TData = Awaited<ReturnType<typeof specialFundingCarryoverOptions>>, TError = ErrorType<ApiResponseVoid>>(
  id: string,
     params: SpecialFundingCarryoverOptionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof specialFundingCarryoverOptions>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getSpecialFundingCarryoverOptionsQueryOptions(id,params,options)
@@ -122,7 +122,3 @@ export function useSpecialFundingCarryoverOptions<TData = Awaited<ReturnType<typ
 
   return query;
 }
-
-
-
-

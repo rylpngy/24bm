@@ -199,8 +199,17 @@ class TenderPolicyTests {
         tender("公开招标", "已开标", "<p>x</p>", now, now, now), "无有效投标")).doesNotThrowAnyException();
     assertThatCode(() -> TenderPolicy.requireFailable(
         tender("公开招标", "评标中", "<p>x</p>", now, now, now), "评审全部不合格")).doesNotThrowAnyException();
+    assertThatCode(() -> TenderPolicy.requireFailable(
+        tender("公开招标", "发售中", "<p>x</p>", now, now, now), "递交截止无投标", now)).doesNotThrowAnyException();
     assertThatThrownBy(() -> TenderPolicy.requireFailable(
-        tender("公开招标", "发售中", "<p>x</p>", now, now, now), "r")).hasMessageContaining("开标后、定标前");
+        tender("公开招标", "发售中", "<p>x</p>", now, now.plusMinutes(1), now.plusMinutes(2)), "未截止", now))
+        .hasMessageContaining("递交截止后");
+    assertThatThrownBy(() -> TenderPolicy.requireFailable(
+        tender("公开招标", "发售中", "<p>x</p>", now, null, now), "缺少时间", now))
+        .hasMessageContaining("递交截止后");
+    assertThatThrownBy(() -> TenderPolicy.requireFailable(
+        tender("公开招标", "已开标", "<p>x</p>", now, now, now), "长".repeat(1001), now))
+        .hasMessageContaining("1000");
     assertThatThrownBy(() -> TenderPolicy.requireFailable(
         tender("公开招标", "已定标", "<p>x</p>", now, now, now), "r")).hasMessageContaining("开标后、定标前");
     assertThatThrownBy(() -> TenderPolicy.requireFailable(

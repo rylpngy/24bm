@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/buyer/tenders/{tenderId}/document-reviews")
 public class TenderDocumentReviewController {
+  @io.swagger.v3.oas.annotations.media.Schema(name = "SubmitTenderDocumentReviewRequest")
   public record Submit(Map<String,Object> formData) {}
   private final TenderDocumentReviewService service;
   public TenderDocumentReviewController(TenderDocumentReviewService service) { this.service=service; }

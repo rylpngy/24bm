@@ -48,15 +48,15 @@ export const specialFundList = (
     params?: SpecialFundListParams,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseSpecialFundPage>(
       {url: `/api/v1/buyer/funding`, method: 'GET',
         params, signal
     },
       );
     }
-  
+
 
 
 
@@ -66,7 +66,7 @@ export const getSpecialFundListQueryKey = (params?: SpecialFundListParams,) => {
     ] as const;
     }
 
-    
+
 export const getSpecialFundListQueryOptions = <TData = Awaited<ReturnType<typeof specialFundList>>, TError = ErrorType<ApiResponseVoid>>(params?: SpecialFundListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof specialFundList>>, TError, TData>>, }
 ) => {
 
@@ -74,13 +74,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getSpecialFundListQueryKey(params);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof specialFundList>>> = ({ signal }) => specialFundList(params, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof specialFundList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -116,7 +116,7 @@ export function useSpecialFundList<TData = Awaited<ReturnType<typeof specialFund
 
 export function useSpecialFundList<TData = Awaited<ReturnType<typeof specialFundList>>, TError = ErrorType<ApiResponseVoid>>(
  params?: SpecialFundListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof specialFundList>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getSpecialFundListQueryOptions(params,options)
@@ -135,8 +135,8 @@ export const specialFundCreate = (
     specialFundDraft: BodyType<SpecialFundDraft>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseSpecialFund>(
       {url: `/api/v1/buyer/funding`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -144,7 +144,7 @@ export const specialFundCreate = (
     },
       );
     }
-  
+
 
 
 export const getSpecialFundCreateMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -158,7 +158,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof specialFundCreate>>, {data: BodyType<SpecialFundDraft>}> = (props) => {
@@ -167,7 +167,7 @@ const {mutation: mutationOptions} = options ?
           return  specialFundCreate(data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -193,15 +193,15 @@ const {mutation: mutationOptions} = options ?
     params?: SpecialFundHistoryParams,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseSpecialFundChangePage>(
       {url: `/api/v1/buyer/funding/changes`, method: 'GET',
         params, signal
     },
       );
     }
-  
+
 
 
 
@@ -211,7 +211,7 @@ export const getSpecialFundHistoryQueryKey = (params?: SpecialFundHistoryParams,
     ] as const;
     }
 
-    
+
 export const getSpecialFundHistoryQueryOptions = <TData = Awaited<ReturnType<typeof specialFundHistory>>, TError = ErrorType<ApiResponseVoid>>(params?: SpecialFundHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof specialFundHistory>>, TError, TData>>, }
 ) => {
 
@@ -219,13 +219,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getSpecialFundHistoryQueryKey(params);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof specialFundHistory>>> = ({ signal }) => specialFundHistory(params, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof specialFundHistory>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -261,7 +261,7 @@ export function useSpecialFundHistory<TData = Awaited<ReturnType<typeof specialF
 
 export function useSpecialFundHistory<TData = Awaited<ReturnType<typeof specialFundHistory>>, TError = ErrorType<ApiResponseVoid>>(
  params?: SpecialFundHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof specialFundHistory>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getSpecialFundHistoryQueryOptions(params,options)
@@ -280,8 +280,8 @@ export const specialFundChangeSubmit = (
     specialFundChangeRequest: BodyType<SpecialFundChangeRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseSpecialFundChange>(
       {url: `/api/v1/buyer/funding/changes`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -289,7 +289,7 @@ export const specialFundChangeSubmit = (
     },
       );
     }
-  
+
 
 
 export const getSpecialFundChangeSubmitMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -303,7 +303,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof specialFundChangeSubmit>>, {data: BodyType<SpecialFundChangeRequest>}> = (props) => {
@@ -312,7 +312,7 @@ const {mutation: mutationOptions} = options ?
           return  specialFundChangeSubmit(data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -339,8 +339,8 @@ const {mutation: mutationOptions} = options ?
     specialFundingWithdrawRequest: BodyType<SpecialFundingWithdrawRequest>,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseSpecialFundChange>(
       {url: `/api/v1/buyer/funding/changes/${id}/withdraw`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
@@ -348,7 +348,7 @@ const {mutation: mutationOptions} = options ?
     },
       );
     }
-  
+
 
 
 export const getSpecialFundChangeWithdrawMutationOptions = <TError = ErrorType<ApiResponseVoid>,
@@ -362,7 +362,7 @@ const {mutation: mutationOptions} = options ?
       : {...options, mutation: {...options.mutation, mutationKey}}
       : {mutation: { mutationKey, }};
 
-      
+
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof specialFundChangeWithdraw>>, {id: string;data: BodyType<SpecialFundingWithdrawRequest>}> = (props) => {
@@ -371,7 +371,7 @@ const {mutation: mutationOptions} = options ?
           return  specialFundChangeWithdraw(id,data,)
         }
 
-        
+
 
 
   return  { mutationFn, ...mutationOptions }}
@@ -397,14 +397,14 @@ const {mutation: mutationOptions} = options ?
     id: string,
  signal?: AbortSignal
 ) => {
-      
-      
+
+
       return customInstance<ApiResponseSpecialFundingProject>(
       {url: `/api/v1/buyer/projects/${id}/funding`, method: 'GET', signal
     },
       );
     }
-  
+
 
 
 
@@ -414,7 +414,7 @@ export const getSpecialFundingProjectViewQueryKey = (id?: string,) => {
     ] as const;
     }
 
-    
+
 export const getSpecialFundingProjectViewQueryOptions = <TData = Awaited<ReturnType<typeof specialFundingProjectView>>, TError = ErrorType<ApiResponseVoid>>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof specialFundingProjectView>>, TError, TData>>, }
 ) => {
 
@@ -422,13 +422,13 @@ const {query: queryOptions} = options ?? {};
 
   const queryKey =  queryOptions?.queryKey ?? getSpecialFundingProjectViewQueryKey(id);
 
-  
+
 
     const queryFn: QueryFunction<Awaited<ReturnType<typeof specialFundingProjectView>>> = ({ signal }) => specialFundingProjectView(id, signal);
 
-      
 
-      
+
+
 
    return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof specialFundingProjectView>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
@@ -464,7 +464,7 @@ export function useSpecialFundingProjectView<TData = Awaited<ReturnType<typeof s
 
 export function useSpecialFundingProjectView<TData = Awaited<ReturnType<typeof specialFundingProjectView>>, TError = ErrorType<ApiResponseVoid>>(
  id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof specialFundingProjectView>>, TError, TData>>, }
- , queryClient?: QueryClient 
+ , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getSpecialFundingProjectViewQueryOptions(id,options)
@@ -475,7 +475,3 @@ export function useSpecialFundingProjectView<TData = Awaited<ReturnType<typeof s
 
   return query;
 }
-
-
-
-

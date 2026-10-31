@@ -16,4 +16,5 @@ export interface WorkflowTaskEventResponse {
   actorName?: string;
   comment?: string;
   createdAt?: string;
+  effective?: boolean;
 }

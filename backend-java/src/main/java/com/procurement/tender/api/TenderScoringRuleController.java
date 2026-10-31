@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/buyer/tenders/{tenderId}/scoring-rule")
 public class TenderScoringRuleController {
+  @io.swagger.v3.oas.annotations.media.Schema(name = "SaveTenderScoringRuleRequest")
   public record Save(@NotNull BigDecimal technicalWeight,@NotNull BigDecimal commercialWeight,@NotNull BigDecimal priceWeight,
       @NotBlank @Size(max=1000) String reason,@NotNull @Min(0) Integer expectedRevision) {}
   private final TenderScoringRuleService service;

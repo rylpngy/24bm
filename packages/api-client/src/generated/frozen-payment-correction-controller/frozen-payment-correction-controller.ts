@@ -5,7 +5,10 @@
  * 多租户采购协同管理 SaaS 后端契约（平台 / 采购方 / 供应商三端）。
  * OpenAPI spec version: v1
  */
-import { useMutation, useQuery } from '@tanstack/react-query';
+import {
+  useMutation,
+  useQuery
+} from '@tanstack/react-query';
 import type {
   DataTag,
   DefinedInitialDataOptions,
@@ -18,7 +21,7 @@ import type {
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
-  UseQueryResult,
+  UseQueryResult
 } from '@tanstack/react-query';
 
 import type {
@@ -34,541 +37,225 @@ import type {
 } from '.././model';
 
 import { customInstance } from '../../http-client';
-import type { ErrorType, BodyType } from '../../http-client';
+import type { ErrorType , BodyType } from '../../http-client';
+
+
+
 
 export const frozenPaymentCorrectionHistory = (
-  invoice: string,
-  params?: FrozenPaymentCorrectionHistoryParams,
-  signal?: AbortSignal,
+    invoice: string,
+    params?: FrozenPaymentCorrectionHistoryParams,
+ signal?: AbortSignal
 ) => {
-  return customInstance<ApiResponseFrozenPaymentCorrectionPage>({
-    url: `/api/v1/buyer/invoices/${invoice}/payment-ledger/corrections`,
-    method: 'GET',
-    params,
-    signal,
-  });
-};
 
-export const getFrozenPaymentCorrectionHistoryQueryKey = (
-  invoice?: string,
-  params?: FrozenPaymentCorrectionHistoryParams,
+
+      return customInstance<ApiResponseFrozenPaymentCorrectionPage>(
+      {url: `/api/v1/buyer/invoices/${invoice}/payment-ledger/corrections`, method: 'GET',
+        params, signal
+    },
+      );
+    }
+
+
+
+
+export const getFrozenPaymentCorrectionHistoryQueryKey = (invoice?: string,
+    params?: FrozenPaymentCorrectionHistoryParams,) => {
+    return [
+    `/api/v1/buyer/invoices/${invoice}/payment-ledger/corrections`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+
+export const getFrozenPaymentCorrectionHistoryQueryOptions = <TData = Awaited<ReturnType<typeof frozenPaymentCorrectionHistory>>, TError = ErrorType<ApiResponseVoid>>(invoice: string,
+    params?: FrozenPaymentCorrectionHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof frozenPaymentCorrectionHistory>>, TError, TData>>, }
 ) => {
-  return [
-    `/api/v1/buyer/invoices/${invoice}/payment-ledger/corrections`,
-    ...(params ? [params] : []),
-  ] as const;
-};
 
-export const getFrozenPaymentCorrectionHistoryQueryOptions = <
-  TData = Awaited<ReturnType<typeof frozenPaymentCorrectionHistory>>,
-  TError = ErrorType<ApiResponseVoid>,
->(
-  invoice: string,
-  params?: FrozenPaymentCorrectionHistoryParams,
-  options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<typeof frozenPaymentCorrectionHistory>>,
-        TError,
-        TData
-      >
-    >;
-  },
-) => {
-  const { query: queryOptions } = options ?? {};
+const {query: queryOptions} = options ?? {};
 
-  const queryKey =
-    queryOptions?.queryKey ??
-    getFrozenPaymentCorrectionHistoryQueryKey(invoice, params);
+  const queryKey =  queryOptions?.queryKey ?? getFrozenPaymentCorrectionHistoryQueryKey(invoice,params);
 
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof frozenPaymentCorrectionHistory>>
-  > = ({ signal }) => frozenPaymentCorrectionHistory(invoice, params, signal);
 
-  return {
-    queryKey,
-    queryFn,
-    enabled: !!invoice,
-    ...queryOptions,
-  } as UseQueryOptions<
-    Awaited<ReturnType<typeof frozenPaymentCorrectionHistory>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
-};
 
-export type FrozenPaymentCorrectionHistoryQueryResult = NonNullable<
-  Awaited<ReturnType<typeof frozenPaymentCorrectionHistory>>
->;
-export type FrozenPaymentCorrectionHistoryQueryError =
-  ErrorType<ApiResponseVoid>;
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof frozenPaymentCorrectionHistory>>> = ({ signal }) => frozenPaymentCorrectionHistory(invoice,params, signal);
 
-export function useFrozenPaymentCorrectionHistory<
-  TData = Awaited<ReturnType<typeof frozenPaymentCorrectionHistory>>,
-  TError = ErrorType<ApiResponseVoid>,
->(
-  invoice: string,
-  params: undefined | FrozenPaymentCorrectionHistoryParams,
-  options: {
-    query: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<typeof frozenPaymentCorrectionHistory>>,
-        TError,
-        TData
-      >
-    > &
-      Pick<
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(invoice), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof frozenPaymentCorrectionHistory>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type FrozenPaymentCorrectionHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof frozenPaymentCorrectionHistory>>>
+export type FrozenPaymentCorrectionHistoryQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useFrozenPaymentCorrectionHistory<TData = Awaited<ReturnType<typeof frozenPaymentCorrectionHistory>>, TError = ErrorType<ApiResponseVoid>>(
+ invoice: string,
+    params: undefined |  FrozenPaymentCorrectionHistoryParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof frozenPaymentCorrectionHistory>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof frozenPaymentCorrectionHistory>>,
           TError,
           Awaited<ReturnType<typeof frozenPaymentCorrectionHistory>>
-        >,
-        'initialData'
-      >;
-  },
-  queryClient?: QueryClient,
-): DefinedUseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-export function useFrozenPaymentCorrectionHistory<
-  TData = Awaited<ReturnType<typeof frozenPaymentCorrectionHistory>>,
-  TError = ErrorType<ApiResponseVoid>,
->(
-  invoice: string,
-  params?: FrozenPaymentCorrectionHistoryParams,
-  options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<typeof frozenPaymentCorrectionHistory>>,
-        TError,
-        TData
-      >
-    > &
-      Pick<
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useFrozenPaymentCorrectionHistory<TData = Awaited<ReturnType<typeof frozenPaymentCorrectionHistory>>, TError = ErrorType<ApiResponseVoid>>(
+ invoice: string,
+    params?: FrozenPaymentCorrectionHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof frozenPaymentCorrectionHistory>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof frozenPaymentCorrectionHistory>>,
           TError,
           Awaited<ReturnType<typeof frozenPaymentCorrectionHistory>>
-        >,
-        'initialData'
-      >;
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-export function useFrozenPaymentCorrectionHistory<
-  TData = Awaited<ReturnType<typeof frozenPaymentCorrectionHistory>>,
-  TError = ErrorType<ApiResponseVoid>,
->(
-  invoice: string,
-  params?: FrozenPaymentCorrectionHistoryParams,
-  options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<typeof frozenPaymentCorrectionHistory>>,
-        TError,
-        TData
-      >
-    >;
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useFrozenPaymentCorrectionHistory<TData = Awaited<ReturnType<typeof frozenPaymentCorrectionHistory>>, TError = ErrorType<ApiResponseVoid>>(
+ invoice: string,
+    params?: FrozenPaymentCorrectionHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof frozenPaymentCorrectionHistory>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useFrozenPaymentCorrectionHistory<
-  TData = Awaited<ReturnType<typeof frozenPaymentCorrectionHistory>>,
-  TError = ErrorType<ApiResponseVoid>,
->(
-  invoice: string,
-  params?: FrozenPaymentCorrectionHistoryParams,
-  options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<typeof frozenPaymentCorrectionHistory>>,
-        TError,
-        TData
-      >
-    >;
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-} {
-  const queryOptions = getFrozenPaymentCorrectionHistoryQueryOptions(
-    invoice,
-    params,
-    options,
-  );
+export function useFrozenPaymentCorrectionHistory<TData = Awaited<ReturnType<typeof frozenPaymentCorrectionHistory>>, TError = ErrorType<ApiResponseVoid>>(
+ invoice: string,
+    params?: FrozenPaymentCorrectionHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof frozenPaymentCorrectionHistory>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
-    TData,
-    TError
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
+  const queryOptions = getFrozenPaymentCorrectionHistoryQueryOptions(invoice,params,options)
 
-  query.queryKey = queryOptions.queryKey;
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
 
   return query;
 }
+
+
+
 
 export const frozenPaymentCorrectionSubmit = (
-  invoice: string,
-  frozenPaymentCorrectionRequest: BodyType<FrozenPaymentCorrectionRequest>,
-  signal?: AbortSignal,
+    invoice: string,
+    frozenPaymentCorrectionRequest: BodyType<FrozenPaymentCorrectionRequest>,
+ signal?: AbortSignal
 ) => {
-  return customInstance<ApiResponseFrozenPaymentCorrection>({
-    url: `/api/v1/buyer/invoices/${invoice}/payment-ledger/corrections`,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    data: frozenPaymentCorrectionRequest,
-    signal,
-  });
-};
 
-export const getFrozenPaymentCorrectionSubmitMutationOptions = <
-  TError = ErrorType<ApiResponseVoid>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof frozenPaymentCorrectionSubmit>>,
-    TError,
-    { invoice: string; data: BodyType<FrozenPaymentCorrectionRequest> },
-    TContext
-  >;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof frozenPaymentCorrectionSubmit>>,
-  TError,
-  { invoice: string; data: BodyType<FrozenPaymentCorrectionRequest> },
-  TContext
-> => {
-  const mutationKey = ['frozenPaymentCorrectionSubmit'];
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      'mutationKey' in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
 
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof frozenPaymentCorrectionSubmit>>,
-    { invoice: string; data: BodyType<FrozenPaymentCorrectionRequest> }
-  > = (props) => {
-    const { invoice, data } = props ?? {};
-
-    return frozenPaymentCorrectionSubmit(invoice, data);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type FrozenPaymentCorrectionSubmitMutationResult = NonNullable<
-  Awaited<ReturnType<typeof frozenPaymentCorrectionSubmit>>
->;
-export type FrozenPaymentCorrectionSubmitMutationBody =
-  BodyType<FrozenPaymentCorrectionRequest>;
-export type FrozenPaymentCorrectionSubmitMutationError =
-  ErrorType<ApiResponseVoid>;
-
-export const useFrozenPaymentCorrectionSubmit = <
-  TError = ErrorType<ApiResponseVoid>,
-  TContext = unknown,
->(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<typeof frozenPaymentCorrectionSubmit>>,
-      TError,
-      { invoice: string; data: BodyType<FrozenPaymentCorrectionRequest> },
-      TContext
-    >;
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<typeof frozenPaymentCorrectionSubmit>>,
-  TError,
-  { invoice: string; data: BodyType<FrozenPaymentCorrectionRequest> },
-  TContext
-> => {
-  const mutationOptions =
-    getFrozenPaymentCorrectionSubmitMutationOptions(options);
-
-  return useMutation(mutationOptions, queryClient);
-};
-export const frozenPaymentCorrectionWithdraw = (
-  invoice: string,
-  id: string,
-  frozenPaymentCorrectionWithdrawRequest: BodyType<FrozenPaymentCorrectionWithdrawRequest>,
-  signal?: AbortSignal,
-) => {
-  return customInstance<ApiResponseFrozenPaymentCorrection>({
-    url: `/api/v1/buyer/invoices/${invoice}/payment-ledger/corrections/${id}/withdraw`,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    data: frozenPaymentCorrectionWithdrawRequest,
-    signal,
-  });
-};
-
-export const getFrozenPaymentCorrectionWithdrawMutationOptions = <
-  TError = ErrorType<ApiResponseVoid>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof frozenPaymentCorrectionWithdraw>>,
-    TError,
-    {
-      invoice: string;
-      id: string;
-      data: BodyType<FrozenPaymentCorrectionWithdrawRequest>;
+      return customInstance<ApiResponseFrozenPaymentCorrection>(
+      {url: `/api/v1/buyer/invoices/${invoice}/payment-ledger/corrections`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: frozenPaymentCorrectionRequest, signal
     },
-    TContext
-  >;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof frozenPaymentCorrectionWithdraw>>,
-  TError,
-  {
-    invoice: string;
-    id: string;
-    data: BodyType<FrozenPaymentCorrectionWithdrawRequest>;
-  },
-  TContext
-> => {
-  const mutationKey = ['frozenPaymentCorrectionWithdraw'];
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      'mutationKey' in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof frozenPaymentCorrectionWithdraw>>,
-    {
-      invoice: string;
-      id: string;
-      data: BodyType<FrozenPaymentCorrectionWithdrawRequest>;
+      );
     }
-  > = (props) => {
-    const { invoice, id, data } = props ?? {};
 
-    return frozenPaymentCorrectionWithdraw(invoice, id, data);
-  };
 
-  return { mutationFn, ...mutationOptions };
-};
 
-export type FrozenPaymentCorrectionWithdrawMutationResult = NonNullable<
-  Awaited<ReturnType<typeof frozenPaymentCorrectionWithdraw>>
->;
-export type FrozenPaymentCorrectionWithdrawMutationBody =
-  BodyType<FrozenPaymentCorrectionWithdrawRequest>;
-export type FrozenPaymentCorrectionWithdrawMutationError =
-  ErrorType<ApiResponseVoid>;
+export const getFrozenPaymentCorrectionSubmitMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof frozenPaymentCorrectionSubmit>>, TError,{invoice: string;data: BodyType<FrozenPaymentCorrectionRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof frozenPaymentCorrectionSubmit>>, TError,{invoice: string;data: BodyType<FrozenPaymentCorrectionRequest>}, TContext> => {
 
-export const useFrozenPaymentCorrectionWithdraw = <
-  TError = ErrorType<ApiResponseVoid>,
-  TContext = unknown,
->(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<typeof frozenPaymentCorrectionWithdraw>>,
-      TError,
-      {
-        invoice: string;
-        id: string;
-        data: BodyType<FrozenPaymentCorrectionWithdrawRequest>;
-      },
-      TContext
-    >;
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<typeof frozenPaymentCorrectionWithdraw>>,
-  TError,
-  {
-    invoice: string;
-    id: string;
-    data: BodyType<FrozenPaymentCorrectionWithdrawRequest>;
-  },
-  TContext
-> => {
-  const mutationOptions =
-    getFrozenPaymentCorrectionWithdrawMutationOptions(options);
+const mutationKey = ['frozenPaymentCorrectionSubmit'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
 
-  return useMutation(mutationOptions, queryClient);
-};
-export const frozenPaymentCorrectionCandidates = (
-  invoice: string,
-  signal?: AbortSignal,
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof frozenPaymentCorrectionSubmit>>, {invoice: string;data: BodyType<FrozenPaymentCorrectionRequest>}> = (props) => {
+          const {invoice,data} = props ?? {};
+
+          return  frozenPaymentCorrectionSubmit(invoice,data,)
+        }
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type FrozenPaymentCorrectionSubmitMutationResult = NonNullable<Awaited<ReturnType<typeof frozenPaymentCorrectionSubmit>>>
+    export type FrozenPaymentCorrectionSubmitMutationBody = BodyType<FrozenPaymentCorrectionRequest>
+    export type FrozenPaymentCorrectionSubmitMutationError = ErrorType<ApiResponseVoid>
+
+    export const useFrozenPaymentCorrectionSubmit = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof frozenPaymentCorrectionSubmit>>, TError,{invoice: string;data: BodyType<FrozenPaymentCorrectionRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof frozenPaymentCorrectionSubmit>>,
+        TError,
+        {invoice: string;data: BodyType<FrozenPaymentCorrectionRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getFrozenPaymentCorrectionSubmitMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const frozenPaymentCorrectionWithdraw = (
+    invoice: string,
+    id: string,
+    frozenPaymentCorrectionWithdrawRequest: BodyType<FrozenPaymentCorrectionWithdrawRequest>,
+ signal?: AbortSignal
 ) => {
-  return customInstance<ApiResponseListFrozenPaymentCorrectionCandidate>({
-    url: `/api/v1/buyer/invoices/${invoice}/payment-ledger/corrections/candidates`,
-    method: 'GET',
-    signal,
-  });
-};
 
-export const getFrozenPaymentCorrectionCandidatesQueryKey = (
-  invoice?: string,
-) => {
-  return [
-    `/api/v1/buyer/invoices/${invoice}/payment-ledger/corrections/candidates`,
-  ] as const;
-};
 
-export const getFrozenPaymentCorrectionCandidatesQueryOptions = <
-  TData = Awaited<ReturnType<typeof frozenPaymentCorrectionCandidates>>,
-  TError = ErrorType<ApiResponseVoid>,
->(
-  invoice: string,
-  options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<typeof frozenPaymentCorrectionCandidates>>,
+      return customInstance<ApiResponseFrozenPaymentCorrection>(
+      {url: `/api/v1/buyer/invoices/${invoice}/payment-ledger/corrections/${id}/withdraw`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: frozenPaymentCorrectionWithdrawRequest, signal
+    },
+      );
+    }
+
+
+
+export const getFrozenPaymentCorrectionWithdrawMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof frozenPaymentCorrectionWithdraw>>, TError,{invoice: string;id: string;data: BodyType<FrozenPaymentCorrectionWithdrawRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof frozenPaymentCorrectionWithdraw>>, TError,{invoice: string;id: string;data: BodyType<FrozenPaymentCorrectionWithdrawRequest>}, TContext> => {
+
+const mutationKey = ['frozenPaymentCorrectionWithdraw'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof frozenPaymentCorrectionWithdraw>>, {invoice: string;id: string;data: BodyType<FrozenPaymentCorrectionWithdrawRequest>}> = (props) => {
+          const {invoice,id,data} = props ?? {};
+
+          return  frozenPaymentCorrectionWithdraw(invoice,id,data,)
+        }
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type FrozenPaymentCorrectionWithdrawMutationResult = NonNullable<Awaited<ReturnType<typeof frozenPaymentCorrectionWithdraw>>>
+    export type FrozenPaymentCorrectionWithdrawMutationBody = BodyType<FrozenPaymentCorrectionWithdrawRequest>
+    export type FrozenPaymentCorrectionWithdrawMutationError = ErrorType<ApiResponseVoid>
+
+    export const useFrozenPaymentCorrectionWithdraw = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof frozenPaymentCorrectionWithdraw>>, TError,{invoice: string;id: string;data: BodyType<FrozenPaymentCorrectionWithdrawRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof frozenPaymentCorrectionWithdraw>>,
         TError,
-        TData
-      >
-    >;
-  },
-) => {
-  const { query: queryOptions } = options ?? {};
+        {invoice: string;id: string;data: BodyType<FrozenPaymentCorrectionWithdrawRequest>},
+        TContext
+      > => {
 
-  const queryKey =
-    queryOptions?.queryKey ??
-    getFrozenPaymentCorrectionCandidatesQueryKey(invoice);
+      const mutationOptions = getFrozenPaymentCorrectionWithdrawMutationOptions(options);
 
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof frozenPaymentCorrectionCandidates>>
-  > = ({ signal }) => frozenPaymentCorrectionCandidates(invoice, signal);
-
-  return {
-    queryKey,
-    queryFn,
-    enabled: !!invoice,
-    ...queryOptions,
-  } as UseQueryOptions<
-    Awaited<ReturnType<typeof frozenPaymentCorrectionCandidates>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
-};
-
-export type FrozenPaymentCorrectionCandidatesQueryResult = NonNullable<
-  Awaited<ReturnType<typeof frozenPaymentCorrectionCandidates>>
->;
-export type FrozenPaymentCorrectionCandidatesQueryError =
-  ErrorType<ApiResponseVoid>;
-
-export function useFrozenPaymentCorrectionCandidates<
-  TData = Awaited<ReturnType<typeof frozenPaymentCorrectionCandidates>>,
-  TError = ErrorType<ApiResponseVoid>,
->(
-  invoice: string,
-  options: {
-    query: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<typeof frozenPaymentCorrectionCandidates>>,
-        TError,
-        TData
-      >
-    > &
-      Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof frozenPaymentCorrectionCandidates>>,
-          TError,
-          Awaited<ReturnType<typeof frozenPaymentCorrectionCandidates>>
-        >,
-        'initialData'
-      >;
-  },
-  queryClient?: QueryClient,
-): DefinedUseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-export function useFrozenPaymentCorrectionCandidates<
-  TData = Awaited<ReturnType<typeof frozenPaymentCorrectionCandidates>>,
-  TError = ErrorType<ApiResponseVoid>,
->(
-  invoice: string,
-  options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<typeof frozenPaymentCorrectionCandidates>>,
-        TError,
-        TData
-      >
-    > &
-      Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof frozenPaymentCorrectionCandidates>>,
-          TError,
-          Awaited<ReturnType<typeof frozenPaymentCorrectionCandidates>>
-        >,
-        'initialData'
-      >;
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-export function useFrozenPaymentCorrectionCandidates<
-  TData = Awaited<ReturnType<typeof frozenPaymentCorrectionCandidates>>,
-  TError = ErrorType<ApiResponseVoid>,
->(
-  invoice: string,
-  options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<typeof frozenPaymentCorrectionCandidates>>,
-        TError,
-        TData
-      >
-    >;
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-
-export function useFrozenPaymentCorrectionCandidates<
-  TData = Awaited<ReturnType<typeof frozenPaymentCorrectionCandidates>>,
-  TError = ErrorType<ApiResponseVoid>,
->(
-  invoice: string,
-  options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<typeof frozenPaymentCorrectionCandidates>>,
-        TError,
-        TData
-      >
-    >;
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-} {
-  const queryOptions = getFrozenPaymentCorrectionCandidatesQueryOptions(
-    invoice,
-    options,
-  );
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
-    TData,
-    TError
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = queryOptions.queryKey;
-
-  return query;
-}
-
-
-
-
-export const frozenPaymentFundingOptions = (
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const frozenPaymentFundingOptions = (
     invoice: string,
     params: FrozenPaymentFundingOptionsParams,
  signal?: AbortSignal
@@ -651,6 +338,92 @@ export function useFrozenPaymentFundingOptions<TData = Awaited<ReturnType<typeof
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getFrozenPaymentFundingOptionsQueryOptions(invoice,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const frozenPaymentCorrectionCandidates = (
+    invoice: string,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseListFrozenPaymentCorrectionCandidate>(
+      {url: `/api/v1/buyer/invoices/${invoice}/payment-ledger/corrections/candidates`, method: 'GET', signal
+    },
+      );
+    }
+
+
+
+
+export const getFrozenPaymentCorrectionCandidatesQueryKey = (invoice?: string,) => {
+    return [
+    `/api/v1/buyer/invoices/${invoice}/payment-ledger/corrections/candidates`
+    ] as const;
+    }
+
+
+export const getFrozenPaymentCorrectionCandidatesQueryOptions = <TData = Awaited<ReturnType<typeof frozenPaymentCorrectionCandidates>>, TError = ErrorType<ApiResponseVoid>>(invoice: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof frozenPaymentCorrectionCandidates>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getFrozenPaymentCorrectionCandidatesQueryKey(invoice);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof frozenPaymentCorrectionCandidates>>> = ({ signal }) => frozenPaymentCorrectionCandidates(invoice, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(invoice), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof frozenPaymentCorrectionCandidates>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type FrozenPaymentCorrectionCandidatesQueryResult = NonNullable<Awaited<ReturnType<typeof frozenPaymentCorrectionCandidates>>>
+export type FrozenPaymentCorrectionCandidatesQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useFrozenPaymentCorrectionCandidates<TData = Awaited<ReturnType<typeof frozenPaymentCorrectionCandidates>>, TError = ErrorType<ApiResponseVoid>>(
+ invoice: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof frozenPaymentCorrectionCandidates>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof frozenPaymentCorrectionCandidates>>,
+          TError,
+          Awaited<ReturnType<typeof frozenPaymentCorrectionCandidates>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useFrozenPaymentCorrectionCandidates<TData = Awaited<ReturnType<typeof frozenPaymentCorrectionCandidates>>, TError = ErrorType<ApiResponseVoid>>(
+ invoice: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof frozenPaymentCorrectionCandidates>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof frozenPaymentCorrectionCandidates>>,
+          TError,
+          Awaited<ReturnType<typeof frozenPaymentCorrectionCandidates>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useFrozenPaymentCorrectionCandidates<TData = Awaited<ReturnType<typeof frozenPaymentCorrectionCandidates>>, TError = ErrorType<ApiResponseVoid>>(
+ invoice: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof frozenPaymentCorrectionCandidates>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useFrozenPaymentCorrectionCandidates<TData = Awaited<ReturnType<typeof frozenPaymentCorrectionCandidates>>, TError = ErrorType<ApiResponseVoid>>(
+ invoice: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof frozenPaymentCorrectionCandidates>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getFrozenPaymentCorrectionCandidatesQueryOptions(invoice,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

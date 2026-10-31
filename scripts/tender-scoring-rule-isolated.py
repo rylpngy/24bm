@@ -47,6 +47,11 @@ try:
             break
         except Exception: time.sleep(1)
     else: raise RuntimeError('Health timeout')
+    print('Isolated API ' + base, flush=True)
+    if os.environ.get('ACCEPTANCE_SYNC_CONTRACTS') == '1':
+        subprocess.run(['node', 'scripts/export-backend-openapi.mjs'], cwd=src,
+            env={**os.environ, 'BACKEND_OPENAPI_URL': base + '/v3/api-docs'}, check=True)
+        subprocess.run(['pnpm', '--filter', '@24bid/api-client', 'run', 'generate'], cwd=src, check=True)
     testenv = {**os.environ, 'JAVA_API_BASE_URL': base, 'ACCEPTANCE_LOCAL_WRITES': '1',
         'ACCEPTANCE_PASSWORD': 'demo123456', 'ACCEPTANCE_BUYER_PASSWORD': 'demo123456',
         'ACCEPTANCE_PLATFORM_PASSWORD': 'demo123456', 'ACCEPTANCE_SUPPLIER_PASSWORD': 'demo123456',
@@ -54,10 +59,14 @@ try:
         'ACCEPTANCE_SUPPLIER_ACCOUNT': 'supplier.sales@example.com', 'ACCEPTANCE_SUPPLIER_ID': 'ent-supplier-sunrise',
         'ACCEPTANCE_FOREIGN_BUYER_ACCOUNT': 'buyer.owner@example.com', 'ACCEPTANCE_FOREIGN_TENANT': 'tenant-acme','ACCEPTANCE_API_PORT':port,'ACCEPTANCE_STAGE_THREE_READY':'1','ACCEPTANCE_EXPECTED_DB':db,'ACCEPTANCE_BACKEND_SHA256':result['backendSha256'],'ACCEPTANCE_WINDOW_SECONDS':'60'}
     docker('psql', '-U', 'procurement', '-d', db, '-v', 'ON_ERROR_STOP=1', input=("update users set password_hash='" + hashed + "' where email='buyer.owner@example.com';").encode(), stdout=subprocess.DEVNULL)
-    for script in ['tender-scoring-rule-acceptance','mall-procurement-stage-three-acceptance']:
+    scripts = ['tender-scoring-rule-acceptance','mall-procurement-stage-three-acceptance']
+    if os.environ.get('ACCEPTANCE_DELIVERY_SWEEP') == '1':
+        scripts += ['budget-business-acceptance', 'srm-deepening-acceptance',
+                    'procurement-stage-two-acceptance', 'project-procurement-acceptance']
+    for script in scripts:
         report = out / (script + '.json')
         r = subprocess.run(['node', 'scripts/' + script + '.mjs'], cwd=src,
-            env={**testenv, 'ACCEPTANCE_REPORT_PATH': str(report), 'ACCEPTANCE_DOWNLOAD_DIR': str(out / script)}, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            env={**testenv, 'ACCEPTANCE_REPORT_PATH': str(report), 'ACCEPTANCE_RESULT_PATH': str(report), 'ACCEPTANCE_DOWNLOAD_DIR': str(out / script)}, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=600)
         (out / (script + '.log')).write_bytes(r.stdout)
         result['reports'].append({'script': script, 'exitCode': r.returncode, 'report': str(report)})
         print(script, 'PASS' if r.returncode == 0 else 'FAIL', flush=True)
@@ -68,6 +77,7 @@ try:
         time.sleep(3)
         br = subprocess.run(['node', 'scripts/tender-scoring-rule-browser.mjs'], cwd=src, env={**testenv,
             'ACCEPTANCE_BROWSER_DIR': str(out), 'ACCEPTANCE_FIXTURE_PATH': str(out/'tender-scoring-rule-acceptance.json'),
+            'ACCEPTANCE_STAGE3_FIXTURE_PATH': str(out/'mall-procurement-stage-three-acceptance.json'),
             'ACCEPTANCE_FRONTEND_URL': 'http://127.0.0.1:'+uiport}, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=180)
         (out/'browser.log').write_bytes(br.stdout)
         result['browserPassed'] = br.returncode == 0
