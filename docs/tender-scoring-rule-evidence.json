@@ -1,0 +1,128 @@
+{
+  "date": "2026-10-31",
+  "backendSha256": "cebb312638b525227803b521a62f4be44992160b7a73d9f170dcc60cb2ff8c3d",
+  "passed": true,
+  "ruleHttp": {
+    "passed": true,
+    "checks": [
+      "weights validate sum, persist version and reject stale edits",
+      "unreviewed publication blocked; missing published workflow rolls back review",
+      "pending file/attachment/settings lock, duplicate submit and self-approval rejection",
+      "rejection resubmission and exact-version approval invalidation",
+      "rule changes invalidate document approval while preserving original review snapshot",
+      "three immutable review rounds with actual actor/history/snapshot and final publication",
+      "published rules immutable and foreign tenant access denied"
+    ],
+    "records": {
+      "tenderId": "tender-be568adb-e3d1-4ddf-8405-9df11ae1f11c",
+      "reviewIds": [
+        "tdr-176eb17c-02e4-4d2f-9520-4bd2342788b2",
+        "tdr-03a988fa-593d-4f02-bb7c-60876b695713",
+        "tdr-7bbf4fb3-7a43-4602-b147-177d14006ec8"
+      ],
+      "draftId": "tender-86c73a30-a8fe-42c6-89c9-e33b5b6b89b5"
+    }
+  },
+  "marketHttp": {
+    "passed": true,
+    "checks": [
+      "8095 health, process, isolated DB and stage-three artifact identity verified before login",
+      "fresh tenant, published Flowable definitions and actual supplier admission approval",
+      "actual supplier auction bid/reduction, decrement rejection, no early force-open and sole-source quote",
+      "real tender invitation/prequalification/acquisition/sealed bid; buyer cannot see bid content early",
+      "actual deadlines elapsed; both RFQs and tender opened; fingerprint and authoritative eligibility verified",
+      "竞价: genuine Flowable approval, pre-approval order rejection, concurrent unified order idempotency and supplier confirmation",
+      "单一来源: genuine Flowable approval, pre-approval order rejection, concurrent unified order idempotency and supplier confirmation",
+      "enterprise tender: all evaluator scores, genuine award/notice, effective requote amount, concurrent/repeated execution and supplier-visible order"
+    ],
+    "records": {
+      "departmentId": "dept-f13b20c4-4736-4f75-b628-db96028e59fd",
+      "materialId": "mat-c0b94fcb-91b1-4495-a3c4-81141a725fab",
+      "definitions": {
+        "buyer_supplier_admission": "proc-ee9193be-7847-4e9d-bd55-1098d4ccdb4f",
+        "rfq_award": "proc-80d96734-3cae-416d-8e00-0a41f5e796f3",
+        "tender_document_review": "proc-125b3128-09dd-48b8-a43a-a6a6e3b5d2ec"
+      },
+      "relationId": "bsr-d8327200-f168-4fdb-802d-183d15c02ff6",
+      "workflows": [
+        {
+          "businessType": "buyer_supplier_admission",
+          "businessId": "bsr-d8327200-f168-4fdb-802d-183d15c02ff6",
+          "workflowInstanceId": "workflow-45120057-0269-4e7d-80a7-8d7a6d85f5a9",
+          "flowableProcessInstanceId": "e8ff0863-d4d0-11f1-bd99-a6efc340ac99",
+          "taskId": "e8ff2f81-d4d0-11f1-bd99-a6efc340ac99",
+          "status": "approved"
+        },
+        {
+          "businessType": "rfq_award",
+          "businessId": "award-b589fdbe-3f61-4b49-b2b4-afaad1b87662",
+          "workflowInstanceId": "workflow-a38e9d05-23fc-4359-bf21-2914037d6ef8",
+          "flowableProcessInstanceId": "0e052ed5-d4d1-11f1-bd99-a6efc340ac99",
+          "taskId": "0e057d03-d4d1-11f1-bd99-a6efc340ac99",
+          "status": "approved"
+        },
+        {
+          "businessType": "rfq_award",
+          "businessId": "award-6fb9059d-2eda-480b-865d-a86260a903bf",
+          "workflowInstanceId": "workflow-ddcc4761-ba28-4f49-a9dd-76b2b45c5951",
+          "flowableProcessInstanceId": "0ecdaf0e-d4d1-11f1-bd99-a6efc340ac99",
+          "taskId": "0ecdaf1c-d4d1-11f1-bd99-a6efc340ac99",
+          "status": "approved"
+        }
+      ],
+      "auction": {
+        "rfqId": "rfq-384ea6c4-bcaf-4721-a765-cab4b1c03db6",
+        "quoteId": "quote-d6cfe15a-578e-4036-8c54-7c2ed0fd7cbb",
+        "awardId": "award-b589fdbe-3f61-4b49-b2b4-afaad1b87662",
+        "orderIds": [
+          "po-954c5371-e6ef-481b-aef5-910e72ae45c8",
+          "po-954c5371-e6ef-481b-aef5-910e72ae45c8"
+        ],
+        "orderId": "po-954c5371-e6ef-481b-aef5-910e72ae45c8"
+      },
+      "singleSource": {
+        "rfqId": "rfq-c5758887-32ae-4e5d-85d9-346bd99db544",
+        "quoteId": "quote-3d5df7a2-1c5d-400b-81c7-c9e9f200a4f1",
+        "awardId": "award-6fb9059d-2eda-480b-865d-a86260a903bf",
+        "orderIds": [
+          "po-5682b84c-3e93-4729-a3f3-68e6bf500be5",
+          "po-5682b84c-3e93-4729-a3f3-68e6bf500be5"
+        ],
+        "orderId": "po-5682b84c-3e93-4729-a3f3-68e6bf500be5"
+      },
+      "tender": {
+        "tenderId": "tender-02b6a55a-a191-4873-8ece-de73c5d5cf7c",
+        "bidId": "tbid-539b78d5-cb59-40bf-8162-e5f4c1a9fa2b",
+        "orderIds": [
+          "po-43d92b9b-28eb-429d-bb6d-b7c2507d5d1f",
+          "po-43d92b9b-28eb-429d-bb6d-b7c2507d5d1f"
+        ],
+        "orderId": "po-43d92b9b-28eb-429d-bb6d-b7c2507d5d1f",
+        "anchorRfqId": "rfq-0e1b06af-f2a9-48e1-94cc-b9a0f197baa4"
+      }
+    }
+  },
+  "browser": {
+    "passed": true,
+    "checks": [
+      "published-rule-locked",
+      "invalid-sum-blocked-and-real-save",
+      "saved-rule-survives-reload",
+      "scoring-rule-1440",
+      "scoring-rule-390"
+    ],
+    "errors": []
+  },
+  "java": {
+    "suites": 11,
+    "tests": 59,
+    "failures": 0,
+    "errors": 0
+  },
+  "frontend": {
+    "files": 5,
+    "tests": 21
+  },
+  "nodeTests": 5,
+  "scope": "three-component weights, not an arbitrary scoring engine"
+}

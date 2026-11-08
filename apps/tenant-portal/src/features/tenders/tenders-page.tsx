@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
+import { TenderDocumentReviewPanel } from './tender-document-review-panel';
+import { TenderScoringRulePanel, tenderScoringRuleKey } from './tender-scoring-rule-panel';
 import { useBuyerPermissions } from '../../lib/use-buyer-permissions';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Award, CheckCircle2, ClipboardCheck, FileBadge, Gavel, Info, Megaphone, Plus, Send, Timer, Trophy, Users } from 'lucide-react';
 import {
   useBuyerEsignList,
@@ -21,6 +23,8 @@ import {
   useBuyerTenderSendInquiry,
   useBuyerTenderSubmitScores,
   useBuyerTenderUpdate,
+  tenderDocumentReviews,
+  tenderScoringRule,
   useRfqListAnnouncements,
   type SaveTenderRequest,
   type TenderResponse,
@@ -33,6 +37,7 @@ import {
   Pagination,
   Panel,
   PrimaryActionButton,
+  ActionButton,
   ResponsiveTableFrame,
   RichTextEditor,
   RichTextView,
@@ -111,6 +116,7 @@ function EvaluationSection({
   refresh: () => void;
 }) {
   const formCommittee = useBuyerTenderFormCommittee();
+  const scoringRule=useQuery({queryKey:tenderScoringRuleKey(t.id!),queryFn:()=>tenderScoringRule(t.id!),enabled:!!t.id});
   const { can } = useBuyerPermissions();
   const canManage = can('buyer:tender:manage');
   const submitScores = useBuyerTenderSubmitScores();
@@ -298,7 +304,9 @@ function EvaluationSection({
               </table>
               <div className="flex items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/60 px-3 py-2.5">
                 <p className="text-[11px] font-bold text-slate-400">
-                  价格分由系统按最低有效报价自动折算;{t.evaluationMethod === '最低评标价法' ? '本项目按最低评标价法以报价升序排名。' : '综合得分 = 技术×50% + 商务×20% + 价格×30%。'}
+                  价格分由系统按最低有效报价自动折算;{t.evaluationMethod === '最低评标价法' ? '本项目按最低评标价法以报价升序排名。' : scoringRule.data?.data
+                    ? `综合得分 = 技术×${scoringRule.data.data.weights.technical}% + 商务×${scoringRule.data.data.weights.commercial}% + 价格×${scoringRule.data.data.weights.price}%。`
+                    : '请先确认上方评审规则，规则读取失败时请刷新重试。'}
                 </p>
                 <PrimaryActionButton size="sm" onClick={doSubmitScores} busy={submitScores.isPending}
                   pendingLabel="提交中" disabled={!sheetComplete || validBids.length === 0}>
@@ -608,7 +616,8 @@ const BUYER_TENDER_STAGES = ['编制', '发售', '开标', '评标', '定标'] a
 function buyerTenderStageIndex(t: TenderResponse): number {
   if (t.status === '已定标') return 4;
   if (t.status === '评标中') return 3;
-  if (t.status === '已开标' || t.status === '已流标') return 2;
+  if (t.status === '已流标') return (t.evaluators ?? []).length > 0 ? 3 : t.openedAt ? 2 : 1;
+  if (t.status === '已开标') return 2;
   if (t.status === '发售中') return 1;
   return 0;
 }
@@ -641,9 +650,9 @@ function BuyerTenderStepper({ tender: t }: { tender: TenderResponse }) {
       )}
       <div className="grid grid-cols-5 items-start gap-2">
         {BUYER_TENDER_STAGES.map((stage, index) => {
-          const done = !failed && index < currentIndex;
+          const done = index < currentIndex;
           const current = !failed && index === currentIndex;
-          const deadHere = failed && index === 2;
+          const deadHere = failed && index === currentIndex;
           return (
             <div key={stage} className="relative text-center">
               {index < BUYER_TENDER_STAGES.length - 1 && <div className="absolute left-1/2 top-5 h-1 w-full bg-slate-100" />}
@@ -657,7 +666,7 @@ function BuyerTenderStepper({ tender: t }: { tender: TenderResponse }) {
               </span>
               <p className={cn('mt-2 text-xs font-black', done || current ? 'text-blue-700' : deadHere ? 'text-red-600' : 'text-slate-500')}>{stage}</p>
               <p className="mt-0.5 text-[11px] font-bold text-slate-400">
-                {deadHere ? '已流标' : failed && index > 2 ? '流程终止' : done || current ? captions[index] : '待开始'}
+                {deadHere ? '已流标' : failed && index > currentIndex ? '流程终止' : done || current ? captions[index] : '待开始'}
               </p>
             </div>
           );
@@ -720,9 +729,9 @@ export function TendersPage() {
   const [failReason, setFailReason] = useState('');
   const [failing, setFailing] = useState(false);
 
-  const [view, setView] = useState<'list' | 'edit' | 'detail'>('list');
+  const [view, setView] = useState<'list' | 'edit' | 'detail'>(() => new URLSearchParams(window.location.search).get('recordId') ? 'detail' : 'list');
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(() => new URLSearchParams(window.location.search).get('recordId'));
   const [form, setForm] = useState<DraftForm>(emptyForm());
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -733,12 +742,28 @@ export function TendersPage() {
 
   const all = tenders.isError ? [] : tenders.data?.data ?? [];
   const selected = selectedId ? all.find((t) => t.id === selectedId) : undefined;
+  const documentReview = useQuery({ queryKey: ['tender-document-review', selectedId], enabled: !!selectedId,
+    queryFn: () => tenderDocumentReviews(selectedId!) });
+  const showDetail = (id: string) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('recordId', id);
+    window.history.replaceState(null, '', url);
+    setSelectedId(id);
+    setView('detail');
+  };
+  const backToList = () => {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('recordId');
+    window.history.replaceState(null, '', url);
+    setSelectedId(null);
+    setView('list');
+  };
 
   const refresh = () =>
     queryClient.invalidateQueries({
       // 公告记录(/buyer/rfqs/{tenderId}/announcements)随业务节点新增,须一并失效。
       predicate: (q) => typeof q.queryKey[0] === 'string'
-        && /\/buyer\/(tenders|rfqs\/[^/]+\/announcements)/.test(q.queryKey[0] as string),
+        && (/\/buyer\/(tenders|rfqs\/[^/]+\/announcements)/.test(q.queryKey[0] as string) || q.queryKey[0] === 'tender-document-review' || q.queryKey[0] === 'tender-scoring-rule'),
     });
 
   const reportError = (e: unknown) =>
@@ -761,17 +786,9 @@ export function TendersPage() {
     setError(null);
     const after = (t?: TenderResponse) => {
       if (thenPublish && t?.id) {
-        publish.mutate(
-          { tenderId: t.id },
-          {
-            onSuccess: () => {
-              setFeedback(`招标项目「${t.title}」已发布,招标文件开始发售。`);
-              setView('list');
-              refresh();
-            },
-            onError: reportError,
-          },
-        );
+        setFeedback('文件已保存，请提交采购文件审查，通过后方可发布。');
+        showDetail(t.id);
+        refresh();
       } else {
         setFeedback('招标项目已保存(编制中)。');
         setView('list');
@@ -825,6 +842,10 @@ export function TendersPage() {
 
   // ── 编制页 ─────────────────────────────────────────────────
   if (tenders.isError) return <FeedbackNotice tone="error" message="招标项目加载失败，请确认权限后重试。" />;
+  if (view === 'detail' && !selected) return <div className="space-y-3">
+    <FeedbackNotice tone={tenders.isLoading ? 'info' : 'error'} message={tenders.isLoading ? '正在加载招标项目…' : '未找到该招标项目或无权查看。'} />
+    <ActionButton onClick={backToList} icon={ArrowLeft}>返回招标台账</ActionButton>
+  </div>;
   if (view === 'edit' && canManage) {
     return (
       <div className="space-y-4">
@@ -911,7 +932,7 @@ export function TendersPage() {
         <div className="sticky bottom-4 z-30 rounded-lg border border-slate-200 bg-white/95 px-5 py-4 shadow-lg shadow-slate-300/40 backdrop-blur">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs font-bold text-slate-500">
-              保存草稿可稍后继续编制;发布发售须已填写正文与三个时间节点(获取截止 ≤ 递交截止 ≤ 开标时间)。
+              保存后提交采购文件审查；发布须审查通过并填写三个时间节点(获取截止 ≤ 递交截止 ≤ 开标时间)。
             </p>
             <div className="flex shrink-0 gap-2">
               <button type="button" disabled={!formValid || create.isPending || update.isPending}
@@ -922,7 +943,7 @@ export function TendersPage() {
               <PrimaryActionButton flushTop size="md" onClick={() => saveDraft(true)}
                 busy={create.isPending || update.isPending || publish.isPending} pendingLabel="发布中"
                 disabled={!formValid}>
-                <Send size={14} /> 保存并发布发售
+                <Send size={14} /> 保存并进入审查
               </PrimaryActionButton>
             </div>
           </div>
@@ -940,7 +961,7 @@ export function TendersPage() {
       <div className="space-y-4">
         <div className="rounded-lg border border-slate-200 bg-white px-5 py-4 shadow-sm shadow-slate-200/50">
           <div className="flex flex-wrap items-center gap-3">
-            <button type="button" onClick={() => setView('list')} aria-label="返回招标台账"
+            <button type="button" onClick={backToList} aria-label="返回招标台账"
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-50">
               <ArrowLeft size={18} />
             </button>
@@ -955,6 +976,10 @@ export function TendersPage() {
               <p className="mt-1 font-mono text-xs font-bold text-slate-500">
                 {t.tenderNo} · 递交截止 {shortTime(t.submissionDeadline)} · 开标 {shortTime(t.openingAt)}
               </p>
+              {t.rebidOfTenderId && <button type="button" onClick={() => showDetail(t.rebidOfTenderId!)}
+                className="mt-2 inline-flex h-8 items-center gap-1 text-xs font-bold text-blue-700 hover:underline">
+                <ArrowLeft size={13} /> 查看原流标项目
+              </button>}
             </div>
             <p className="shrink-0 font-mono text-xl font-black text-slate-950">{currency(t.budget)}</p>
           </div>
@@ -965,6 +990,8 @@ export function TendersPage() {
 
         {/* 组织流程步进器:编制→发售→开标→评标→定标(与供应商端参与视图同口径) */}
         <BuyerTenderStepper tender={t} />
+        <TenderDocumentReviewPanel tenderId={t.id!} drafting={t.status === '编制中'} canManage={canManage} />
+        <TenderScoringRulePanel tenderId={t.id!} editable={canManage && t.status === '编制中' && !!documentReview.data?.data && documentReview.data.data.reviews[0]?.status !== 'processing'} />
 
         <div className="grid gap-4 xl:grid-cols-[1fr_20rem]">
           <div className="min-w-0 space-y-4">
@@ -979,6 +1006,7 @@ export function TendersPage() {
 
             {t.id && (
               <OwnerAttachments ownerType="tender" ownerId={t.id} title="招标文件附件"
+                readOnly={!canManage || t.status !== '编制中' || documentReview.data?.data?.reviews[0]?.status === 'processing'} onChanged={refresh}
                 emptyHint="上传图纸、工程量清单、资格审查表等附件。" />
             )}
 
@@ -1247,12 +1275,29 @@ export function TendersPage() {
                   <MiniFact label="流标原因" value={t.failureReason ?? '—'} />
                 </div>
                 <p className="mt-2 text-[11px] font-bold text-slate-400">
-                  发放/投标/评分记录保留在本项目备查;重新招标将复制标的要素与正文新建草稿(时间节点须重新设定)。
+                  发放、投标、评分及审批记录保留在原项目。重招仅复用基本信息、正文和评分权重；附件须重新上传，时间须重新设置，采购文件须重新送审。关联项目分包请从项目库发起重采。
                 </p>
+                {(t.scores ?? []).length > 0 && <details className="my-3 border-y border-slate-100 py-3">
+                  <summary className="cursor-pointer text-sm font-bold text-slate-700">历史评分记录（只读）</summary>
+                  <div className="mt-3 overflow-x-auto">
+                    <table className="w-full min-w-[600px] text-left text-xs">
+                      <thead className="bg-slate-50 text-slate-500"><tr>
+                        {['评委', '供应商', '技术分', '商务分', '评审意见', '评分时间'].map(label => <th key={label} className="px-3 py-2 whitespace-nowrap">{label}</th>)}
+                      </tr></thead>
+                      <tbody className="divide-y divide-slate-100">{(t.scores ?? []).map((score, index) => <tr key={index}>
+                        <td className="px-3 py-2">{t.evaluators?.find(e => e.id === score.evaluatorId)?.evaluatorName ?? '—'}</td>
+                        <td className="px-3 py-2">{t.bids?.find(b => b.id === score.bidId)?.supplierName ?? '—'}</td>
+                        <td className="px-3 py-2">{score.technicalScore}</td><td className="px-3 py-2">{score.commercialScore}</td>
+                        <td className="max-w-64 break-words px-3 py-2">{score.comment ?? '—'}</td>
+                        <td className="px-3 py-2 whitespace-nowrap">{shortTime(score.scoredAt)}</td>
+                      </tr>)}</tbody>
+                    </table>
+                  </div>
+                </details>}
                 <PrimaryActionButton size="sm" disabled={!canManage} onClick={() =>
                   t.id && rebidTender.mutate({ tenderId: t.id }, {
                     onSuccess: (r) => {
-                      setFeedback(`已按流标项目重新立项:「${r.data?.title}」(${r.data?.tenderNo}),请补齐时间节点后发布。`);
+                      setFeedback(`已创建重招草稿:「${r.data?.title}」(${r.data?.tenderNo}),请核对附件、重新设置时间并提交采购文件审查。`);
                       refresh();
                       if (r.data) openEdit(r.data);
                     },
@@ -1305,7 +1350,7 @@ export function TendersPage() {
                 当前状态 <StatusPill label={t.status ?? '—'} />
                 <span className="ml-2">
                   {t.status === '编制中'
-                    ? '正文与时间节点齐备后即可发布发售。'
+                    ? '正文与时间节点齐备且采购文件审查通过后方可发布发售。'
                     : t.status === '发售中'
                       ? t.openingAt && new Date(t.openingAt) <= new Date()
                         ? '已到达约定开标时间,可执行开标唱标(解封密封投标并核验指纹)。'
@@ -1324,14 +1369,15 @@ export function TendersPage() {
             </div>
             {canManage && t.status === '编制中' && (
               <div className="flex shrink-0 gap-2">
-                <button type="button" onClick={() => openEdit(t)}
+                <button type="button" onClick={() => openEdit(t)} disabled={documentReview.data?.data?.reviews[0]?.status === 'processing'}
                   className="inline-flex h-10 items-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-black text-slate-600 hover:bg-slate-50">
                   继续编制
                 </button>
                 <PrimaryActionButton flushTop size="md" onClick={() =>
                   t.id && publish.mutate({ tenderId: t.id },
                     { onSuccess: () => { setFeedback('招标文件已发布发售。'); refresh(); }, onError: reportError })}
-                  busy={publish.isPending} pendingLabel="发布中">
+                  busy={publish.isPending} pendingLabel="发布中" disabled={!documentReview.data?.data?.currentApproved}
+                  disabledReason="当前采购文件尚未审查通过">
                   <Megaphone size={14} /> 发布发售
                 </PrimaryActionButton>
               </div>
@@ -1344,12 +1390,13 @@ export function TendersPage() {
                 <Gavel size={14} /> 开标唱标
               </PrimaryActionButton>
             )}
-            {canManage && (t.status === '已开标' || t.status === '评标中') && (
+            {canManage && (t.status === '已开标' || t.status === '评标中' ||
+              (t.status === '发售中' && t.submissionDeadline && new Date(t.submissionDeadline) <= new Date())) && (
               failing ? (
                 <div className="flex shrink-0 flex-wrap items-center gap-2">
                   <input
                     className="h-10 w-64 rounded-lg border border-amber-200 bg-white px-3 text-xs font-bold text-slate-700 outline-none focus:border-amber-400"
-                    placeholder="流标原因(必填留痕)" aria-label="流标原因" value={failReason}
+                    placeholder="流标原因(必填留痕)" aria-label="流标原因" maxLength={1000} value={failReason}
                     onChange={(e) => setFailReason(e.target.value)} />
                   <button type="button" disabled={!failReason.trim() || failTender.isPending}
                     onClick={() => t.id && failTender.mutate(
@@ -1427,7 +1474,7 @@ export function TendersPage() {
                   </div>
                   {t.status && <span className="shrink-0 whitespace-nowrap"><StatusPill label={t.status} /></span>}
                 </div>
-                <button type="button" onClick={() => { setSelectedId(t.id ?? null); setView('detail'); }}
+                <button type="button" onClick={() => t.id && showDetail(t.id)}
                   className="mt-3 inline-flex h-8 w-full items-center justify-center rounded-md border border-slate-200 bg-white text-xs font-black text-slate-600 hover:bg-slate-50">
                   查看详情
                 </button>
@@ -1478,7 +1525,7 @@ export function TendersPage() {
                               继续编制
                             </button>
                           )}
-                          <button type="button" onClick={() => { setSelectedId(t.id ?? null); setView('detail'); }}
+                          <button type="button" onClick={() => t.id && showDetail(t.id)}
                             className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50">
                             详情
                           </button>

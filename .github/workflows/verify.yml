@@ -8,18 +8,30 @@ on:
       - main
       - master
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   backend:
     name: Backend (Java 21)
-    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, linux, 24bid-ci]
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify dedicated CI host
+        run: bash scripts/ci/check-runner.sh
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
-          cache: maven
       # 单测均以 mock 隔离,无需数据库;集成测试(*IT)由 Testcontainers 自起容器。
       - name: Backend tests (unit + integration)
         working-directory: backend-java
@@ -29,16 +41,21 @@ jobs:
 
   frontend:
     name: Frontend (pnpm)
-    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, linux, 24bid-ci]
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify dedicated CI host
+        run: bash scripts/ci/check-runner.sh
       # pnpm 版本以 package.json 的 packageManager 为准,不在此重复指定。
       - uses: pnpm/action-setup@v4
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Typecheck (all packages + apps)
@@ -54,7 +71,12 @@ jobs:
 
   e2e:
     name: E2E (Playwright, 三端)
-    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, linux, 24bid-ci]
+    timeout-minutes: 45
+    env:
+      CI_KEYCLOAK_CONTAINER: 24bid-ci-keycloak-${{ github.run_id }}-${{ github.run_attempt }}
+      CI_BACKEND_STEM: 24bid-backend-${{ github.run_id }}-${{ github.run_attempt }}
     services:
       postgres:
         image: postgres:16-alpine
@@ -62,19 +84,23 @@ jobs:
           POSTGRES_DB: procurement_saas
           POSTGRES_USER: procurement
           POSTGRES_PASSWORD: procurement
-        ports: ['5432:5432']
+        ports: ['127.0.0.1::5432']
         options: >-
           --health-cmd "pg_isready -U procurement -d procurement_saas"
           --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify dedicated CI host and test ports
+        run: bash scripts/ci/check-runner.sh --e2e
       - name: Set up Java
         uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: 21, cache: maven }
+        with: { distribution: temurin, java-version: 21 }
       - uses: pnpm/action-setup@v4
       - name: Set up Node.js
         uses: actions/setup-node@v4
-        with: { node-version: 22, cache: pnpm }
+        with: { node-version: 22 }
       - name: Install deps
         run: pnpm install --frozen-lockfile
       - name: Install Playwright chromium
@@ -82,7 +108,7 @@ jobs:
       # 登录链路走 Keycloak(演示 realm),用 docker run 以便挂载仓库内 realm 文件。
       - name: Start Keycloak (realm import) in background
         run: |
-          docker run -d --name keycloak -p 8081:8081 \
+          docker run -d --name "$CI_KEYCLOAK_CONTAINER" --label "24bid.ci.run=$GITHUB_RUN_ID" -p 127.0.0.1:8081:8081 \
             -e KC_BOOTSTRAP_ADMIN_USERNAME=admin -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin \
             -v "$PWD/infra/keycloak/realm:/opt/keycloak/data/import:ro" \
             quay.io/keycloak/keycloak:26.0 start-dev --http-port=8081 --import-realm
@@ -91,15 +117,20 @@ jobs:
         env:
           # 种子走独立链(flyway_seed_history);显式指向 db/demo,覆盖 local profile 默认的 db/dev。
           APP_SEED_LOCATIONS: classpath:db/demo
+          DB_URL: jdbc:postgresql://127.0.0.1:${{ job.services.postgres.ports[5432] }}/procurement_saas
+          DB_USERNAME: procurement
+          DB_PASSWORD: procurement
+          SERVER_PORT: 8080
         run: |
-          nohup mvn -B -ntp spring-boot:run -Dspring-boot.run.profiles=local > /tmp/backend.log 2>&1 &
+          nohup mvn -B -ntp spring-boot:run -Dspring-boot.run.profiles=local > "$RUNNER_TEMP/$CI_BACKEND_STEM.log" 2>&1 &
+          echo "$!" > "$RUNNER_TEMP/$CI_BACKEND_STEM.pid"
           # 编译+迁移在冷缓存下可能超过 3 分钟;等不到就直接失败,避免 E2E 在后端未就绪时开跑。
           for i in $(seq 1 150); do
             curl -sf http://localhost:8080/api/v1/health && exit 0
             sleep 3
           done
           echo "backend did not become healthy within 450s" >&2
-          tail -80 /tmp/backend.log >&2
+          tail -80 "$RUNNER_TEMP/$CI_BACKEND_STEM.log" >&2
           exit 1
       - name: Wait for Keycloak realm
         run: |
@@ -107,19 +138,28 @@ jobs:
             curl -sf http://localhost:8081/realms/24bid/.well-known/openid-configuration >/dev/null && exit 0 || sleep 3
           done
           echo "Keycloak realm not ready" >&2
-          docker logs keycloak | tail -50 >&2
+          docker logs "$CI_KEYCLOAK_CONTAINER" | tail -50 >&2
           exit 1
       - name: Run E2E (webServer 自起三端 dev)
         run: pnpm exec playwright test
       - name: Dump backend log on failure
         if: failure()
-        run: tail -100 /tmp/backend.log
-      - name: Upload report
+        run: tail -100 "$RUNNER_TEMP/$CI_BACKEND_STEM.log" || true
+      - name: Retain report locally and stop owned test services
         if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report
-          path: |
-            playwright-report/
-            test-results/
-          retention-days: 7
+        run: |
+          report="$HOME/24bid-ci-reports/$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          mkdir -p "$report"
+          chmod 700 "$HOME/24bid-ci-reports" "$report"
+          for path in playwright-report test-results; do
+            if [ -d "$path" ]; then cp -a "$path" "$report/"; fi
+          done
+          if [ -f "$RUNNER_TEMP/$CI_BACKEND_STEM.log" ]; then cp "$RUNNER_TEMP/$CI_BACKEND_STEM.log" "$report/"; fi
+          if [ -f "$RUNNER_TEMP/$CI_BACKEND_STEM.pid" ]; then
+            pid="$(cat "$RUNNER_TEMP/$CI_BACKEND_STEM.pid")"
+            case "$pid" in ''|*[!0-9]*) exit 1 ;; esac
+            if ps -p "$pid" -o args= | grep -F 'spring-boot:run' > /dev/null; then kill "$pid"; fi
+          fi
+          if docker inspect --format '{{index .Config.Labels "24bid.ci.run"}}' "$CI_KEYCLOAK_CONTAINER" 2>/dev/null | grep -Fx "$GITHUB_RUN_ID"; then
+            docker rm -f "$CI_KEYCLOAK_CONTAINER"
+          fi

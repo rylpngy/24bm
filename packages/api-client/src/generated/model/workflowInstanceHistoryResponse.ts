@@ -32,4 +32,5 @@ export interface WorkflowInstanceHistoryResponse {
   createdAt?: string;
   completedAt?: string;
   events?: WorkflowTaskEventResponse[];
+  flowSchema?: string;
 }

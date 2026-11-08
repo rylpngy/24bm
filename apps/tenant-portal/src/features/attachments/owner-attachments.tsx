@@ -20,12 +20,14 @@ export function OwnerAttachments({
   title = '附件',
   emptyHint = '暂无附件,点击右上角上传。',
   readOnly = false,
+  onChanged,
 }: {
   ownerType: string;
   ownerId: string;
   title?: string;
   emptyHint?: string;
   readOnly?: boolean;
+  onChanged?: () => void;
 }) {
   const queryClient = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -66,6 +68,7 @@ export function OwnerAttachments({
         data: { ownerType, ownerId, fileName: file.name, storageKey, visibility: 'buyer_internal' },
       });
       refreshList();
+      onChanged?.();
     } catch (error) {
       setError((error as { response?: { data?: { message?: string } } }).response?.data?.message ?? '上传失败，请重新选择文件重试。');
     } finally {

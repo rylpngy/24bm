@@ -1169,6 +1169,7 @@ public class UnifiedWorkflowApplicationService {
       case "buyer_supplier_admission", "buyer_supplier_exit", "supplier_qualification_change" -> putOwner(owners, "supplier", snapshot.get("supplierId"));
       case "rfq_award" -> putOwner(owners, "rfq", snapshot.get("rfqId"));
       case "contract_approval" -> owners.put("contract", instance.businessId());
+      case "tender_document_review" -> putOwner(owners,"tender",snapshot.get("tenderId"));
       case "payment_request" -> putOwner(owners, "invoice", snapshot.get("invoiceId"));
       case "payment_batch" -> owners.put("payment_batch", instance.businessId());
       case "payment_archive_exception" -> putOwner(owners, "payment_batch", snapshot.get("paymentBatchNo"));
@@ -1180,6 +1181,8 @@ public class UnifiedWorkflowApplicationService {
         .listActiveByTenantAndOwner(tenantId, ownerType, ownerId)
         .forEach(attachment -> attachments.putIfAbsent(attachment.id(), attachment)));
     return attachments.values().stream()
+        .filter(attachment -> !"tender_document_review".equals(instance.businessType())
+            || (snapshot.get("attachmentIds") instanceof List<?> ids && ids.contains(attachment.id())))
         .map(attachment -> new WorkflowAttachmentResponse(
             attachment.id(),
             attachment.ownerType(),
@@ -1214,6 +1217,7 @@ public class UnifiedWorkflowApplicationService {
       case "supplier_qualification_change" -> "供应商资质变更";
       case "rfq_award" -> "询价定标";
       case "contract_approval" -> "合同审批";
+      case "tender_document_review" -> "采购文件审查";
       case "payment_request" -> "付款申请";
       case "payment_batch" -> "付款批次";
       case "payment_archive_exception" -> "付款归档例外";

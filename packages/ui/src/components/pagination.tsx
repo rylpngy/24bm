@@ -18,14 +18,14 @@ export function Pagination({ page, pageSize, total, onPageChange }: PaginationPr
   const to = Math.min(current * pageSize, total);
 
   const navBtn =
-    'inline-flex h-8 items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-black text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40';
+    'inline-flex h-8 shrink-0 items-center gap-1 whitespace-nowrap rounded-md border border-slate-200 bg-white px-2.5 text-xs font-black text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40';
 
   return (
     <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
       <p className="text-xs font-bold text-slate-500">
         {t('共')} {total} {t('条')}{total > 0 && ` · ${from}-${to}`}
       </p>
-      <div className="flex items-center gap-1.5">
+      <nav aria-label="列表分页" className="flex shrink-0 items-center gap-1.5">
         <button
           type="button"
           className={navBtn}
@@ -45,7 +45,7 @@ export function Pagination({ page, pageSize, total, onPageChange }: PaginationPr
         >
           <ChevronRight size={14} /> {t('下一页')}
         </button>
-      </div>
+      </nav>
     </div>
   );
 }

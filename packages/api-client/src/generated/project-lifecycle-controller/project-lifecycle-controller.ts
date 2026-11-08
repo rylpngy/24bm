@@ -255,93 +255,7 @@ const {mutation: mutationOptions} = options ?
 
       return useMutation(mutationOptions, queryClient);
     }
-    export const projectLifecyclePreview = (
-    project: string,
- signal?: AbortSignal
-) => {
-
-
-      return customInstance<ApiResponseProjectLifecyclePreview>(
-      {url: `/api/v1/buyer/projects/${project}/lifecycle/preview`, method: 'GET', signal
-    },
-      );
-    }
-
-
-
-
-export const getProjectLifecyclePreviewQueryKey = (project?: string,) => {
-    return [
-    `/api/v1/buyer/projects/${project}/lifecycle/preview`
-    ] as const;
-    }
-
-
-export const getProjectLifecyclePreviewQueryOptions = <TData = Awaited<ReturnType<typeof projectLifecyclePreview>>, TError = ErrorType<ApiResponseVoid>>(project: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof projectLifecyclePreview>>, TError, TData>>, }
-) => {
-
-const {query: queryOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getProjectLifecyclePreviewQueryKey(project);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof projectLifecyclePreview>>> = ({ signal }) => projectLifecyclePreview(project, signal);
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: !!(project), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof projectLifecyclePreview>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
-}
-
-export type ProjectLifecyclePreviewQueryResult = NonNullable<Awaited<ReturnType<typeof projectLifecyclePreview>>>
-export type ProjectLifecyclePreviewQueryError = ErrorType<ApiResponseVoid>
-
-
-export function useProjectLifecyclePreview<TData = Awaited<ReturnType<typeof projectLifecyclePreview>>, TError = ErrorType<ApiResponseVoid>>(
- project: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof projectLifecyclePreview>>, TError, TData>> & Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof projectLifecyclePreview>>,
-          TError,
-          Awaited<ReturnType<typeof projectLifecyclePreview>>
-        > , 'initialData'
-      >, }
- , queryClient?: QueryClient
-  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useProjectLifecyclePreview<TData = Awaited<ReturnType<typeof projectLifecyclePreview>>, TError = ErrorType<ApiResponseVoid>>(
- project: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof projectLifecyclePreview>>, TError, TData>> & Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof projectLifecyclePreview>>,
-          TError,
-          Awaited<ReturnType<typeof projectLifecyclePreview>>
-        > , 'initialData'
-      >, }
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useProjectLifecyclePreview<TData = Awaited<ReturnType<typeof projectLifecyclePreview>>, TError = ErrorType<ApiResponseVoid>>(
- project: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof projectLifecyclePreview>>, TError, TData>>, }
- , queryClient?: QueryClient
-  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-
-export function useProjectLifecyclePreview<TData = Awaited<ReturnType<typeof projectLifecyclePreview>>, TError = ErrorType<ApiResponseVoid>>(
- project: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof projectLifecyclePreview>>, TError, TData>>, }
- , queryClient?: QueryClient
- ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getProjectLifecyclePreviewQueryOptions(project,options)
-
-  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = queryOptions.queryKey ;
-
-  return query;
-}
-
-
-
-
-export const projectReopenClosureArchive = (
+    export const projectReopenClosureArchive = (
     project: string,
     id: string,
  signal?: AbortSignal
@@ -517,6 +431,92 @@ export function useProjectReopenPreview<TData = Awaited<ReturnType<typeof projec
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getProjectReopenPreviewQueryOptions(project,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const projectLifecyclePreview = (
+    project: string,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseProjectLifecyclePreview>(
+      {url: `/api/v1/buyer/projects/${project}/lifecycle/preview`, method: 'GET', signal
+    },
+      );
+    }
+
+
+
+
+export const getProjectLifecyclePreviewQueryKey = (project?: string,) => {
+    return [
+    `/api/v1/buyer/projects/${project}/lifecycle/preview`
+    ] as const;
+    }
+
+
+export const getProjectLifecyclePreviewQueryOptions = <TData = Awaited<ReturnType<typeof projectLifecyclePreview>>, TError = ErrorType<ApiResponseVoid>>(project: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof projectLifecyclePreview>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getProjectLifecyclePreviewQueryKey(project);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof projectLifecyclePreview>>> = ({ signal }) => projectLifecyclePreview(project, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(project), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof projectLifecyclePreview>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ProjectLifecyclePreviewQueryResult = NonNullable<Awaited<ReturnType<typeof projectLifecyclePreview>>>
+export type ProjectLifecyclePreviewQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useProjectLifecyclePreview<TData = Awaited<ReturnType<typeof projectLifecyclePreview>>, TError = ErrorType<ApiResponseVoid>>(
+ project: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof projectLifecyclePreview>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof projectLifecyclePreview>>,
+          TError,
+          Awaited<ReturnType<typeof projectLifecyclePreview>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useProjectLifecyclePreview<TData = Awaited<ReturnType<typeof projectLifecyclePreview>>, TError = ErrorType<ApiResponseVoid>>(
+ project: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof projectLifecyclePreview>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof projectLifecyclePreview>>,
+          TError,
+          Awaited<ReturnType<typeof projectLifecyclePreview>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useProjectLifecyclePreview<TData = Awaited<ReturnType<typeof projectLifecyclePreview>>, TError = ErrorType<ApiResponseVoid>>(
+ project: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof projectLifecyclePreview>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useProjectLifecyclePreview<TData = Awaited<ReturnType<typeof projectLifecyclePreview>>, TError = ErrorType<ApiResponseVoid>>(
+ project: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof projectLifecyclePreview>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getProjectLifecyclePreviewQueryOptions(project,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

@@ -19,11 +19,12 @@ export function SearchInput({ onSearch, placeholder, className }: SearchInputPro
         e.preventDefault();
         onSearch(text.trim());
       }}
-      className={cn('mb-3 flex items-center gap-1.5', className)}
+      className={cn('mb-3 flex max-w-full flex-wrap items-center gap-1.5', className)}
     >
-      <div className="relative w-48 sm:w-56">
+      <div className="relative min-w-0 w-48 max-w-full sm:w-56">
         <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
         <input
+          aria-label={placeholder ?? t('搜索')}
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder={placeholder ?? t('搜索')}

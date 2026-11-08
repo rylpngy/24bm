@@ -29,6 +29,7 @@ import type {
   ApiResponseListTenderResponse,
   ApiResponseTenderBidResponse,
   ApiResponseTenderResponse,
+  ApiResponseTenderSupplierScoringRuleResponse,
   ApiResponseVoid,
   ApplyPrequalificationRequest,
   SubmitTenderBidRequest
@@ -405,6 +406,92 @@ export function useSupplierTenderList<TData = Awaited<ReturnType<typeof supplier
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getSupplierTenderListQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const supplierTenderScoringRule = (
+    tenderId: string,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseTenderSupplierScoringRuleResponse>(
+      {url: `/api/v1/supplier/tenders/${tenderId}/scoring-rule`, method: 'GET', signal
+    },
+      );
+    }
+
+
+
+
+export const getSupplierTenderScoringRuleQueryKey = (tenderId?: string,) => {
+    return [
+    `/api/v1/supplier/tenders/${tenderId}/scoring-rule`
+    ] as const;
+    }
+
+
+export const getSupplierTenderScoringRuleQueryOptions = <TData = Awaited<ReturnType<typeof supplierTenderScoringRule>>, TError = ErrorType<ApiResponseVoid>>(tenderId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierTenderScoringRule>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSupplierTenderScoringRuleQueryKey(tenderId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof supplierTenderScoringRule>>> = ({ signal }) => supplierTenderScoringRule(tenderId, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(tenderId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof supplierTenderScoringRule>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type SupplierTenderScoringRuleQueryResult = NonNullable<Awaited<ReturnType<typeof supplierTenderScoringRule>>>
+export type SupplierTenderScoringRuleQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useSupplierTenderScoringRule<TData = Awaited<ReturnType<typeof supplierTenderScoringRule>>, TError = ErrorType<ApiResponseVoid>>(
+ tenderId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierTenderScoringRule>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof supplierTenderScoringRule>>,
+          TError,
+          Awaited<ReturnType<typeof supplierTenderScoringRule>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSupplierTenderScoringRule<TData = Awaited<ReturnType<typeof supplierTenderScoringRule>>, TError = ErrorType<ApiResponseVoid>>(
+ tenderId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierTenderScoringRule>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof supplierTenderScoringRule>>,
+          TError,
+          Awaited<ReturnType<typeof supplierTenderScoringRule>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useSupplierTenderScoringRule<TData = Awaited<ReturnType<typeof supplierTenderScoringRule>>, TError = ErrorType<ApiResponseVoid>>(
+ tenderId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierTenderScoringRule>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useSupplierTenderScoringRule<TData = Awaited<ReturnType<typeof supplierTenderScoringRule>>, TError = ErrorType<ApiResponseVoid>>(
+ tenderId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof supplierTenderScoringRule>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getSupplierTenderScoringRuleQueryOptions(tenderId,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

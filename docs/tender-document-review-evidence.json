@@ -1,0 +1,40 @@
+{
+  "date": "2026-10-30",
+  "scope": "tender_document_review",
+  "http": {
+    "passed": true,
+    "checks": [
+      "unreviewed publication blocked; missing published workflow rolls back review",
+      "pending file/attachment/settings lock, duplicate submit and self-approval rejection",
+      "rejection resubmission and exact-version approval invalidation",
+      "three immutable review rounds with actual actor/history/snapshot and final publication"
+    ],
+    "records": {
+      "tenderId": "tender-49f2b72e-d129-473e-96ed-13d95e1d3f91",
+      "reviewIds": [
+        "tdr-f6b4cb19-358c-4c19-b51b-9a6b160cfa09",
+        "tdr-03027ba4-a820-463d-92ee-5c7ba56456ab",
+        "tdr-226a3dc2-9291-4cba-a2ea-73cfa1d52cb6"
+      ],
+      "draftId": "tender-c7a01904-17dd-47e3-afc9-bd8ed24b758e"
+    }
+  },
+  "browser": {
+    "checks": [
+      "review-history-1440",
+      "review-history-390",
+      "review-form-and-publish-lock"
+    ],
+    "errors": [],
+    "passed": true
+  },
+  "backendSha256": "5fd789b0fb33a7b29a44717d521eb698ef1a1b04cbe953a22027604b0fe377a8",
+  "backendTests": {
+    "suites": 11,
+    "tests": 55,
+    "failures": 0,
+    "errors": 0
+  },
+  "frontendTests": 28,
+  "nodeGuardTests": 5
+}

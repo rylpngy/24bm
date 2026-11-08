@@ -20,6 +20,7 @@ export function RfqResultBuyer({ rfqId, supplierNames }: { rfqId: string; suppli
   const name = (id?: string) => (id ? (supplierNames[id] ?? id) : '—');
 
   if (result.isLoading) return <p className="mt-3 text-xs font-bold text-slate-400">加载结果…</p>;
+  if (result.isError) return <FeedbackNotice tone="error" message="结果加载失败，请刷新后重试。" />;
   if (!d) return null;
 
   return (
@@ -78,7 +79,6 @@ export function RfqResultBuyer({ rfqId, supplierNames }: { rfqId: string; suppli
           <AwardNotice rfqId={rfqId} />
         </div>
       )}
-      {result.isError && <FeedbackNotice tone="error" message="结果加载失败。" />}
     </div>
   );
 }

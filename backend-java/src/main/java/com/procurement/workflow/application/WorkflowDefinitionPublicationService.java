@@ -315,6 +315,7 @@ public class WorkflowDefinitionPublicationService {
       case "supplier_qualification_change" -> "供应商资质变更";
       case "rfq_award" -> "询价定标";
       case "contract_approval" -> "合同";
+      case "tender_document_review" -> "采购文件审查";
       case "payment_request" -> "付款申请";
       case "payment_batch" -> "付款批次";
       case "payment_archive_exception" -> "付款归档例外";

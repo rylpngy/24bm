@@ -25,7 +25,9 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ApiResponseListCategory,
   ApiResponseListLudongPocApplicationResponse,
+  ApiResponseListLudongPocReviewRecord,
   ApiResponseLudongPocAiReviewMetricsResponse,
   ApiResponseLudongPocAiReviewResponse,
   ApiResponseLudongPocApplicationResponse,
@@ -36,7 +38,8 @@ import type {
   LudongPocAiReviewFeedbackRequest,
   LudongPocAiReviewRequest,
   LudongPocApplicationRequest,
-  LudongPocReportParams
+  LudongPocReportParams,
+  LudongPocReviewHistoryParams
 } from '.././model';
 
 import { customInstance } from '../../http-client';
@@ -186,6 +189,64 @@ const {mutation: mutationOptions} = options ?
       > => {
 
       const mutationOptions = getLudongPocUpdateMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const ludongPocUpdateDraft = (
+    id: string,
+    ludongPocApplicationRequest: BodyType<LudongPocApplicationRequest>,
+ ) => {
+
+
+      return customInstance<ApiResponseLudongPocApplicationResponse>(
+      {url: `/api/v1/buyer/ludong-poc/applications/${id}/draft`, method: 'PUT',
+      headers: {'Content-Type': 'application/json', },
+      data: ludongPocApplicationRequest
+    },
+      );
+    }
+
+
+
+export const getLudongPocUpdateDraftMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ludongPocUpdateDraft>>, TError,{id: string;data: BodyType<LudongPocApplicationRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof ludongPocUpdateDraft>>, TError,{id: string;data: BodyType<LudongPocApplicationRequest>}, TContext> => {
+
+const mutationKey = ['ludongPocUpdateDraft'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof ludongPocUpdateDraft>>, {id: string;data: BodyType<LudongPocApplicationRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  ludongPocUpdateDraft(id,data,)
+        }
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LudongPocUpdateDraftMutationResult = NonNullable<Awaited<ReturnType<typeof ludongPocUpdateDraft>>>
+    export type LudongPocUpdateDraftMutationBody = BodyType<LudongPocApplicationRequest>
+    export type LudongPocUpdateDraftMutationError = ErrorType<ApiResponseVoid>
+
+    export const useLudongPocUpdateDraft = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ludongPocUpdateDraft>>, TError,{id: string;data: BodyType<LudongPocApplicationRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof ludongPocUpdateDraft>>,
+        TError,
+        {id: string;data: BodyType<LudongPocApplicationRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getLudongPocUpdateDraftMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
@@ -564,6 +625,64 @@ const {mutation: mutationOptions} = options ?
       > => {
 
       const mutationOptions = getLudongPocAiReviewFeedbackMutationOptions(options);
+
+      return useMutation(mutationOptions, queryClient);
+    }
+    export const ludongPocCreateDraft = (
+    ludongPocApplicationRequest: BodyType<LudongPocApplicationRequest>,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseLudongPocApplicationResponse>(
+      {url: `/api/v1/buyer/ludong-poc/applications/drafts`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: ludongPocApplicationRequest, signal
+    },
+      );
+    }
+
+
+
+export const getLudongPocCreateDraftMutationOptions = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ludongPocCreateDraft>>, TError,{data: BodyType<LudongPocApplicationRequest>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof ludongPocCreateDraft>>, TError,{data: BodyType<LudongPocApplicationRequest>}, TContext> => {
+
+const mutationKey = ['ludongPocCreateDraft'];
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof ludongPocCreateDraft>>, {data: BodyType<LudongPocApplicationRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  ludongPocCreateDraft(data,)
+        }
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LudongPocCreateDraftMutationResult = NonNullable<Awaited<ReturnType<typeof ludongPocCreateDraft>>>
+    export type LudongPocCreateDraftMutationBody = BodyType<LudongPocApplicationRequest>
+    export type LudongPocCreateDraftMutationError = ErrorType<ApiResponseVoid>
+
+    export const useLudongPocCreateDraft = <TError = ErrorType<ApiResponseVoid>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ludongPocCreateDraft>>, TError,{data: BodyType<LudongPocApplicationRequest>}, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof ludongPocCreateDraft>>,
+        TError,
+        {data: BodyType<LudongPocApplicationRequest>},
+        TContext
+      > => {
+
+      const mutationOptions = getLudongPocCreateDraftMutationOptions(options);
 
       return useMutation(mutationOptions, queryClient);
     }
@@ -987,6 +1106,186 @@ export function useLudongPocApplication<TData = Awaited<ReturnType<typeof ludong
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getLudongPocApplicationQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const ludongPocAttachmentCategories = (
+    id: string,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseListCategory>(
+      {url: `/api/v1/buyer/ludong-poc/applications/${id}/attachment-categories`, method: 'GET', signal
+    },
+      );
+    }
+
+
+
+
+export const getLudongPocAttachmentCategoriesQueryKey = (id?: string,) => {
+    return [
+    `/api/v1/buyer/ludong-poc/applications/${id}/attachment-categories`
+    ] as const;
+    }
+
+
+export const getLudongPocAttachmentCategoriesQueryOptions = <TData = Awaited<ReturnType<typeof ludongPocAttachmentCategories>>, TError = ErrorType<ApiResponseVoid>>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ludongPocAttachmentCategories>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getLudongPocAttachmentCategoriesQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof ludongPocAttachmentCategories>>> = ({ signal }) => ludongPocAttachmentCategories(id, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof ludongPocAttachmentCategories>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type LudongPocAttachmentCategoriesQueryResult = NonNullable<Awaited<ReturnType<typeof ludongPocAttachmentCategories>>>
+export type LudongPocAttachmentCategoriesQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useLudongPocAttachmentCategories<TData = Awaited<ReturnType<typeof ludongPocAttachmentCategories>>, TError = ErrorType<ApiResponseVoid>>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof ludongPocAttachmentCategories>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof ludongPocAttachmentCategories>>,
+          TError,
+          Awaited<ReturnType<typeof ludongPocAttachmentCategories>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useLudongPocAttachmentCategories<TData = Awaited<ReturnType<typeof ludongPocAttachmentCategories>>, TError = ErrorType<ApiResponseVoid>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ludongPocAttachmentCategories>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof ludongPocAttachmentCategories>>,
+          TError,
+          Awaited<ReturnType<typeof ludongPocAttachmentCategories>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useLudongPocAttachmentCategories<TData = Awaited<ReturnType<typeof ludongPocAttachmentCategories>>, TError = ErrorType<ApiResponseVoid>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ludongPocAttachmentCategories>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useLudongPocAttachmentCategories<TData = Awaited<ReturnType<typeof ludongPocAttachmentCategories>>, TError = ErrorType<ApiResponseVoid>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ludongPocAttachmentCategories>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getLudongPocAttachmentCategoriesQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey ;
+
+  return query;
+}
+
+
+
+
+export const ludongPocReviewHistory = (
+    id: string,
+    params: LudongPocReviewHistoryParams,
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<ApiResponseListLudongPocReviewRecord>(
+      {url: `/api/v1/buyer/ludong-poc/applications/${id}/approval-records`, method: 'GET',
+        params, signal
+    },
+      );
+    }
+
+
+
+
+export const getLudongPocReviewHistoryQueryKey = (id?: string,
+    params?: LudongPocReviewHistoryParams,) => {
+    return [
+    `/api/v1/buyer/ludong-poc/applications/${id}/approval-records`, ...(params ? [params]: [])
+    ] as const;
+    }
+
+
+export const getLudongPocReviewHistoryQueryOptions = <TData = Awaited<ReturnType<typeof ludongPocReviewHistory>>, TError = ErrorType<ApiResponseVoid>>(id: string,
+    params: LudongPocReviewHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ludongPocReviewHistory>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getLudongPocReviewHistoryQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof ludongPocReviewHistory>>> = ({ signal }) => ludongPocReviewHistory(id,params, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof ludongPocReviewHistory>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type LudongPocReviewHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof ludongPocReviewHistory>>>
+export type LudongPocReviewHistoryQueryError = ErrorType<ApiResponseVoid>
+
+
+export function useLudongPocReviewHistory<TData = Awaited<ReturnType<typeof ludongPocReviewHistory>>, TError = ErrorType<ApiResponseVoid>>(
+ id: string,
+    params: LudongPocReviewHistoryParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof ludongPocReviewHistory>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof ludongPocReviewHistory>>,
+          TError,
+          Awaited<ReturnType<typeof ludongPocReviewHistory>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useLudongPocReviewHistory<TData = Awaited<ReturnType<typeof ludongPocReviewHistory>>, TError = ErrorType<ApiResponseVoid>>(
+ id: string,
+    params: LudongPocReviewHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ludongPocReviewHistory>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof ludongPocReviewHistory>>,
+          TError,
+          Awaited<ReturnType<typeof ludongPocReviewHistory>>
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useLudongPocReviewHistory<TData = Awaited<ReturnType<typeof ludongPocReviewHistory>>, TError = ErrorType<ApiResponseVoid>>(
+ id: string,
+    params: LudongPocReviewHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ludongPocReviewHistory>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useLudongPocReviewHistory<TData = Awaited<ReturnType<typeof ludongPocReviewHistory>>, TError = ErrorType<ApiResponseVoid>>(
+ id: string,
+    params: LudongPocReviewHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ludongPocReviewHistory>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getLudongPocReviewHistoryQueryOptions(id,params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

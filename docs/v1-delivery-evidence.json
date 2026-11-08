@@ -1,0 +1,139 @@
+{
+  "date": "2026-10-31",
+  "scope": "Base V1 targeted closure, no external payment or Ludong changes",
+  "database": "procurement_stage3_acceptance_1793414987",
+  "backendSha256": "d50473edf373e9c6a79a8fefa9981d2cc3d437a74091f129bf65c45706be7af9",
+  "passed": true,
+  "reports": [
+    {
+      "script": "tender-scoring-rule-acceptance",
+      "passed": true,
+      "checks": [
+        "weights validate sum, persist version and reject stale edits",
+        "unreviewed publication blocked; missing published workflow rolls back review",
+        "pending file/attachment/settings lock, duplicate submit and self-approval rejection",
+        "rejection resubmission and exact-version approval invalidation",
+        "rule changes invalidate document approval while preserving original review snapshot",
+        "three immutable review rounds with actual actor/history/snapshot and final publication",
+        "published rules immutable and foreign tenant access denied"
+      ]
+    },
+    {
+      "script": "mall-procurement-stage-three-acceptance",
+      "passed": true,
+      "checks": [
+        "8095 health, process, isolated DB and stage-three artifact identity verified before login",
+        "fresh tenant, published Flowable definitions and actual supplier admission approval",
+        "actual supplier auction bid/reduction, decrement rejection, no early force-open and sole-source quote",
+        "real tender invitation/prequalification/acquisition/sealed bid; buyer cannot see bid content early",
+        "actual deadlines elapsed; both RFQs and tender opened; fingerprint and authoritative eligibility verified",
+        "deadline failure without opening and partially scored failure; concurrent rebid, original evidence, clean successor, new approval/publication and tenant isolation",
+        "竞价: genuine Flowable approval, pre-approval order rejection, concurrent unified order idempotency and supplier confirmation",
+        "单一来源: genuine Flowable approval, pre-approval order rejection, concurrent unified order idempotency and supplier confirmation",
+        "enterprise tender: all evaluator scores, genuine award/notice, effective requote amount, concurrent/repeated execution and supplier-visible order"
+      ]
+    },
+    {
+      "script": "budget-business-acceptance",
+      "passed": true,
+      "checks": [
+        "default remains warning; opening workspace does not create a policy",
+        "published form is required, self handling denied, real independent approval activates budget",
+        "adjustment versions prevent stale overwrite; rejection and withdrawal preserve amounts and history",
+        "warning mode allows overrun with real reservation; withdrawal releases only its own pending amount",
+        "hard control requires explicit acknowledgement and rolls back failed submissions",
+        "exception is business-scoped and single-use; unused grants become invalid after budget version change",
+        "concurrent submissions serialize budget checks: only one fits the remaining balance",
+        "real supplier publication and mall checkout enforce budget, roll back stock, assign department and consume one exception",
+        "request pagination has no overlap, foreign tenant access denied, real XLSX export generated"
+      ]
+    },
+    {
+      "script": "srm-deepening-acceptance",
+      "passed": true,
+      "checks": [
+        "supplier import validates rows, reports duplicates/missing suppliers and never auto-admits",
+        "existing material import still reports partial success and rejects invalid prices",
+        "buyer deadline task reaches real supplier recipient; supplier attaches a versioned original and stale replies fail",
+        "direct bypass, missing form and non-candidate handling denied; intermediate approval does not activate change; rejection returns supplement",
+        "two-step final approval closes supplement; original versions, comments, form and exact downloaded bytes retained",
+        "superseded originals cannot advance an intermediate node; cancelled workflow stays auditable",
+        "new published three-node version used by a new instance, prior two-node history unchanged; foreign tenant denied"
+      ]
+    },
+    {
+      "script": "procurement-stage-two-acceptance",
+      "passed": true,
+      "checks": [
+        "department budgets require separate real reviewer approval before becoming effective",
+        "demand rejection/edit/resubmission and initiator withdrawal retain separate workflow histories",
+        "draft cancel releases demand; award and contract approval cannot be bypassed; premature archive blocked",
+        "two shipments/two receipts retain partial state and reject cumulative overshipment",
+        "partial payments, overpayment protection, contract closeout and real ZIP archive complete",
+        "cross-tenant execution/archive rejected",
+        "unresolved rejected receipt cannot pass amount-only matching; prepared for real UI disposition review",
+        "real archived project releases unused demand reservation without deducting payment twice",
+        "cross-department net payment is allocated explicitly without omission or double counting"
+      ]
+    },
+    {
+      "script": "project-procurement-acceptance",
+      "passed": true,
+      "checks": [
+        "rfq: independent Flowable initiation, immutable attachment, no early close, demand approval and duplicate execution guard",
+        "rfq: real order, contract, shipment, receipt, invoice, approved payment, project close and original attachment ZIP",
+        "tender: independent Flowable initiation, immutable attachment, no early close, demand approval and duplicate execution guard",
+        "tender: real order, contract, shipment, receipt, invoice, approved payment, project close and original attachment ZIP",
+        "two executions reserve annual budget only once; closeout releases 600 and records actual net payment 1800"
+      ]
+    }
+  ],
+  "browser": {
+    "passed": true,
+    "checks": [
+      "published-rule-locked",
+      "invalid-sum-blocked-and-real-save",
+      "saved-rule-survives-reload",
+      "scoring-rule-1440",
+      "scoring-rule-390",
+      "rebid-0-origin-link-and-readonly-history",
+      "rebid-1-origin-link-and-readonly-history"
+    ],
+    "errors": []
+  },
+  "localChecks": {
+    "frontend": {
+      "files": 170,
+      "tests": 817,
+      "passed": true
+    },
+    "java": {
+      "scope": "Tender*Tests,Workflow*Tests,ContractReview*Tests,Ai*Tests",
+      "suites": 20,
+      "tests": 101,
+      "passed": true
+    },
+    "nodeSafety": {
+      "tests": 5,
+      "passed": true
+    },
+    "typecheckAll": true,
+    "portalBuilds": [
+      "tenant-portal",
+      "supplier-portal",
+      "platform-admin",
+      "mall-portal"
+    ],
+    "openApiPaths": 497
+  },
+  "warnings": [
+    "React act warnings in existing UI tests",
+    "Supplier bundle above 500kB"
+  ],
+  "notCovered": [
+    "All project-package retry combinations",
+    "Every UI action and mobile view",
+    "Production security/capacity",
+    "Real third-party integrations"
+  ]
+}

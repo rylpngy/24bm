@@ -4,8 +4,10 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { TendersPage } from './tenders-page';
 
 const state = vi.hoisted(() => ({ manage: false, failed: false, suppliersEnabled: false, awarded: false, mixed: false,
-  noneEligible: false, evaluatorCounts: [1], submitScores: vi.fn(),
+  noneEligible: false, evaluatorCounts: [1], submitScores: vi.fn(), saleDeadline: null as string | null, failedProject: false,
 }));
+vi.mock('./tender-document-review-panel', () => ({ TenderDocumentReviewPanel: () => <p>采购文件审查</p> }));
+vi.mock('./tender-scoring-rule-panel', () => ({ TenderScoringRulePanel: () => <p>评审规则</p>, tenderScoringRuleKey:(id:string)=>['tender-scoring-rule',id] }));
 vi.mock('../../lib/use-buyer-permissions', () => ({ useBuyerPermissions: () => ({ can: () => state.manage }) }));
 vi.mock('@24bid/api-client', async (original) => {
   const api = await original<Record<string, unknown>>();
@@ -14,8 +16,12 @@ vi.mock('@24bid/api-client', async (original) => {
     mocks[`useBuyerTender${name}`] = () => ({});
   }
   return { ...api, ...mocks,
+    tenderDocumentReviews: vi.fn().mockResolvedValue({ data: { reviews: [], currentApproved: false } }),
+    tenderScoringRule: vi.fn().mockResolvedValue({ data: { evaluationMethod:'综合评分法',revision:0,weights:{technical:50,commercial:20,price:30},history:[] } }),
     useBuyerTenderSubmitScores: () => ({ mutate: state.submitScores }),
-    useBuyerTenderList: () => ({ isError: state.failed, data: { data: [{ id: 't-1', title: '只读招标', status: state.mixed ? '评标中' : state.awarded ? '已定标' : '编制中', tenderNo: 'T001',
+    useBuyerTenderList: () => ({ isError: state.failed, data: { data: [{ id: 't-1', title: '只读招标', status: state.failedProject ? '已流标' : state.saleDeadline ? '发售中' : state.mixed ? '评标中' : state.awarded ? '已定标' : '编制中', tenderNo: 'T001',
+      scores: state.failedProject ? [{ evaluatorId: 'e-1', bidId: 'b-1', technicalScore: 70, commercialScore: 80, comment: '原始评审意见' }] : [],
+      submissionDeadline: state.saleDeadline,
       awardedBidId: state.awarded ? 'b-1' : null,
       openedAt: state.awarded || state.mixed ? '2026-01-01' : null,
       bids: state.mixed ? [
@@ -40,7 +46,44 @@ vi.mock('@24bid/api-client', async (original) => {
     },
   };
 });
-afterEach(() => { cleanup(); state.manage = false; state.failed = false; state.awarded = false; state.mixed = false; state.noneEligible = false; state.evaluatorCounts = [1]; state.submitScores.mockClear(); });
+afterEach(() => { cleanup(); window.history.replaceState(null, '', '/'); state.failedProject = false; state.saleDeadline = null; state.manage = false; state.failed = false; state.awarded = false; state.mixed = false; state.noneEligible = false; state.evaluatorCounts = [1]; state.submitScores.mockClear(); });
+
+it('keeps failed evaluation evidence visible without scoring or award actions', () => {
+  state.manage = true; state.failedProject = true;
+  window.history.replaceState(null, '', '/?module=tenders&recordId=t-1'); show();
+  expect(screen.getByText('历史评分记录（只读）')).toBeVisible();
+  fireEvent.click(screen.getByText('历史评分记录（只读）'));
+  expect(screen.getByText('原始评审意见')).toBeVisible();
+  expect(screen.queryByRole('button', { name: '宣布流标' })).toBeNull();
+  expect(screen.queryByRole('button', { name: /提交「.*」评分/ })).toBeNull();
+});
+
+it.each([true, false])('offers failure before opening only after submission deadline: %s', expired => {
+  state.manage = true; state.saleDeadline = new Date(Date.now() + (expired ? -60000 : 60000)).toISOString();
+  window.history.replaceState(null, '', '/?module=tenders&recordId=t-1');
+  show();
+  expect(screen.queryByRole('button', { name: '宣布流标' }) !== null).toBe(expired);
+  if (expired) {
+    fireEvent.click(screen.getByRole('button', { name: '宣布流标' }));
+    expect(screen.getByLabelText('流标原因')).toHaveAttribute('maxlength', '1000');
+    expect(screen.getByRole('button', { name: '确认流标' })).toBeDisabled();
+  }
+});
+
+it('opens a linked tender directly and clears only its record when returning', () => {
+  window.history.replaceState(null, '', '/?module=tenders&recordId=t-1&solution=base');
+  show();
+  expect(screen.getByRole('heading', { name: '只读招标' })).toBeVisible();
+  fireEvent.click(screen.getByRole('button', { name: '返回招标台账' }));
+  expect(new URLSearchParams(window.location.search).get('recordId')).toBeNull();
+  expect(new URLSearchParams(window.location.search).get('solution')).toBe('base');
+});
+
+it('does not silently fall back to the list for an unavailable linked tender', () => {
+  window.history.replaceState(null, '', '/?module=tenders&recordId=missing');
+  show();
+  expect(screen.getByText('未找到该招标项目或无权查看。')).toBeVisible();
+});
 const show = () => render(<QueryClientProvider client={new QueryClient()}><TendersPage /></QueryClientProvider>);
 
 it('does not expose edit or create actions to read-only users', () => {

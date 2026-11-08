@@ -1,0 +1,312 @@
+{
+  "date": "2026-10-30",
+  "baseline": "b9c89fae103fa163a9846d00347f978132164d07",
+  "groups": [
+    {
+      "name": "mall-stage-three-acceptance",
+      "passed": true,
+      "checks": [
+        "Real image upload, type validation, one-use ticket, authenticated download and content integrity",
+        "Supplier product/SKU/tier maintenance, real buyer publication and parameter-aware comparison",
+        "Whole-checkout limit rolls back, concurrent retries make one order, stock/amount/address/remark preserved",
+        "Unified shipment/receipt, partial aftersales quantity, supplier evidence, buyer confirmation/history and true SKU review binding",
+        "Legacy price mutation cannot preserve old publication entitlement; re-review restores purchasability",
+        "Foreign-tenant history and checkout note access denied"
+      ],
+      "records": {
+        "mediaId": "mpm-d97879b2-84e2-4636-abf9-def102438701",
+        "productId": "mp-28e58dc3-9d17-4ae6-8ddf-2d7786424850",
+        "skuId": "ms-bbf85524-bf97-49c7-9152-cb7a77348d72",
+        "categoryId": "mc-mall3-1793348003020-a554c693f2e19b6550d29b45faff386d",
+        "orderId": "po-d21674bd-bdd0-453c-a96a-3f7a8ab3fded",
+        "rfqId": "rfq-9a3ca883-3624-41b4-914a-ae444627fca1",
+        "afterSalesId": "mas-68238cdb-f67d-4e26-926d-821a318dcb8a"
+      }
+    },
+    {
+      "name": "mall-procurement-stage-three-acceptance",
+      "passed": true,
+      "checks": [
+        "8095 health, process, isolated DB and stage-three artifact identity verified before login",
+        "fresh tenant, published Flowable definitions and actual supplier admission approval",
+        "actual supplier auction bid/reduction, decrement rejection, no early force-open and sole-source quote",
+        "real tender invitation/prequalification/acquisition/sealed bid; buyer cannot see bid content early",
+        "actual deadlines elapsed; both RFQs and tender opened; fingerprint and authoritative eligibility verified",
+        "竞价: genuine Flowable approval, pre-approval order rejection, concurrent unified order idempotency and supplier confirmation",
+        "单一来源: genuine Flowable approval, pre-approval order rejection, concurrent unified order idempotency and supplier confirmation",
+        "enterprise tender: all evaluator scores, genuine award/notice, effective requote amount, concurrent/repeated execution and supplier-visible order"
+      ],
+      "records": {
+        "departmentId": "dept-0c8812d0-d584-45f4-8235-7c7b3c7be1fb",
+        "materialId": "mat-7a949d54-55aa-4cc7-a9f1-6589cd4e4e10",
+        "definitions": {
+          "buyer_supplier_admission": "proc-c116ac6d-b24f-44cf-a583-d03d5f2faf32",
+          "rfq_award": "proc-31b2ef5f-ce9c-4873-a5e2-db0a6a78f30d"
+        },
+        "relationId": "bsr-4d683ab6-0ccc-4bad-957a-b524577210de",
+        "workflows": [
+          {
+            "businessType": "buyer_supplier_admission",
+            "businessId": "bsr-4d683ab6-0ccc-4bad-957a-b524577210de",
+            "workflowInstanceId": "workflow-9bc2c161-95b7-4818-b277-919aabfaee37",
+            "flowableProcessInstanceId": "cde7a2b2-d439-11f1-a0e3-5a5c4edb0aac",
+            "taskId": "cde7c9d0-d439-11f1-a0e3-5a5c4edb0aac",
+            "status": "approved"
+          },
+          {
+            "businessType": "rfq_award",
+            "businessId": "award-3d16ad8c-312c-49c2-b782-32cad9a6b934",
+            "workflowInstanceId": "workflow-1aa15cbc-927c-488d-b841-d90b4c2d99cb",
+            "flowableProcessInstanceId": "f2e9aa5b-d439-11f1-a0e3-5a5c4edb0aac",
+            "taskId": "f2e9f889-d439-11f1-a0e3-5a5c4edb0aac",
+            "status": "approved"
+          },
+          {
+            "businessType": "rfq_award",
+            "businessId": "award-e2dd70f8-5fd9-4762-bd26-b816755125a3",
+            "workflowInstanceId": "workflow-dfbbb108-de8a-47bf-993f-f3f8a32dcee3",
+            "flowableProcessInstanceId": "f3c03454-d439-11f1-a0e3-5a5c4edb0aac",
+            "taskId": "f3c05b72-d439-11f1-a0e3-5a5c4edb0aac",
+            "status": "approved"
+          }
+        ],
+        "auction": {
+          "rfqId": "rfq-d2035cfd-7e13-4a6a-a8c9-0982c4242a3d",
+          "quoteId": "quote-abc99bbd-ebab-40ef-8060-5a91e008b8ba",
+          "awardId": "award-3d16ad8c-312c-49c2-b782-32cad9a6b934",
+          "orderIds": [
+            "po-4c826b28-d226-4aaa-96c1-b2a1a700f63f",
+            "po-4c826b28-d226-4aaa-96c1-b2a1a700f63f"
+          ],
+          "orderId": "po-4c826b28-d226-4aaa-96c1-b2a1a700f63f"
+        },
+        "singleSource": {
+          "rfqId": "rfq-cf5ea48d-ade4-428d-91e1-fe9eb4f17166",
+          "quoteId": "quote-cbc314af-2640-4c35-b4be-21b38e44c702",
+          "awardId": "award-e2dd70f8-5fd9-4762-bd26-b816755125a3",
+          "orderIds": [
+            "po-ffb39e30-7b17-4b3d-84d3-b0aa12cbe501",
+            "po-ffb39e30-7b17-4b3d-84d3-b0aa12cbe501"
+          ],
+          "orderId": "po-ffb39e30-7b17-4b3d-84d3-b0aa12cbe501"
+        },
+        "tender": {
+          "tenderId": "tender-b1e7a2d3-e52a-427c-8939-4b09271ee2e4",
+          "bidId": "tbid-8964fa85-940d-4aba-8451-2090ace74bc6",
+          "orderIds": [
+            "po-f9723982-3eb9-48b1-b4fe-d9c860b6c43e",
+            "po-f9723982-3eb9-48b1-b4fe-d9c860b6c43e"
+          ],
+          "orderId": "po-f9723982-3eb9-48b1-b4fe-d9c860b6c43e",
+          "anchorRfqId": "rfq-22db40e6-d55c-484b-a6b2-8f70201a0285"
+        }
+      }
+    },
+    {
+      "name": "procurement-stage-two-acceptance",
+      "passed": true,
+      "checks": [
+        "department budgets require separate real reviewer approval before becoming effective",
+        "demand rejection/edit/resubmission and initiator withdrawal retain separate workflow histories",
+        "draft cancel releases demand; award and contract approval cannot be bypassed; premature archive blocked",
+        "two shipments/two receipts retain partial state and reject cumulative overshipment",
+        "partial payments, overpayment protection, contract closeout and real ZIP archive complete",
+        "cross-tenant execution/archive rejected",
+        "unresolved rejected receipt cannot pass amount-only matching; prepared for real UI disposition review",
+        "real archived project releases unused demand reservation without deducting payment twice",
+        "cross-department net payment is allocated explicitly without omission or double counting"
+      ],
+      "records": {
+        "attachmentId": "att-97ed2298-62f0-48b8-bd20-83538c63e6b5",
+        "rfqId": "rfq-021b1019-f8c9-4e61-97c2-bec6cea5d886",
+        "orderId": "po-8fe84d50-3e3f-4a9f-bda0-3cc4b4b5de48",
+        "contractId": "contract-b01d6d54-2a5d-401d-84c8-c1dfaa3d9383",
+        "invoiceId": "invoice-e0d2d682-aa98-4e48-8caa-3458c718d721",
+        "archiveId": "ebcfd653-4b58-47fb-8d58-5d30f6fc9a60",
+        "qualityRfqId": "rfq-05cc552d-5306-4c5e-b53d-2789cf546fe2",
+        "qualityOrderId": "po-204ebad7-d372-4ed5-8664-67aee666cc2d",
+        "qualityReceiptId": "receipt-0ad5d95c-bc6f-43fb-9627-9955668faf37",
+        "qualityInvoiceId": "invoice-eeec0851-870a-462b-8a5a-2c4d7f312cff",
+        "demandIds": [
+          "3E120261030001",
+          "10C20261030001"
+        ],
+        "batchNo": "PAY-phase2-1793348082806"
+      }
+    },
+    {
+      "name": "project-procurement-acceptance",
+      "passed": true,
+      "checks": [
+        "rfq: independent Flowable initiation, immutable attachment, no early close, demand approval and duplicate execution guard",
+        "rfq: real order, contract, shipment, receipt, invoice, approved payment, project close and original attachment ZIP",
+        "tender: independent Flowable initiation, immutable attachment, no early close, demand approval and duplicate execution guard",
+        "tender: real order, contract, shipment, receipt, invoice, approved payment, project close and original attachment ZIP",
+        "two executions reserve annual budget only once; closeout releases 600 and records actual net payment 1800"
+      ],
+      "records": {
+        "rfq": {
+          "projectId": "project-2d7afb35-8126-49e0-bad4-96fd4ef7bb14",
+          "executionId": "rfq-3de8619d-15e3-4c88-8bdb-60823967a01f",
+          "demandId": "EB420261030001",
+          "orderId": "po-8755fd35-ba01-4fd6-b976-01d34c49fb6c",
+          "rfqId": "rfq-3de8619d-15e3-4c88-8bdb-60823967a01f",
+          "archiveId": "d6a29e68-e4a9-440b-b64a-2e9ad8d86293"
+        },
+        "tender": {
+          "projectId": "project-95ff95a9-ffb9-4788-b304-122d640d9be9",
+          "executionId": "tender-ce49ca71-5c21-4554-909d-13e106d61fdf",
+          "demandId": "EB420261030002",
+          "orderId": "po-39834abf-f3b0-48c9-8afd-7702a44129d2",
+          "rfqId": "rfq-986f1481-6dd2-4791-aa83-019442ac85aa",
+          "archiveId": "69b6761e-7c7e-478f-9773-473b40e9616e"
+        }
+      }
+    },
+    {
+      "name": "mall-finance-closeout",
+      "passed": true,
+      "checks": [
+        "mall contract approval and invoiced amount match original received order",
+        "mall payment request/batch approval, registration, supplier state and real archive download"
+      ],
+      "records": {
+        "orderId": "po-d21674bd-bdd0-453c-a96a-3f7a8ab3fded",
+        "contractId": "contract-ac4fd099-838b-4f4a-bc6d-60e99eeb06b6",
+        "invoiceId": "invoice-7c8cf5cc-6e0c-400f-984e-ab2a8b9facdc",
+        "archiveId": "398ede77-91cd-4da3-b7d7-e953d900c0dc"
+      }
+    }
+  ],
+  "browser": {
+    "checks": [
+      "demands-1440",
+      "demands-390",
+      "rfqs-1440",
+      "rfqs-390",
+      "procurement-plans-1440",
+      "procurement-plans-390",
+      "orders-1440",
+      "orders-390",
+      "invoices-1440",
+      "invoices-390"
+    ],
+    "errors": [],
+    "passed": true
+  },
+  "marketBrowser": {
+    "passed": true,
+    "checks": [
+      "mall-home-1440",
+      "mall-home-390",
+      "mall-category-1440",
+      "mall-category-390",
+      "mall-product-1440",
+      "mall-product-390",
+      "mall-cart-1440",
+      "mall-cart-390",
+      "mall-orders-1440",
+      "mall-orders-390",
+      "tender-list-1440",
+      "tender-list-390",
+      "tender-detail-1440",
+      "tender-detail-390",
+      "auction-list-1440",
+      "auction-list-390",
+      "supplier-products-1440",
+      "supplier-products-390",
+      "supplier-orders-1440",
+      "supplier-orders-390"
+    ],
+    "errors": []
+  },
+  "recovery": {
+    "passed": true,
+    "database": "drill_1793348286842",
+    "checks": [
+      "restored database fingerprints",
+      "all object originals restored and SHA256 matched",
+      "restored application healthy",
+      "restored authorized demands",
+      "restored authorized orders",
+      "restored authorized suppliers",
+      "isolated read-only capacity thresholds",
+      "all restored rows unchanged after startup and reads"
+    ],
+    "objects": 5,
+    "capacity": {
+      "passed": true,
+      "base": "http://127.0.0.1:8099",
+      "total": 200,
+      "concurrency": 4,
+      "timeoutMs": 10000,
+      "errors": 0,
+      "errorRate": 0,
+      "thresholds": {
+        "maxP95Ms": 1500,
+        "maxErrorRate": 0
+      },
+      "durationSeconds": 1.815676999999996,
+      "requestsPerSecond": 110.15175055915806,
+      "p50Ms": 13.745166999993671,
+      "p95Ms": 142.22062499999447,
+      "p99Ms": 193.42033299999457,
+      "endpoints": [
+        {
+          "path": "/api/v1/buyer/suppliers",
+          "requests": 29,
+          "errors": 0,
+          "p95Ms": 17.562417000001005
+        },
+        {
+          "path": "/api/v1/buyer/demands",
+          "requests": 29,
+          "errors": 0,
+          "p95Ms": 19.728541999997105
+        },
+        {
+          "path": "/api/v1/buyer/rfqs",
+          "requests": 29,
+          "errors": 0,
+          "p95Ms": 113.43462500000169
+        },
+        {
+          "path": "/api/v1/buyer/orders",
+          "requests": 29,
+          "errors": 0,
+          "p95Ms": 33.76170899999852
+        },
+        {
+          "path": "/api/v1/buyer/workspace",
+          "requests": 28,
+          "errors": 0,
+          "p95Ms": 196.93654100000276
+        },
+        {
+          "path": "/api/v1/buyer/budgets",
+          "requests": 28,
+          "errors": 0,
+          "p95Ms": 27.08299999999872
+        },
+        {
+          "path": "/api/v1/buyer/supplier-invitations",
+          "requests": 28,
+          "errors": 0,
+          "p95Ms": 21.09441700000025
+        }
+      ],
+      "generatedAt": "2026-10-30T08:18:48.681Z",
+      "scope": "Read-only local measurement; not a production capacity guarantee"
+    },
+    "coverageGaps": [
+      "Restored mall media metadata has no backed-up object reference; application-level media download not exercised. All original objects were authenticated-read from the restored bucket and SHA256 checked."
+    ]
+  },
+  "frontendFull": {
+    "files": 167,
+    "passed": 803
+  },
+  "laterTenderTests": 10,
+  "operationsTests": 12,
+  "remoteMerged": false
+}

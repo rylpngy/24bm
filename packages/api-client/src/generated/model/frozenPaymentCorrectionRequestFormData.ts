@@ -6,6 +6,4 @@
  * OpenAPI spec version: v1
  */
 
-export type FrozenPaymentCorrectionRequestFormData = {
-  [key: string]: { [key: string]: unknown };
-};
+export type FrozenPaymentCorrectionRequestFormData = {[key: string]: { [key: string]: unknown }};

@@ -1,0 +1,117 @@
+{
+  "date": "2026-10-30",
+  "baseline": "b9c89fae103fa163a9846d00347f978132164d07",
+  "database": "v1_closeout_1793346356",
+  "groups": [
+    {
+      "name": "procurement-loop-acceptance",
+      "passed": true,
+      "checks": [
+        "independent tenant and buyer/supplier login",
+        "five workflow definitions published in new tenant only",
+        "Flowable buyer_supplier_admission completed",
+        "Flowable purchase_demand completed",
+        "order creation blocked before award approval",
+        "Flowable rfq_award completed",
+        "quote, award, unique order, confirmation, shipment and receipt synchronized",
+        "invalid shipment quantity and tax rejected; explicit zero tax preserved",
+        "Flowable payment_request completed",
+        "payment blocked before batch approval",
+        "Flowable payment_batch completed",
+        "three-way match, request/batch approval, payment registration and archive synchronized",
+        "business audit trail retains buyer and actual supplier member identities"
+      ],
+      "records": {
+        "demandId": "95620261030001",
+        "rfqId": "rfq-cd372405-cfde-49cf-84c4-960f89897da2",
+        "awardId": "award-a947a654-2371-48a3-9e53-08c63a20d75f",
+        "orderId": "po-8b6811ef-9b09-44ff-85dd-a7b817e2e08b",
+        "invoiceId": "invoice-3321783f-8276-40b2-b00e-c080943748c7",
+        "paymentBatchNo": "PAY-qa-loop-1793346395405"
+      }
+    },
+    {
+      "name": "procurement-stage-two-acceptance",
+      "passed": true,
+      "checks": [
+        "department budgets require separate real reviewer approval before becoming effective",
+        "demand rejection/edit/resubmission and initiator withdrawal retain separate workflow histories",
+        "draft cancel releases demand; award and contract approval cannot be bypassed; premature archive blocked",
+        "two shipments/two receipts retain partial state and reject cumulative overshipment",
+        "partial payments, overpayment protection, contract closeout and real ZIP archive complete",
+        "cross-tenant execution/archive rejected",
+        "unresolved rejected receipt cannot pass amount-only matching; prepared for real UI disposition review",
+        "real archived project releases unused demand reservation without deducting payment twice",
+        "cross-department net payment is allocated explicitly without omission or double counting"
+      ],
+      "records": {
+        "attachmentId": "att-059bd0e1-4147-4ea4-ae3e-5780fd2e16ca",
+        "rfqId": "rfq-5ac1aa6e-cd5a-4b09-b753-ad3962da8440",
+        "orderId": "po-e1d20bf8-d56c-4574-b5b4-ebc802a4b9ee",
+        "contractId": "contract-f8223141-32ff-4643-9382-5990399d9793",
+        "invoiceId": "invoice-9ae5760d-1322-49fb-b817-02d7db7fe1ac",
+        "archiveId": "2a5e4dcf-91e7-438d-a172-32bbc1d07bc7",
+        "qualityRfqId": "rfq-731683c7-97f3-4f6c-a2c5-6980e6fa9090",
+        "qualityOrderId": "po-ae4ea59f-778a-4d19-9f7f-5cefd39568aa",
+        "qualityReceiptId": "receipt-0a603b3c-5c02-44d3-b48c-91fa3078a85b",
+        "qualityInvoiceId": "invoice-323aae33-6a11-4f22-ae1d-9d29f3078a09",
+        "demandIds": [
+          "F0220261030001",
+          "BD820261030001"
+        ],
+        "batchNo": "PAY-phase2-1793346398057"
+      }
+    },
+    {
+      "name": "project-procurement-acceptance",
+      "passed": true,
+      "checks": [
+        "rfq: independent Flowable initiation, immutable attachment, no early close, demand approval and duplicate execution guard",
+        "rfq: real order, contract, shipment, receipt, invoice, approved payment, project close and original attachment ZIP",
+        "tender: independent Flowable initiation, immutable attachment, no early close, demand approval and duplicate execution guard",
+        "tender: real order, contract, shipment, receipt, invoice, approved payment, project close and original attachment ZIP",
+        "two executions reserve annual budget only once; closeout releases 600 and records actual net payment 1800"
+      ],
+      "records": {
+        "rfq": {
+          "projectId": "project-29d04ca9-52bc-40d2-a846-ec5808d9f670",
+          "executionId": "rfq-02daf08a-d2fa-4892-b812-88954284bee2",
+          "demandId": "10920261030001",
+          "orderId": "po-15a5ce1f-fbc9-4e53-b611-759f67e8b11d",
+          "rfqId": "rfq-02daf08a-d2fa-4892-b812-88954284bee2",
+          "archiveId": "e30b61bb-c635-4973-909c-4353b10c76e4"
+        },
+        "tender": {
+          "projectId": "project-8a8a48f7-10db-4445-85f3-eb0fdd767eda",
+          "executionId": "tender-c6999642-dda8-456e-a210-983afa809a95",
+          "demandId": "10920261030002",
+          "orderId": "po-db50b291-5ef1-4fb3-981b-1ee4e7a4c7dc",
+          "rfqId": "rfq-4fa31ea5-8a4c-4676-ab93-ce601f53c0b1",
+          "archiveId": "e3f44899-6d1a-4ffc-be3c-b3d9e7195a8d"
+        }
+      }
+    }
+  ],
+  "browser": {
+    "checks": [
+      "demands-1440",
+      "demands-390",
+      "rfqs-1440",
+      "rfqs-390",
+      "procurement-plans-1440",
+      "procurement-plans-390",
+      "orders-1440",
+      "orders-390",
+      "invoices-1440",
+      "invoices-390"
+    ],
+    "errors": [],
+    "passed": true
+  },
+  "frontendTests": {
+    "files": 3,
+    "passed": 8
+  },
+  "buyerBuildPassed": true,
+  "deployed": false
+}

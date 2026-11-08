@@ -89,13 +89,22 @@ public final class TenderPolicy {
     }
   }
 
-  // 流标(C-6):开标后、定标前可宣布流标(无有效投标或评审全部不合格等),原因必填留痕。
+  // 截止后允许人工处置无法开标的项目,不自动推定法定家数或失败原因。
   public static void requireFailable(Tender tender, String reason) {
-    if (!STATUS_OPENED.equals(tender.status()) && !STATUS_EVALUATING.equals(tender.status())) {
-      throw new IllegalStateException("仅开标后、定标前的招标项目可宣布流标: " + tender.id());
+    requireFailable(tender, reason, OffsetDateTime.now());
+  }
+
+  public static void requireFailable(Tender tender, String reason, OffsetDateTime now) {
+    boolean closedSubmission = STATUS_ON_SALE.equals(tender.status())
+        && tender.submissionDeadline() != null && !now.isBefore(tender.submissionDeadline());
+    if (!closedSubmission && !STATUS_OPENED.equals(tender.status()) && !STATUS_EVALUATING.equals(tender.status())) {
+      throw new IllegalStateException("仅递交截止后或开标后、定标前可宣布流标: " + tender.id());
     }
     if (reason == null || reason.isBlank()) {
       throw new IllegalArgumentException("流标原因不能为空(留痕要求): " + tender.id());
+    }
+    if (reason.trim().length() > 1000) {
+      throw new IllegalArgumentException("流标原因不能超过1000字");
     }
   }
 

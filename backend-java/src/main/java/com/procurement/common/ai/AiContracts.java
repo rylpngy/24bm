@@ -15,6 +15,7 @@ public final class AiContracts {
   }
   public record Evidence(String id, String kind, String locator, String label, String value,
       String sourceId, String sourceHash, String policyVersion) {}
+  @io.swagger.v3.oas.annotations.media.Schema(name = "AiReviewFinding")
   public record Finding(String id, String severity, String title, String detail, List<String> evidenceIds) {
     public Finding { evidenceIds = List.copyOf(evidenceIds); }
   }
@@ -28,6 +29,7 @@ public final class AiContracts {
   }
   public record Feedback(String findingId, String disposition, String comment, String createdBy,
       OffsetDateTime createdAt, OffsetDateTime updatedAt) {}
+  @io.swagger.v3.oas.annotations.media.Schema(name = "AiReviewResult")
   public record Review(String runId, String subjectType, String subjectId, String sourceRevision,
       OffsetDateTime createdAt, String mode, String model, String fallbackReason, String rulesetVersion,
       String summary, List<Finding> findings, List<Evidence> evidence, List<String> limitations,

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { deflateSync } from 'node:zlib';
+import { createAcceptanceQualification } from './acceptance-supplier-qualification.mjs';
 
 function testPng() {
   const crc=bytes=>{let value=0xffffffff;for(const byte of bytes){value^=byte;for(let bit=0;bit<8;bit++)value=(value>>>1)^((value&1)?0xedb88320:0);}return(value^0xffffffff)>>>0;};
@@ -11,7 +12,7 @@ function testPng() {
 }
 
 const base=process.env.JAVA_API_BASE_URL;
-assert.ok(base && ['127.0.0.1','localhost'].includes(new URL(base).hostname) && new URL(base).port==='8095'
+assert.ok(base && ['127.0.0.1','localhost'].includes(new URL(base).hostname) && new URL(base).port===(process.env.ACCEPTANCE_API_PORT ?? '8095') && new URL(base).port !== '8080'
   && process.env.ACCEPTANCE_LOCAL_WRITES==='1','Explicit isolated 8095 API and ACCEPTANCE_LOCAL_WRITES=1 required; never use original data.');
 const required=key=>{assert.ok(process.env[key],`Missing ${key}`);return process.env[key];};
 const password=required('ACCEPTANCE_PASSWORD'),supplierId=required('ACCEPTANCE_SUPPLIER_ID');
@@ -30,6 +31,7 @@ async function approve(b,type,businessId) {
 try {
   const platform=await login(required('ACCEPTANCE_PLATFORM_ACCOUNT'),'PLATFORM');
   const supplier=await login(required('ACCEPTANCE_SUPPLIER_ACCOUNT'),'SUPPLIER',{supplierId}),s=supplier.accessToken;
+  await createAcceptanceQualification(base,s,api,id);
   await api('platform/tenants',platform.accessToken,{tenantId:id,enterpriseId:`ent-${id}`,name:`商城闭环 ${id}`,industry:'通用采购',plan:'MVP',userLimit:20,
     enabledFeatures:['rfq','finance','order','mall','method:mall'],adminName:'商城采购负责人',adminEmail:report.buyerAccount,adminPassword:password});
   const buyer=await login(report.buyerAccount,'BUYER',{tenantId:id}),b=buyer.accessToken;

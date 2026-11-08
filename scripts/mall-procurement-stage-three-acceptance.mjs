@@ -5,6 +5,8 @@ import { mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from '
 import { dirname, isAbsolute, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as sleep } from 'node:timers/promises';
+import { createAcceptanceQualification } from './acceptance-supplier-qualification.mjs';
+import { approveAcceptanceTender } from './acceptance-tender-review.mjs';
 
 const HELP = `Stage-three real HTTP acceptance (macOS, Node 20+). No SQL, mocks, or server startup.
 
@@ -36,9 +38,10 @@ node scripts/mall-procurement-stage-three-acceptance.mjs
   No payment, CA, guarantee, shipment, or external-platform acceptance is claimed.
 `;
 
-export function validateBase(value) {
+export function validateBase(value, port = '8095') {
   const url = new URL(value);
-  assert.ok(url.protocol === 'http:' && url.hostname === '127.0.0.1' && url.port === '8095'
+  assert.ok(/^\d+$/.test(port) && Number(port) >= 1024 && Number(port) <= 65535 && port !== '8080', 'Invalid isolated port');
+  assert.ok(url.protocol === 'http:' && url.hostname === '127.0.0.1' && url.port === port
     && url.pathname === '/' && !url.username && !url.password && !url.search && !url.hash,
   'Only the exact loopback origin http://127.0.0.1:8095 is permitted.');
   return url.origin;
@@ -65,7 +68,7 @@ export function validateHealth(payload, now = Date.now()) {
 
 export function readConfig(env = process.env) {
   const required = key => { assert.ok(env[key], `Missing ${key}`); return env[key]; };
-  const base = validateBase(required('JAVA_API_BASE_URL'));
+  const base = validateBase(required('JAVA_API_BASE_URL'), env.ACCEPTANCE_API_PORT ?? '8095');
   assert.ok(env.ACCEPTANCE_LOCAL_WRITES === '1' && env.ACCEPTANCE_STAGE_THREE_READY === '1',
     'Both ACCEPTANCE_LOCAL_WRITES=1 and ACCEPTANCE_STAGE_THREE_READY=1 are required.');
   const database = required('ACCEPTANCE_EXPECTED_DB');
@@ -92,7 +95,8 @@ const environmentValue = (text, key) => {
 };
 
 function runtimeIdentity(config) {
-  const pids = [...new Set(command('lsof', ['-nP', '-iTCP:8095', '-sTCP:LISTEN', '-Fp'])
+  const port = new URL(config.base).port;
+  const pids = [...new Set(command('lsof', ['-nP', `-iTCP:${port}`, '-sTCP:LISTEN', '-Fp'])
     .split('\n').filter(s => /^p\d+$/.test(s)).map(s => s.slice(1)))];
   assert.ok(pids.length === 1, 'Expected exactly one process listening on 8095.');
   const pid = pids[0];
@@ -107,7 +111,7 @@ function runtimeIdentity(config) {
     assert.ok(!environmentValue(processText, key), `Unset ${key} on the isolated backend to make runtime identity unambiguous.`);
   }
   validateDatabase(environmentValue(processText, 'DB_URL'), config.database);
-  assert.ok(environmentValue(processText, 'SERVER_PORT') === '8095', 'Runtime SERVER_PORT must explicitly be 8095.');
+  assert.ok(environmentValue(processText, 'SERVER_PORT') === port, 'Runtime SERVER_PORT must match explicit isolated port.');
   const jar = processText.match(/(?:^|\s)-jar\s+(\S+\.jar)(?:\s|$)/)?.[1];
   assert.ok(jar && isAbsolute(jar), 'Only a pinned executable JAR with an absolute path is supported.');
   const path = realpathSync(jar);
@@ -207,6 +211,7 @@ async function run(config) {
       adminName: '隔离验收管理员', adminEmail: buyerAccount, adminPassword: config.password });
     const buyer = await login(buyerAccount, 'BUYER', { tenantId });
     const b = buyer.accessToken, s = supplier.accessToken;
+    await createAcceptanceQualification(config.base, s, api, runId);
     const own = data => { assert.equal(data.tenantId, tenantId, 'Response escaped acceptance tenant'); return data; };
     const department = await api('buyer/departments', b, { name: `Acceptance ${runId}` });
     const material = await api('buyer/materials', b, { code: `MAT-${runId}`, name: '隔离验收设备', category: '验收专用', unit: '台', referencePrice: 1000 });
@@ -214,7 +219,10 @@ async function run(config) {
     const role = (await api('buyer/roles', b)).find(r => r.permissions?.includes('buyer:*'));
     assert.ok(role?.id, 'Fresh tenant needs a real buyer administrator role.');
     report.records.definitions = {};
-    for (const businessType of ['buyer_supplier_admission', 'rfq_award']) {
+    const reviewerAccount=`review-${runId}@example.com`;
+    await api('buyer/users',b,{name:'独立文件审查人',email:reviewerAccount,status:'active',departmentId:department.id,roleId:role.id,initialPassword:config.password});
+    const documentReviewer=(await login(reviewerAccount,'BUYER',{tenantId})).accessToken;
+    for (const businessType of ['buyer_supplier_admission', 'rfq_award', 'tender_document_review']) {
       const definition = await api('buyer/process-definitions', b, { name: `${runId} ${businessType}`, businessType, icon: 'file-text' });
       report.records.definitions[businessType] = definition.id;
       await api(`buyer/process-definitions/${definition.id}`, b, { name: definition.name, businessType, status: 'draft',
@@ -283,11 +291,15 @@ async function run(config) {
     const tenderId = tender.id;
     report.records.tender = { tenderId };
     await api(`buyer/tenders/${tenderId}/prequalification`, b, { required: true }, 'PUT');
+    const scoring=await api(`buyer/tenders/${tenderId}/scoring-rule`,b,{technicalWeight:40,commercialWeight:30,priceWeight:30,reason:'隔离验收：验证项目权重参与实际计算',expectedRevision:0},'PUT');
+    assert.equal(scoring.revision,1);
+    await approveAcceptanceTender(api,b,documentReviewer,tenderId);
     await api(`buyer/tenders/${tenderId}/publish`, b, {});
     await api(`buyer/tenders/${tenderId}/distribute`, b, { supplierIds: [config.supplierId] });
     const supplierTender = async () => (await api('supplier/tenders', s)).find(t => t.id === tenderId) ?? assert.fail('Missing supplier tender');
     const buyerTender = async () => own((await api('buyer/tenders', b)).find(t => t.id === tenderId) ?? assert.fail('Missing buyer tender'));
     assert.equal((await supplierTender()).documentHtml, null);
+    await api(`supplier/tenders/${tenderId}/scoring-rule`,s,undefined,'GET',[400,403]);
     await api(`supplier/tenders/${tenderId}/acquire`, s, {}, 'POST', [400, 409], /预审/);
     await api(`supplier/tenders/${tenderId}/prequalification`, s, { application: `资格声明 ${runId}` });
     tender = await buyerTender();
@@ -295,6 +307,10 @@ async function run(config) {
     assert.ok(application?.id);
     await api(`buyer/tenders/${tenderId}/prequalifications/${application.id}/review`, b, { status: '已通过', reviewComment: '隔离验收材料审查通过' });
     assert.ok((await api(`supplier/tenders/${tenderId}/acquire`, s, {})).documentHtml?.includes(runId));
+    const disclosedRule=await api(`supplier/tenders/${tenderId}/scoring-rule`,s);
+    assert.equal(Number(disclosedRule.weights.technical),40);
+    assert.equal(disclosedRule.revision,1);
+    assert.ok(!('history' in disclosedRule),'Supplier must not receive internal editing history');
     const bid = await api(`supplier/tenders/${tenderId}/bids`, s, { bidAmount: 1000, documentHtml: `<p>Supplier bid ${runId}</p>` });
     report.records.tender.bidId = bid.id;
     assert.equal(bid.sealedStatus, '已密封');
@@ -303,6 +319,23 @@ async function run(config) {
     assert.equal(sealed.evaluationEligible, null, 'Pre-opening eligibility must not be inferred or disclosed.');
     await api(`buyer/tenders/${tenderId}/open`, b, {}, 'POST', [400, 409], /开标时间|提前/);
     check('real tender invitation/prequalification/acquisition/sealed bid; buyer cannot see bid content early');
+
+    const failureDraft = { title: `${runId} exception evidence`, tenderType: '邀请招标', budget: 1200,
+      documentHtml: `<p>Failure evidence ${runId}</p>`, evaluationMethod: '综合评分法',
+      acquisitionDeadline: deadline, submissionDeadline: deadline, openingAt: deadline };
+    const emptyTender = own(await api('buyer/tenders', b, failureDraft));
+    const partialTender = own(await api('buyer/tenders', b, { ...failureDraft, title: `${runId} partial evaluation` }));
+    for (const draft of [emptyTender, partialTender]) {
+      await api(`buyer/tenders/${draft.id}/scoring-rule`, b, { technicalWeight: 60, commercialWeight: 10,
+        priceWeight: 30, reason: '重招规则来源', expectedRevision: 0 }, 'PUT');
+      await approveAcceptanceTender(api, b, documentReviewer, draft.id);
+      await api(`buyer/tenders/${draft.id}/publish`, b, {});
+      await api(`buyer/tenders/${draft.id}/fail`, b, { reason: '截止前不允许流标' }, 'POST', [400,409]);
+    }
+    await api(`buyer/tenders/${partialTender.id}/distribute`, b, { supplierIds: [config.supplierId] });
+    await api(`supplier/tenders/${partialTender.id}/acquire`, s, {});
+    const partialBid = await api(`supplier/tenders/${partialTender.id}/bids`, s,
+      { bidAmount: 950, documentHtml: `<p>Immutable failed bid ${runId}</p>` });
 
     const cutoff = Date.parse(deadline);
     let lastLog = 0;
@@ -323,6 +356,60 @@ async function run(config) {
     assert.equal(openedBid.digestVerified, true); assert.equal(openedBid.evaluationEligible, true);
     assert.equal(Number(openedBid.bidAmount), 1000);
     check('actual deadlines elapsed; both RFQs and tender opened; fingerprint and authoritative eligibility verified');
+
+    await scenario('failure and rebid', async () => {
+      const partial = await api(`buyer/tenders/${partialTender.id}/open`, b, {});
+      const committee = await api(`buyer/tenders/${partial.id}/committee`, b, { members: [
+        { name: `${runId}-failure-A`, role: '组长' }, { name: `${runId}-failure-B`, role: '成员' },
+        { name: `${runId}-failure-C`, role: '成员' },
+      ] });
+      await api(`buyer/tenders/${partial.id}/scores`, b, { evaluatorId: committee.evaluators[0].id,
+        lines: [{ bidId: partialBid.id, technicalScore: 70, commercialScore: 80, comment: '部分评审历史保留' }] });
+      report.records.rebids = [];
+      for (const source of [emptyTender, partialTender]) {
+        const failed = own(await api(`buyer/tenders/${source.id}/fail`, b, { reason: '隔离业务验收：重新组织采购' }));
+        assert.equal(failed.status, '已流标');
+        const [first, replay] = await Promise.all([
+          api(`buyer/tenders/${source.id}/rebid`, b, {}), api(`buyer/tenders/${source.id}/rebid`, b, {}),
+        ]);
+        assert.equal(first.id, replay.id, 'Concurrent rebid must return the same successor');
+        assert.equal(first.rebidOfTenderId, source.id);
+        assert.equal(first.status, '编制中');
+        assert.equal(first.acquisitionDeadline, null); assert.equal(first.submissionDeadline, null); assert.equal(first.openingAt, null);
+        assert.equal(first.executionOrderId, null); assert.equal(first.awardedBidId, null);
+        assert.equal(first.bids.length, 0); assert.equal(first.acquisitions.length, 0);
+        assert.equal(first.evaluators.length, 0); assert.equal(first.evaluationSummary.length, 0);
+        const review = await api(`buyer/tenders/${first.id}/document-reviews`, b);
+        assert.equal(review.reviews.length, 0); assert.equal(review.currentApproved, false);
+        const inherited = await api(`buyer/tenders/${first.id}/scoring-rule`, b);
+        assert.equal(inherited.revision, 1); assert.equal(Number(inherited.weights.technical), 60);
+        await api(`buyer/tenders/${first.id}/publish`, b, {}, 'POST', [400,409]);
+        const dates = new Date(Date.now() + 86400000).toISOString();
+        await api(`buyer/tenders/${first.id}`, b, { ...failureDraft, acquisitionDeadline: dates,
+          submissionDeadline: dates, openingAt: dates }, 'PUT');
+        await api(`buyer/tenders/${first.id}/publish`, b, {}, 'POST', [400,409]);
+        await approveAcceptanceTender(api, b, documentReviewer, first.id);
+        assert.equal((await api(`buyer/tenders/${first.id}/publish`, b, {})).status, '发售中');
+        await api(`buyer/tenders/${source.id}/open`, b, {}, 'POST', [400,409]);
+        await api(`buyer/tenders/${source.id}/fail`, b, { reason: '重复流标' }, 'POST', [400,409]);
+        await api(`supplier/tenders/${source.id}/bids`, s, { bidAmount: 800, documentHtml: '不得覆盖旧投标' }, 'POST', [400,403,409]);
+        await api(`buyer/tenders/${source.id}/rebid`, foreign.accessToken, {}, 'POST', [400,403,404]);
+        const rows = await api('buyer/tenders', b);
+        assert.equal(rows.filter(t => t.rebidOfTenderId === source.id).length, 1);
+        const original = rows.find(t => t.id === source.id);
+        assert.equal(original.status, '已流标');
+        assert.equal(original.bids.length, source.id === partialTender.id ? 1 : 0);
+        if (source.id === partialTender.id) {
+          assert.equal(Number(original.bids[0].bidAmount), 950);
+          assert.equal(original.scores.length, 1);
+        }
+        assert.equal((await api(`buyer/tenders/${source.id}/document-reviews`, b)).reviews.length, 1);
+        const announcements = (await api('public/procurement-announcements')).filter(a => a.rfqId === source.id && a.type === '终止公告');
+        assert.equal(announcements.length, 1, 'Exactly one termination announcement must retain the failure reason');
+        report.records.rebids.push({ originalId: source.id, successorId: first.id });
+      }
+      check('deadline failure without opening and partially scored failure; concurrent rebid, original evidence, clean successor, new approval/publication and tenant isolation');
+    });
 
     async function verifyOrder(order, method, amount, expectedRfq) {
       own(order);
@@ -386,9 +473,12 @@ async function run(config) {
           lines: eligible.map(item => ({ bidId: item.id, technicalScore: 80, commercialScore: 90, comment: `评审记录 ${runId}` })) }));
         assert.equal(scored.evaluators.find(e => e.id === evaluator.id).scoredCount, 1);
         assert.equal(scored.evaluationSummary.some(row => row.recommended), i === 2);
+        assert.equal(Number(scored.evaluationSummary.find(row=>row.bidId===bid.id).compositeScore),89,'Configured 40/30/30 must replace fixed 50/20/30');
       }
       tender = own(await api(`buyer/tenders/${tenderId}/award`, b, awardBody));
       assert.equal(tender.awardedBidId, bid.id);
+      await api(`buyer/tenders/${tenderId}/fail`, b, { reason: '不得对已定标项目流标' }, 'POST', [400,409]);
+      await api(`buyer/tenders/${tenderId}/rebid`, b, {}, 'POST', [400,409]);
       assert.equal(Number(tender.evaluationSummary.find(row => row.bidId === bid.id).effectiveAmount), 800);
       assert.equal((await supplierTender()).awardNoticeHtml, awardBody.awardNoticeHtml);
       const announcements = (await api('public/procurement-announcements')).filter(a => a.rfqId === tenderId && a.type === '定标公告');

@@ -25,6 +25,11 @@ public class SupplierTenderController {
     return ApiResponse.ok(tenderApplicationService.listSupplierTenders());
   }
 
+  @GetMapping("/{tenderId}/scoring-rule")
+  public ApiResponse<TenderSupplierScoringRuleResponse> scoringRule(@PathVariable String tenderId) {
+    return ApiResponse.ok(tenderApplicationService.supplierScoringRule(tenderId));
+  }
+
   @PostMapping("/{tenderId}/acquire")
   public ApiResponse<TenderResponse> acquire(@PathVariable String tenderId) {
     return ApiResponse.ok(tenderApplicationService.acquire(tenderId));
