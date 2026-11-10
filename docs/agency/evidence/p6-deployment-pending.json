@@ -1,0 +1,67 @@
+{
+  "profile": "production",
+  "ready": false,
+  "scope": "Read-only configuration checks; no deployment, real message, production acceptance or connectivity claim",
+  "checks": [
+    {
+      "name": "Database configuration",
+      "passed": false,
+      "detail": "Database credentials must be provided outside source control"
+    },
+    {
+      "name": "Independent application signing secret",
+      "passed": false,
+      "detail": "At least 32 bytes; reject demo secret"
+    },
+    {
+      "name": "Object storage configuration",
+      "passed": false,
+      "detail": "TLS required for production storage endpoint"
+    },
+    {
+      "name": "Explicit CORS origins",
+      "passed": false,
+      "detail": "Use explicit trusted portal origins"
+    },
+    {
+      "name": "Minimum temporary disk space",
+      "passed": true,
+      "detail": "Local temporary workspace only; capacity planning remains operator-owned"
+    },
+    {
+      "name": "AI deferred",
+      "passed": true,
+      "detail": "AI remains disabled until user configures service"
+    },
+    {
+      "name": "Office fallback is explicit",
+      "passed": true,
+      "detail": "Online editor disabled; whole DOCX download/upload retained"
+    },
+    {
+      "name": "SMS external sending disabled",
+      "passed": true,
+      "detail": "No gateway configured; no actual send is performed"
+    },
+    {
+      "name": "Strict external identity mapping",
+      "passed": false,
+      "detail": "Customer IdP login, account lifecycle and emergency administrator drill remain necessary"
+    },
+    {
+      "name": "Self-issued login retired",
+      "passed": true,
+      "detail": "Perform only after external identity and emergency recovery verified"
+    },
+    {
+      "name": "Header fallback disabled",
+      "passed": true,
+      "detail": "Untrusted tenant headers cannot establish an identity"
+    },
+    {
+      "name": "Restore evidence supplied",
+      "passed": false,
+      "detail": "Review evidence and operator RPO/RTO; file existence does not certify production recovery"
+    }
+  ]
+}

@@ -1,0 +1,3425 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "24Bid Procurement SaaS API",
+    "description": "多租户采购协同管理 SaaS 后端契约（平台 / 采购方 / 供应商三端）。",
+    "version": "v1"
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "Default"
+    }
+  ],
+  "paths": {
+    "/api/v1/buyer/agency/evaluation/packages/{pkg}/sessions/{session}/mine": {
+      "get": {
+        "tags": [
+          "agency-assessment-controller"
+        ],
+        "operationId": "agencyAssessmentMine",
+        "parameters": [
+          {
+            "name": "pkg",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "session",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "stage",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAgencyAssessmentMine"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "agency-assessment-controller"
+        ],
+        "operationId": "agencyAssessmentSave",
+        "parameters": [
+          {
+            "name": "pkg",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "session",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "stage",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgencyAssessmentSheetSave"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAgencyAssessmentSheet"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/agency/evaluation/packages/{pkg}/rounds/{round}/materials/plan": {
+      "put": {
+        "tags": [
+          "agency-opening-controller"
+        ],
+        "operationId": "agencyOpeningPlanSave",
+        "parameters": [
+          {
+            "name": "pkg",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "round",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgencyOpeningPlanSave"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAgencyOpeningPlan"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/agency/evaluation/packages/{pkg}/rounds/{id}": {
+      "put": {
+        "tags": [
+          "agency-evaluation-controller"
+        ],
+        "operationId": "agencyEvaluationSave",
+        "parameters": [
+          {
+            "name": "pkg",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgencyEvaluationSave"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAgencyEvaluationView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/agency/evaluation/packages/{pkg}/sessions/{session}/stages/{stage}/release": {
+      "post": {
+        "tags": [
+          "agency-opening-controller"
+        ],
+        "operationId": "agencyOpeningReleaseStage",
+        "parameters": [
+          {
+            "name": "pkg",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "session",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "stage",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgencyOpeningReleaseDraft"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAgencyOpeningRelease"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/agency/evaluation/packages/{pkg}/sessions/{session}/mine/submit": {
+      "post": {
+        "tags": [
+          "agency-assessment-controller"
+        ],
+        "operationId": "agencyAssessmentSubmit",
+        "parameters": [
+          {
+            "name": "pkg",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "session",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "stage",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgencyAssessmentSubmit"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAgencyAssessmentSheet"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/agency/evaluation/packages/{pkg}/sessions/{session}/corrections": {
+      "post": {
+        "tags": [
+          "agency-assessment-controller"
+        ],
+        "operationId": "agencyAssessmentCorrection",
+        "parameters": [
+          {
+            "name": "pkg",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "session",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "stage",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgencyAssessmentCorrectionDraft"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAgencyAssessmentCorrection"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/agency/evaluation/packages/{pkg}/sessions/{session}/corrections/{id}/withdraw": {
+      "post": {
+        "tags": [
+          "agency-assessment-controller"
+        ],
+        "operationId": "agencyAssessmentWithdrawCorrection",
+        "parameters": [
+          {
+            "name": "pkg",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "session",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgencyAssessmentWithdraw"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/agency/evaluation/packages/{pkg}/rounds": {
+      "get": {
+        "tags": [
+          "agency-evaluation-controller"
+        ],
+        "operationId": "agencyEvaluationWorkspace",
+        "parameters": [
+          {
+            "name": "pkg",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAgencyEvaluationWorkspace"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "agency-evaluation-controller"
+        ],
+        "operationId": "agencyEvaluationCreate",
+        "parameters": [
+          {
+            "name": "pkg",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgencyEvaluationSave"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAgencyEvaluationView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/agency/evaluation/packages/{pkg}/rounds/{round}/materials/receipts": {
+      "post": {
+        "tags": [
+          "agency-opening-controller"
+        ],
+        "operationId": "agencyOpeningReceive",
+        "parameters": [
+          {
+            "name": "pkg",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "round",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgencyOpeningReceiptDraft"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAgencyOpeningReceiptView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/agency/evaluation/packages/{pkg}/rounds/{round}/materials/receipts/{id}/withdraw": {
+      "post": {
+        "tags": [
+          "agency-opening-controller"
+        ],
+        "operationId": "agencyOpeningReceiptWithdraw",
+        "parameters": [
+          {
+            "name": "pkg",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "round",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgencyOpeningConfirm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAgencyOpeningReceipt"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/agency/evaluation/packages/{pkg}/rounds/{round}/materials/preview": {
+      "post": {
+        "tags": [
+          "agency-opening-controller"
+        ],
+        "operationId": "agencyOpeningPreview",
+        "parameters": [
+          {
+            "name": "pkg",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "round",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgencyOpeningSelection"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAgencyOpeningPreview"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/agency/evaluation/packages/{pkg}/rounds/{round}/materials/plan/confirm": {
+      "post": {
+        "tags": [
+          "agency-opening-controller"
+        ],
+        "operationId": "agencyOpeningPlanConfirm",
+        "parameters": [
+          {
+            "name": "pkg",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "round",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgencyOpeningConfirm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAgencyOpeningPlan"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/agency/evaluation/packages/{pkg}/rounds/{round}/materials/open": {
+      "post": {
+        "tags": [
+          "agency-opening-controller"
+        ],
+        "operationId": "agencyOpeningConfirm",
+        "parameters": [
+          {
+            "name": "pkg",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "round",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgencyOpeningOpen"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAgencyOpeningSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/agency/evaluation/packages/{pkg}/rounds/{round}/assessment": {
+      "get": {
+        "tags": [
+          "agency-assessment-controller"
+        ],
+        "operationId": "agencyAssessmentOverview",
+        "parameters": [
+          {
+            "name": "pkg",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "round",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAgencyAssessmentOverview"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "agency-assessment-controller"
+        ],
+        "operationId": "agencyAssessmentStart",
+        "parameters": [
+          {
+            "name": "pkg",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "round",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgencyAssessmentStart"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAgencyAssessmentSession"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/agency/evaluation/packages/{pkg}/rounds/{id}/void": {
+      "post": {
+        "tags": [
+          "agency-evaluation-controller"
+        ],
+        "operationId": "agencyEvaluationVoid",
+        "parameters": [
+          {
+            "name": "pkg",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgencyEvaluationTransition"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAgencyEvaluationView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/agency/evaluation/packages/{pkg}/rounds/{id}/freeze": {
+      "post": {
+        "tags": [
+          "agency-evaluation-controller"
+        ],
+        "operationId": "agencyEvaluationFreeze",
+        "parameters": [
+          {
+            "name": "pkg",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgencyEvaluationTransition"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAgencyEvaluationView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/agency/evaluation/packages/{pkg}/sessions/{session}/stages": {
+      "get": {
+        "tags": [
+          "agency-opening-controller"
+        ],
+        "operationId": "agencyOpeningStages",
+        "parameters": [
+          {
+            "name": "pkg",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "session",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAgencyOpeningStageBoard"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/agency/evaluation/packages/{pkg}/sessions/{session}/progress": {
+      "get": {
+        "tags": [
+          "agency-assessment-controller"
+        ],
+        "operationId": "agencyAssessmentProgress",
+        "parameters": [
+          {
+            "name": "pkg",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "session",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListAgencyAssessmentProgress"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/agency/evaluation/packages/{pkg}/rounds/{round}/materials": {
+      "get": {
+        "tags": [
+          "agency-opening-controller"
+        ],
+        "operationId": "agencyOpeningWorkspace",
+        "parameters": [
+          {
+            "name": "pkg",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "round",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAgencyOpeningWorkspace"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/agency/evaluation/packages/{pkg}/rounds/{round}/materials/receipts/{id}/artifact": {
+      "get": {
+        "tags": [
+          "agency-opening-controller"
+        ],
+        "operationId": "agencyOpeningArtifact",
+        "parameters": [
+          {
+            "name": "pkg",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "round",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMapStringString"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/agency/evaluation/packages/{pkg}/rounds/{id}/snapshot": {
+      "get": {
+        "tags": [
+          "agency-evaluation-controller"
+        ],
+        "operationId": "agencyEvaluationSnapshot",
+        "parameters": [
+          {
+            "name": "pkg",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMapStringObject"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AgencyAssessmentCell": {
+        "type": "object",
+        "properties": {
+          "participationId": {
+            "type": "string"
+          },
+          "criterionKey": {
+            "type": "string"
+          }
+        }
+      },
+      "AgencyAssessmentCorrection": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "sessionId": {
+            "type": "string"
+          },
+          "sheetId": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "sheetVersion": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sheetHash": {
+            "type": "string"
+          },
+          "cellsJson": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "evidenceVersionId": {
+            "type": "string"
+          },
+          "evidenceHash": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "workflowId": {
+            "type": "string"
+          },
+          "resultNote": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AgencyAssessmentCorrectionDraft": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cells": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgencyAssessmentCell"
+            }
+          },
+          "reason": {
+            "type": "string"
+          },
+          "evidenceVersionId": {
+            "type": "string"
+          },
+          "formData": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "idempotencyKey": {
+            "type": "string"
+          }
+        }
+      },
+      "AgencyAssessmentEntry": {
+        "type": "object",
+        "properties": {
+          "participationId": {
+            "type": "string"
+          },
+          "criterionKey": {
+            "type": "string"
+          },
+          "score": {
+            "type": "number"
+          },
+          "conclusion": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "opinion": {
+            "type": "string"
+          }
+        }
+      },
+      "AgencyAssessmentMine": {
+        "type": "object",
+        "properties": {
+          "session": {
+            "$ref": "#/components/schemas/AgencyAssessmentSession"
+          },
+          "stageKeys": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "selectedStage": {
+            "type": "string"
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgencyAssessmentSubject"
+            }
+          },
+          "criteria": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgencyEvaluationCriterion"
+            }
+          },
+          "sheets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgencyAssessmentSheet"
+            }
+          },
+          "corrections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgencyAssessmentCorrection"
+            }
+          },
+          "writable": {
+            "type": "boolean"
+          },
+          "blockers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "AgencyAssessmentOverview": {
+        "type": "object",
+        "properties": {
+          "sessions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgencyAssessmentSession"
+            }
+          },
+          "availableSubjects": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "AgencyAssessmentProgress": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "ordinal": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "stageKey": {
+            "type": "string"
+          }
+        }
+      },
+      "AgencyAssessmentSession": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "packageId": {
+            "type": "string"
+          },
+          "roundId": {
+            "type": "string"
+          },
+          "roundHash": {
+            "type": "string"
+          },
+          "subjectsJson": {
+            "type": "string"
+          },
+          "openingEvidenceVersionId": {
+            "type": "string"
+          },
+          "openingHash": {
+            "type": "string"
+          },
+          "openedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "note": {
+            "type": "string"
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AgencyAssessmentSheet": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "sessionId": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "stageKey": {
+            "type": "string"
+          },
+          "ordinal": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "status": {
+            "type": "string"
+          },
+          "entriesJson": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "previousId": {
+            "type": "string"
+          },
+          "correctionId": {
+            "type": "string"
+          },
+          "contentHash": {
+            "type": "string"
+          },
+          "submittedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AgencyAssessmentSheetSave": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgencyAssessmentEntry"
+            }
+          },
+          "idempotencyKey": {
+            "type": "string"
+          }
+        }
+      },
+      "AgencyAssessmentStart": {
+        "type": "object",
+        "properties": {
+          "expectedRoundVersion": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "participationIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "openingEvidenceVersionId": {
+            "type": "string"
+          },
+          "openedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "openingReviewed": {
+            "type": "boolean"
+          },
+          "note": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          }
+        }
+      },
+      "AgencyAssessmentSubject": {
+        "type": "object",
+        "properties": {
+          "participationId": {
+            "type": "string"
+          },
+          "supplierName": {
+            "type": "string"
+          }
+        }
+      },
+      "AgencyAssessmentSubmit": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "personallyConfirmed": {
+            "type": "boolean"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          }
+        }
+      },
+      "AgencyAssessmentWithdraw": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
+      "AgencyEvaluationConfig": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "documentRevisionId": {
+            "type": "string"
+          },
+          "evaluationMethod": {
+            "type": "string"
+          },
+          "ruleVersion": {
+            "type": "string"
+          },
+          "ruleBasis": {
+            "type": "string"
+          },
+          "venue": {
+            "type": "string"
+          },
+          "scheduledAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgencyEvaluationMember"
+            }
+          },
+          "rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgencyEvaluationRulePair"
+            }
+          },
+          "tieRule": {
+            "type": "string"
+          }
+        }
+      },
+      "AgencyEvaluationCriterion": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "stage": {
+            "type": "string"
+          },
+          "applicableTo": {
+            "type": "string"
+          },
+          "resultType": {
+            "type": "string"
+          },
+          "minimum": {
+            "type": "number"
+          },
+          "maximum": {
+            "type": "number"
+          },
+          "weight": {
+            "type": "number"
+          },
+          "formula": {
+            "type": "string"
+          },
+          "evidenceRequired": {
+            "type": "boolean"
+          },
+          "scale": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rounding": {
+            "type": "string"
+          }
+        }
+      },
+      "AgencyEvaluationDifference": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "field": {
+            "type": "string"
+          },
+          "documentValue": {
+            "type": "string"
+          },
+          "configuredValue": {
+            "type": "string"
+          }
+        }
+      },
+      "AgencyEvaluationMember": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "AgencyEvaluationMemberSnapshot": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "AgencyEvaluationRound": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "packageId": {
+            "type": "string"
+          },
+          "ordinal": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "status": {
+            "type": "string"
+          },
+          "configJson": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "frozenJson": {
+            "type": "string"
+          },
+          "frozenHash": {
+            "type": "string"
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "frozenBy": {
+            "type": "string"
+          },
+          "frozenAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "voidReason": {
+            "type": "string"
+          }
+        }
+      },
+      "AgencyEvaluationRulePair": {
+        "type": "object",
+        "properties": {
+          "documentRule": {
+            "$ref": "#/components/schemas/AgencyEvaluationCriterion"
+          },
+          "configuredRule": {
+            "$ref": "#/components/schemas/AgencyEvaluationCriterion"
+          },
+          "locator": {
+            "type": "string"
+          },
+          "manuallyChecked": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AgencyEvaluationSave": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "config": {
+            "$ref": "#/components/schemas/AgencyEvaluationConfig"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          }
+        }
+      },
+      "AgencyEvaluationSource": {
+        "type": "object",
+        "properties": {
+          "revisionId": {
+            "type": "string"
+          },
+          "documentId": {
+            "type": "string"
+          },
+          "fileVersionId": {
+            "type": "string"
+          },
+          "hash": {
+            "type": "string"
+          },
+          "inputVersion": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "current": {
+            "type": "boolean"
+          },
+          "basisStale": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AgencyEvaluationTransition": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "businessRulesReviewed": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          }
+        }
+      },
+      "AgencyEvaluationView": {
+        "type": "object",
+        "properties": {
+          "round": {
+            "$ref": "#/components/schemas/AgencyEvaluationRound"
+          },
+          "config": {
+            "$ref": "#/components/schemas/AgencyEvaluationConfig"
+          },
+          "roster": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgencyEvaluationMemberSnapshot"
+            }
+          },
+          "differences": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgencyEvaluationDifference"
+            }
+          },
+          "blockers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "frozenBasisStale": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AgencyEvaluationWorkspace": {
+        "type": "object",
+        "properties": {
+          "rounds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgencyEvaluationView"
+            }
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgencyEvaluationSource"
+            }
+          }
+        }
+      },
+      "AgencyFileRow": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "packageId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "visibility": {
+            "type": "string"
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AgencyFileVersion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "fileId": {
+            "type": "string"
+          },
+          "ordinal": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "status": {
+            "type": "string"
+          },
+          "attachmentId": {
+            "type": "string"
+          },
+          "hash": {
+            "type": "string"
+          },
+          "contentSize": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
+      "AgencyFileView": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "$ref": "#/components/schemas/AgencyFileRow"
+          },
+          "versions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgencyFileVersion"
+            }
+          }
+        }
+      },
+      "AgencyOpeningCandidate": {
+        "type": "object",
+        "properties": {
+          "participationId": {
+            "type": "string"
+          },
+          "supplierName": {
+            "type": "string"
+          },
+          "priorPassed": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AgencyOpeningConfig": {
+        "type": "object",
+        "properties": {
+          "cutoffAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "notBefore": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "minimumSubjects": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "ruleBasis": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgencyOpeningItem"
+            }
+          }
+        }
+      },
+      "AgencyOpeningConfirm": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "reviewed": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          }
+        }
+      },
+      "AgencyOpeningItem": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "readerRoles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "AgencyOpeningManifest": {
+        "type": "object",
+        "properties": {
+          "receiptId": {
+            "type": "string"
+          },
+          "participationId": {
+            "type": "string"
+          },
+          "itemKey": {
+            "type": "string"
+          },
+          "fileId": {
+            "type": "string"
+          },
+          "fileVersionId": {
+            "type": "string"
+          },
+          "attachmentId": {
+            "type": "string"
+          },
+          "fileName": {
+            "type": "string"
+          },
+          "hash": {
+            "type": "string"
+          },
+          "readerRoles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "AgencyOpeningOpen": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "participationIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "previewFingerprint": {
+            "type": "string"
+          },
+          "openedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "evidenceVersionId": {
+            "type": "string"
+          },
+          "reviewed": {
+            "type": "boolean"
+          },
+          "note": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          }
+        }
+      },
+      "AgencyOpeningPlan": {
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "type": "string"
+          },
+          "roundId": {
+            "type": "string"
+          },
+          "packageId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "configJson": {
+            "type": "string"
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AgencyOpeningPlanSave": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "config": {
+            "$ref": "#/components/schemas/AgencyOpeningConfig"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          }
+        }
+      },
+      "AgencyOpeningPreview": {
+        "type": "object",
+        "properties": {
+          "planVersion": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgencyAssessmentSubject"
+            }
+          },
+          "manifest": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgencyOpeningManifest"
+            }
+          },
+          "blockers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "fingerprint": {
+            "type": "string"
+          }
+        }
+      },
+      "AgencyOpeningReceipt": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "packageId": {
+            "type": "string"
+          },
+          "roundId": {
+            "type": "string"
+          },
+          "participationId": {
+            "type": "string"
+          },
+          "itemKey": {
+            "type": "string"
+          },
+          "fileId": {
+            "type": "string"
+          },
+          "receivedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "originalType": {
+            "type": "string"
+          },
+          "sourceNote": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "lateEntryReason": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "withdrawReason": {
+            "type": "string"
+          }
+        }
+      },
+      "AgencyOpeningReceiptDraft": {
+        "type": "object",
+        "properties": {
+          "participationId": {
+            "type": "string"
+          },
+          "itemKey": {
+            "type": "string"
+          },
+          "fileName": {
+            "type": "string"
+          },
+          "receivedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "originalType": {
+            "type": "string"
+          },
+          "sourceNote": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "lateEntryReason": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          }
+        }
+      },
+      "AgencyOpeningReceiptView": {
+        "type": "object",
+        "properties": {
+          "receipt": {
+            "$ref": "#/components/schemas/AgencyOpeningReceipt"
+          },
+          "file": {
+            "$ref": "#/components/schemas/AgencyFileView"
+          },
+          "readable": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AgencyOpeningRelease": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "sessionId": {
+            "type": "string"
+          },
+          "stageKey": {
+            "type": "string"
+          },
+          "subjectsJson": {
+            "type": "string"
+          },
+          "prerequisiteHash": {
+            "type": "string"
+          },
+          "evidenceVersionId": {
+            "type": "string"
+          },
+          "evidenceHash": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "exclusionsJson": {
+            "type": "string"
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AgencyOpeningReleaseDraft": {
+        "type": "object",
+        "properties": {
+          "participationIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "exclusions": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "prerequisiteHash": {
+            "type": "string"
+          },
+          "evidenceVersionId": {
+            "type": "string"
+          },
+          "reviewed": {
+            "type": "boolean"
+          },
+          "note": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          }
+        }
+      },
+      "AgencyOpeningSelection": {
+        "type": "object",
+        "properties": {
+          "participationIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "AgencyOpeningStageBoard": {
+        "type": "object",
+        "properties": {
+          "stages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgencyOpeningStageView"
+            }
+          }
+        }
+      },
+      "AgencyOpeningStageView": {
+        "type": "object",
+        "properties": {
+          "stageKey": {
+            "type": "string"
+          },
+          "released": {
+            "type": "boolean"
+          },
+          "complete": {
+            "type": "boolean"
+          },
+          "candidates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgencyOpeningCandidate"
+            }
+          },
+          "prerequisiteHash": {
+            "type": "string"
+          }
+        }
+      },
+      "AgencyOpeningSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "manifestHash": {
+            "type": "string"
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgencyAssessmentSubject"
+            }
+          },
+          "openedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "evidenceVersionId": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      },
+      "AgencyOpeningWorkspace": {
+        "type": "object",
+        "properties": {
+          "plan": {
+            "$ref": "#/components/schemas/AgencyOpeningPlan"
+          },
+          "config": {
+            "$ref": "#/components/schemas/AgencyOpeningConfig"
+          },
+          "receipts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgencyOpeningReceiptView"
+            }
+          },
+          "opening": {
+            "$ref": "#/components/schemas/AgencyOpeningSummary"
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ApiResponseAgencyAssessmentCorrection": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AgencyAssessmentCorrection"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseAgencyAssessmentMine": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AgencyAssessmentMine"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseAgencyAssessmentOverview": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AgencyAssessmentOverview"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseAgencyAssessmentSession": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AgencyAssessmentSession"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseAgencyAssessmentSheet": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AgencyAssessmentSheet"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseAgencyEvaluationView": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AgencyEvaluationView"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseAgencyEvaluationWorkspace": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AgencyEvaluationWorkspace"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseAgencyOpeningPlan": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AgencyOpeningPlan"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseAgencyOpeningPreview": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AgencyOpeningPreview"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseAgencyOpeningReceipt": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AgencyOpeningReceipt"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseAgencyOpeningReceiptView": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AgencyOpeningReceiptView"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseAgencyOpeningRelease": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AgencyOpeningRelease"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseAgencyOpeningStageBoard": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AgencyOpeningStageBoard"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseAgencyOpeningSummary": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AgencyOpeningSummary"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseAgencyOpeningWorkspace": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AgencyOpeningWorkspace"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseListAgencyAssessmentProgress": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgencyAssessmentProgress"
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseMapStringObject": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseMapStringString": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseVoid": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "object"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "date": "2026-11-09",
+  "backend": {
+    "tests": 1269,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "frontend": {
+    "files": 176,
+    "tests": 832,
+    "failures": 0,
+    "finalTargetedTests": 3
+  },
+  "http": 14,
+  "foundationRegression": 9,
+  "browser": 5,
+  "browserPageErrors": 0,
+  "canonicalSnapshotHashVerifiedIndependently": true,
+  "migration": "V274 applied",
+  "api": {
+    "operations": 6,
+    "paths": 5,
+    "schemas": 16
+  },
+  "scope": "isolated synthetic tenants; evaluation preparation only; no formal scoring, opening or ranking; no production deployment",
+  "tenantBuild": "passed"
+}

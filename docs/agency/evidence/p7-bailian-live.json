@@ -1,0 +1,13 @@
+{
+  "time": "2026-11-10T01:12:58.025Z",
+  "model": "qwen3.8-flash",
+  "mode": "AI_MODEL",
+  "scope": "Live Alibaba Bailian call through deployed application; synthetic DOCX evidence only",
+  "checks": [
+    "Built portal proxies authenticated API and login succeeds",
+    "Configured flag is active in procurement workspace",
+    "Actual provider result is AI_MODEL with qwen3.8-flash",
+    "Immutable review history and evidence are persisted",
+    "AI review does not change current procurement revision or approval"
+  ]
+}

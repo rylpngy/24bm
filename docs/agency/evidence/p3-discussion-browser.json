@@ -1,0 +1,11 @@
+{
+  "passed": 5,
+  "checks": [
+    "Browser activates an explicit scope and retains a partial private draft; switching is disabled until save or explicit discard",
+    "Selecting another supplier starts a separate ledger with no carried-over text, and confirms only that supplier record",
+    "Returning to the first supplier restores its saved draft and freezes staff/subject/evidence snapshots after explicit confirmation",
+    "Final initiation freezes exact supplier discussion references and makes the process read-only without copying private notes into the campaign",
+    "A wildcard frozen reviewer has no organizer discussion workspace or private supplier notes, and no browser exceptions occur"
+  ],
+  "pageErrors": []
+}

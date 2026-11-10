@@ -1,0 +1,6 @@
+{
+  "passed": 1,
+  "checks": [
+    "Report compiler cannot approve their own report after a different frozen organizer submits it; actual Flowable task rejects the compiler and the real initiator can withdraw"
+  ]
+}

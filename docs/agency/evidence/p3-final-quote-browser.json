@@ -1,0 +1,10 @@
+{
+  "passed": 4,
+  "checks": [
+    "Browser locks the real offline initiation, deadline, reviewed requirements and participants",
+    "Uploading sealed final-response bytes invalidates earlier confirmation while preserving manual missing-submission handling",
+    "The browser confirms an exact zero final price and records another subject as missing without a fallback amount",
+    "Only the confirmed accepted response downloads exact sealed bytes; no browser exceptions"
+  ],
+  "pageErrors": []
+}

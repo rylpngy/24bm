@@ -1,0 +1,16 @@
+{
+  "checks": [
+    "Approved package opens execution workspace with actual demand sources",
+    "Unsaved chapter survives polling and saves with optimistic version",
+    "Saved chapter persists after browser reload",
+    "Browser downloads actual immutable DOCX bytes",
+    "Versioned company template library renders actual data",
+    "Participation ledger is editable through browser without qualification gate",
+    "Project plan shows actual nodes and overdue status",
+    "Company plan template is editable with business forms and version checking",
+    "Preparation workspace shows venue slot and controlled records",
+    "Publication records retain actual approved revision identities"
+  ],
+  "passed": 10,
+  "pageErrors": []
+}

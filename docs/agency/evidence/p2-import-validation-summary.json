@@ -1,0 +1,21 @@
+{
+  "backend": {
+    "tests": 1258,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "frontend": {
+    "files": 174,
+    "tests": 826,
+    "failures": 0
+  },
+  "importHttp": 14,
+  "importBrowser": 4,
+  "browserPageErrors": 0,
+  "p2Regression": 36,
+  "tenantBuild": "passed",
+  "scope": "isolated synthetic tenants; no production deployment",
+  "maxRowsTested": 200,
+  "injectedSecondRowFailureRolledBack": true
+}

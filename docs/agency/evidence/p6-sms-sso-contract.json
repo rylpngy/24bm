@@ -1,0 +1,15 @@
+{
+  "time": "2026-11-09T23:42:01.805Z",
+  "scope": "Own loopback SMS and RS256/JWKS contract; no actual SMS or customer IdP acceptance",
+  "checks": [
+    "Real HTTP JWKS + RS256 validation maps issuer/subject to local reviewer and ignores forged user/tenant/role claims",
+    "Wrong audience, issuer, expired token and unmapped buyer are rejected",
+    "Disabled local identity binding rejects already-issued external tokens immediately",
+    "SMS settings use optimistic revision; contact requires verification/consent and returns only masked number",
+    "Explicitly authorized SMS event queues once, signs a real loopback HTTP request, and records accepted without claiming delivery",
+    "Signed delivery receipt is required, replay is idempotent and delivered terminal state cannot regress",
+    "Unverifiable provider result remains unknown and cannot be blindly retried",
+    "Tenant daily quota prevents a third actual gateway request",
+    "SMS view is isolated by project scope"
+  ]
+}

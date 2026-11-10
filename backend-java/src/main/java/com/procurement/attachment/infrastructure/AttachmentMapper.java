@@ -9,6 +9,9 @@ import org.apache.ibatis.annotations.Select;
 
 @Mapper
 public interface AttachmentMapper {
+ @org.apache.ibatis.annotations.Update("update attachments set content_size=#{size},content_sha256=#{hash} where tenant_id=#{tenant} and id=#{id}")
+ int generatedFingerprint(String tenant,String id,long size,String hash);
+
 
   record Fingerprint(Long contentSize, String contentSha256) {}
 

@@ -1,0 +1,7 @@
+{
+  "passed": 2,
+  "checks": [
+    "New report and finance workflow histories link back to the exact authorized package; duplicate fee creation with a new transport idempotency key cannot double-count one agreement trigger",
+    "Post-document workflow history links to its own package while generated, approved and actually issued/delivered states remain separate"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "passed": 7,
+  "checks": [
+    "New confirmed campaigns require final review; frozen organizer duties and exact final requirements/response bytes gate activation and reviewer downloads",
+    "Independent drafts start empty; spoofed user IDs, cross-supplier cells, incomplete submissions and stale versions cannot replace another member or manufacture results",
+    "Pause preserves private drafts and blocks save/submit; independent resume invalidates the old basis fingerprint",
+    "All final members must submit; totals use new final scores (51.00/45.00) and exact final-sheet references instead of the initial 79.00/52.00 opinions",
+    "Conflicting final conclusions block calculation without majority voting; progress/events expose no private opinions and submitted records remain immutable",
+    "Active final review replaces preliminary scoring as the calculation prerequisite without bypassing earlier qualification/conformity stages or inventing initial scores",
+    "Only pre-migration confirmed campaigns retain explicit legacy review, and valid historical price calculations remain current without fabricated sheets"
+  ],
+  "scope": "Synthetic consultation final-response review and exact final-score provenance; method matrix unit-tested; no production/six-method business acceptance"
+}

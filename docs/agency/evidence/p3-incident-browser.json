@@ -1,0 +1,10 @@
+{
+  "passed": 4,
+  "checks": [
+    "Browser registers a reviewed incident, pauses the round and prevents resume with an unresolved case",
+    "A wildcard frozen reviewer sees neutral pause state and counts without private facts or control forms",
+    "Case resolution keeps the round paused and invalidates prior control confirmation; separate re-review explicitly restores it",
+    "Explicit termination is irreversible, retains case/control history and leaves a read-only browser workspace without page exceptions"
+  ],
+  "pageErrors": []
+}

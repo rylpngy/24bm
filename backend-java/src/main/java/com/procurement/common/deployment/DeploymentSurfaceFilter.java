@@ -31,6 +31,7 @@ public class DeploymentSurfaceFilter extends OncePerRequestFilter {
 
   /** 商城形态下关闭的路径前缀:寻源(询比/竞价)、招标、公开商机与采购公告。 */
   static final List<String> NON_MALL_PREFIXES = List.of(
+      "/api/v1/buyer/agency",
       "/api/v1/buyer/rfqs",
       "/api/v1/buyer/tenders",
       "/api/v1/buyer/auction-stream",

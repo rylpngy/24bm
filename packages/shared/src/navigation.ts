@@ -33,6 +33,7 @@ export const buyerAdminModules: AdminNavigationModule[] = [
   { id: 'dashboard', label: '首页看板', desc: '采购金额、待办、履约进度' },
   { id: 'analytics', label: '采购分析', desc: '订单趋势、供应商集中度与报价差额', requiredPermission: 'buyer:analytics:read' },
   { id: 'budgets', label: '预算管理', desc: '部门预算池、占用、超预算预警', requiredPermission: 'buyer:budget:read' },
+  { id: 'agency', label: '招标代理', desc: '采购包档案 · 建档审批 · 版本资料', requiredPermission: 'buyer:agency:read' },
   { id: 'projects', label: '项目库', desc: '项目申报、立项审批与执行跟踪', requiredPermission: 'buyer:project:read' },
   { id: 'demands', label: '采购需求', desc: '需求列表、审批提交、转采购计划', requiredPermission: 'buyer:demand:read' },
   { id: 'procurement-plans', label: '采购计划', desc: '需求合并、方案审批、执行进度', requiredPermission: 'buyer:rfq:read' },

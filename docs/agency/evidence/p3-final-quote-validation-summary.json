@@ -1,0 +1,26 @@
+{
+  "date": "2026-11-09",
+  "backend": {
+    "fullTests": 1292,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "frontend": {
+    "files": 180,
+    "fullTests": 841,
+    "failures": 0
+  },
+  "http": 9,
+  "browser": 4,
+  "pageErrors": 0,
+  "initialQuoteRegression": 7,
+  "tenantBuild": "passed",
+  "migration": "V278 applied",
+  "api": {
+    "operations": 5,
+    "paths": 4,
+    "schemas": 19
+  },
+  "scope": "isolated synthetic consultation offline final quotes; negotiation method gate unit-tested; no supplier online submission, notification sending, ranking, award or production deployment"
+}

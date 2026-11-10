@@ -1,0 +1,15 @@
+{
+  "time": "2026-11-10T07:52:59+0800",
+  "scope": "Local synthetic cold recovery; not production RPO/RTO. Source targets never overwritten. Private backups excluded from delivery.",
+  "checks": [
+    "Previously captured quiesced DB/object backup verified; live source remains running and is not overwritten",
+    "Fresh database restored with identical complete-row fingerprints across all 297 public tables",
+    "Fresh bucket restored 1039 original objects with byte size and SHA256 verification",
+    "Restored sealed agency attachment references resolve to restored bucket objects with matching persisted hashes and sizes: 1036"
+  ],
+  "tables": 297,
+  "objects": 1039,
+  "objectBytes": 823370,
+  "sealedReferences": 1036,
+  "elapsedSeconds": 433.93
+}

@@ -1,0 +1,9 @@
+{
+  "passed": 3,
+  "checks": [
+    "Ordinary authorized finance statistics contain category and money but no expert identity, payee or private service snapshot; expert options and writes require separate permission",
+    "Post-award authority reads only approved report candidate summaries through its own permission; archive export does not require or grant evaluation opinion access",
+    "Actual authorized issue decision pauses post-award generation and release; closing or handling alone does not resume, a separate authorized resume is recorded"
+  ],
+  "scope": "Synthetic role and exception isolation; permissions restored"
+}

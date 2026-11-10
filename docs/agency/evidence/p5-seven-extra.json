@@ -1,0 +1,41 @@
+{
+  "cases": [
+    {
+      "method": "公开招标",
+      "evaluation": "lowest_price",
+      "passed": 1,
+      "checks": [
+        "公开招标 / lowest_price actual synthetic opening, independent opinions, applicable quote/score source, controlled recommendation and real report approval"
+      ],
+      "scope": "Isolated synthetic method-specific technical verification; real procurement samples and legal applicability remain business acceptance"
+    },
+    {
+      "method": "公开招标",
+      "evaluation": "comprehensive",
+      "passed": 1,
+      "checks": [
+        "公开招标 / comprehensive actual synthetic opening, independent opinions, applicable quote/score source, controlled recommendation and real report approval"
+      ],
+      "scope": "Isolated synthetic method-specific technical verification; real procurement samples and legal applicability remain business acceptance"
+    },
+    {
+      "method": "竞争性谈判",
+      "evaluation": "negotiation_price",
+      "passed": 1,
+      "checks": [
+        "竞争性谈判 / negotiation_price actual synthetic opening, independent opinions, applicable quote/score source, controlled recommendation and real report approval"
+      ],
+      "scope": "Isolated synthetic method-specific technical verification; real procurement samples and legal applicability remain business acceptance"
+    },
+    {
+      "method": "竞争性磋商",
+      "evaluation": "comprehensive",
+      "passed": 1,
+      "checks": [
+        "竞争性磋商 / comprehensive actual synthetic opening, independent opinions, applicable quote/score source, controlled recommendation and real report approval"
+      ],
+      "scope": "Isolated synthetic method-specific technical verification; real procurement samples and legal applicability remain business acceptance"
+    }
+  ],
+  "scope": "Four additional synthetic method paths; combined with invitation, inquiry and sole source records forms seven technical cases, not real business acceptance"
+}

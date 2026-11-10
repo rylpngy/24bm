@@ -1,0 +1,22 @@
+{
+  "owner": {
+    "files": 18,
+    "withheld": 0
+  },
+  "office": {
+    "files": 16,
+    "withheld": 2
+  },
+  "restricted": {
+    "files": 14,
+    "withheld": 4
+  },
+  "group": {
+    "packages": 2,
+    "incompleteSnapshots": 1
+  },
+  "xlsx": {
+    "expertPrivateMarkers": 0,
+    "formulaCells": 0
+  }
+}

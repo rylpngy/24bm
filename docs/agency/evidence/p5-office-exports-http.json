@@ -1,0 +1,9 @@
+{
+  "passed": 4,
+  "checks": [
+    "Parent-project financial summary includes each authorized approved package once and separates currencies; a second empty package does not double the first package income or cost",
+    "Tenant-specific cost categories are configurable with optimistic revision; core meanings stay stable, disabled categories cannot create new costs and historical records remain",
+    "Actual XLSX export contains authorized per-package finance and performance basis without expert identities, automatic salary formulas or cash/invoice conflation",
+    "Actual parent-project archive collection exports one immutable selected snapshot per authorized package, including explicitly incomplete second-package status and missing notes"
+  ]
+}

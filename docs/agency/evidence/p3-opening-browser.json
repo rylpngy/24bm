@@ -1,0 +1,13 @@
+{
+  "checks": [
+    "Browser explicitly configures reader duties and locks the reviewed material plan",
+    "Browser uploads and seals two responses while both UI and raw creator downloads remain closed",
+    "Reviewed formal opening releases exact bytes only after explicit confirmation",
+    "Separate sheets let one account hold two duties while the later phase is still locked",
+    "Browser separately submits qualification and conformity, then explicitly opens each downstream phase",
+    "A different frozen reviewer can submit only the now-open evaluation stage and receives no earlier private opinions"
+  ],
+  "passed": 6,
+  "pageErrors": [],
+  "sessionId": "agency-assessment-af27f441-9ca5-47d9-a158-01442de9d7da"
+}

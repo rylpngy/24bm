@@ -1,0 +1,9 @@
+create unique index agency_final_response_one_draft on agency_final_response_sheets(tenant_id,session_id,user_id) where status='draft';
+create table agency_method_records (
+ id text primary key,tenant_id text not null,package_id text not null,round_id text not null,kind text not null,ordinal integer not null,previous_id text,source_fingerprint text not null,snapshot_json jsonb not null,frozen_hash text not null,actor_id text not null,created_at timestamptz not null default now(),
+ unique(tenant_id,id),unique(tenant_id,round_id,kind,ordinal),foreign key(tenant_id,round_id) references agency_evaluation_rounds(tenant_id,id),foreign key(tenant_id,previous_id) references agency_method_records(tenant_id,id)
+);
+create table agency_method_legacy(tenant_id text not null,round_id text not null,kind text not null,reason text not null,primary key(tenant_id,round_id,kind));
+insert into agency_method_legacy select o.tenant_id,o.round_id,'invitation','opening existed before V286; preserve historical invitation evidence' from agency_response_openings o join agency_packages p on p.tenant_id=o.tenant_id and p.id=o.package_id where p.procurement_method='邀请招标';
+insert into agency_method_legacy select distinct s.tenant_id,s.round_id,'inquiry','price calculation existed before V286; preserve historical validity review' from agency_assessment_sessions s join agency_packages p on p.tenant_id=s.tenant_id and p.id=s.package_id join agency_price_calculations c on c.tenant_id=s.tenant_id and c.session_id=s.id where p.procurement_method='询价';
+insert into agency_method_legacy select s.tenant_id,s.round_id,'single_basis','assessment existed before V286; preserve historical applicability evidence' from agency_assessment_sessions s join agency_packages p on p.tenant_id=s.tenant_id and p.id=s.package_id where p.procurement_method='单一来源';

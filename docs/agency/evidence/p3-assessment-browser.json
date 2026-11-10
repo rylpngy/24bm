@@ -1,0 +1,12 @@
+{
+  "checks": [
+    "Browser binds the logged-in reviewer to empty personal fields without organizer or peer-opinion controls",
+    "Personal draft is saved explicitly and submission locks all original fields",
+    "Correction dialog starts the published Flowable process while the original remains locked",
+    "Independent approval unlocks only the requested cell and the reviewer personally resubmits the new revision",
+    "Reload retains the corrected submission and the exact original opinion revision and fingerprint"
+  ],
+  "passed": 5,
+  "pageErrors": [],
+  "approvalMode": "real independent organizer API action; reviewer workflow through browser"
+}

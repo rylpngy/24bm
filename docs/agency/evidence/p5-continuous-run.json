@@ -1,0 +1,53 @@
+{
+  "jobs": [
+    {
+      "job": "invitation-foundation",
+      "passed": true
+    },
+    {
+      "job": "single-foundation",
+      "passed": true
+    },
+    {
+      "job": "inquiry-foundation",
+      "passed": true
+    },
+    {
+      "job": "recommendation-report",
+      "passed": true
+    },
+    {
+      "job": "post-award",
+      "passed": true
+    },
+    {
+      "job": "finance",
+      "passed": true
+    },
+    {
+      "job": "archive",
+      "passed": true
+    },
+    {
+      "job": "permissions-exceptions",
+      "passed": true
+    },
+    {
+      "job": "method-report-branches",
+      "passed": true
+    },
+    {
+      "job": "report-independence",
+      "passed": true
+    },
+    {
+      "job": "office-exports",
+      "passed": true
+    },
+    {
+      "job": "browser",
+      "passed": true
+    }
+  ],
+  "scope": "Isolated synthetic technical acceptance; real templates/business approval/production capacity and release remain separate"
+}

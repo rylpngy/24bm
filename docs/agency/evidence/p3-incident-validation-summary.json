@@ -1,0 +1,38 @@
+{
+  "date": "2026-11-09",
+  "backend": {
+    "fullTests": 1323,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "frontend": {
+    "files": 183,
+    "fullTests": 851,
+    "finalTargetedAfterReadOnlyControls": 7,
+    "failures": 0
+  },
+  "http": 9,
+  "browser": 4,
+  "pageErrors": 0,
+  "regressions": {
+    "controlledOpening": 14,
+    "independentAssessment": 15,
+    "preparation": 14,
+    "foundation": 9,
+    "initialQuote": 7,
+    "finalQuote": 9,
+    "priceCalculation": 10,
+    "controlledTotal": 7
+  },
+  "tenantBuild": "passed",
+  "migration": "V281 applied",
+  "api": {
+    "operations": 5,
+    "paths": 4,
+    "schemas": 13
+  },
+  "preservedRoundLimit": 50,
+  "preIssuedUploadTickets": "blocked for byte upload and attachment registration while paused",
+  "scope": "fresh isolated synthetic tenants; round-scoped incidents and administrative pause/resume/end; desensitized evidence only; no member substitution, automatic procurement termination, method switch or production deployment"
+}

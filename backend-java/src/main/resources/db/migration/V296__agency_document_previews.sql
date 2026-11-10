@@ -1,0 +1,3 @@
+alter table agency_execution_jobs drop constraint agency_execution_jobs_kind_check;
+alter table agency_execution_jobs add constraint agency_execution_jobs_kind_check check(kind in ('extract','compose','preview'));
+create table agency_document_previews(id text primary key,tenant_id text not null,package_id text not null,revision_id text not null,source_hash text not null,file_version_id text not null,file_hash text not null,job_id text not null,created_by text not null,created_at timestamptz not null default now(),unique(tenant_id,id),unique(tenant_id,revision_id,source_hash),foreign key(tenant_id,revision_id) references agency_document_revisions(tenant_id,id),foreign key(tenant_id,file_version_id) references agency_file_versions(tenant_id,id));

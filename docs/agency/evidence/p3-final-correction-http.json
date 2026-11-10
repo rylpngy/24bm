@@ -1,0 +1,9 @@
+{
+  "passed": 4,
+  "checks": [
+    "A real independent Flowable request freezes exact original hash and permitted cells; drafts stay locked, private opinions stay out of the workflow snapshot, and pending correction blocks old price use",
+    "Approval appends the owner’s next draft, scope checks reject other cells and old basis acknowledgments, and resubmission preserves old bytes while requiring a new price review",
+    "Rejection and personal withdrawal retain the submitted version; another user cannot withdraw or replace the owner’s opinion",
+    "Even a wildcard reviewer named as approver cannot approve their own correction; real Flowable task guards enforce separation"
+  ]
+}

@@ -1,6 +1,6 @@
 package com.procurement.tender.application;
 
-import com.procurement.attachment.infrastructure.AttachmentMapper;
+import com.procurement.attachment.application.AttachmentReviewQuery;
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.common.tenant.TenantAccessGuard;
 import com.procurement.identity.application.PermissionService;
@@ -24,14 +24,14 @@ public class TenderDocumentReviewService {
   public static final String TYPE = "tender_document_review";
   private final TenderMapper tenders;
   private final TenderDocumentReviewMapper reviews;
-  private final AttachmentMapper attachments;
+  private final AttachmentReviewQuery attachments;
   private final TenderReadAccess access;
   private final PermissionService permissions;
   private final UnifiedWorkflowApplicationService workflows;
   private final AuditLogApplicationService audit;
 
   public TenderDocumentReviewService(TenderMapper tenders, TenderDocumentReviewMapper reviews,
-      AttachmentMapper attachments, TenderReadAccess access, PermissionService permissions,
+      AttachmentReviewQuery attachments, TenderReadAccess access, PermissionService permissions,
       UnifiedWorkflowApplicationService workflows, AuditLogApplicationService audit) {
     this.tenders=tenders; this.reviews=reviews; this.attachments=attachments; this.access=access;
     this.permissions=permissions; this.workflows=workflows; this.audit=audit;

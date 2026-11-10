@@ -1,0 +1,881 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "24Bid Procurement SaaS API",
+    "description": "多租户采购协同管理 SaaS 后端契约（平台 / 采购方 / 供应商三端）。",
+    "version": "v1"
+  },
+  "paths": {
+    "/api/v1/buyer/agency/evaluation/packages/{pkg}/sessions/{session}/final-response-review/mine": {
+      "get": {
+        "tags": [
+          "agency-final-response-controller"
+        ],
+        "operationId": "agencyFinalResponseMine",
+        "parameters": [
+          {
+            "name": "pkg",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "session",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAgencyFinalResponseMine"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "agency-final-response-controller"
+        ],
+        "operationId": "agencyFinalResponseSave",
+        "parameters": [
+          {
+            "name": "pkg",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "session",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgencyFinalResponseSave"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAgencyFinalResponseSheet"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/agency/evaluation/packages/{pkg}/sessions/{session}/final-response-review/mine/submit": {
+      "post": {
+        "tags": [
+          "agency-final-response-controller"
+        ],
+        "operationId": "agencyFinalResponseSubmit",
+        "parameters": [
+          {
+            "name": "pkg",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "session",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgencyFinalResponseSubmit"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAgencyFinalResponseSheet"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/agency/evaluation/packages/{pkg}/sessions/{session}/final-response-review/activate": {
+      "post": {
+        "tags": [
+          "agency-final-response-controller"
+        ],
+        "operationId": "agencyFinalResponseActivate",
+        "parameters": [
+          {
+            "name": "pkg",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "session",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgencyFinalResponseActivate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAgencyFinalResponsePlan"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/buyer/agency/evaluation/packages/{pkg}/sessions/{session}/final-response-review": {
+      "get": {
+        "tags": [
+          "agency-final-response-controller"
+        ],
+        "operationId": "agencyFinalResponseWorkspace",
+        "parameters": [
+          {
+            "name": "pkg",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "session",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAgencyFinalResponseWorkspace"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AgencyAssessmentEntry": {
+        "type": "object",
+        "properties": {
+          "participationId": {
+            "type": "string"
+          },
+          "criterionKey": {
+            "type": "string"
+          },
+          "score": {
+            "type": "number"
+          },
+          "conclusion": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "opinion": {
+            "type": "string"
+          }
+        }
+      },
+      "AgencyEvaluationCriterion": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "stage": {
+            "type": "string"
+          },
+          "applicableTo": {
+            "type": "string"
+          },
+          "resultType": {
+            "type": "string"
+          },
+          "minimum": {
+            "type": "number"
+          },
+          "maximum": {
+            "type": "number"
+          },
+          "weight": {
+            "type": "number"
+          },
+          "formula": {
+            "type": "string"
+          },
+          "evidenceRequired": {
+            "type": "boolean"
+          },
+          "scale": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rounding": {
+            "type": "string"
+          }
+        }
+      },
+      "AgencyEvaluationMemberSnapshot": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "AgencyFinalResponseActivate": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "expectedFingerprint": {
+            "type": "string"
+          },
+          "evidenceVersionId": {
+            "type": "string"
+          },
+          "reviewed": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          }
+        }
+      },
+      "AgencyFinalResponseClause": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "locator": {
+            "type": "string"
+          },
+          "requirementText": {
+            "type": "string"
+          },
+          "sourceVersionId": {
+            "type": "string"
+          },
+          "sourceHash": {
+            "type": "string"
+          }
+        }
+      },
+      "AgencyFinalResponseMine": {
+        "type": "object",
+        "properties": {
+          "fingerprint": {
+            "type": "string"
+          },
+          "plan": {
+            "$ref": "#/components/schemas/AgencyFinalResponsePlan"
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/AgencyFinalResponseSnapshot"
+          },
+          "sheet": {
+            "$ref": "#/components/schemas/AgencyFinalResponseSheet"
+          },
+          "blockers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "AgencyFinalResponsePlan": {
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "type": "string"
+          },
+          "sessionId": {
+            "type": "string"
+          },
+          "packageId": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "snapshotJson": {
+            "type": "string"
+          },
+          "frozenHash": {
+            "type": "string"
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AgencyFinalResponseProgress": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "AgencyFinalResponseSave": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "expectedFingerprint": {
+            "type": "string"
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgencyAssessmentEntry"
+            }
+          },
+          "idempotencyKey": {
+            "type": "string"
+          }
+        }
+      },
+      "AgencyFinalResponseSheet": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "sessionId": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "entriesJson": {
+            "type": "string"
+          },
+          "snapshotJson": {
+            "type": "string"
+          },
+          "frozenHash": {
+            "type": "string"
+          },
+          "submittedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AgencyFinalResponseSnapshot": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "roundHash": {
+            "type": "string"
+          },
+          "campaignId": {
+            "type": "string"
+          },
+          "campaignHash": {
+            "type": "string"
+          },
+          "requirementsVersionId": {
+            "type": "string"
+          },
+          "requirementsHash": {
+            "type": "string"
+          },
+          "changesJson": {
+            "type": "string"
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgencyFinalResponseSubject"
+            }
+          },
+          "clauses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgencyFinalResponseClause"
+            }
+          },
+          "criteria": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgencyEvaluationCriterion"
+            }
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgencyEvaluationMemberSnapshot"
+            }
+          },
+          "evidenceVersionId": {
+            "type": "string"
+          },
+          "evidenceHash": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "actorId": {
+            "type": "string"
+          }
+        }
+      },
+      "AgencyFinalResponseSubject": {
+        "type": "object",
+        "properties": {
+          "participationId": {
+            "type": "string"
+          },
+          "supplierName": {
+            "type": "string"
+          },
+          "receiptId": {
+            "type": "string"
+          },
+          "fileVersionId": {
+            "type": "string"
+          },
+          "attachmentId": {
+            "type": "string"
+          },
+          "responseHash": {
+            "type": "string"
+          }
+        }
+      },
+      "AgencyFinalResponseSubmit": {
+        "type": "object",
+        "properties": {
+          "expectedVersion": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "expectedFingerprint": {
+            "type": "string"
+          },
+          "evidenceVersionId": {
+            "type": "string"
+          },
+          "personallyConfirmed": {
+            "type": "boolean"
+          },
+          "idempotencyKey": {
+            "type": "string"
+          }
+        }
+      },
+      "AgencyFinalResponseWorkspace": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string"
+          },
+          "branch": {
+            "$ref": "#/components/schemas/AgencyMethodBranch"
+          },
+          "fingerprint": {
+            "type": "string"
+          },
+          "plan": {
+            "$ref": "#/components/schemas/AgencyFinalResponsePlan"
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/AgencyFinalResponseSnapshot"
+          },
+          "progress": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgencyFinalResponseProgress"
+            }
+          },
+          "blockers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "AgencyMethodBranch": {
+        "type": "object",
+        "properties": {
+          "procurementMethod": {
+            "type": "string"
+          },
+          "evaluationMethod": {
+            "type": "string"
+          },
+          "priceSource": {
+            "type": "string"
+          },
+          "finalResponseRequired": {
+            "type": "boolean"
+          },
+          "scoringAllowed": {
+            "type": "boolean"
+          },
+          "competitive": {
+            "type": "boolean"
+          },
+          "remainingProcesses": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ApiResponseAgencyFinalResponseMine": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AgencyFinalResponseMine"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseAgencyFinalResponsePlan": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AgencyFinalResponsePlan"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseAgencyFinalResponseSheet": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AgencyFinalResponseSheet"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseAgencyFinalResponseWorkspace": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AgencyFinalResponseWorkspace"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseVoid": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "object"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

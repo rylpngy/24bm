@@ -33,6 +33,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     this.acceptSelfIssuedTokens = acceptSelfIssuedTokens;
   }
 
+  @Override protected boolean shouldNotFilter(HttpServletRequest request){return (request.getRequestURI().startsWith("/api/v1/buyer/agency/office-bridge/") || request.getRequestURI().startsWith("/api/v1/buyer/agency/sms-bridge/"));}
+
   // 先用自研 JWT 验签;失败再回退 Keycloak(OIDC/JWKS)。两条签发器路径共存。
   private AuthenticatedPrincipal authenticate(String token) {
     if (!acceptSelfIssuedTokens) {

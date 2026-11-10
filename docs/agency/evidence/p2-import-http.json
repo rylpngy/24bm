@@ -1,0 +1,22 @@
+{
+  "tenantId": "agency-import-1794122586630",
+  "packageId": "agency-package-559f4730-9a06-43cf-958c-b69d64779b0d",
+  "checks": [
+    "Batch import is guarded by approved project archive",
+    "Actual CSV upload, immutable source hash, quoted fields and preview idempotency without insertion",
+    "Preview requires the creating user explicit manual confirmation",
+    "Confirmed batch appends once, persists row provenance and rejects stale or changed retries",
+    "Invalid qualification statuses cannot be bypassed by confirmation or duplicate acknowledgement",
+    "Possible duplicates require separate acknowledgement and never overwrite original ledger records",
+    "Commit rechecks duplicates added after the preview",
+    "Batch sources reject restricted sharing, wrong package and cross-scope access",
+    "Read-only users may inspect authorized provenance but cannot create imports",
+    "Actual XLSX upload and import preserve string phone and credit-code leading zeros",
+    "More than 200 data records is rejected before any insertion",
+    "A full 200-record batch commits atomically with all source rows retained",
+    "Real second-row insert failure rolls back the whole batch and permits a clean same-key retry",
+    "Concurrent identical confirmations append one set of rows"
+  ],
+  "passed": 14,
+  "mode": "real HTTP + PostgreSQL + Flowable + MinIO + CSV/XLSX"
+}

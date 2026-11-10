@@ -1,0 +1,14 @@
+{
+  "time": "2026-11-09T23:53:56.968Z",
+  "kind": "local signed HTTP contract + actual LibreOffice conversion; not editor roundtrip",
+  "checks": [
+    "Office session start is idempotent and binds exact current DOCX",
+    "Source capability downloads actual sealed bytes and rejects invalid ticket",
+    "Callback rejects signature/body mismatch and unapproved download origin",
+    "Accepted force-save is not saved; callback replay deduplicates; active editing cannot be adopted",
+    "Final save creates manually adopted draft without inheriting approval and adoption replay is idempotent",
+    "Ended session rejects new late callbacks; another otherwise authorized member cannot resume the owner's editor",
+    "Actual LibreOffice asynchronous preview is sealed PDF with matching source and artifact hashes",
+    "Out-of-scope account cannot access Office history or derived PDF"
+  ]
+}

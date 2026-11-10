@@ -1,0 +1,11 @@
+{
+  "checks": [
+    "Browser creates structured preparation personnel",
+    "Reviewed form generates and downloads an unsigned actual DOCX",
+    "Browser uploads and seals a restricted synthetic signature-return source",
+    "Explicit signer, date and manual confirmation record the exact form return",
+    "Reload preserves the generated form and return history"
+  ],
+  "passed": 5,
+  "pageErrors": []
+}

@@ -2,8 +2,6 @@ package com.procurement.tender.api;
 
 import com.procurement.common.api.ApiResponse;
 import com.procurement.tender.application.TenderDocumentReviewService;
-import com.procurement.tender.infrastructure.TenderDocumentReviewMapper;
-import java.util.List;
 import java.util.Map;
 import org.springframework.web.bind.annotation.*;
 

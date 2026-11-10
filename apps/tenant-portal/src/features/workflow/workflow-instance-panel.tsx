@@ -1,3 +1,5 @@
+import {AgencyExecutionSnapshot} from "../agency/agency-execution-snapshot";
+import {AgencyApprovalSnapshot} from '../agency/agency-approval-snapshot';
 import { useState } from 'react';
 import { ExternalLink, FileText, History, Paperclip, Workflow } from 'lucide-react';
 import {
@@ -113,6 +115,8 @@ export function WorkflowInstancePanel({
           <ContextBlock title="审批表单" icon={FileText} entries={formEntries} labels={formLabels} />
         </div>
       )}
+      {!compact&&!hideBusinessSnapshot&&['agency_package_archive','agency_package_change'].includes(history.businessType)&&<AgencyApprovalSnapshot snapshot={history.businessSnapshot}/>}
+      {!compact&&!hideBusinessSnapshot&&['agency_template_publication','agency_purchase_document','agency_announcement'].includes(history.businessType)&&<AgencyExecutionSnapshot snapshot={history.businessSnapshot}/>}
       {!compact&&!hideBusinessSnapshot&&history.businessType==='order_settlement'&&<SettlementSnapshot snapshot={history.businessSnapshot?.settlementSnapshot}/>}
       {!compact&&!hideBusinessSnapshot&&history.businessType==='tender_document_review'&&typeof history.businessSnapshot?.documentHtml==='string'&&
         <section className="mt-4 rounded-lg border border-slate-200 p-4"><h3 className="mb-3 text-sm font-black">送审采购文件快照</h3><RichTextView html={history.businessSnapshot.documentHtml}/></section>}
@@ -249,6 +253,14 @@ export function workflowBusinessHref(history: Pick<WorkflowInstanceHistory, 'bus
     buyer_supplier_exit: { module: 'suppliers', id: history.businessId },
     rfq_award: { module: 'rfqs', id: snapshot.rfqId },
     contract_approval: { module: 'contracts', id: history.businessId },
+    agency_package_archive: { module: 'agency', id: snapshot.packageId },
+    agency_package_change: { module: 'agency', id: snapshot.packageId },
+    agency_evaluation_report: { module: 'agency', id: snapshot.packageId },
+    agency_post_document: { module: 'agency', id: snapshot.packageId },
+    agency_finance_review: { module: 'agency', id: snapshot.packageId },
+    agency_assessment_correction: { module: 'agency', id: snapshot.packageId },
+    agency_purchase_document: { module: 'agency', id: snapshot.packageId },
+    agency_announcement: { module: 'agency', id: snapshot.packageId },
     tender_document_review: { module: 'tenders', id: snapshot.tenderId },
     payment_request: { module: 'invoices', id: snapshot.invoiceId },
     payment_batch: { module: 'invoices', id: history.businessId },

@@ -120,7 +120,7 @@ public class AttachmentApplicationService {
       throw new IllegalArgumentException("Attachment not found in tenant scope: " + attachmentId);
     }
     requireAttachmentStorageKey(tenantId, attachment);
-    access.requireAccess(attachment.ownerType(), attachment.ownerId(), false);
+    access.requireDownloadAccess(attachment.ownerType(), attachment.ownerId());
     OffsetDateTime createdAt = OffsetDateTime.now();
     // Downloads always require the current authenticated session and current business permissions.
     String downloadUrl = "/api/v1/buyer/attachments/%s/download".formatted(attachment.id());
@@ -180,6 +180,7 @@ public class AttachmentApplicationService {
     }
     // Claim commits before object I/O. Failures/crashes cannot make the same key writable again.
     try {
+      access.validateUpload(ticket.ownerType(),ticket.ownerId(),ticket.fileName(),data);
       objectStorageService.put(storageKey, data, contentType);
       if (tickets.finishUploaded(tenantId, storageKey, userId, data.length, sha256(data)) != 1) {
         throw new IllegalStateException("Unable to complete attachment upload");
@@ -198,11 +199,14 @@ public class AttachmentApplicationService {
       throw new IllegalArgumentException("Attachment not found in tenant scope: " + attachmentId);
     }
     requireAttachmentStorageKey(tenantId, attachment);
-    access.requireAccess(attachment.ownerType(), attachment.ownerId(), false);
+    access.requireDownloadAccess(attachment.ownerType(), attachment.ownerId());
     ObjectStorageService.StoredObject stored = objectStorageService.get(attachment.storageKey());
     var fingerprint = attachmentMapper.fingerprint(tenantId, attachmentId);
     if (hasFingerprint(fingerprint) && !matches(fingerprint, stored.data())) {
       throw new IllegalStateException("附件内容与上传时记录不一致，已阻止下载，请联系管理员核查备份");
+    }
+    if ("agency_file_version".equals(attachment.ownerType())) {
+      auditService.recordCurrentTenantAction("attachment.downloaded", attachment.ownerType(), attachment.ownerId(), "授权读取附件字节：" + attachment.id());
     }
     return new DownloadedObject(attachment.fileName(), stored.data(), stored.contentType());
   }

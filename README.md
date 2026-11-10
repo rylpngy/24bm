@@ -79,3 +79,13 @@ npx -y pnpm@9.15.0 e2e
 ```
 
 For the full local Java workflow, see [docs/local-java-integration.md](docs/local-java-integration.md).
+
+## 招标代理业务 P1
+
+采购包档案、公司年度编号、成员与文件权限、建档及重要变更审批已接入。开发与验收说明见 [docs/agency/README.md](docs/agency/README.md)。独立本地环境使用18080/15173端口，避免连接默认8080上的其他系统。
+
+P2 procurement execution workspace: [交付说明](docs/agency/P2交付说明.md), including demand provenance, versioned templates, DOCX candidates, independent approvals, manual publication, participation, plans and preparation.
+
+P6 非AI增强：在线Office编辑、PDF/OCR及版本预览、受控短信网关和运维验证，见[二期台账](docs/agency/二期非AI连续研发台账.md)与[服务接入说明](docs/agency/P6非AI服务接入与运维说明.md)。AI及全流程电子标按用户最新决定暂缓，实际外部服务及生产验收单列。
+
+当前百炼接入与本机走查部署见[P7说明](docs/agency/P7百炼接入与走查部署说明.md)。用户提供的模型凭据仅保存在被Git忽略的私有配置，源码仓库不包含密钥。

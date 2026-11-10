@@ -1,0 +1,11 @@
+{
+  "passed": 5,
+  "checks": [
+    "Browser registers external authority, common requirements and notice as an immutable all-recipient batch without claiming purchaser approval or sending messages",
+    "Recipient drafts stay isolated; unsaved facts lock switching, explicit discard clears them, and incomplete delivery blocks reconciliation",
+    "Append-only receipt correction preserves history; explicit reconciliation freezes every latest receipt and removes mutation controls",
+    "Final initiation accepts only the notified requirements and seals the exact completed change hash for later review",
+    "Ordinary frozen reviewers cannot see organizer change/receipt facts; no browser page exceptions occur"
+  ],
+  "pageErrors": []
+}

@@ -6,4 +6,6 @@ import java.util.Set;
 public interface AttachmentOwnerAccess {
   Set<String> ownerTypes();
   void requireAccess(String ownerId, boolean write);
+  default void validateUpload(String ownerId,String fileName,byte[] data) {}
+  default void requireDownloadAccess(String ownerId) { requireAccess(ownerId, false); }
 }

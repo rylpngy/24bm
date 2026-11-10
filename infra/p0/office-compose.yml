@@ -1,0 +1,13 @@
+# Optional experiment only. Do not start on the shared host until capacity is available.
+name: 24bm-p0-office-experiment
+services:
+  office:
+    image: onlyoffice/documentserver@sha256:e3da62a847b9a5d51a11f73cfea1d9c13c3be3809614490d4edddcf01dcf919b
+    cpus: 2
+    mem_limit: 3g
+    environment:
+      JWT_ENABLED: 'true'
+      JWT_SECRET: ${JWT_SECRET:?required}
+      ALLOW_PRIVATE_IP_ADDRESS: 'true'
+      PLUGINS_ENABLED: 'false'
+    ports: ['127.0.0.1:18088:80']

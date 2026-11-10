@@ -1,0 +1,46 @@
+{
+  "date": "2026-11-09",
+  "scope": "Phase-one registration of external authority evidence, common requirement addenda and offline all-recipient notification reconciliation",
+  "backend": {
+    "tests": 1339,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "frontend": {
+    "files": 185,
+    "tests": 859
+  },
+  "finalTargeted": {
+    "backend": 95,
+    "frontend": 10
+  },
+  "productionBuild": "passed",
+  "httpGroups": 6,
+  "browserGroups": 5,
+  "browserErrors": 0,
+  "migration": "V283 applied in isolated database",
+  "openapi": {
+    "operations": 6,
+    "paths": 4,
+    "schemas": 23
+  },
+  "previousRegressionGroups": {
+    "opening": 14,
+    "assessment": 15,
+    "preparation": 14,
+    "foundation": 9,
+    "initialQuote": 7,
+    "finalQuote": 9,
+    "price": 10,
+    "total": 7,
+    "incident": 9,
+    "discussion": 7
+  },
+  "notes": [
+    "Full suites followed by targeted backend checks after progress-query reuse and targeted UI/build after multiline clause editing",
+    "Synthetic consultation fixtures; no complete six-method or real project acceptance",
+    "External authority and evidence content require human verification; no automatic legal validation, supplier authentication, electronic signing or external sending",
+    "No production deployment; electronic tendering deferred to phase two pending integration-vs-rebuild decision"
+  ]
+}

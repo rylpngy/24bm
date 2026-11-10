@@ -1,0 +1,30 @@
+{
+  "date": "2026-11-09",
+  "backend": {
+    "tests": 1281,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "frontend": {
+    "files": 178,
+    "tests": 838,
+    "failures": 0
+  },
+  "http": 14,
+  "assessmentRegression": 15,
+  "preparationRegression": 14,
+  "foundationRegression": 9,
+  "supplementalArchiveChecks": 2,
+  "finalTargetedBackendChecks": 7,
+  "browser": 6,
+  "pageErrors": 0,
+  "tenantBuild": "passed",
+  "api": {
+    "operations": 24,
+    "paths": 21,
+    "schemas": 67
+  },
+  "migration": "V276 applied",
+  "scope": "isolated synthetic tenants; controlled offline-response copies and shared phase gates; no encrypted e-tender opening, ranking, award or production deployment"
+}

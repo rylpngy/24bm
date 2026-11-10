@@ -1,0 +1,23 @@
+{
+  "checks": [
+    "Only frozen organizers may establish explicitly reviewed objects and actual non-future offline opening evidence",
+    "One session creates separate sheets from exact frozen duties and never treats organizer or wildcard privilege as scoring identity",
+    "Independent task APIs reject outsiders and foreign tenants despite administrator permissions",
+    "Partial drafts survive while invalid ranges, duplicate cells, foreign duties and incomplete submissions are blocked",
+    "A project read-only member with explicit review permission may save only personal opinions without generic project management rights",
+    "Client-supplied evaluator identities cannot replace the login identity and personal reads never include another member’s drafts",
+    "Explicit personal submission locks the original revision and concurrent retries submit exactly once",
+    "Organizers see completion state but no other person’s opinion values",
+    "Missing published correction workflow rolls back the application without unlocking submitted opinions",
+    "A real Flowable correction freezes the exact original hash and limited cells without publishing full scoring data",
+    "Approved correction creates the owner’s next draft, blocks out-of-scope changes, and preserves the old submitted bytes and hash",
+    "Rejected and personally withdrawn corrections leave the previous submitted opinion locked",
+    "Wildcard administrators cannot approve their own correction even if the workflow names them",
+    "Confidentiality and active-account revocation immediately protect personal tasks even with an existing login token",
+    "Voided rules stop further writes while historical personal submissions remain readable and unchanged"
+  ],
+  "passed": 15,
+  "preparationRegression": 14,
+  "foundationRegression": 9,
+  "scope": "synthetic offline-opening evidence and independent manual opinions; no ranking, award or legal certification"
+}

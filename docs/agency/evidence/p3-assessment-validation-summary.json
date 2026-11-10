@@ -1,0 +1,28 @@
+{
+  "date": "2026-11-09",
+  "backend": {
+    "tests": 1275,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "frontend": {
+    "files": 177,
+    "tests": 835,
+    "failures": 0
+  },
+  "http": 15,
+  "preparationRegression": 14,
+  "foundationRegression": 9,
+  "browser": 5,
+  "pageErrors": 0,
+  "browserApproval": "independent organizer via real API; reviewer editing, request and resubmission through UI",
+  "tenantBuild": "passed",
+  "api": {
+    "operations": 14,
+    "paths": 11,
+    "schemas": 36
+  },
+  "migration": "V275 applied",
+  "scope": "isolated synthetic tenants; independent manual opinions and controlled corrections only; no ranking, award or production deployment"
+}

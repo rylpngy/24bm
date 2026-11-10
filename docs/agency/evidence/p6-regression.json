@@ -1,0 +1,9 @@
+{
+  "tests": 1376,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "scope": "Full Maven suite then targeted fixes, one added permission test and separately enabled actual local OCR/LibreOffice run; cumulative distinct test cases",
+  "frontendTests": 873,
+  "frontendFiles": 190
+}

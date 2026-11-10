@@ -1,0 +1,10 @@
+{
+  "command": "mvn -q test",
+  "profile": "default (no integration/Testcontainers)",
+  "result": {
+    "tests": 1233,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

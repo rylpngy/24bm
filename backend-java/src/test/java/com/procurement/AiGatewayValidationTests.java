@@ -17,13 +17,14 @@ class AiGatewayValidationTests {
   HttpServer server;
   AtomicInteger calls=new AtomicInteger();
   AtomicReference<String> content=new AtomicReference<>();
+  AtomicReference<String> requestBody=new AtomicReference<>();
   Snapshot snapshot=new Snapshot("r",List.of(AiSupport.field("budget","预算","-1","d","h")),
       List.of(AiSupport.finding("risk","risk","预算异常","预算为负值","budget")),List.of(),List.of());
   String url;
   @BeforeEach void start() throws Exception {
     server=HttpServer.create(new InetSocketAddress("127.0.0.1",0),0);
     server.createContext("/model",exchange -> {
-      calls.incrementAndGet(); exchange.getRequestBody().readAllBytes();
+      calls.incrementAndGet(); requestBody.set(new String(exchange.getRequestBody().readAllBytes(),StandardCharsets.UTF_8));
       byte[] body=json.writeValueAsBytes(Map.of("choices",List.of(Map.of("message",Map.of("content",content.get())))));
       exchange.sendResponseHeaders(200,body.length); exchange.getResponseBody().write(body); exchange.close();
     }); server.start(); url="http://127.0.0.1:"+server.getAddress().getPort()+"/model";
@@ -53,5 +54,14 @@ class AiGatewayValidationTests {
   @Test void oversizedResponsesAreBoundedAndFallBack() {
     content.set("x".repeat(40000));
     assertThat(new OpenAiCompatibleGateway(json,true,url,"key","m").analyze(snapshot).mode()).isEqualTo("RULE_FALLBACK");
+  }
+  @Test void providerThinkingOptionIsOmittedUnlessConfigured() throws Exception {
+    content.set("{\"focusEvidenceIds\":[\"budget\"],\"action\":\"review_evidence\"}");
+    var gateway=new OpenAiCompatibleGateway(json,true,url,"test-key","qwen3.8-flash");
+    assertThat(gateway.configured()).isTrue();gateway.analyze(snapshot);
+    assertThat(json.readTree(requestBody.get()).has("enable_thinking")).isFalse();
+    assertThat(json.readTree(requestBody.get()).path("messages").path(0).path("content").asText()).contains("JSON");
+    gateway.configureThinking(false);assertThat(gateway.analyze(snapshot).mode()).isEqualTo("AI_MODEL");
+    assertThat(json.readTree(requestBody.get()).path("enable_thinking").booleanValue()).isFalse();
   }
 }

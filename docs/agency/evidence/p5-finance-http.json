@@ -1,0 +1,10 @@
+{
+  "passed": 4,
+  "checks": [
+    "Fee agreement and precise calculation freeze before actual independent Flowable approval; pending calculation never becomes confirmed receivable",
+    "Invoice is separate from cash; real overpayment remains visible, actual refund reconciles it, same proof cannot be counted twice",
+    "Approved cost, budget, request, actual occurrence and payment remain separate; payable exact, fee updates do not invalidate frozen evaluation content version",
+    "Waiver is an independently approved financial adjustment, never an immediate silent reduction"
+  ],
+  "scope": "Synthetic financial technical verification; no bank payment, real invoicing or collection"
+}

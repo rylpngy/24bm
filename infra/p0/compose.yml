@@ -1,0 +1,26 @@
+name: 24bm-p0
+services:
+  postgres:
+    image: postgres:16.15-alpine
+    environment:
+      POSTGRES_DB: procurement_agency_p0
+      POSTGRES_USER: procurement
+      POSTGRES_PASSWORD: ${P0_DB_PASSWORD:?required}
+    ports: ["127.0.0.1:15432:5432"]
+    volumes: ["postgres-data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U procurement -d procurement_agency_p0"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  minio:
+    image: minio/minio:RELEASE.2024-09-13T20-26-02Z
+    environment:
+      MINIO_ROOT_USER: p0minio
+      MINIO_ROOT_PASSWORD: ${P0_MINIO_PASSWORD:?required}
+    command: ["server", "/data", "--console-address", ":9001"]
+    ports: ["127.0.0.1:19020:9000", "127.0.0.1:19021:9001"]
+    volumes: ["minio-data:/data"]
+volumes:
+  postgres-data:
+  minio-data:

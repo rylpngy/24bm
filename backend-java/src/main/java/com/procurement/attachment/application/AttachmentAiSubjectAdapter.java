@@ -47,7 +47,7 @@ public class AttachmentAiSubjectAdapter implements AiSubjectAdapter {
       findings.add(AiSupport.finding("integrity-unknown","warning","缺少上传完整性基线","依赖正文作判断前，请先人工核对原始文件。","uploadHash"));
     } else if(fingerprint.contentSize()>AttachmentTextExtractor.MAX_BYTES) {
       readState="size_limit";
-      limitations.add("文件超过2MB，正文未评估。");
+      limitations.add("文件超过10MB，正文未评估。");
     } else {
       try {
         var object=attachments.loadCurrentTenantObject(id); contentHash=AiSupport.hash(object.data()); readState="read";

@@ -1,0 +1,7 @@
+{
+  "command": "pnpm exec vitest run --maxWorkers=2",
+  "filesPassed": 171,
+  "testsPassed": 820,
+  "failures": 0,
+  "sourceLog": "p2-frontend-tests.log"
+}

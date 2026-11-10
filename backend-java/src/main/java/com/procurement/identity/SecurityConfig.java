@@ -49,6 +49,7 @@ public class SecurityConfig {
           response.getWriter().write("{\"success\":false,\"data\":null,\"message\":\"当前账号无权执行此操作\"}");
         }))
         .authorizeHttpRequests(auth -> auth
+            .requestMatchers("/api/v1/buyer/agency/office-bridge/**", "/api/v1/buyer/agency/sms-bridge/**").permitAll()
             .requestMatchers("/api/v1/health", "/api/v1/auth/login").permitAll()
             .requestMatchers("/api/v1/public/**").permitAll()
             .requestMatchers("/actuator/health/**", "/actuator/info", "/actuator/prometheus").permitAll()

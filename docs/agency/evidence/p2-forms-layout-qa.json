@@ -1,0 +1,47 @@
+{
+  "renderer": "bundled LibreOffice via render_docx.py with local CJK fonts",
+  "documents": [
+    {
+      "kind": "attendance",
+      "pages": 1,
+      "sha256": "25f89c754dde87fe31c32c2e4c7567e042c0f76aee059d3b12401eaaf59742a4",
+      "allPagesVisuallyInspected": true
+    },
+    {
+      "kind": "disclosure",
+      "pages": 1,
+      "sha256": "4fd42f394226e4e7195c7f26693dbc222189dfc1606415eab2e708c52cf0dfbb",
+      "allPagesVisuallyInspected": true
+    },
+    {
+      "kind": "confidentiality",
+      "pages": 1,
+      "sha256": "c6723381170743486b221ba446f17b1f6187d9d800b87fe80ad6fd7c41e6f3a2",
+      "allPagesVisuallyInspected": true
+    },
+    {
+      "kind": "integrity",
+      "pages": 1,
+      "sha256": "652c42c6ce081b00721d5888531a723ad29c174fa6854fa1eb7d1257234dca47",
+      "allPagesVisuallyInspected": true
+    },
+    {
+      "kind": "attendance-long",
+      "pages": 3,
+      "sha256": "fef1a52d64cf81ddc8373d8b60db38b2ef9970f0f4d4e33722781483d37a185c",
+      "allPagesVisuallyInspected": true
+    },
+    {
+      "kind": "http-attendance",
+      "pages": 1,
+      "sha256": "1f3fccaf4d9065dcf98c25bde05fe371a8be08b93bc5dc0219d3c10bbcba178c",
+      "allPagesVisuallyInspected": true
+    }
+  ],
+  "notes": [
+    "blank signature/date/arrival fields",
+    "repeated table headers on continuation pages",
+    "no split personnel rows",
+    "all synthetic technical samples"
+  ]
+}

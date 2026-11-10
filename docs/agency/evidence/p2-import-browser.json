@@ -1,0 +1,10 @@
+{
+  "checks": [
+    "Browser downloads a UTF-8 CSV header template without fictitious supplier rows",
+    "Uploaded source produces a two-row preview and cannot import before confirmation",
+    "Explicit confirmation commits the batch and displays appended ledger records",
+    "Reload reopens the durable source preview as committed without offering a second import"
+  ],
+  "passed": 4,
+  "pageErrors": []
+}

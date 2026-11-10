@@ -1,0 +1,283 @@
+{
+  "baseCommit": "f3dd8b6e64c8d45655abb621f73ab0f320192f53",
+  "branch": "codex/24bm-agency",
+  "files": [
+    {
+      "path": ".gitignore",
+      "sha256": "12e0b3aac67f4fd87c6e89814e4a93fb1c664bc69956091bb1ad7459253b6eb1"
+    },
+    {
+      "path": "README.md",
+      "sha256": "97489765d75f2bfd3ba16eb4bf3db1a10456c8ca1500954f2e1141370efa45a1"
+    },
+    {
+      "path": "apps/tenant-portal/src/App.tsx",
+      "sha256": "a7f3ed6faebb3b56f346870b593172cacded1b4b997dc635f1c6f6db12665671"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/agency/agency-approval-snapshot.tsx",
+      "sha256": "959ad20df00f1af7f9fb97f8b85f414d2a321050241019f3254030e53808c2fb"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/agency/agency-numbering-panel.tsx",
+      "sha256": "d3962a36305eb3eb33d40d650b9ff3a790de3efc08993f8b394c658c41c30bd4"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/agency/agency-page.tsx",
+      "sha256": "463eef95d4e479334c13bd8cccfa9e98cfcc9761db02756512a8b295abf24012"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/process/process-engine-page.tsx",
+      "sha256": "85d0d60551d49ee029011bbcb33f9dee96f3c1c25c988b858d8dedc7446ba589"
+    },
+    {
+      "path": "apps/tenant-portal/src/features/workflow/workflow-instance-panel.tsx",
+      "sha256": "9fa8476c7ea92d96490468a6cd12b1ca1e6232224cb7c52521292b5cfd9a7021"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/agency/api/AgencyController.java",
+      "sha256": "2e87c6904abd4608d081251b9c1e6562359b1edb9e698dee89b6156effd2f8d3"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/agency/api/AgencyExceptionHandler.java",
+      "sha256": "f23c7f53bb8d0bca71f82ce96c4eca6409dfca2324e4589c8ba86339c4462422"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/agency/api/AgencyUploadLimitFilter.java",
+      "sha256": "ea8b5fe3556d8c7fafa7cad0a396d734eac20b226fd10706c982c74fc5530d3a"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/agency/application/AgencyArchiveWorkflowHandler.java",
+      "sha256": "9d3b4e0244ebf16ee3dc6198fd748a0b034f0281a52023558161b23fb2f22d06"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/agency/application/AgencyChangeWorkflowHandler.java",
+      "sha256": "5072ec576e1bf61eca29a1dca86f322432f4895ddb9484cfe2a00b3977e59dc6"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/agency/application/AgencyDirectory.java",
+      "sha256": "4f0726b0f04f79f00f1d35f11d072a06bd4590b7a08d90b3d943b1765bec780b"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/agency/application/AgencyDrafts.java",
+      "sha256": "acb14aa35c3decd4fec6654c3cf10f828421f920f47c8b78ea50122a65d2c2bb"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/agency/application/AgencyFileAccess.java",
+      "sha256": "176e3e98e5483781c82c55811b28a9d022642074a8e393dbffad7563fcfdc3c7"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/agency/application/AgencyFileSafety.java",
+      "sha256": "dfdd84066ea6b5bd6e99043967b7fd48d89c58664eb42988c0422a8563232705"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/agency/application/AgencyFiles.java",
+      "sha256": "5892db742077a18222c1a55cfad38baba813989f7faf0e29aafb29ae65422ac6"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/agency/application/AgencyGuard.java",
+      "sha256": "9bf8749c2c4392dd81bc9a2266169bdf2a3c8a3f06bf5bc2597faba8c34bc97e"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/agency/application/AgencyJson.java",
+      "sha256": "ee6df89787915c0ac4272a6ca499d71e299d6defda7c92f40b70bb509898efd2"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/agency/application/AgencyReviewProjector.java",
+      "sha256": "37afa59a500b7cf0ce50eefc3a5ae2aee283aa1c46452db4138a287c88e89869"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/agency/application/AgencySequenceAlerts.java",
+      "sha256": "c0313556d6b1afb1077d4b93830e871462bfbbb2d4d402238eb011ff7f891bb1"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/agency/application/AgencyService.java",
+      "sha256": "13236c12db0c57dfdc4ac43210f8888d7d1d66ad1affe63240f03ad67fcbd6c0"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/agency/domain/AgencyConflictException.java",
+      "sha256": "3794d785c8ca069f454796e0b94c9ed09f95a3fc827dd8b30f0f7cfa34d1576e"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/agency/domain/AgencyPolicy.java",
+      "sha256": "9756140c4a10c256cb365f89f96a0a429e2419841af54caa8c6a83973954c5db"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/agency/domain/AgencyRecords.java",
+      "sha256": "c6da6636dfc8d1cc47f9e4ebd2fa09dd77d7c5c3b0158c7beb64436db5986b33"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/agency/infrastructure/AgencyMapper.java",
+      "sha256": "b8d646294fc62698f96025b6cf1a28ba1c7f7cf030ce09d1afd7fde21ee15030"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/agency/package-info.java",
+      "sha256": "0ee39e41c14523f370df6b909188287c6b884adbf1fab62fb7b8906c01a2d9de"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/attachment/application/AttachmentAccessService.java",
+      "sha256": "5828f929181cac4ddcd29981fade094e0f620f5b747c9e644bfee9753ac4294d"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/attachment/application/AttachmentApplicationService.java",
+      "sha256": "e4cdef1908f8b1b3e80951dc0fdf12239c39d303dc5f595f281d5bb5f0ae18c2"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/attachment/application/AttachmentOwnerAccess.java",
+      "sha256": "755d806221c4eb43ef326da708702cb324f9b2d2b05fd6da64973c3c9f264290"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/attachment/application/AttachmentReviewQuery.java",
+      "sha256": "a03634d086cfc93a3a72080a7ae12136f4f4c2eccab68562f03b42c25c1b4db7"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/common/deployment/DeploymentSurfaceFilter.java",
+      "sha256": "2332c98a2aec9cd77ed5438043809a974d034e48f39d9f1c527825bace74b7f6"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/identity/application/BuyerDirectoryQuery.java",
+      "sha256": "331c9c64e2c09b057e96cc25a3da385f15ea8c9c3a9be159a417baaefbbba256"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/identity/domain/BuyerPermissionCatalog.java",
+      "sha256": "cd12ff6f4d6c1614b848d9980d5d70b51be3522758b50f6e3e5f8f5b06f9f99c"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/organization/application/DepartmentDirectoryQuery.java",
+      "sha256": "e618fa712add283a74994867c556e813839c450b7158491c062350a5bf2e50d2"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/tender/api/TenderDocumentReviewController.java",
+      "sha256": "dccb1374c8798c046632eb6536d7a013394e60a7152ada8c9bf31e6f3ede475c"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/tender/application/TenderDocumentReviewService.java",
+      "sha256": "9e9a29915ac633b8baf0cdc0b131620b9249fad162d2a30a11bf423330014bc4"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/workflow/application/UnifiedWorkflowApplicationService.java",
+      "sha256": "5254e6d3e0aa04d7b32c6ab3024a4fed49a68a38a6e5d566e0344dca4acdee0a"
+    },
+    {
+      "path": "backend-java/src/main/java/com/procurement/workflow/definition/WorkflowBusinessTypeCatalog.java",
+      "sha256": "3a8c183e3da9a62a883947156fd18c7f19b9276988c3231109ee0027ece8c424"
+    },
+    {
+      "path": "backend-java/src/main/resources/db/migration/V266__agency_package_foundation.sql",
+      "sha256": "25334f35808df16cb8d3ab470697b25eb528b435926e3b94491f1e6a5a6e729e"
+    },
+    {
+      "path": "backend-java/src/main/resources/db/migration/V267__agency_member_responsibilities.sql",
+      "sha256": "a6b82ab5fa7abea448b52c27b5303949133c6a67f22c899ad6f1d606e01b0eba"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/AttachmentMetadataLifecycleTests.java",
+      "sha256": "be12933c5a2ee9ce2bada0bf068823b8b17b83df1ccfa25cd7306567b8581c4e"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/AttachmentReviewQueryTests.java",
+      "sha256": "93bf6c54b6b535e9bf9743cdab942aa8c7a3027577dbe738e5ecd76a70d00425"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/HttpSecurityContractTests.java",
+      "sha256": "8ea81b309ce9ef02d20511f689359de78b9cd6bd9c66cb6f313f5c0e27daaf03"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/agency/AgencyFileManifestTests.java",
+      "sha256": "bf21606190be2dffcffe0ba64bb348e1b680afa512f615c1870ed8f3b28f6dfd"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/agency/AgencyPolicyTests.java",
+      "sha256": "c734cde1522c992392f55e5ff0923a93e154d32b6f8c1f9f5254d5b2b3ab1c73"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/agency/AgencyReviewProjectorTests.java",
+      "sha256": "a6ca3b19b853259f56e387678368b8576141b13cf67ab6f6bf8d375651d80bcb"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/agency/AgencyUploadLimitTests.java",
+      "sha256": "6a7c05d6c85dcc7d1cffc2b895c1cba5319c79717242edd2c50d3ddfa56124a2"
+    },
+    {
+      "path": "backend-java/src/test/java/com/procurement/tender/application/TenderDocumentReviewTests.java",
+      "sha256": "613baa5de24c64059dcc45c367f59f9f97c5b84836b216472e8e9193a3425808"
+    },
+    {
+      "path": "docs/agency/README.md",
+      "sha256": "5c4c1ec79120dac400d8bd9cf2a00cbb552fb6226b8a0da60042b49d651474cb"
+    },
+    {
+      "path": "docs/agency/p1-openapi.json",
+      "sha256": "379b8be17441712ee9654cc2efb2b7d59a9954ac94a2c8ff315f96a4ac86bc60"
+    },
+    {
+      "path": "docs/agency/requirements-baseline.md",
+      "sha256": "bf172cccbd450f068d90ad920da6f6f0c54775bb706a019f91dacc87ae30e5c1"
+    },
+    {
+      "path": "infra/p0/compose.yml",
+      "sha256": "fdbb4922de5045c267698797c025798a93e051d7fc7ff069daed296e5b34ec51"
+    },
+    {
+      "path": "infra/p0/office-compose.yml",
+      "sha256": "4347e9138ea371331051f70dbaaac2aa7e759dc1967181a1db0e7e9b1f8d81e2"
+    },
+    {
+      "path": "packages/api-client/src/agency.ts",
+      "sha256": "38b9b1deb0324e704c9a1a1a2bdb41b55e619a53231c6be1da6e02fa5b375760"
+    },
+    {
+      "path": "packages/api-client/src/index.ts",
+      "sha256": "90440a4fe9cf909be6eea79d069d05ac8d30cce04b66d790fda1f28c29f9d81d"
+    },
+    {
+      "path": "packages/shared/src/navigation.ts",
+      "sha256": "5a04a09885607cff3f0250b8aaf529e64af90fd2c7b09f9f8e74fc3b0d5fc825"
+    },
+    {
+      "path": "scripts/p0-attachment-smoke.mjs",
+      "sha256": "0aa97696f9320df5a139a43d059afb9680f90a1bbce3b04f2ba431731423bf28"
+    },
+    {
+      "path": "scripts/p0-bootstrap.py",
+      "sha256": "ef372c31f08c9faf70a2b7e56e67b849d944bc50086b59c84ced628ba0b2f4a8"
+    },
+    {
+      "path": "scripts/p0-office/browser-test.mjs",
+      "sha256": "236811050875382baf2cac6f7ec098f8f7fb2be370746fd5b9d5a4283d712f5e"
+    },
+    {
+      "path": "scripts/p0-office/contract-test.mjs",
+      "sha256": "cae64c8e942f801b5d43ff8729ea1f644e351a4eea60f7bc4b05950178d1b8d3"
+    },
+    {
+      "path": "scripts/p0-office/create-fixture.py",
+      "sha256": "50dc12de980378cb506002f44fadd6eaa655084ee9495c7ca1b39e191d903b69"
+    },
+    {
+      "path": "scripts/p0-office/server.mjs",
+      "sha256": "0e587170cb573e489a46df471ca77a1b0ffabd67413230cf495cd4dabc4186fc"
+    },
+    {
+      "path": "scripts/p0-office/verify-roundtrip.py",
+      "sha256": "ff5644da733d15ebfe424514f0e8680505ce127f13a0be20ae963908fb03ef18"
+    },
+    {
+      "path": "scripts/p0-run-backend.py",
+      "sha256": "a628ed6ed03740bc7fb34bfd43129f33713a67a69e98b3865918dab3142bf1ce"
+    },
+    {
+      "path": "scripts/p1-agency-smoke.mjs",
+      "sha256": "e910a04a2de826ad9324cd96d953b723d8fd68e4300765e82fcd77bd272686a3"
+    },
+    {
+      "path": "scripts/p1-browser-smoke.mjs",
+      "sha256": "e5fa26f9d29ac2f8610adfd2a9270fce478ed3a841f9dec364e2642bf30ec0a6"
+    },
+    {
+      "path": "scripts/p1-run-smoke.py",
+      "sha256": "c7067a0cd5c0dc6224639b808dbc253ccdff8008e1a68c778e3cdba66bb9a610"
+    }
+  ],
+  "note": "Includes P0 prerequisite fixes and P1 changes. Uncommitted workspace; no deployment to original service."
+}

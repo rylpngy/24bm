@@ -1,0 +1,45 @@
+{
+  "date": "2026-11-09",
+  "scope": "Phase-one offline supplier-isolated discussions; no supplier online transactions, electronic signing, demand-change authorization or external notification sending",
+  "backend": {
+    "tests": 1331,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "frontend": {
+    "files": 184,
+    "tests": 855
+  },
+  "finalTargeted": {
+    "backend": 87,
+    "frontend": 6
+  },
+  "productionBuild": "passed",
+  "httpGroups": 7,
+  "browserGroups": 5,
+  "browserErrors": 0,
+  "migration": "V282 applied in isolated database",
+  "openapi": {
+    "operations": 8,
+    "paths": 7,
+    "schemas": 28
+  },
+  "previousRegressionGroups": {
+    "opening": 14,
+    "assessment": 15,
+    "preparation": 14,
+    "foundation": 9,
+    "initialQuote": 7,
+    "finalQuote": 9,
+    "price": 10,
+    "total": 7,
+    "incident": 9
+  },
+  "notes": [
+    "Full suites followed by targeted checks and final build after compatibility/read-only display polish",
+    "HTTP and browser use synthetic consultation fixtures; negotiation shares policy but lacks complete real business acceptance",
+    "Pre-migration legacy fixture verifies valid historical price remains current; no artificial legacy exemption API",
+    "Not deployed to production"
+  ]
+}

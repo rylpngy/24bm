@@ -1,0 +1,15 @@
+{
+  "passed": 9,
+  "checks": [
+    "Default rounds remain active; frozen organizer/project scope, responsible accounts, occurrence time and explicit review are enforced",
+    "Observe-only incidents retain normal control state yet block price results, and reviewer/general events receive no private incident details",
+    "Resolution chronology and conditions are required; observe resolution preserves history while its epoch invalidates pre-incident results",
+    "A paused round blocks quotation, opening, phase, final quote, price and total writes while leaving exact prior snapshots readable",
+    "Closing the last case never auto-resumes; separately reviewed resume checks all versions and requires fresh price/total review afterward",
+    "Before a session exists, pause also blocks raw response upload tickets, formal opening and assessment creation; resolution alone keeps uploads closed",
+    "Personal drafts survive pauses byte-for-byte; independent saves/submits and raw final-response uploads are closed until separately restored",
+    "Reorganization decisions cannot restore the old round; explicit termination is sticky and isolated from other rounds",
+    "A voided baseline cannot be revived by resolving cases or using resume, and procurement mode plus three package statuses stay unchanged"
+  ],
+  "scope": "isolated synthetic round incidents and controls; desensitized evidence only; no member replacement, legal adjudication, automatic procurement termination or production deployment"
+}

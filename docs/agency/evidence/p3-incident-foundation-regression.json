@@ -1,0 +1,23 @@
+{
+  "checks": [
+    "Intake requires manual rule confirmation and locked deadlines, checklist, roles and participant threshold cannot be rewritten",
+    "Sealed response bytes remain closed before opening even to their creator, file-confidential managers and wildcard administrators",
+    "Response material cannot be relabelled, generically versioned or reused as a purchase/publication source",
+    "Future opening time and insufficient participant count are server gates rather than display-only warnings",
+    "Receipt, preview and opening operations enforce tenant, project and frozen custodian duties",
+    "Checklist completeness, unique active receipts, sealed status and evidenced late registration are checked before opening",
+    "Actually late material is not silently admitted and replacement retains the withdrawn receipt and original bytes",
+    "Changed preview fingerprints and real stored-byte hash mismatch reject opening atomically, leaving the content closed",
+    "Formal opening releases exact versions only to explicitly frozen reader duties; creators and another unopened round remain blocked",
+    "Opened receipts and intake configuration cannot be rewritten after release",
+    "One account gets separate qualification and conformity sheets, and later phases cannot be written or opened prematurely",
+    "Phase transition requires full prior submissions, blocks failed objects and requires per-object exclusion reasons without exposing private opinion text",
+    "Separate roles can finish sequential phases without deadlock; excluded objects and cross-phase corrections stay blocked after downstream release",
+    "Removing the response-read permission also blocks raw downloads of already opened materials"
+  ],
+  "passed": 14,
+  "assessmentRegression": 15,
+  "preparationRegression": 14,
+  "foundationRegression": 9,
+  "scope": "synthetic controlled receipts, offline opening and basic phased assessments; no encrypted e-tender opening or method-specific full procedure"
+}

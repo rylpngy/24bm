@@ -1,0 +1,24 @@
+{
+  "backend": {
+    "tests": 1247,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "frontend": {
+    "files": 173,
+    "tests": 824,
+    "failures": 0
+  },
+  "p2Http": 36,
+  "p1Http": 30,
+  "browser": 12,
+  "pageErrors": 0,
+  "tenantBuild": "passed",
+  "smsEnabled": false,
+  "externalAIEnabled": false,
+  "officeOnlineEnabled": false,
+  "reminderPollMsDuringTest": 1000,
+  "productionDefaultPollMs": 30000,
+  "scope": "isolated local environment; no production deployment"
+}

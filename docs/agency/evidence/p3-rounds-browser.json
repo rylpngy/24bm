@@ -1,0 +1,11 @@
+{
+  "checks": [
+    "Structured rule editor keeps document entries separate until an explicit copy and review",
+    "Saved server draft has no blockers but cannot freeze without a separate confirmation",
+    "Explicit confirmation freezes the configuration and removes draft editing",
+    "Browser export preserves exact source and independently verifiable canonical snapshot hash",
+    "Reload retains frozen personnel duties and rule contents"
+  ],
+  "passed": 5,
+  "pageErrors": []
+}

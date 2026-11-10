@@ -1,0 +1,23 @@
+{
+  "tenantId": "agency-p3-1794211358490",
+  "packageId": "agency-package-389bafdc-6359-4d73-828c-46e43fe96357",
+  "foundationChecks": 9,
+  "checks": [
+    "Evaluation preparation enforces archive, project and tenant scope",
+    "Approved exact document source and authorized account duties form an idempotent draft",
+    "Foreign, unauthorized and duplicate accounts cannot become configured evaluation personnel",
+    "Independent source and configured rules display field differences and block freeze",
+    "Manual item review and exact decimal total cannot be bypassed",
+    "Untrusted formulas are rejected and purchase method is not silently changed",
+    "Qualification duties are required separately from technical reviewers",
+    "Optimistic versions and explicit business-rule confirmation guard state changes",
+    "Freeze requires its independent permission even when draft management is authorized",
+    "Concurrent retry freezes once and immutable snapshot retains document hash, account duties and exact rule data",
+    "Void preserves the frozen snapshot and new rounds never inherit a previous frozen state",
+    "Changed confirmed requirements stale the source and frozen basis without rewriting historical bytes",
+    "Confidentiality permission protects both workspace and snapshot for creators and wildcard-free managers",
+    "Authorized read-only participants may inspect preparation but cannot configure it"
+  ],
+  "passed": 14,
+  "scope": "evaluation preparation only; synthetic rules; no live scoring or regulatory certification"
+}

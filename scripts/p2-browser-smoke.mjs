@@ -1,0 +1,26 @@
+import fs from 'node:fs/promises';
+import {chromium} from '/Users/note/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs';
+import assert from 'node:assert/strict';
+const session=JSON.parse(await fs.readFile('.p0/p2-browser-session.json'));
+const browser=await chromium.launch({headless:true,executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});
+const checks=[];checks.push=(...v)=>{console.log('PASS',...v);return Array.prototype.push.apply(checks,v)};const participantName='浏览器合成供应商 '+Date.now();const editText='浏览器保存合成章节 '+Date.now()+' {{projectTitle}}';
+try{
+ const page=await browser.newPage({viewport:{width:1440,height:1050}}),errors=[];
+ page.on('pageerror',e=>errors.push(e.message));
+ await page.addInitScript(s=>localStorage.setItem('24bid.tenant-portal.session',JSON.stringify(s)),session);
+ await page.goto('http://127.0.0.1:15173/?module=agency&recordId='+session.packageId);
+ const workspace=page.getByRole('region',{name:'采购执行工作台'});await workspace.waitFor();await workspace.getByRole('heading',{name:'来源可追溯的结构化需求'}).waitFor();checks.push('Approved package opens execution workspace with actual demand sources');
+ await workspace.getByRole('tab',{name:'文件编制与审批',exact:true}).click();await workspace.getByRole('heading',{name:/完整采购文件/}).waitFor();
+ const purchase=workspace.locator('section').filter({has:page.getByRole('heading',{name:/完整采购文件/})}).first();
+ const chapter=purchase.locator('summary').filter({hasText:'采购公告或邀请'}).first();await chapter.click();const text=purchase.getByLabel('正文（支持 {{projectTitle}}、{{projectNumber}}、{{requirement.字段名}} 等公共变量）').first();await text.fill(editText);await page.waitForTimeout(5500);assert.equal(await text.inputValue(),editText);await purchase.getByRole('button',{name:'保存章节与要素',exact:true}).click();await workspace.getByText('操作已保存。',{exact:true}).waitFor();checks.push('Unsaved chapter survives polling and saves with optimistic version');
+ await page.reload();await workspace.getByRole('tab',{name:'文件编制与审批',exact:true}).click();await workspace.getByRole('heading',{name:/完整采购文件/}).waitFor();await purchase.locator('summary').filter({hasText:'采购公告或邀请'}).first().click();assert.equal(await purchase.getByLabel('正文（支持 {{projectTitle}}、{{projectNumber}}、{{requirement.字段名}} 等公共变量）').first().inputValue(),editText);checks.push('Saved chapter persists after browser reload');
+ const downloading=page.waitForEvent('download');await workspace.getByRole('button',{name:'下载不可变稿件'}).first().click();const download=await downloading;await download.saveAs('.p0/p2-browser-download.docx');assert.equal((await fs.readFile('.p0/p2-browser-download.docx')).subarray(0,2).toString(),'PK');checks.push('Browser downloads actual immutable DOCX bytes');
+ await workspace.getByRole('tab',{name:'模板库',exact:true}).click();await workspace.getByText(/P2 合成服务采购模板/).first().waitFor();checks.push('Versioned company template library renders actual data');
+ await workspace.getByRole('tab',{name:'参与台账',exact:true}).click();await workspace.getByRole('heading',{name:'供应商参与台账'}).waitFor();await workspace.getByLabel('供应商名称',{exact:true}).fill(participantName);await workspace.getByLabel('来源',{exact:true}).fill('浏览器人工验收');await workspace.getByRole('button',{name:'新增参与记录',exact:true}).click();await workspace.getByText(participantName,{exact:true}).waitFor();checks.push('Participation ledger is editable through browser without qualification gate');
+ await workspace.getByRole('tab',{name:'项目计划',exact:true}).click();await workspace.getByRole('heading',{name:'项目计划与真实节点回填'}).waitFor();await workspace.getByRole('cell',{name:/自定义验收节点/}).waitFor();checks.push('Project plan shows actual nodes and overdue status');
+ await workspace.locator('summary').filter({hasText:'公司计划模板'}).click();await workspace.getByRole('button',{name:'读取当前配置',exact:true}).click();await workspace.getByLabel('模板节点 1 名称',{exact:true}).fill('浏览器计划模板节点');await workspace.getByLabel('配置版本变更原因',{exact:true}).fill('浏览器验证表单式计划模板维护');const configResponse=page.waitForResponse(r=>r.url().includes('/plan-templates')&&r.request().method()==='PUT');await workspace.getByRole('button',{name:'保存公司计划模板下一版本',exact:true}).click();assert.equal((await configResponse).status(),200);checks.push('Company plan template is editable with business forms and version checking');
+ await workspace.getByRole('tab',{name:'会前准备',exact:true}).click();await workspace.getByLabel('场地',{exact:true}).waitFor();assert.equal(await workspace.getByLabel('场地',{exact:true}).inputValue(),'合成会议室');await workspace.screenshot({path:'.p0/p2-preparation-workspace.png'});checks.push('Preparation workspace shows venue slot and controlled records');
+ await workspace.getByRole('tab',{name:'发布登记',exact:true}).click();await workspace.getByRole('heading',{name:'人工发布与凭证登记'}).waitFor();await workspace.getByText('合成人工发布平台',{exact:true}).waitFor();await workspace.screenshot({path:'.p0/p2-publication-workspace.png'});checks.push('Publication records retain actual approved revision identities');
+ assert.equal(errors.length,0,errors.join('\n'));
+ await fs.writeFile('.p0/p2-browser-result.json',JSON.stringify({checks,passed:checks.length,pageErrors:errors},null,2));console.log('Browser P2 passed:',checks.length,'checks');
+}finally{await browser.close()}

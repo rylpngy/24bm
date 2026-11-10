@@ -1,0 +1,14 @@
+{
+  "checks": [
+    "A frozen reviewer with wildcard permissions cannot read organizer quote records",
+    "Negative, rounded, overflowing and unreviewed amounts are rejected",
+    "Original quote is recorded once with idempotent retry",
+    "Original overwrite, stale predecessors and mixed currencies are blocked",
+    "Original, corrected and policy review prices remain separate exact decimal layers",
+    "A new correction invalidates the current policy layer while immutable earlier prices remain",
+    "Unsupported final quotes and foreign opening subjects cannot enter this first-quote ledger"
+  ],
+  "passed": 7,
+  "sessionId": "agency-assessment-f7993baf-c5de-4af2-829b-828e89366be1",
+  "scope": "synthetic manual first-quote layers; no policy calculation, ranking or contract value"
+}

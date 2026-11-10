@@ -38,3 +38,6 @@ scripts/dept.xlsx
 scripts/mat.xlsx
 infra/observability/secrets/
 /.ludong-tender-runtime/
+
+# Isolated P0 runtime credentials and logs
+.p0/

@@ -1,0 +1,11 @@
+{
+  "passed": 5,
+  "checks": [
+    "Incomplete checklist cannot claim complete archive; business can close while money and archive remain open, financial settlement rejects pending balances",
+    "Method checklist freezes actual immutable file versions, SHA256, signature and paper metadata; a later snapshot appends and preserves the first, without invalidating evaluation content version",
+    "Actual bounded ZIP exports recheck per-file ACL and real bytes, record download audit, and withhold restricted files from a non-frozen office approver",
+    "New sealed evidence after archival reopens archive accumulation and marks old source stale while preserving immutable snapshot and business closure",
+    "Actual post-closure payments and refunds reconcile independently; later receipt reopens financial settlement without reopening business or changing content version"
+  ],
+  "scope": "Synthetic formal archive and independent completion technical verification; no production release or real business acceptance"
+}

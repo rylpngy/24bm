@@ -1,0 +1,9 @@
+{
+  "passed": 2,
+  "checks": [
+    "Inquiry refuses a second original offer; complete validity evidence is mandatory, corrections retain the original and invalidate prior validity review until rechecked",
+    "Inquiry does not expose negotiation final quotes or comprehensive scoring despite wildcard permissions"
+  ],
+  "method": "询价",
+  "scope": "Synthetic offline method-specific procedure; no legal or production acceptance"
+}

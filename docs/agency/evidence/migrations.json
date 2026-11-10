@@ -1,0 +1,17 @@
+{
+  "migrations": [
+    {
+      "version": "266",
+      "script": "V266__agency_package_foundation.sql",
+      "checksum": -550887482,
+      "success": true
+    },
+    {
+      "version": "267",
+      "script": "V267__agency_member_responsibilities.sql",
+      "checksum": 925340229,
+      "success": true
+    }
+  ],
+  "agencyTables": 10
+}

@@ -1,0 +1,12 @@
+{
+  "passed": 6,
+  "checks": [
+    "External authority evidence, explicit permitted scope/privacy/time review, sealed public sources, frozen organizer and tenant/session access are enforced",
+    "Immutable idempotent authorization freezes common documents and all recipients; neither partial coverage nor final-quote exclusions bypass notification",
+    "Per-recipient current fingerprints and predecessor checks protect receipts; append-only corrections preserve original facts and do not auto-complete the batch",
+    "Pause blocks every mutation and preserves history; resume invalidates old review fingerprints; explicit all-recipient reconciliation locks exact latest receipt hashes",
+    "A later pending change cannot reuse earlier coverage; each subsequent addendum requires a new requirements version, new all-recipient receipts and a linked immutable snapshot",
+    "Final quote requires the latest notified requirements and timing window, freezes both completed addenda, keeps private facts out of generic events and forbids backfilling after initiation"
+  ],
+  "scope": "Synthetic offline external-authority evidence and all-frozen-recipient notification reconciliation; no automatic message sending, legal validation, scoring/qualification changes or supplier authentication"
+}

@@ -1,0 +1,33 @@
+{
+  "backend": {
+    "tests": 1262,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "frontend": {
+    "files": 175,
+    "tests": 829,
+    "failures": 0
+  },
+  "formsHttp": 14,
+  "formsBrowser": 5,
+  "browserPageErrors": 0,
+  "importRegression": 14,
+  "tenantBuild": "passed",
+  "docxLayout": {
+    "fixtureDocuments": 5,
+    "fixturePages": 7,
+    "actualHttpDocumentPages": 1,
+    "allPagesVisuallyInspected": true
+  },
+  "api": {
+    "operations": 50,
+    "paths": 47,
+    "schemas": 87
+  },
+  "migration": "V273 applied",
+  "scope": "isolated synthetic tenants; no production deployment; no real signature validation",
+  "p2Regression": 36,
+  "temporaryFaultTriggersRemaining": 0
+}

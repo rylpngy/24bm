@@ -1,0 +1,10 @@
+{
+  "passed": 4,
+  "checks": [
+    "zero original amount kept as decimal string",
+    "correction appended",
+    "policy price kept separate",
+    "new correction invalidates current policy and preserves history"
+  ],
+  "pageErrors": []
+}

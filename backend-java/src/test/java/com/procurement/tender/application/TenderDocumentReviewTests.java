@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import com.procurement.tender.domain.Tender;
 import com.procurement.tender.infrastructure.*;
-import com.procurement.attachment.infrastructure.AttachmentMapper;
+import com.procurement.attachment.application.AttachmentReviewQuery;
 import com.procurement.audit.application.AuditLogApplicationService;
 import com.procurement.workflow.application.*;
 import com.procurement.workflow.domain.WorkflowBusinessInstance;
@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 class TenderDocumentReviewTests {
   final TenderMapper tenders=mock(TenderMapper.class);
   final TenderDocumentReviewMapper reviews=mock(TenderDocumentReviewMapper.class);
-  final AttachmentMapper attachments=mock(AttachmentMapper.class);
+  final AttachmentReviewQuery attachments=mock(AttachmentReviewQuery.class);
   final AuditLogApplicationService audit=mock(AuditLogApplicationService.class);
   final TenderDocumentReviewService service=new TenderDocumentReviewService(tenders,reviews,attachments,
       null,null,mock(UnifiedWorkflowApplicationService.class),audit);

@@ -1,0 +1,9 @@
+{
+  "time": "2026-11-10T01:16:14.838Z",
+  "checks": [
+    "Fresh browser signs in through the walkthrough button and sees active model configuration",
+    "User opens exact-version review and a real Bailian result is rendered in the deployed portal",
+    "No browser runtime errors"
+  ],
+  "pageErrors": []
+}

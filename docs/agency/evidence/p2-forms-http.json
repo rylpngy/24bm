@@ -1,0 +1,22 @@
+{
+  "tenantId": "agency-forms-1794128290900",
+  "packageId": "agency-package-0740ff65-06cc-46f9-99d1-1ca76872cf9c",
+  "checks": [
+    "Preparation forms are guarded by approved project archive",
+    "Form workspace enforces project and tenant scope",
+    "Structured preparation roster distinguishes roles and detects stale edits",
+    "Form generation requires reviewed content, valid person count and matching package/preparation/person versions",
+    "Four actual DOCX form kinds start unsigned and generation retries do not duplicate forms",
+    "Generated forms use restricted immutable files, real DOCX bytes and matching hashes",
+    "Signature return requires restricted signed-file category, actual date, unique roster people and manual attestation",
+    "Return registration links the exact source form and file hash without marking the whole roster signed",
+    "Personnel edits make old print snapshots stale and require an explicit explanation for old-paper returns",
+    "Next form version preserves original bytes and does not inherit old signature associations",
+    "Voiding an incorrect return preserves its original bytes and allows a traceable corrected association",
+    "Voided forms reject new returns while historical form and signature downloads remain available",
+    "File creator and general confidential-file privilege cannot bypass the personnel confidentiality permission",
+    "Authorized read-only staff may inspect and download but cannot alter the roster"
+  ],
+  "passed": 14,
+  "mode": "real HTTP + PostgreSQL + Flowable + MinIO + generated DOCX; synthetic signature evidence only"
+}

@@ -1,0 +1,14 @@
+{
+  "counts": {
+    "tests": 1225,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "commands": [
+    "mvn -q test",
+    "mvn -q -Dtest=AgencyFileManifestTests test"
+  ],
+  "scope": "Full suite plus subsequently added manifest regression. No integration-profile/Testcontainers claim.",
+  "baseCommit": "f3dd8b6e64c8d45655abb621f73ab0f320192f53"
+}

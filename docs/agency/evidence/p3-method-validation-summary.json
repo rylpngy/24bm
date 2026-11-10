@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-09",
+  "backendTargeted": 93,
+  "frontendTargeted": 4,
+  "productionBuild": "passed",
+  "methodHttpGroups": {
+    "invitation": 2,
+    "inquiry": 2,
+    "single": 2
+  },
+  "scope": "Synthetic invitation-lowest-price, inquiry and sole-source offline paths; baseline shared workflows and actual DOCX generation reused. Real procurement rule/UAT acceptance remains outstanding."
+}

@@ -1,0 +1,9 @@
+{
+  "passed": 4,
+  "checks": [
+    "Browser opens sanitized approved result options through the post-award workspace without private opinion reads or raw source-version inputs",
+    "Real browser saves a controlled external matter with owner, deadline and proof only after input-bound manual acknowledgement",
+    "Browser displays separate invoice/cash/cost totals, immutable archive versions, independent completion flags and internal office follow-up",
+    "New phase-one panels render at mobile width without horizontal page overflow or browser runtime errors"
+  ]
+}

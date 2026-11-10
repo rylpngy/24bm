@@ -60,6 +60,7 @@ procurement:
     endpoint: ${PROCUREMENT_AI_ENDPOINT:}
     api-key: ${PROCUREMENT_AI_API_KEY:}
     model: ${PROCUREMENT_AI_MODEL:}
+    enable-thinking: ${PROCUREMENT_AI_ENABLE_THINKING:#{null}}
   ludong-poc:
     ai-review:
       # 可选 OpenAI 兼容 chat/completions 接口。未配置时使用本地采购规则模型，不影响审批办理。

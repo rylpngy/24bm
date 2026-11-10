@@ -1,0 +1,10 @@
+{
+  "passed": 4,
+  "checks": [
+    "Browser exposes incorrect manual price inclusion and blocks freezing source mismatches",
+    "Explicit rule review freezes unique sources; a price snapshot must still be selected manually",
+    "Two-member raw-score aggregation and one objective price component produce 79.00/52.00 without private opinion text",
+    "A settled immutable history shows raw sum, denominator, member version hashes and the single price reference without browser errors"
+  ],
+  "pageErrors": []
+}

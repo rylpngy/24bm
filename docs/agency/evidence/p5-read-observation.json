@@ -1,0 +1,12 @@
+{
+  "passed": 1,
+  "checks": [
+    "20 authenticated read requests at concurrency 2 complete successfully against the isolated finance workspace"
+  ],
+  "requests": 20,
+  "concurrency": 2,
+  "p50Ms": 15,
+  "p95Ms": 53,
+  "maxMs": 54,
+  "scope": "Small local read observation only; no production capacity or latency SLA claim"
+}

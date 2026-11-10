@@ -306,6 +306,26 @@ import org.springframework.test.web.servlet.MvcResult;
     com.procurement.mall.api.SupplierMallController.class,
     com.procurement.esign.api.BuyerEsignController.class,
     com.procurement.esign.api.SupplierEsignController.class,
+    com.procurement.agency.api.AgencyFinalResponseController.class,
+    com.procurement.agency.api.AgencyRequirementChangeController.class,
+    com.procurement.agency.api.AgencyArchiveController.class,
+    com.procurement.agency.api.AgencyRecommendationController.class,
+    com.procurement.agency.api.AgencyPostController.class,
+    com.procurement.agency.api.AgencyFinanceController.class,
+    com.procurement.agency.api.AgencyOfficeController.class,
+    com.procurement.agency.api.AgencyMethodProcedureController.class,
+    com.procurement.agency.api.AgencyOfficeEditController.class,
+    com.procurement.agency.api.AgencySmsController.class,
+    com.procurement.agency.api.AgencySmsReceiptController.class,
+    com.procurement.agency.api.AgencyOfficeBridgeController.class,
+    com.procurement.agency.api.AgencyDocumentPreviewController.class,
+    com.procurement.agency.api.AgencyController.class,
+    com.procurement.agency.api.AgencyExecutionController.class,
+    com.procurement.agency.api.AgencyEvaluationController.class,
+    com.procurement.agency.api.AgencyAssessmentController.class,
+    com.procurement.agency.api.AgencyOpeningController.class,
+    com.procurement.tender.api.TenderDocumentReviewController.class,
+    com.procurement.tender.api.TenderScoringRuleController.class,
     com.procurement.tender.api.BuyerTenderController.class,
     com.procurement.tender.api.SupplierTenderController.class,
     com.procurement.tenant.api.BuyerCapabilityController.class,
@@ -336,6 +356,135 @@ import org.springframework.test.web.servlet.MvcResult;
     "procurement.security.jwt-expires-in-seconds=7200"
 })
 class HttpSecurityContractTests {
+ @MockBean private com.procurement.agency.application.AgencyDocumentPreviewService agencyDocumentPreviewService;
+ @MockBean private com.procurement.agency.application.AgencySmsService agencySmsService;
+ @MockBean private com.procurement.agency.application.AgencySmsGateway agencySmsGateway;
+ @MockBean private com.procurement.agency.application.AgencyOfficeEditService agencyOfficeEditService;
+ @MockBean private com.procurement.agency.application.AgencyOfficeService agencyOfficeService;
+ @MockBean private com.procurement.agency.application.AgencyArchiveService agencyArchiveService;
+ @MockBean private com.procurement.agency.application.AgencyFinanceService agencyFinanceService;
+ @MockBean private com.procurement.agency.application.AgencyPostService agencyPostService;
+ @MockBean private com.procurement.agency.application.AgencyRecommendationService agencyRecommendationService;
+ @MockBean private com.procurement.agency.application.AgencyReportService agencyReportService;
+  @MockBean private com.procurement.agency.application.AgencyPreparationFormsService agencyPreparationFormsService;
+  @MockBean private com.procurement.agency.application.AgencyEvaluationService agencyEvaluationService;
+  @MockBean private com.procurement.agency.application.AgencyAssessmentService agencyAssessmentService;
+  @MockBean private com.procurement.agency.application.AgencyOpeningService agencyOpeningService;
+  @MockBean private com.procurement.agency.application.AgencyFinalQuoteService agencyFinalQuoteService;
+  @MockBean private com.procurement.agency.application.AgencyPriceService agencyPriceService;
+  @MockBean private com.procurement.agency.application.AgencyTotalService agencyTotalService;
+  @MockBean private com.procurement.agency.application.AgencyIncidentService agencyIncidentService;
+  @MockBean private com.procurement.agency.application.AgencyFinalResponseService agencyFinalResponseService;
+  @MockBean private com.procurement.agency.application.AgencyMethodProcedureService agencyMethodProcedureService;
+  @MockBean private com.procurement.agency.application.AgencyDiscussionService agencyDiscussionService;
+  @MockBean private com.procurement.agency.application.AgencyRequirementChangeService agencyRequirementChangeService;
+  @MockBean private com.procurement.agency.application.AgencyQuoteService agencyQuoteService;
+  @MockBean private com.procurement.agency.application.AgencyAssessmentStages agencyAssessmentStages;
+  @MockBean private com.procurement.agency.application.AgencyParticipationImportService agencyParticipationImportService;
+  @MockBean private com.procurement.agency.application.AgencyReminderService agencyReminderService;
+  @MockBean
+  private com.procurement.agency.application.AgencyExecutionService agencyExecutionService;
+
+  @MockBean private com.procurement.agency.application.AgencyTemplateService agencyTemplateService;
+  @MockBean private com.procurement.agency.application.AgencyDemandService agencyDemandService;
+  @MockBean private com.procurement.agency.application.AgencyDocumentService agencyDocumentService;
+
+  @MockBean
+  private com.procurement.agency.application.AgencyPublicationService agencyPublicationService;
+
+  @MockBean
+  private com.procurement.agency.application.AgencyCollaborationService agencyCollaborationService;
+
+  @MockBean private com.procurement.agency.application.AgencyService agencyService;
+  @MockBean private com.procurement.agency.application.AgencyFiles agencyFiles;
+
+  @Test
+  void agencyExecutionRequiresBuyerScope() throws Exception {
+    String url = "/api/v1/buyer/agency/execution/packages/package-1";
+    mockMvc.perform(get(url)).andExpect(status().isForbidden());
+    mockMvc
+        .perform(
+            get(url)
+                .header(
+                    "Authorization",
+                    "Bearer "
+                        + loginAndExtractToken(
+                            "{\"account\":\"supplier\",\"password\":\"demo123456\",\"scope\":\"SUPPLIER\",\"supplierId\":\"ent-supplier-sunrise\"}")))
+        .andExpect(status().isForbidden());
+    org.mockito.Mockito.verifyNoInteractions(
+        agencyExecutionService,
+        agencyDocumentService,
+        agencyDemandService,
+        agencyCollaborationService);
+  }
+
+  @Test
+  void agencyRequiresBuyerScope() throws Exception {
+    String url = "/api/v1/buyer/agency/packages";
+    mockMvc.perform(get(url)).andExpect(status().isForbidden());
+    mockMvc
+        .perform(post(url).contentType("application/json").content("{}"))
+        .andExpect(status().isForbidden());
+    String supplier =
+        loginAndExtractToken(
+            "{\"account\":\"supplier\",\"password\":\"demo123456\",\"scope\":\"SUPPLIER\",\"supplierId\":\"ent-supplier-sunrise\"}");
+    mockMvc
+        .perform(get(url).header("Authorization", "Bearer " + supplier))
+        .andExpect(status().isForbidden());
+    mockMvc
+        .perform(
+            post(url + "/p/submit")
+                .header("Authorization", "Bearer " + supplier)
+                .contentType("application/json")
+                .content("{}"))
+        .andExpect(status().isForbidden());
+    org.mockito.Mockito.verifyNoInteractions(agencyService, agencyFiles);
+  }
+
+  @MockBean
+  private com.procurement.tender.application.TenderDocumentReviewService tenderDocumentReviews;
+
+  @MockBean private com.procurement.tender.application.TenderScoringRuleService tenderScoringRules;
+
+  @Test
+  void tenderDocumentReviewsRequireAuthenticationAndBuyerScope() throws Exception {
+    String url = "/api/v1/buyer/tenders/tender-p0/document-reviews";
+    String supplier =
+        loginAndExtractToken(
+            "{\"account\":\"supplier\",\"password\":\"demo123456\",\"scope\":\"SUPPLIER\",\"supplierId\":\"ent-supplier-sunrise\"}");
+    mockMvc.perform(get(url)).andExpect(status().isForbidden());
+    mockMvc
+        .perform(post(url).contentType("application/json").content("{}"))
+        .andExpect(status().isForbidden());
+    mockMvc
+        .perform(get(url).header("Authorization", "Bearer " + supplier))
+        .andExpect(status().isForbidden());
+    mockMvc
+        .perform(
+            post(url)
+                .header("Authorization", "Bearer " + supplier)
+                .contentType("application/json")
+                .content("{}"))
+        .andExpect(status().isForbidden());
+    String scoringUrl = "/api/v1/buyer/tenders/tender-p0/scoring-rule";
+    mockMvc.perform(get(scoringUrl)).andExpect(status().isForbidden());
+    mockMvc
+        .perform(get(scoringUrl).header("Authorization", "Bearer " + supplier))
+        .andExpect(status().isForbidden());
+    mockMvc
+        .perform(put(scoringUrl).contentType("application/json").content("{}"))
+        .andExpect(status().isForbidden());
+    mockMvc
+        .perform(
+            put(scoringUrl)
+                .header("Authorization", "Bearer " + supplier)
+                .contentType("application/json")
+                .content("{}"))
+        .andExpect(status().isForbidden());
+    org.mockito.Mockito.verifyNoInteractions(tenderDocumentReviews, tenderScoringRules);
+  }
+
+
   @MockBean private com.procurement.contract.application.ContractReviewRulesService contractReviewRules;
   @MockBean private com.procurement.contract.application.ContractReviewService contractReview;
   @MockBean private com.procurement.sourcing.application.RfqQuotationService rfqQuotation;

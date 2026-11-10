@@ -1,0 +1,9 @@
+{
+  "passed": 3,
+  "checks": [
+    "Purchaser confirmation remains separate from report: frozen role or explicit offline authority and sealed evidence required, unrecommended supplier rejected",
+    "Actual DOCX generation and three independent Flowable approvals precede external publication, notice issue/delivery and signed contract; skipped states and amount divergence rejected, no fee-collection gate",
+    "External question is a controlled dated matter with owner, deadline and evidence; no automatic legal answer or ruling"
+  ],
+  "scope": "Synthetic offline post-award technical verification; no real publication, signing or authority decision"
+}

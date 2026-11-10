@@ -1,0 +1,15 @@
+{
+  "passed": 9,
+  "checks": [
+    "Unreviewed starts, foreign scopes, invalid windows and confirmation before the real deadline are blocked",
+    "Only frozen organizers access final quotes; initiation is immutable and idempotent",
+    "Receipt time, late-entry evidence, decimal precision and package currency are checked",
+    "One active receipt per subject, exact retry, mandatory sealing and protected version immutability",
+    "Creator and wildcard reviewer cannot download unconfirmed content; generic document reuse is refused",
+    "Changed sealed bytes invalidate old confirmation; missing subjects and false non-submission are rejected",
+    "A final quote higher than the initial price is retained; missing final quote stays null and initial price stays unchanged",
+    "Only confirmed exact accepted bytes are released to authorized organizers; confirmation locks receiving and withdrawal",
+    "Wrong receipt withdrawal preserves history; late material never becomes an accepted price or downloadable accepted response"
+  ],
+  "scope": "isolated synthetic consultation offline final quotes; negotiation method gate unit-tested; no supplier identity, notification sending, ranking or award"
+}

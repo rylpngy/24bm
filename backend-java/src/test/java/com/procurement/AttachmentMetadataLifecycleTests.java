@@ -160,7 +160,7 @@ class AttachmentMetadataLifecycleTests {
     org.assertj.core.api.Assertions.assertThat(link.downloadUrl())
         .isEqualTo("/api/v1/buyer/attachments/att-1/download");
     org.assertj.core.api.Assertions.assertThat(link.expiresAt()).isNull();
-    verify(access).requireAccess("quote", "quote-1", false);
+    verify(access).requireDownloadAccess("quote", "quote-1");
   }
 
   private Attachment attachment(String id, String visibility, String status) {

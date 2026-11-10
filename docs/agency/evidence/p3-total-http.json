@@ -1,0 +1,13 @@
+{
+  "passed": 7,
+  "checks": [
+    "Frozen organizer and project scope apply; missing member submissions and unfrozen total rules cannot yield totals",
+    "Independent source/configuration differences, stale drafts, unsupported trimming and automatic tie breaking are rejected",
+    "Exactly one objective price source and complete frozen criterion coverage are required by an immutable reviewed rule",
+    "All two-member technical submissions produce 49/42; price is counted once as 30/10 despite contradictory manual price scores, without exposing private opinions",
+    "Manual review, sealed evidence and exact current fingerprint protect an idempotent immutable total snapshot",
+    "Changed upstream inputs invalidate selected prices and old confirmation; re-reviewed prices create a new total while preserving old totals",
+    "Equal final totals remain in source order and explicitly pending manual tie handling, with no rank or winner generated"
+  ],
+  "scope": "isolated synthetic comprehensive consultation; exact equal-member totals with one objective price component; no ranking, recommendation or award"
+}

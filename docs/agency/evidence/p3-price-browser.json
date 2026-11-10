@@ -1,0 +1,10 @@
+{
+  "passed": 4,
+  "checks": [
+    "Browser displays original/configured decimal differences and prevents freezing mismatched rules",
+    "Explicitly reviewed rules freeze into a visible immutable hash bound to the price item and final source",
+    "Explicitly selected subjects produce exact decimal component points and multiplication/division trace before manual confirmation",
+    "A reviewed immutable history snapshot retains exact prices, source fingerprints and arithmetic without browser errors"
+  ],
+  "pageErrors": []
+}

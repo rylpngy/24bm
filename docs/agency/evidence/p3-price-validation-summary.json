@@ -1,0 +1,28 @@
+{
+  "date": "2026-11-09",
+  "backend": {
+    "fullTests": 1302,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "finalTargetedAfterAdditionalGuards": 79
+  },
+  "frontend": {
+    "files": 181,
+    "fullTests": 844,
+    "failures": 0
+  },
+  "http": 10,
+  "browser": 4,
+  "pageErrors": 0,
+  "finalQuoteRegression": 9,
+  "initialQuoteRegression": 7,
+  "tenantBuild": "passed",
+  "migration": "V279 applied",
+  "api": {
+    "operations": 5,
+    "paths": 4,
+    "schemas": 19
+  },
+  "scope": "isolated synthetic consultation price component only; fixed decimal comparison and rounding additionally unit-tested; no total score, ranking, recommendation, award or production deployment"
+}

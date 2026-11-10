@@ -1,0 +1,8 @@
+{
+  "checks": [
+    "Withdrawn unuploaded responses do not block a real archive-change workflow or enter its file snapshot",
+    "Ordinary unfinished files still block the same workflow and cancel normally"
+  ],
+  "passed": 2,
+  "scope": "synthetic tenant; real workflow started then personally withdrawn"
+}

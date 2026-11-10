@@ -1,0 +1,8 @@
+{
+  "passed": 2,
+  "checks": [
+    "Recommendation requires exact current calculation, manual evidence and top applicable candidate; stale and skipped candidates are rejected, idempotent replay preserves one immutable snapshot",
+    "Real DOCX bytes seal with SHA256 before actual independent Flowable approval; reviewing narrative is immutable and approval is distinct from purchaser award"
+  ],
+  "scope": "Synthetic technical verification; no purchaser decision or external publication"
+}

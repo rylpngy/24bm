@@ -1,0 +1,6 @@
+{
+  "passed": 1,
+  "checks": [
+    "Actual process-configuration browser exposes all three new agency workflow business types for administrators without hard-coded approval users"
+  ]
+}

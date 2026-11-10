@@ -1,0 +1,22 @@
+{
+  "passed": 1,
+  "checks": [
+    "Isolated database pg_dump/pg_restore into a fresh clone preserves complete row fingerprints and counts across 11 lifecycle source, opinion/report, finance and archive tables"
+  ],
+  "tables": {
+    "agency_packages": 201,
+    "agency_file_versions": 1059,
+    "agency_recommendations": 17,
+    "agency_evaluation_reports": 21,
+    "agency_report_submissions": 19,
+    "agency_post_results": 5,
+    "agency_post_documents": 16,
+    "agency_finance_accounts": 13,
+    "agency_finance_entries": 33,
+    "agency_archive_snapshots": 8,
+    "agency_report_contributors": 24
+  },
+  "backupBytes": 6399637,
+  "elapsedSeconds": 57.416,
+  "scope": "Synthetic database restore only; original database not overwritten; object-store disaster recovery and production RPO/RTO remain separate"
+}

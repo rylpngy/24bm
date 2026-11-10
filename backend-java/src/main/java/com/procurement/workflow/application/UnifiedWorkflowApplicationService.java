@@ -245,6 +245,39 @@ public class UnifiedWorkflowApplicationService {
   }
 
   @Transactional
+  public void withdrawAgencyExecution(String id,String reason) {
+    String tenant=TenantAccessGuard.requireTenantId("agency withdrawal"),actor=TenantAccessGuard.requireUserId("agency withdrawal");
+
+    if(reason==null||reason.isBlank()||reason.length()>1000)throw new IllegalArgumentException("撤回原因必填且不超过1000字");
+    var instance=workflowBusinessInstanceMapper.findByTenantAndIdForUpdate(tenant,id);
+    if(instance==null||!List.of("agency_finance_review","agency_post_document","agency_evaluation_report","agency_assessment_correction","agency_template_publication","agency_purchase_document","agency_announcement").contains(instance.businessType()))throw new IllegalArgumentException("建档审批不存在");
+    if(!actor.equals(instance.initiatorId()))throw new PermissionDeniedException("仅提交人可撤回建档审批");
+    if(!WorkflowInstanceStatus.PROCESSING.equals(instance.status()))throw new IllegalStateException("审批已经结束");
+    permissionService.require(instance.businessType().equals("agency_finance_review")?"buyer:agency:finance:manage":instance.businessType().equals("agency_post_document")?"buyer:agency:post:manage":instance.businessType().equals("agency_evaluation_report")?"buyer:agency:report:manage":instance.businessType().equals("agency_assessment_correction")?"buyer:agency:evaluation:correction:request":instance.businessType().equals("agency_template_publication")?"buyer:agency:template:manage":"buyer:agency:document:manage");
+    runtimeService.deleteProcessInstance(instance.flowableProcessInstanceId(),reason.strip());
+    if(workflowBusinessInstanceMapper.complete(tenant,id,WorkflowInstanceStatus.CANCELLED,actor)!=1)throw new IllegalStateException("审批状态已变化");
+    workflowTaskEventMapper.insert("workflow-task-event-"+UUID.randomUUID(),tenant,id,null,null,null,"cancelled",actor,reason.strip());
+    requireCompletionHandler(instance.businessType()).onCancelled(instance,actor,reason.strip());
+    auditLogApplicationService.recordTenantAction(tenant,"workflow.cancelled",instance.businessType(),instance.businessId(),reason.strip());
+  }
+
+  @Transactional
+  public void withdrawAgencyReview(String id,String reason) {
+    String tenant=TenantAccessGuard.requireTenantId("agency withdrawal"),actor=TenantAccessGuard.requireUserId("agency withdrawal");
+    permissionService.require("buyer:agency:submit");
+    if(reason==null||reason.isBlank()||reason.length()>1000)throw new IllegalArgumentException("撤回原因必填且不超过1000字");
+    var instance=workflowBusinessInstanceMapper.findByTenantAndIdForUpdate(tenant,id);
+    if(instance==null||!List.of("agency_package_archive","agency_package_change").contains(instance.businessType()))throw new IllegalArgumentException("建档审批不存在");
+    if(!actor.equals(instance.initiatorId()))throw new PermissionDeniedException("仅提交人可撤回建档审批");
+    if(!WorkflowInstanceStatus.PROCESSING.equals(instance.status()))throw new IllegalStateException("审批已经结束");
+    runtimeService.deleteProcessInstance(instance.flowableProcessInstanceId(),reason.strip());
+    if(workflowBusinessInstanceMapper.complete(tenant,id,WorkflowInstanceStatus.CANCELLED,actor)!=1)throw new IllegalStateException("审批状态已变化");
+    workflowTaskEventMapper.insert("workflow-task-event-"+UUID.randomUUID(),tenant,id,null,null,null,"cancelled",actor,reason.strip());
+    requireCompletionHandler(instance.businessType()).onCancelled(instance,actor,reason.strip());
+    auditLogApplicationService.recordTenantAction(tenant,"workflow.cancelled",instance.businessType(),instance.businessId(),reason.strip());
+  }
+
+  @Transactional
   public void withdrawProcurementProject(String id,String reason) {
     String tenant=TenantAccessGuard.requireTenantId("project withdrawal"),actor=TenantAccessGuard.requireUserId("project withdrawal");
     permissionService.require("buyer:project:manage");
@@ -403,7 +436,7 @@ public class UnifiedWorkflowApplicationService {
     }
     WorkflowBusinessCompletionHandler businessHandler = requireCompletionHandler(instance.businessType());
     if(businessHandler.requiresIndependentApprover() && userId.equals(instance.initiatorId())) {
-      throw new PermissionDeniedException("预算申请与审批须职责分离，请由其他有权审批人办理");
+      throw new PermissionDeniedException("申请与审批须职责分离，请由其他有权审批人办理");
     }
     if (businessHandler.requiresBusinessProjection() && !businessProjectionEnabled) {
       throw new IllegalStateException("该流程任务必须通过业务审批入口办理，以同步保存节点表单");
@@ -1201,6 +1234,15 @@ public class UnifiedWorkflowApplicationService {
 
   private static String workflowBusinessName(String businessType) {
     return switch (businessType) {
+      case "agency_finance_review" -> "代理财务核定";
+      case "agency_post_document" -> "代理标后文书";
+      case "agency_evaluation_report" -> "代理评审报告";
+      case "agency_assessment_correction" -> "代理个人评审更正";
+      case "agency_template_publication" -> "公司采购模板发布";
+      case "agency_purchase_document" -> "完整采购文件审核";
+      case "agency_announcement" -> "采购公告或邀请审核";
+      case "agency_package_archive" -> "代理采购包建档";
+      case "agency_package_change" -> "代理采购包重要变更";
       case "order_settlement" -> "合同解除与订单清算";
       case "project_initiation" -> "项目立项";
       case "project_change" -> "立项变更";

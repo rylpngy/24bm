@@ -1,0 +1,13 @@
+{
+  "passed": 7,
+  "checks": [
+    "New assessment sessions require explicit immutable process activation; project/frozen-organizer duties and activation review/version are enforced",
+    "Partial drafts survive incomplete confirmation; one active draft, frozen staff, stale process fingerprints and cross-supplier record substitution are checked",
+    "Four successive communications remain immutable and chronological; supplier ledgers and generic progress/events never mix private discussion text",
+    "Drafts cannot be bypassed by excluding suppliers; void retains content, final initiation follows meeting time and freezes exact latest references without private text",
+    "Confirmed requirement-change flags cannot be approved inline, overwritten, hidden by later no-change notes or bypassed through supplier exclusion",
+    "Pause blocks discussion save/confirm/void while preserving content; separate resume never revives the old confirmation fingerprint",
+    "Pre-migration offline tasks stay explicitly legacy: no fabricated discussion references and no spurious invalidation of their valid price snapshots"
+  ],
+  "scope": "synthetic offline supplier-isolated communication and final quote provenance; no online identity, electronic signature, demand-change authorization or automatic notices"
+}

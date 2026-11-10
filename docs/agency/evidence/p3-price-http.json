@@ -1,0 +1,16 @@
+{
+  "passed": 10,
+  "checks": [
+    "Project scope and frozen organizer duties protect rules and calculations; no rule produces no price result",
+    "Independent original/configured rules expose mismatches and reject unsupported formulas and stale edits",
+    "Final-price-only source, frozen price weight and explicit review gate an immutable, idempotent rule snapshot",
+    "Incomplete opinions and missing confirmed final quotes block computation even when initial prices exist",
+    "Confirmed final prices yield exact 30.00/10.00 price points with traceable source versions and no private opinions",
+    "Human scope/trace review, sealed evidence and exact input fingerprint protect an immutable idempotent calculation snapshot",
+    "Later price-ledger revisions invalidate old confirmation and mark history stale without rewriting old arithmetic",
+    "Missing final prices are never filled from cheap initial prices; excluding a subject requires explicit recorded handling",
+    "A zero-priced confirmed final response remains original data while the ratio formula safely blocks division by zero",
+    "Explicit exclusion reasons cannot silently relax the frozen minimum subject count"
+  ],
+  "scope": "isolated synthetic consultation price component only; no total score, ranking, recommendation or award"
+}

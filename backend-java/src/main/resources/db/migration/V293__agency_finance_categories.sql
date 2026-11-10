@@ -1,0 +1,1 @@
+create table agency_finance_categories(tenant_id text not null,code text not null,label text not null,active boolean not null default true,version bigint not null default 1,updated_by text not null,updated_at timestamptz not null default now(),primary key(tenant_id,code));

@@ -1,0 +1,11 @@
+{
+  "passed": 5,
+  "checks": [
+    "Organizer freezes exact final requirements and response evidence with all frozen reviewers, while receiving progress rather than a personal review form",
+    "Final opinions start empty, partial private facts survive save/reopen, and another frozen reviewer cannot see or inherit them",
+    "A frozen reviewer downloads the exact accepted final-response attachment after plan activation rather than an unconfirmed receipt or an initial response",
+    "Each reviewer completes and locks every final requirement and frozen scoring item; one outstanding member blocks computation and submitted forms become read-only",
+    "Organizer sees all members completed without their private opinions; browser page errors remain zero"
+  ],
+  "pageErrors": []
+}

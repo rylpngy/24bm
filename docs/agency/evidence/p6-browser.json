@@ -1,0 +1,10 @@
+{
+  "time": "2026-11-09T23:55:02.465Z",
+  "checks": [
+    "Actual browser shows honest whole-DOCX fallback while Office runtime is disabled",
+    "Actual browser opens sealed PDF blob and downloads real PDF bytes for the exact revision",
+    "Actual browser separates gateway states and blocks sending with gateway disabled",
+    "Non-AI workspace fits mobile viewport and has no browser runtime errors"
+  ],
+  "pageErrors": []
+}

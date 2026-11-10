@@ -1,0 +1,9 @@
+{
+  "passed": 2,
+  "checks": [
+    "Formal opening is blocked without invitation provenance; true external selection, non-default prequalification applicability and per-recipient delivery evidence are required and immutable",
+    "Invitation evidence remains sealed after opening; existing qualification, conformity and evaluation stages still require separate responsible submissions"
+  ],
+  "method": "邀请招标",
+  "scope": "Synthetic offline method-specific procedure; no legal or production acceptance"
+}

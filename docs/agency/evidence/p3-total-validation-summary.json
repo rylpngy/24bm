@@ -1,0 +1,26 @@
+{
+  "date": "2026-11-09",
+  "backend": {
+    "fullTests": 1313,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "frontend": {
+    "files": 182,
+    "fullTests": 847,
+    "failures": 0
+  },
+  "http": 7,
+  "browser": 4,
+  "pageErrors": 0,
+  "priceRegression": 10,
+  "tenantBuild": "passed",
+  "migration": "V280 applied",
+  "api": {
+    "operations": 5,
+    "paths": 4,
+    "schemas": 23
+  },
+  "scope": "isolated synthetic comprehensive consultation; exact equal-member components and one objective price component; no ranking, recommendation, award or production deployment"
+}

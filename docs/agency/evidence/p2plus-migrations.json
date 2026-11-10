@@ -1,0 +1,38 @@
+[
+  {
+    "version": "266",
+    "description": "agency package foundation",
+    "checksum": -550887482,
+    "success": true
+  },
+  {
+    "version": "267",
+    "description": "agency member responsibilities",
+    "checksum": 925340229,
+    "success": true
+  },
+  {
+    "version": "268",
+    "description": "agency execution workspace",
+    "checksum": 2051786824,
+    "success": true
+  },
+  {
+    "version": "269",
+    "description": "agency document review exceptions",
+    "checksum": -1331717357,
+    "success": true
+  },
+  {
+    "version": "270",
+    "description": "agency venue reservations",
+    "checksum": -472390852,
+    "success": true
+  },
+  {
+    "version": "271",
+    "description": "agency reminder policies and template provenance",
+    "checksum": -1669033726,
+    "success": true
+  }
+]

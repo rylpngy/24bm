@@ -1,0 +1,16 @@
+{
+  "time": "2026-11-09T23:45:24.280Z",
+  "requests": 120,
+  "concurrency": 6,
+  "errors": 0,
+  "p50Ms": 17,
+  "p95Ms": 52,
+  "maxMs": 89,
+  "elapsedMs": 455,
+  "host": {
+    "arch": "arm64",
+    "cpus": 10,
+    "memoryGiB": 16
+  },
+  "scope": "Bounded authenticated read observation on local synthetic dataset; no production SLA, write throughput or heavy document parallelism claim"
+}

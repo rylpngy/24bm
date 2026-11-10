@@ -1,0 +1,20 @@
+{
+  "backend": {
+    "tests": 1233,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "frontend": {
+    "files": 171,
+    "tests": 820,
+    "failed": 0
+  },
+  "p2Http": 27,
+  "browser": 10,
+  "p1HttpRegression": 30,
+  "tenantBuild": "passed",
+  "officeOnlineEnabled": false,
+  "externalAIEnabled": false,
+  "scope": "isolated worktree; synthetic technical verification; no production deployment"
+}
