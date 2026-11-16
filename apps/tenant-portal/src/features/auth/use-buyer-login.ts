@@ -8,9 +8,18 @@ export const SELF_LOGIN_FALLBACK = (import.meta.env.VITE_SELF_LOGIN ?? 'true') !
 
 const KEYCLOAK_URL = import.meta.env.VITE_KEYCLOAK_URL ?? 'http://localhost:8081';
 
-const walkthroughAccount=import.meta.env.VITE_WALKTHROUGH_ACCOUNT;
-const localTenant=import.meta.env.VITE_SELF_LOGIN_TENANT_ID || "tenant-acme";
-export const demoAccounts = walkthroughAccount ? [{account:walkthroughAccount,name:"走查管理员",hint:"本地合成数据走查"}] : [
+const walkthroughAccount = import.meta.env.VITE_WALKTHROUGH_ACCOUNT;
+const localTenant = import.meta.env.VITE_SELF_LOGIN_TENANT_ID || 'tenant-acme';
+const walkthroughExperts = [
+  import.meta.env.VITE_WALKTHROUGH_EXPERT_ONE,
+  import.meta.env.VITE_WALKTHROUGH_EXPERT_TWO,
+];
+export const demoAccounts = walkthroughAccount ? [
+  { account: walkthroughAccount, name: '走查管理员', hint: '本地合成数据走查' },
+  ...walkthroughExperts.flatMap((account, index) => account
+    ? [{ account, name: '走查专家 ' + (index + 1), hint: '本地独立评分走查' }]
+    : []),
+] : [
   { account: 'buyer.owner@example.com', name: '采购管理员', hint: '全部权限' },
   { account: 'zhang.req@example.com', name: '采购申请员', hint: '需求/物料/询比' },
   { account: 'li.fin@example.com', name: '财务专员', hint: '付款/对账' },

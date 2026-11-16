@@ -84,14 +84,16 @@ export function AgencyFinancePanel({
   detail,
   busy,
   run,
+  defaultOpen = false,
 }: {
+  defaultOpen?: boolean;
   detail: AgencyDetail;
   busy: boolean;
   run: (f: () => Promise<unknown>) => Promise<boolean>;
 }) {
   const [submitError, setSubmitError] = useState<unknown>(null);
   const { can } = useBuyerPermissions(),
-    [open, setOpen] = useState(false),
+    [open, setOpen] = useState(defaultOpen),
     path = `/packages/${detail.record.id}/finance`,
     q = useQuery({
       queryKey: ["agency-finance", detail.record.id],
@@ -165,6 +167,7 @@ export function AgencyFinancePanel({
   if (!can("buyer:agency:finance:read")) return null;
   return (
     <details
+      open={open}
       className="mt-4 rounded border p-3"
       onToggle={(e) => setOpen(e.currentTarget.open)}
     >

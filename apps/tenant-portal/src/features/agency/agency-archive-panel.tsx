@@ -1,8 +1,10 @@
+import { reviewedEvaluationLabels, type ReviewedEvaluationFile } from "./reviewed-evaluation-files";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   agencyRequest as api,
   downloadReport,
+  agencyFileDownload,
   type AgencyDetail,
 } from "@24bid/api-client";
 import { useBuyerPermissions } from "../../lib/use-buyer-permissions";
@@ -44,6 +46,7 @@ type W = {
   checklist: C[];
   snapshots: S[];
   blockers: string[];
+  reviewedEvaluationFiles?: (ReviewedEvaluationFile & {name: string; reviewedAt: string; reviewFingerprint: string})[];
 };
 const names: Record<string, string> = {
   required: "必需",
@@ -131,6 +134,22 @@ export function AgencyArchivePanel({
           <p className="text-sm">
             业务办结后仍可收款和补档。正式档案保留版本与指纹；导出只包含当前授权文件，受限资料不披露名称。保留年限按单位制度配置，系统不自动永久删除。
           </p>
+          {!!w.reviewedEvaluationFiles?.length && (
+            <section className="space-y-2 rounded border p-3" aria-label="已核对评标文件">
+              <h3 className="font-semibold">已核对评标文件</h3>
+              <p className="text-xs text-slate-600">建立项目归档快照时，清单记录下列材料版本和指纹。</p>
+              <ul className="divide-y">
+                {w.reviewedEvaluationFiles.map((row, index) => {
+                  const attachment = detail.files.flatMap(file => file.versions).find(version => version.id === row.versionId)?.attachmentId;
+                  return <li key={row.versionId + ':' + index} className="space-y-1 py-2 text-sm">
+                    <p>{reviewedEvaluationLabels[row.kind]} · {row.name} · V{row.ordinal}</p>
+                    <p className="break-all text-xs text-slate-600">{new Date(row.reviewedAt).toLocaleString("zh-CN", {timeZone:"Asia/Shanghai"})} · SHA-256 {row.sha256}</p>
+                    {attachment && can("buyer:agency:file:download") && <button type="button" className="text-xs text-blue-700 underline" disabled={busy} onClick={() => void run(() => agencyFileDownload(attachment, row.name))}>下载此版本</button>}
+                  </li>;
+                })}
+              </ul>
+            </section>
+          )}
           <ul>
             {w.checklist.map((c) => (
               <li key={c.key}>

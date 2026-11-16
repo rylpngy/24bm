@@ -63,7 +63,7 @@ public final class AgencyEvaluationRules {
     }
   }
 
-  private static void criterion(Criterion c) {
+  static void criterion(Criterion c) {
     if (c == null) throw new IllegalArgumentException("缺少原文或配置规则");
     if (c.key() == null || !c.key().matches("[A-Za-z][A-Za-z0-9_-]{0,39}"))
       throw new IllegalArgumentException("规则编号不合法");
@@ -107,7 +107,7 @@ public final class AgencyEvaluationRules {
     return out;
   }
 
-  private static Map<String, String> values(Criterion c) {
+  static Map<String, String> values(Criterion c) {
     Map<String, String> m = new LinkedHashMap<>();
     m.put("title", c.title());
     m.put("stage", c.stage());

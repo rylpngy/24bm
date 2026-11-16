@@ -94,10 +94,15 @@ public class AgencyDocumentService {
     return s.json.read(d.settingsJson(), java.util.TreeMap.class);
   }
 
-  private Map<String, String> validateSettings(Map<String, String> input) {
+  private Map<String, String> validateSettings(Map<String, String> input, boolean purchase) {
     Map<String, String> out = new TreeMap<>();
     if (input == null) return out;
     for (var e : input.entrySet()) {
+      if (AgencyScoringMethod.SETTING.equals(e.getKey()) && purchase) {
+        var scoring = AgencyScoringMethod.parse(s, e.getValue());
+        if (scoring != null) out.put(e.getKey(), s.json.write(scoring));
+        continue;
+      }
       if (!Set.of(
               "fileGetStart",
               "fileGetEnd",
@@ -128,7 +133,7 @@ public class AgencyDocumentService {
     var d = require(id, true);
     mutable(d, request.expectedVersion());
     var chapters = s.validateChapters(request.sections());
-    var settings = validateSettings(request.settings());
+    var settings = validateSettings(request.settings(), "purchase".equals(d.kind()));
     if (s.data.documentEdit(
             s.guard.tenant(),
             id,
@@ -242,7 +247,28 @@ public class AgencyDocumentService {
             item ->
                 out.put("requirement." + item.path("key").asText(), item.path("value").asText()));
     out.putAll(settings(d));
+    out.remove(AgencyScoringMethod.SETTING);
     return out;
+  }
+
+  private AgencyScoringMethod scoring(Document d) {
+    return AgencyScoringMethod.parse(s, settings(d).get(AgencyScoringMethod.SETTING));
+  }
+
+  private List<Chapter> finalChapters(Document d) {
+    var chapters = s.chapters(d.sectionsJson());
+    var method = scoring(d);
+    if (method == null) return chapters;
+    List<Chapter> result = new ArrayList<>();
+    boolean inserted = false;
+    for (var chapter : chapters) {
+      if ("evaluation".equals(chapter.code())) {
+        result.add(new Chapter("evaluation", "评审办法", method.body(), true));
+        inserted = true;
+      } else result.add(chapter);
+    }
+    if (!inserted) result.add(new Chapter("evaluation", "评审办法", method.body(), true));
+    return result;
   }
 
   public List<String> issues(Document d, boolean uploaded) {
@@ -250,7 +276,7 @@ public class AgencyDocumentService {
     if (basis.stale(s.guard.tenant(), d.packageId(), d.basisJson()))
       issues.add("公共字段或已确认需求已变化，请先同步复核");
     if (!uploaded)
-      for (var c : s.chapters(d.sectionsJson())) {
+      for (var c : finalChapters(d)) {
         if (c.required() && c.body().isBlank()) issues.add("缺少必需章节内容：" + c.title());
         if (composer.expand(c.body(), fields(d)).contains("{{"))
           issues.add("章节含未解析字段：" + c.title());
@@ -311,7 +337,7 @@ public class AgencyDocumentService {
         (d.kind().equals("purchase") ? "采购文件" : "采购公告或邀请")
             + " "
             + fields(d).getOrDefault("projectTitle", ""),
-        s.chapters(d.sectionsJson()),
+        finalChapters(d),
         fields(d));
   }
 
@@ -350,7 +376,7 @@ public class AgencyDocumentService {
     Map<String, Object> snapshot = new LinkedHashMap<>();
     snapshot.put("document", d);
     snapshot.put("fields", fields(d));
-    snapshot.put("sections", s.chapters(d.sectionsJson()));
+    snapshot.put("sections", finalChapters(d));
     snapshot.put("settings", settings(d));
     snapshot.put("basis", s.json.tree(d.basisJson()));
     snapshot.put("wholeDocumentConfirmed", confirmed);
@@ -386,6 +412,7 @@ public class AgencyDocumentService {
       String id, Long expected, String file, boolean confirmed, String note, String key) {
     var d = require(id, true);
     mutable(d, expected);
+    if (scoring(d) != null) throw new IllegalStateException("结构化评分办法须使用系统合成稿，以保证正文与线上评分一致");
     if (!confirmed) throw new IllegalArgumentException("上传整稿须人工确认已核对正文、章节及公共要素");
     s.text(note, 2000, true, "整稿复核说明");
     String hash = s.begin(key, Arrays.asList("whole", id, expected, file, confirmed, note));

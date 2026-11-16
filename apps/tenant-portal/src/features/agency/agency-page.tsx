@@ -1,5 +1,4 @@
-import { AgencyExecutionPanel } from "./agency-execution-panel";
-import { AgencyNumberingPanel } from "./agency-numbering-panel";
+import {workbenchHref} from "../workbench/workbench-model";
 import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -11,8 +10,9 @@ import {
   RefreshCw,
   Download,
   Upload,
+  Paperclip,
 } from "lucide-react";
-import { Panel, FeedbackNotice } from "@24bid/ui";
+import { Panel, FeedbackNotice, Pagination, ResponsiveTableFrame, SearchInput, StatusPill, cn } from "@24bid/ui";
 import {
   agencyOptions,
   agencyGroups,
@@ -37,6 +37,18 @@ import {
 import { useBuyerPermissions } from "../../lib/use-buyer-permissions";
 import { WorkflowSubmitDialog } from "../workflow/workflow-submit-dialog";
 import { WorkflowStatusPanel } from "../workflow/workflow-instance-panel";
+const PROJECT_PAGE_SIZE = 10;
+const listFilter = "h-8 min-w-0 max-w-full rounded-md border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 focus:border-blue-400";
+const projectMoney = (value: string | undefined, currency: string) => {
+  if (value == null || !value.trim()) return "待填写";
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return `${currency} ${value}`;
+  try {
+    return new Intl.NumberFormat("zh-CN", { style: "currency", currency }).format(amount);
+  } catch {
+    return `${currency} ${value}`;
+  }
+};
 const btn =
   "inline-flex items-center justify-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 disabled:opacity-40";
 const input =
@@ -90,13 +102,14 @@ function AgencyWorkspace() {
   const [id, setId] = useState<string | null>(() =>
     new URLSearchParams(location.search).get("recordId"),
   );
-  const [draft, setDraft] = useState<AgencyDraft | null>(null),
+  const [draft, setDraft] = useState<AgencyDraft | null>(() => new URLSearchParams(location.search).get("action") === "create" ? empty() : null),
     [message, setMessage] = useState<{
       tone: "error" | "success";
       message: string;
     } | null>(null),
     [busy, setBusy] = useState(false);
   const [keyword, setKeyword] = useState(""),
+    [searchKey, resetSearch] = useState(0),
     [status, setStatus] = useState(""),
     [groupId, setGroupId] = useState(""),
     [method, setMethod] = useState(""),
@@ -132,7 +145,7 @@ function AgencyWorkspace() {
         procurementMethod: method,
         ownerId: owner,
         page,
-        pageSize: 10,
+        pageSize: PROJECT_PAGE_SIZE,
       }),
   });
   const detail = useQuery({
@@ -224,52 +237,40 @@ function AgencyWorkspace() {
       setBusy(false);
     }
   };
+  const rows = (list.data?.items ?? []).map((project, index) => ({
+    id: project.id,
+    sequence: (page - 1) * PROJECT_PAGE_SIZE + index + 1,
+    title: project.title || "未命名草稿",
+    number: project.number || "首次提交时编号",
+    department: options.data?.departments.find(department => department.id === project.departmentId)?.name || "部门待指定",
+    owner: options.data?.users.find(user => user.id === project.ownerId)?.name || "负责人待指定",
+    group: groups.data?.find(group => group.id === project.groupId)?.name || "未关联",
+    method: project.procurementMethod || "待填写",
+    budget: projectMoney(project.budget, project.currency),
+    stage: project.workflowId && project.status === "approved" ? "变更审核中" : states[project.status] || project.status,
+  }));
   const d = detail.data;
-  return (
-    <Panel
-      title="招标代理项目库"
-      icon={FolderKanban}
-      subtitle="以采购包为执行单元，贯通建档、审批与版本资料"
-    >
-      <div className="mb-4 flex flex-wrap justify-between gap-2">
-        <div className="flex gap-2">
-          {(id || draft) && (
-            <button className={btn} disabled={busy} onClick={() => open(null)}>
-              <ArrowLeft size={15} />
-              返回项目库
-            </button>
-          )}
-          <button
-            className={btn}
-            disabled={busy}
-            onClick={() => void refresh()}
-          >
-            <RefreshCw size={15} />
-            刷新
+  const currentReview = d?.reviews.find(review => review.workflowId === d.record.workflowId && review.workflowId)
+    ?? d?.reviews.find(review => review.workflowId);
+  const detailView = Boolean(id && !draft);
+  const content = (
+    <>
+      {(id || draft) && !(detailView && d) && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          <button className={btn} disabled={busy} onClick={() => open(null)}>
+            <ArrowLeft size={15} /> 返回项目库
+          </button>
+          <button className={btn} disabled={busy} onClick={() => void refresh()}>
+            <RefreshCw size={15} /> 刷新
           </button>
         </div>
-        {!id && !draft && can("buyer:agency:manage") && (
-          <button
-            className={btn + " !bg-blue-600 !text-white"}
-            onClick={() => {
-              setCount(1);
-              setDraft({ ...empty(), groupId: groupId || undefined });
-              batchKey.current = crypto.randomUUID();
-            }}
-          >
-            <Plus size={15} />
-            新建采购包
-          </button>
-        )}
-      </div>
+      )}
       {message && (
         <div className="mb-4">
           <FeedbackNotice {...message} />
         </div>
       )}
-      {options.data && can("buyer:agency:configure") && (
-        <AgencyNumberingPanel value={options.data.numbering} />
-      )}
+
       {options.isError && (
         <FeedbackNotice
           tone="error"
@@ -281,87 +282,51 @@ function AgencyWorkspace() {
       )}
       {!id && !draft && (
         <>
-          <div className="mb-4 grid gap-3 md:grid-cols-3 lg:grid-cols-6">
-            <Field label="项目名称或编号">
-              <input
-                className={input}
-                value={keyword}
-                onChange={(e) => {
-                  setKeyword(e.target.value);
-                  setPage(1);
-                }}
-                placeholder="搜索采购包"
-              />
-            </Field>
-            <Field label="所属项目">
-              <select
-                className={input}
-                value={groupId}
-                onChange={(e) => {
-                  setGroupId(e.target.value);
-                  setPage(1);
-                }}
-              >
-                <option value="">全部项目</option>
-                {groups.data?.map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label="采购方式">
-              <select
-                className={input}
-                value={method}
-                onChange={(e) => {
-                  setMethod(e.target.value);
-                  setPage(1);
-                }}
-              >
-                <option value="">全部方式</option>
-                {options.data?.procurementMethods.map((m) => (
-                  <option key={m}>{m}</option>
-                ))}
-              </select>
-            </Field>
-            <Field label="主负责人">
-              <select
-                className={input}
-                value={owner}
-                onChange={(e) => {
-                  setOwner(e.target.value);
-                  setPage(1);
-                }}
-              >
-                <option value="">全部负责人</option>
-                {options.data?.users.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label="建档状态">
-              <select
-                className={input}
-                value={status}
-                onChange={(e) => {
-                  setStatus(e.target.value);
-                  setPage(1);
-                }}
-              >
-                <option value="">全部状态</option>
-                {Object.entries(states).map(([k, v]) => (
-                  <option key={k} value={k}>
-                    {v}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <div className="self-end text-sm text-slate-500">
-              共 {list.data?.total ?? 0} 个采购包
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap gap-2" role="group" aria-label="建档状态">
+              {Object.entries({ "": "全部", ...states }).map(([value, label]) => (
+                <button key={value} type="button" aria-pressed={status === value}
+                  onClick={() => { setStatus(value); setPage(1); }}
+                  className={cn("h-8 rounded-md border px-3 text-xs font-black transition",
+                    status === value ? "border-blue-200 bg-blue-50 text-blue-700"
+                      : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50")}>
+                  {label}
+                </button>
+              ))}
             </div>
+            <SearchInput key={searchKey} className="mb-0 ml-auto max-w-full flex-wrap" placeholder="按编号 / 标题搜索"
+              onSearch={value => { setKeyword(value.slice(0, 200)); setPage(1); }} />
+            {can("buyer:agency:manage") && (
+              <button type="button" className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-slate-900 px-4 text-xs font-black text-white hover:bg-slate-800"
+                onClick={() => {
+                  setCount(1);
+                  setDraft({ ...empty(), groupId: groupId || undefined });
+                  batchKey.current = crypto.randomUUID();
+                }}>
+                <Plus size={14} /> 新建项目
+              </button>
+            )}
+          </div>
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <select aria-label="所属项目" className={listFilter} value={groupId} onChange={(event) => { setGroupId(event.target.value); setPage(1); }}>
+              <option value="">全部所属项目</option>
+              {groups.data?.map(group => <option key={group.id} value={group.id}>{group.name}</option>)}
+            </select>
+            <select aria-label="采购方式" className={listFilter} value={method} onChange={(event) => { setMethod(event.target.value); setPage(1); }}>
+              <option value="">全部采购方式</option>
+              {options.data?.procurementMethods.map(value => <option key={value}>{value}</option>)}
+            </select>
+            <select aria-label="主负责人" className={listFilter} value={owner} onChange={(event) => { setOwner(event.target.value); setPage(1); }}>
+              <option value="">全部负责人</option>
+              {options.data?.users.map(user => <option key={user.id} value={user.id}>{user.name}</option>)}
+            </select>
+            {(keyword || groupId || method || owner || status) && (
+              <button type="button" className="rounded-md px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-50" onClick={() => {
+                resetSearch(key => key + 1); setKeyword(""); setGroupId(""); setMethod(""); setOwner(""); setStatus(""); setPage(1);
+              }}>清空筛选</button>
+            )}
+            <button type="button" className="ml-auto inline-flex items-center gap-1 rounded-full px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+              disabled={list.isFetching} onClick={() => void refresh()}><RefreshCw size={14} /> 刷新</button>
           </div>
           {summary.data && (
             <div className="mb-4 rounded-lg bg-blue-50 p-3 text-sm text-blue-900">
@@ -372,93 +337,70 @@ function AgencyWorkspace() {
               · {summary.data.unknownBudgetCount} 包预算待补
             </div>
           )}
-          {list.isLoading ? (
-            <p>加载项目中…</p>
-          ) : list.isError ? (
+          {list.isError ? (
             <FeedbackNotice tone="error" message={err(list.error)} />
-          ) : !list.data?.items.length ? (
-            <p className="rounded-lg border border-dashed p-10 text-center text-sm text-slate-500">
-              暂无符合条件的采购包。洽谈阶段即可新建档案，委托协议后补。
-            </p>
+          ) : !rows.length ? (
+            <FeedbackNotice tone="info" message={list.isLoading ? "正在加载项目…" : "当前筛选下暂无项目。"} />
           ) : (
-            <div className="overflow-x-auto rounded-lg border border-slate-200">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-slate-50 text-xs text-slate-500">
+            <ResponsiveTableFrame mobileCards={rows.map(row => (
+              <article key={row.id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/50">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="break-words text-sm font-black text-slate-950">{row.sequence}. {row.title}</p>
+                    <p className="mt-1 break-all font-mono text-xs font-black text-slate-500">{row.number}</p>
+                  </div>
+                  <StatusPill label={row.stage} className="shrink-0 whitespace-nowrap" />
+                </div>
+                <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
+                  <div><dt className="font-bold text-slate-500">部门 / 负责人</dt><dd className="mt-1 break-words font-bold text-slate-600">{row.department} · {row.owner}</dd></div>
+                  <div><dt className="font-bold text-slate-500">预算金额</dt><dd className="mt-1 break-all font-mono font-black text-slate-900">{row.budget}</dd></div>
+                  <div className="col-span-2"><dt className="font-bold text-slate-500">所属项目 / 采购方式</dt><dd className="mt-1 break-words font-bold text-slate-600">{row.group} · {row.method}</dd></div>
+                </dl>
+                <button type="button" onClick={() => open(row.id)} aria-label={`详情：${row.title}`}
+                  className="mt-4 inline-flex h-8 w-full items-center justify-center rounded-md border border-slate-200 bg-white text-xs font-black text-slate-600 hover:bg-slate-50">详情</button>
+              </article>
+            ))}>
+              <table aria-label="项目档案列表" className="w-full min-w-[1000px] table-fixed text-left text-sm">
+                <thead className="bg-slate-50 text-xs font-black text-slate-500">
                   <tr>
-                    {[
-                      "项目编号与采购包",
-                      "所属项目",
-                      "采购方式",
-                      "负责人",
-                      "预算",
-                      "状态",
-                      "",
-                    ].map((t, i) => (
-                      <th key={i} className="p-3">
-                        {t}
-                      </th>
-                    ))}
+                    <th scope="col" className="w-12 px-2 py-4 text-center">序号</th>
+                    <th scope="col" className="w-[28%] px-5 py-4">项目</th>
+                    <th scope="col" className="px-5 py-4">部门 / 负责人</th>
+                    <th scope="col" className="px-5 py-4">所属项目 / 采购方式</th>
+                    <th scope="col" className="w-40 px-5 py-4 text-right">预算金额</th>
+                    <th scope="col" className="w-28 px-5 py-4">状态</th>
+                    <th scope="col" className="w-24 px-5 py-4 text-right">操作</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {list.data.items.map((p) => (
-                    <tr key={p.id}>
-                      <td className="p-3">
-                        <div className="font-semibold">
-                          {p.title || "未命名草稿"}
-                        </div>
-                        <div className="mt-1 text-xs text-slate-400">
-                          {p.number || "首次提交时编号"}
-                        </div>
+                <tbody className="divide-y divide-slate-100 bg-white">
+                  {rows.map(row => (
+                    <tr key={row.id} className="hover:bg-blue-50/30">
+                      <td className="px-2 py-5 text-center font-mono font-black text-slate-400">{row.sequence}</td>
+                      <td className="px-5 py-5">
+                        <p className="truncate font-black text-slate-950" title={row.title}>{row.title}</p>
+                        <p className="mt-1 truncate font-mono text-xs font-black text-slate-500">{row.number}</p>
                       </td>
-                      <td className="p-3">
-                        {groups.data?.find((g) => g.id === p.groupId)?.name ||
-                          "—"}
+                      <td className="px-5 py-5">
+                        <p className="truncate font-bold text-slate-600" title={row.department}>{row.department}</p>
+                        <p className="mt-1 truncate text-xs font-bold text-slate-500" title={row.owner}>{row.owner}</p>
                       </td>
-                      <td className="p-3">{p.procurementMethod || "待补"}</td>
-                      <td className="p-3">
-                        {options.data?.users.find((u) => u.id === p.ownerId)
-                          ?.name || "待指定"}
+                      <td className="px-5 py-5">
+                        <p className="truncate font-bold text-slate-600" title={row.group}>{row.group}</p>
+                        <p className="mt-1 truncate text-xs font-bold text-slate-500">{row.method}</p>
                       </td>
-                      <td className="p-3">
-                        {p.budget == null
-                          ? "待补"
-                          : `${p.currency} ${p.budget}`}
-                      </td>
-                      <td className="p-3">
-                        {states[p.status]}
-                        {p.workflowId && p.status === "approved"
-                          ? " · 变更审核中"
-                          : ""}
-                      </td>
-                      <td className="p-3">
-                        <button className={btn} onClick={() => open(p.id)}>
-                          查看档案
-                        </button>
+                      <td className="whitespace-nowrap px-5 py-5 text-right font-mono font-black text-slate-900">{row.budget}</td>
+                      <td className="px-5 py-5"><StatusPill label={row.stage} className="whitespace-nowrap" /></td>
+                      <td className="px-5 py-5 text-right">
+                        <button type="button" aria-label={`详情：${row.title}`} onClick={() => open(row.id)}
+                          className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-black text-slate-600 hover:bg-slate-50">详情</button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            </div>
+            </ResponsiveTableFrame>
           )}
-          <div className="mt-4 flex justify-end gap-3">
-            <button
-              className={btn}
-              disabled={page === 1}
-              onClick={() => setPage((p) => p - 1)}
-            >
-              上一页
-            </button>
-            <span className="self-center text-sm">第 {page} 页</span>
-            <button
-              className={btn}
-              disabled={!list.data || page * 10 >= list.data.total}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              下一页
-            </button>
-          </div>
+          <Pagination page={page} pageSize={PROJECT_PAGE_SIZE} total={list.data?.total ?? 0} onPageChange={setPage} />
         </>
       )}
       {id && detail.isLoading && <p>加载档案中…</p>}
@@ -467,49 +409,21 @@ function AgencyWorkspace() {
       )}
       {id && d && !draft && (
         <>
-          <div className="mb-5 rounded-xl bg-slate-50 p-5">
-            <p className="text-xs text-slate-500">
-              {d.record.number || "未编号草稿"} · 版本 {d.record.version}
-            </p>
-            <h2 className="mt-1 text-xl font-bold text-slate-900">
-              {d.record.title || "未命名草稿"}
-            </h2>
-            <p className="mt-2 text-sm text-slate-600">
-              {d.record.procurementMethod || "采购方式待补"} · 半流程 ·{" "}
-              {states[d.record.status]}
-              {d.record.workflowId && d.record.status === "approved"
-                ? " · 重要变更审核中"
-                : ""}
-            </p>
-            <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-500">
-              <span>
-                业务：
-                {d.businessStatus === "published"
-                  ? "已发布"
-                  : d.businessStatus === "not_started"
-                    ? "未开始"
-                    : d.businessStatus === "closed"
-                      ? "已办结"
-                      : d.businessStatus === "in_progress"
-                        ? "办理中"
-                        : d.businessStatus}
-              </span>
-              <span>
-                档案：
-                {d.archiveCompletion === "complete"
-                  ? "已完成"
-                  : "持续累积／待补件"}
-              </span>
-              <span>
-                费用：
-                {d.financialStatus === "settled"
-                  ? "已结清"
-                  : d.financialStatus === "unsettled"
-                    ? "未结清"
-                    : "未核算"}
-              </span>
+          <header className="mb-5 flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 pb-4">
+            <div className="flex min-w-0 items-start gap-3">
+              <button type="button" className={btn + " shrink-0"} title="返回项目库"
+                aria-label="返回项目库" disabled={busy} onClick={() => open(null)}>
+                <ArrowLeft size={15} />
+              </button>
+              <div className="min-w-0">
+                <h2 className="break-words text-xl font-black text-slate-950">{d.record.title || "未命名草稿"}</h2>
+                <p className="mt-1 break-words text-xs text-slate-600">
+                  {d.record.number || "未编号草稿"} · {states[d.record.status] || d.record.status} · 版本 {d.record.version}
+                  {d.record.workflowId && d.record.status === "approved" ? " · 重要变更审核中" : ""}
+                </p>
+              </div>
             </div>
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="flex max-w-full flex-wrap items-center gap-2">
               {d.canEdit && (
                 <button
                   className={btn}
@@ -557,48 +471,104 @@ function AgencyWorkspace() {
                   </button>
                 </div>
               )}
+              <button type="button" className={btn} title="刷新" aria-label="刷新"
+                disabled={busy} onClick={() => void refresh()}>
+                <RefreshCw size={15} />
+              </button>
             </div>
+          </header>
+          <div className="mb-5 grid items-start gap-4 xl:grid-cols-3">
+            <section className={detailCard + " xl:col-span-2"}>
+              <Info title="基础信息" values={{
+                所属部门: options.data?.departments.find(dept => dept.id === d.data.departmentId)?.name || "—",
+                项目负责人: d.members.find(member => member.userId === d.data.ownerId)?.name
+                  || options.data?.users.find(user => user.id === d.data.ownerId)?.name || "—",
+                所属项目: groups.data?.find(group => group.id === d.data.groupId)?.name || "—",
+                采购方式: d.data.procurementMethod || "—",
+                预算金额: projectMoney(d.data.budget ?? undefined, d.data.currency),
+                最高限价: projectMoney(d.data.ceiling ?? undefined, d.data.currency),
+                当前状态: states[d.record.status] || d.record.status,
+                运行模式: "半流程",
+                采购对象: d.data.objectCode || "—",
+                适用制度: d.data.regime || "—",
+                地区: d.data.region || "—",
+              }} />
+              <div className="mt-5 grid gap-5 border-t border-slate-100 pt-5 md:grid-cols-2">
+                <Info title="采购人与联系人" values={d.data.purchaser} />
+                <Info title="委托与服务范围" values={d.data.entrustment} />
+              </div>
+            </section>
+            <aside className="grid min-w-0 gap-4" aria-label="项目概况与附件">
+              <section className={detailCard}>
+                <Info title="项目概况" values={{
+                  业务状态: {published: "已发布", not_started: "未开始", closed: "已办结", in_progress: "办理中"}[d.businessStatus] || d.businessStatus,
+                  档案状态: d.archiveCompletion === "complete" ? "已完成" : "持续累积／待补件",
+                  费用状态: d.financialStatus === "settled" ? "已结清" : d.financialStatus === "unsettled" ? "未结清" : "未核算",
+                }} />
+              </section>
+              <section className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="flex items-center gap-1.5 text-xs font-bold text-slate-700"><Paperclip size={14} /> 项目附件</h3>
+                  {(d.canManageFiles || d.files.length > 0) && (
+                    <button type="button" className="text-xs font-bold text-blue-700 hover:underline"
+                      onClick={() => {
+                        const attachments = document.getElementById("agency-project-attachments");
+                        attachments?.focus();
+                        attachments?.scrollIntoView({block: "start"});
+                      }}>
+                      {d.canManageFiles ? "管理附件" : "查看附件"}
+                    </button>
+                  )}
+                </div>
+                <p className="mt-2 text-xs text-slate-500">{d.files.length ? `共 ${d.files.length} 项可见附件` : "暂无可见附件。"}</p>
+              </section>
+            </aside>
           </div>
-          <div className="mb-5 grid gap-4 md:grid-cols-2">
-            <Info
-              title="基础与分类"
-              values={{
-                所属项目:
-                  groups.data?.find((g) => g.id === d.data.groupId)?.name || "",
-                采购对象: d.data.objectCode || "",
-                适用制度: d.data.regime || "",
-                地区: d.data.region || "",
-                预算: d.data.budget ?? "",
-                最高限价: d.data.ceiling ?? "",
-              }}
-            />
-            <Info title="采购人与联系人" values={d.data.purchaser} />
-            <Info title="委托与服务范围" values={d.data.entrustment} />
-            <Info
-              title="项目组织"
-              values={Object.fromEntries(
-                d.members.map((m) => [
-                  m.name,
-                  m.role === "OWNER"
-                    ? "主负责人"
-                    : m.role === "EDITOR"
-                      ? "协作编辑"
-                      : m.role === "DRAFTER"
-                        ? "文件编制人"
-                        : m.role === "OFFICE"
-                          ? "办公室对接"
-                          : "只读成员",
-                ]),
-              )}
-            />
+          <div className="mb-5">
+            {currentReview ? (
+              <WorkflowStatusPanel
+                businessType={currentReview.kind === "archive" ? "agency_package_archive" : "agency_package_change"}
+                businessId={currentReview.id}
+                hideBusinessSnapshot
+              />
+            ) : (
+              <section className={detailCard}>
+                <h3 className="mb-2 font-bold">审批流程</h3>
+                <p className="text-sm text-slate-500">尚未发起审批流程。</p>
+              </section>
+            )}
+          </div>
+          {d.record.status === "approved" && (
+            <section className={detailCard + " mb-5"} aria-label="项目关联业务">
+              <h3 className="mb-3 font-bold">项目关联业务</h3>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {[
+                  ["documents", "招标文件", "编制、版本与审核"],
+                  ["announcements", "公告管理", "公告编制与发布"],
+                  ["execution", "项目执行", "开评标、结果与归档"],
+                  ["fees", "费用管理", "服务费与成本收支"],
+                ].map(([module, title, description]) => (
+                  <a key={module} href={workbenchHref(module, d.record.id)}
+                    className="rounded-md border border-slate-200 p-3 hover:border-blue-300 hover:bg-blue-50">
+                    <h4 className="text-sm font-bold text-blue-700">{title} →</h4>
+                    <p className="mt-1 text-xs text-slate-500">{description}</p>
+                  </a>
+                ))}
+              </div>
+            </section>
+          )}
+          <div className={detailCard + " mb-5 grid gap-5 lg:grid-cols-3"}>
+            <Info title="项目组织" values={Object.fromEntries(d.members.map(member => [
+              member.name,
+              {OWNER: "主负责人", EDITOR: "协作编辑", DRAFTER: "文件编制人", OFFICE: "办公室对接"}[member.role] || "只读成员",
+            ]))} />
             <Info title="服务费约定" values={d.data.feeAgreement} />
             <Info title="补充资料" values={d.data.supplement} />
           </div>
-          <FilePanel detail={d} busy={busy} run={action} />
-          {d.record.status === "approved" && (
-            <AgencyExecutionPanel detail={d} />
-          )}
-          <section className="mt-5">
+          <div id="agency-project-attachments" tabIndex={-1} className="scroll-mt-4 rounded-lg bg-white">
+            <FilePanel detail={d} busy={busy} run={action} />
+          </div>
+          <section className={detailCard + " mt-5"}>
             <h3 className="mb-3 text-sm font-bold">审批记录与快照</h3>
             {!d.reviews.length && (
               <p className="text-sm text-slate-500">尚未提交审批。</p>
@@ -609,7 +579,7 @@ function AgencyWorkspace() {
                   {r.kind === "archive" ? "建档审批" : "重要变更"} · {r.status}{" "}
                   · {r.createdAt.slice(0, 16).replace("T", " ")}
                 </summary>
-                {r.workflowId && (
+                {r.workflowId && r.id !== currentReview?.id && (
                   <div className="mt-3">
                     <WorkflowStatusPanel
                       businessType={
@@ -630,7 +600,7 @@ function AgencyWorkspace() {
               </details>
             ))}
           </section>
-          <details className="mt-5 rounded-lg border p-3">
+          <details className={detailCard + " mt-5"}>
             <summary className="cursor-pointer text-sm font-semibold">
               档案修订历史（{d.history.length}）
             </summary>
@@ -651,7 +621,7 @@ function AgencyWorkspace() {
         <>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-lg font-bold">
-              {id ? "维护采购包档案" : "新建采购包档案"}
+              {id ? "维护采购包档案" : "创建项目档案"}
             </h2>
             <span className="text-xs text-slate-500">
               草稿可缺项保存，首次提交生成编号
@@ -803,6 +773,16 @@ function AgencyWorkspace() {
           </p>
         </WorkflowSubmitDialog>
       )}
+    </>
+  );
+  if (detailView) return <div className="min-w-0">{content}</div>;
+  return (
+    <Panel
+      title="项目库"
+      icon={FolderKanban}
+      subtitle="项目经理创建项目、办理立项审核，关联项目成员与资料"
+    >
+      {content}
     </Panel>
   );
 }
@@ -836,6 +816,8 @@ const labels: Record<string, string> = {
   source: "项目来源",
   tags: "标签",
 };
+const detailCard = "min-w-0 rounded-lg border border-slate-200 bg-white p-5";
+
 function Info({
   title,
   values,
@@ -844,21 +826,19 @@ function Info({
   values: Record<string, string>;
 }) {
   return (
-    <section className="rounded-lg border border-slate-200 p-4">
-      <h3 className="mb-3 text-sm font-bold">{title}</h3>
-      <dl className="grid gap-2 text-sm">
+    <section className="min-w-0">
+      <h3 className="mb-4 font-bold text-slate-900">{title}</h3>
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
         {Object.entries(values)
           .filter(([, v]) => v)
           .map(([k, v]) => (
-            <div key={k} className="grid grid-cols-[110px_1fr] gap-3">
-              <dt className="text-slate-500">{labels[k] || k}</dt>
-              <dd className="break-words">{v}</dd>
+            <div key={k} className="min-w-0">
+              <dt className="text-xs text-slate-500">{labels[k] || k}</dt>
+              <dd className="mt-1 whitespace-pre-wrap break-words text-sm text-slate-900">{v}</dd>
             </div>
           ))}
-        {!Object.values(values).some(Boolean) && (
-          <p className="text-slate-400">待补充</p>
-        )}
       </dl>
+      {!Object.values(values).some(Boolean) && <p className="text-sm text-slate-500">待补充</p>}
     </section>
   );
 }
@@ -1026,7 +1006,7 @@ function AgencyForm({
         <h3 className="mb-4 text-sm font-bold">四 项目组织</h3>
         <div className="grid gap-4 sm:grid-cols-2">
           {select("所属部门", "departmentId", o?.departments || [])}
-          {select("主负责人（当前限一名）", "ownerId", o?.users || [])}
+          {select("项目经理（主负责人）", "ownerId", o?.users || [])}
         </div>
         <div className="mt-4 space-y-2">
           {d.members.map((m, index) => (
@@ -1130,7 +1110,7 @@ function AgencyForm({
     </fieldset>
   );
 }
-function FilePanel({
+export function FilePanel({
   detail: d,
   busy,
   run,

@@ -36,6 +36,24 @@ public class AgencyTemplateService {
     return out;
   }
 
+  public List<TemplateView> library(String method, String keyword) {
+    s.guard.permissions().require("buyer:agency:read");
+    s.guard.permissions().require("buyer:agency:document:read");
+    boolean manager=s.guard.permissions().currentUserHas("buyer:agency:template:manage");
+    List<TemplateView> out=new ArrayList<>();
+    for(var t:s.data.templates(s.guard.tenant(),s.str(method),s.str(keyword))) {
+      if(!t.active() && !manager) continue;
+      if(t.packageId()!=null) {
+        var p=s.guard.mapper().find(s.guard.tenant(),t.packageId());
+        if(p==null || !s.guard.inScope(p,false)) continue;
+      }
+      var versions=s.data.templateVersions(s.guard.tenant(),t.id()).stream()
+          .filter(v -> "project".equals(t.scope()) || manager || "published".equals(v.status())).toList();
+      if(!versions.isEmpty()) out.add(new TemplateView(t,versions));
+    }
+    return out;
+  }
+
   private Template permitted(String id) {
     var t = s.data.template(s.guard.tenant(), id);
     if (t == null) throw new IllegalArgumentException("模板不存在");

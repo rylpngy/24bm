@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import type { ElementType, ReactNode } from 'react';
 import { Globe, Sparkles, Languages, ChevronDown, LogOut, Menu, X,
   BadgeCheck,
@@ -17,7 +17,11 @@ import { Globe, Sparkles, Languages, ChevronDown, LogOut, Menu, X,
   ShieldCheck,
   ShoppingCart,
   SquareStack,
-  TrendingUp,
+  CalendarDays,
+  FolderKanban,
+  Library,
+  Workflow,
+  Hash,
   Users,
 } from 'lucide-react';
 import type { AdminNavigationModule } from '@24bid/shared';
@@ -27,8 +31,17 @@ import { useI18n } from '../i18n/i18n';
 // 模块 id → 菜单 icon。三端 id 复用同一映射;未命中用占位 icon。
 const MODULE_ICONS: Record<string, ElementType> = {
   dashboard: LayoutGrid,
+  agency: FolderKanban,
+  documents: FileText,
+  templates: Library,
+  execution: Send,
+  fees: Banknote,
+  "process-engine": Workflow,
+  org: Building2,
+  "numbering-rules": Hash,
+  "ai-policies": ShieldCheck,
   overview: LayoutGrid,
-  analytics: TrendingUp,
+  analytics: CalendarDays,
   demands: FileText,
   applications: FileText,
   approvals: ShieldCheck,
@@ -55,9 +68,13 @@ const MODULE_ICONS: Record<string, ElementType> = {
 export interface AppShellProps {
   /** 侧栏品牌副标题，如「采购方企业端」「平台运营端」。 */
   brandSubtitle: string;
+  brandName?: string;
+  mainlineLabel?: string;
+  isolationHint?: string;
   /** 侧栏主线提示，如「需求申请 - 询价比价 - 订单履约 - 发票付款」。 */
   mainlineHint?: string;
   modules: AdminNavigationModule[];
+  moduleGroups?: Readonly<Record<string, readonly string[]>>;
   activeModuleId: string;
   onSelectModule: (id: string) => void;
   /** 顶栏工作区标题。 */
@@ -75,9 +92,13 @@ export interface AppShellProps {
 
 /** 三端后台布局壳——深色侧栏 + 顶栏 + max-w-7xl 主区。 */
 export function AppShell({
+  brandName = "24Bid",
+  mainlineLabel = "采购主线",
+  isolationHint = "采购数据、供应商私域关系、订单和财务记录按企业隔离。",
   brandSubtitle,
   mainlineHint,
   modules,
+  moduleGroups,
   activeModuleId,
   onSelectModule,
   title,
@@ -134,7 +155,7 @@ export function AppShell({
               24
             </div>
             <div className="flex-1">
-              <p className="text-lg font-black leading-none">24Bid</p>
+              <p className="text-lg font-black leading-none">{brandName}</p>
               <p className="mt-1 text-xs font-bold uppercase tracking-widest text-blue-300">
                 {t(brandSubtitle)}
               </p>
@@ -150,19 +171,23 @@ export function AppShell({
           </div>
           {mainlineHint && (
             <div className="mt-5 rounded-lg border border-blue-400/20 bg-blue-500/10 p-3">
-              <p className="text-xs font-bold text-blue-200">{t('采购主线')}</p>
+              <p className="text-xs font-bold text-blue-200">{t(mainlineLabel)}</p>
               <p className="mt-1 text-sm font-semibold text-white">{t(mainlineHint)}</p>
             </div>
           )}
         </div>
 
         <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain p-4">
-          {modules.map((module) => {
+          {modules.map((module, index) => {
+            const group = Object.entries(moduleGroups ?? {}).find(([, ids]) => ids.includes(module.id));
+            const showGroup = group && !group[1].includes(modules[index - 1]?.id);
             const active = module.id === activeModuleId;
             const Icon = MODULE_ICONS[module.id] ?? SquareStack;
             return (
+              <Fragment key={module.id}>
+              {showGroup && <p className="px-3 pb-1 pt-3 text-xs font-semibold text-slate-400">{group[0]}</p>}
               <button
-                key={module.id}
+                aria-current={active ? 'page' : undefined}
                 type="button"
                 onClick={() => selectModule(module.id)}
                 className={cn(
@@ -193,6 +218,7 @@ export function AppShell({
                   </span>
                 </span>
               </button>
+              </Fragment>
             );
           })}
         </nav>
@@ -201,7 +227,7 @@ export function AppShell({
           <div className="rounded-lg bg-white/5 p-4">
             <p className="text-xs font-bold text-slate-400">{t('多租户隔离')}</p>
             <p className="mt-2 text-sm text-slate-300">
-              {t('采购数据、供应商私域关系、订单和财务记录按企业隔离。')}
+              {t(isolationHint)}
             </p>
           </div>
         </div>

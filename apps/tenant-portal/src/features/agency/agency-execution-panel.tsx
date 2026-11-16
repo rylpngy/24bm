@@ -1,10 +1,12 @@
+import { AgencyExpertCheckIn } from "./agency-expert-check-in";
+import { readScoringMethod, StructuredScoringEditor } from "./agency-structured-scoring-editor";
+import { executionWorkspaces } from "../workbench/workbench-model";
 import {AgencyRevisionAiPanel} from "./agency-revision-ai-panel";
 import { AgencySmsPanel } from "./agency-sms-panel";
 import { AgencyDocumentPreviewPanel } from "./agency-document-preview-panel";
 import { AgencyOnlineOfficePanel } from "./agency-online-office-panel";
 import { AgencyOfficePanel } from "./agency-office-panel";
 import { AgencyArchivePanel } from "./agency-archive-panel";
-import { AgencyFinancePanel } from "./agency-finance-panel";
 import { AgencyPostPanel } from "./agency-post-panel";
 import { AgencyEvaluationPanel } from "./agency-evaluation-panel";
 import { AgencyPreparationFormsPanel } from "./agency-preparation-forms-panel";
@@ -27,6 +29,7 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { FeedbackNotice } from "@24bid/ui";
 import {
+  agencyRequest,
   agencyFileDownload,
   agencyOptions,
   type AgencyReminderSettings,
@@ -110,8 +113,8 @@ function Box({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 type Run = (job: () => Promise<unknown>) => Promise<boolean>;
-type Submit = { type: string; id: string; template?: boolean };
-export function AgencyExecutionPanel({ detail }: { detail: AgencyDetail }) {
+export type Submit = { type: string; id: string; template?: boolean };
+export function AgencyExecutionPanel({ detail, mode = "execution", initialTab }: { detail: AgencyDetail; mode?: "execution" | "documents" | "announcements"; initialTab?: string }) {
   const { can } = useBuyerPermissions(),
     client = useQueryClient(),
     pkg = detail.record.id;
@@ -120,7 +123,12 @@ export function AgencyExecutionPanel({ detail }: { detail: AgencyDetail }) {
     queryFn: () => executionWorkspace(pkg),
     refetchInterval: 5000,
   });
-  const [tab, setTab] = useState("demand"),
+  const tabs = mode === "execution" ? executionWorkspaces
+    : mode === "announcements" ? [["documents", "公告编制与审核"], ["publication", "公告发布登记"]]
+    : [["documents", "招标文件编制与审核"], ["demand", "项目资料与编制依据"]];
+  const legacyTabs: Record<string, string> = {preparation: "expert-draw", evaluation: "expert-scoring", archive: "evaluation-files"};
+  const requestedTab = mode === "execution" && initialTab ? legacyTabs[initialTab] ?? initialTab : initialTab;
+  const [tab, setTab] = useState(tabs.some(([id]) => id === requestedTab) ? requestedTab! : tabs[0][0]),
     [busy, setBusy] = useState(false),
     [notice, setNotice] = useState<{
       tone: "error" | "success";
@@ -197,16 +205,7 @@ export function AgencyExecutionPanel({ detail }: { detail: AgencyDetail }) {
         <FeedbackNotice tone="error" message={message(query.error)} />
       )}
       <div className="flex flex-wrap gap-2" role="tablist">
-        {[
-          ["demand", "需求资料"],
-          ["documents", "文件编制与审批"],
-          ["templates", "模板库"],
-          ["publication", "发布登记"],
-          ["participation", "参与台账"],
-          ["plan", "项目计划"],
-          ["preparation", "会前准备"],
-          ["evaluation", "评审准备"],
-        ].map(([id, title]) => (
+        {tabs.map(([id, title]) => (
           <button
             key={id}
             className={
@@ -221,6 +220,8 @@ export function AgencyExecutionPanel({ detail }: { detail: AgencyDetail }) {
           </button>
         ))}
       </div>
+      {mode === "execution" && tab === "expert-scoring" && <FeedbackNotice tone="info" message="专家现场查阅纸质标书，使用定稿评分办法独立打分。"/>}
+      {mode === "execution" && tab === "evaluation-files" && <FeedbackNotice tone="info" message="全部专家提交后，核对汇总分、评分记录与评标材料。"/>}
       {!w ? (
         <p>加载执行资料中…</p>
       ) : (
@@ -248,7 +249,7 @@ export function AgencyExecutionPanel({ detail }: { detail: AgencyDetail }) {
                   初始化采购文件与独立公告
                 </button>
               )}
-              {w.documents.map((d) => (
+              {w.documents.filter(d => d.document.kind === (mode === "announcements" ? "announcement" : "purchase")).map((d) => (
                 <DocumentEditor
                   key={d.document.id}
                   view={d}
@@ -298,11 +299,12 @@ export function AgencyExecutionPanel({ detail }: { detail: AgencyDetail }) {
                 editable={manage("participation:manage")}
               />
             )}
-          {tab === "evaluation" &&
+          {(tab === "expert-scoring" || tab === "evaluation-files") &&
             can("buyer:agency:evaluation:read") &&
             can("buyer:agency:evaluation:confidential") && (
               <AgencyEvaluationPanel
                 detail={detail}
+                reviewOnly={tab === "evaluation-files"}
                 editable={manage("evaluation:manage")}
                 canFreeze={can("buyer:agency:evaluation:freeze")}
                 run={run}
@@ -322,9 +324,10 @@ export function AgencyExecutionPanel({ detail }: { detail: AgencyDetail }) {
               method={detail.data.procurementMethod || ""}
             />
           )}
-          {tab === "preparation" && can("buyer:agency:preparation:read") && (
+          {(tab === "expert-draw" || tab === "expert-attendance") && can("buyer:agency:preparation:read") && (
             <>
-              <PreparationPanel
+              {can("buyer:agency:preparation:confidential") && <AgencyExpertCheckIn key={tab} detail={detail} mode={tab}/>}
+              {tab === "expert-draw" && <PreparationPanel
                 pkg={pkg}
                 value={w.preparation}
                 fileOptions={fileOptions}
@@ -334,8 +337,8 @@ export function AgencyExecutionPanel({ detail }: { detail: AgencyDetail }) {
                   manage("preparation:manage") &&
                   can("buyer:agency:preparation:confidential")
                 }
-              />
-              {can("buyer:agency:preparation:confidential") && (
+              />}
+              {tab === "expert-attendance" && can("buyer:agency:preparation:confidential") && (
                 <AgencyPreparationFormsPanel
                   detail={detail}
                   run={run}
@@ -394,10 +397,9 @@ export function AgencyExecutionPanel({ detail }: { detail: AgencyDetail }) {
           )}
         </>
       )}
-      <AgencyPostPanel detail={detail} busy={busy} run={run} />
-      <AgencyFinancePanel detail={detail} busy={busy} run={run} />
-      <AgencyArchivePanel detail={detail} busy={busy} run={run} />
-      <AgencyOfficePanel detail={detail} busy={busy} run={run} />
+      {tab === "post" && <AgencyPostPanel detail={detail} busy={busy} run={run} />}
+      {tab === "evaluation-files" && <AgencyArchivePanel detail={detail} busy={busy} run={run} />}
+      {tab === "office" && <AgencyOfficePanel detail={detail} busy={busy} run={run} />}
       {submit && (
         <WorkflowSubmitDialog
           businessType={submit.type}
@@ -632,6 +634,7 @@ function DocumentEditor({
     }
   }, [d.version, dirty]);
   const locked = !editable || d.status === "reviewing" || busy;
+  const scoring = readScoringMethod(settings.structuredScoring);
   const current = view.revisions.find((r) => r.id === d.currentRevisionId);
   const modify = (i: number, patch: Partial<ExecutionChapter>) => {
     setSections((s) => s.map((c, n) => (i === n ? { ...c, ...patch } : c)));
@@ -663,6 +666,12 @@ function DocumentEditor({
             ? "；服务器已出现新版本，保存将检查冲突。"
             : ""}
         </p>
+      )}
+      {d.kind === "purchase" && (
+        <StructuredScoringEditor value={scoring} disabled={locked} onChange={(method) => {
+          setSettings(current => ({ ...current, structuredScoring: method.criteria.length ? JSON.stringify(method) : "" }));
+          setDirty(true);
+        }} />
       )}
       <details>
         <summary className="cursor-pointer text-sm font-semibold">
@@ -714,7 +723,7 @@ function DocumentEditor({
         </ul>
       )}
       <div className="space-y-2">
-        {sections.map((c, i) => (
+        {sections.map((c, i) => c.code === "evaluation" && scoring.criteria.length ? null : (
           <details key={c.code} className="rounded border bg-white p-3">
             <summary className="cursor-pointer text-sm font-semibold">
               {i + 1}. {c.title}
@@ -1067,7 +1076,7 @@ function DocumentEditor({
     </Box>
   );
 }
-function TemplatePanel({
+export function TemplatePanel({
   pkg,
   method,
   run,
@@ -1095,7 +1104,7 @@ function TemplatePanel({
   } | null>(null);
   const [keyword, setKeyword] = useState(""),
     [name, setName] = useState(""),
-    [scope, setScope] = useState("project"),
+    [scope, setScope] = useState(pkg ? "project" : "company"),
     [sourceNote, setSourceNote] = useState(""),
     [sections, setSections] = useState<ExecutionChapter[]>([
       {
@@ -1108,17 +1117,17 @@ function TemplatePanel({
     [editing, setEditing] = useState<ExecutionTemplate | null>(null),
     [reason, setReason] = useState("");
   const query = useQuery({
-    queryKey: ["agency-templates", pkg, keyword],
-    queryFn: () => executionTemplates(pkg, keyword),
+    queryKey: ["agency-templates", pkg, method, keyword],
+    queryFn: () => pkg ? executionTemplates(pkg, keyword) : agencyRequest<ExecutionTemplate[]>(`/workbench/templates?${new URLSearchParams({method,keyword})}`),
   });
   const create = async () => {
     const t = editing?.template;
     const body = {
       expectedVersion: t?.version,
-      packageId: scope === "project" ? pkg : null,
+      packageId: scope === "project" ? (t?.packageId || pkg) : null,
       name,
       scope,
-      procurementMethod: method,
+      procurementMethod: t?.procurementMethod || method,
       objectCode: t?.objectCode,
       regime: t?.regime,
       region: t?.region,
@@ -1373,7 +1382,7 @@ function TemplatePanel({
                 disabled={!!editing}
                 onChange={(e) => setScope(e.target.value)}
               >
-                <option value="project">项目自有模板</option>
+                {(pkg || editing?.template.scope === "project") && <option value="project">项目自有模板</option>}
                 <option value="company">公司模板（须审核发布）</option>
               </select>
             </Field>

@@ -28,11 +28,13 @@ const btn =
 const stamp = (s: string) => (s ? new Date(s).toLocaleString() : "");
 export function AgencyAssessmentPanel({
   detail,
+  paperScoring = false,
   round,
   busy,
   run,
 }: {
   detail: AgencyDetail;
+  paperScoring?: boolean;
   round: EvaluationView;
   busy: boolean;
   run: (fn: () => Promise<unknown>) => Promise<boolean>;
@@ -96,7 +98,7 @@ export function AgencyAssessmentPanel({
                 />
               )}
               {organize && <Progress base={base} session={session.id} />}
-              {can("buyer:agency:evaluation:final-response:read") && (
+              {!paperScoring && can("buyer:agency:evaluation:final-response:read") && (
                 <AgencyFinalResponsePanel
                   detail={detail}
                   session={session}
@@ -106,7 +108,7 @@ export function AgencyAssessmentPanel({
                   run={run}
                 />
               )}
-              {organize && can("buyer:agency:evaluation:price:read") && (
+              {!paperScoring && organize && can("buyer:agency:evaluation:price:read") && (
                 <AgencyQuotePanel
                   detail={detail}
                   session={session}
@@ -114,7 +116,7 @@ export function AgencyAssessmentPanel({
                   run={run}
                 />
               )}
-              {organize &&
+              {!paperScoring && organize &&
                 can("buyer:agency:evaluation:discussion:read") &&
                 ["竞争性谈判", "竞争性磋商"].includes(
                   detail.record.procurementMethod || "",
@@ -127,7 +129,7 @@ export function AgencyAssessmentPanel({
                     run={run}
                   />
                 )}
-              {organize &&
+              {!paperScoring && organize &&
                 can("buyer:agency:evaluation:change:read") &&
                 ["竞争性谈判", "竞争性磋商"].includes(
                   detail.record.procurementMethod || "",
@@ -139,7 +141,7 @@ export function AgencyAssessmentPanel({
                     run={run}
                   />
                 )}
-              {organize &&
+              {!paperScoring && organize &&
                 can("buyer:agency:evaluation:final:read") &&
                 ["竞争性谈判", "竞争性磋商"].includes(
                   detail.record.procurementMethod || "",
@@ -151,7 +153,7 @@ export function AgencyAssessmentPanel({
                     run={run}
                   />
                 )}
-              {organize &&
+              {!paperScoring && organize &&
                 can("buyer:agency:evaluation:calculation:read") &&
                 detail.record.procurementMethod !== "单一来源" && (
                   <AgencyPricePanel
@@ -161,7 +163,7 @@ export function AgencyAssessmentPanel({
                     run={run}
                   />
                 )}
-              {organize &&
+              {!paperScoring && organize &&
                 can("buyer:agency:evaluation:total:read") &&
                 can("buyer:agency:evaluation:calculation:read") &&
                 round.config.evaluationMethod === "comprehensive" && (
@@ -173,7 +175,7 @@ export function AgencyAssessmentPanel({
                     run={run}
                   />
                 )}
-              {organize && <AgencyRecommendationPanel detail={detail} session={session} round={round} busy={busy} run={run} />}
+              {!paperScoring && organize && <AgencyRecommendationPanel detail={detail} session={session} round={round} busy={busy} run={run} />}
               {organize && can("buyer:agency:evaluation:stage:manage") && (
                 <AgencyStagePanel
                   detail={detail}
@@ -399,7 +401,7 @@ function MyAssessment({
                       : "通过/不通过"}
                   </legend>
                   <p className="text-xs">
-                    适用对象：{r.applicableTo} ·{" "}
+                    评分或审查依据：{r.applicableTo} ·{" "}
                     {r.evidenceRequired ? "依据必填" : "依据选填"}
                   </p>
                   {r.resultType === "score" ? (

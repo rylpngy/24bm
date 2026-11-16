@@ -109,6 +109,11 @@ public class AgencyExecutionSupport {
     return artifact(pkg, name, bytes, "preparation_form", "restricted");
   }
 
+  public FileVersion paperScoreArtifact(String pkg, String name, byte[] bytes) {
+    guard.permissions().require("buyer:agency:evaluation:total:manage");
+    return artifact(pkg, name, bytes, "paper_score_artifact", "restricted");
+  }
+
   private FileVersion artifact(
       String pkg, String name, byte[] bytes, String category, String visibility) {
     String file = "agency-file-" + UUID.randomUUID(), version = "agency-fv-" + UUID.randomUUID();

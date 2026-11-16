@@ -89,3 +89,5 @@ P2 procurement execution workspace: [交付说明](docs/agency/P2交付说明.md
 P6 非AI增强：在线Office编辑、PDF/OCR及版本预览、受控短信网关和运维验证，见[二期台账](docs/agency/二期非AI连续研发台账.md)与[服务接入说明](docs/agency/P6非AI服务接入与运维说明.md)。AI及全流程电子标按用户最新决定暂缓，实际外部服务及生产验收单列。
 
 当前百炼接入与本机走查部署见[P7说明](docs/agency/P7百炼接入与走查部署说明.md)。用户提供的模型凭据仅保存在被Git忽略的私有配置，源码仓库不包含密钥。
+
+本轮工作台一级菜单拆分、独立文件/模板库及开标日历见[P8调整说明](docs/agency/P8一级菜单与开标日历调整.md)。

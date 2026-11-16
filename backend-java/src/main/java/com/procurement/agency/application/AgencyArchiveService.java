@@ -76,8 +76,7 @@ public class AgencyArchiveService {
 
   String fingerprint(String p) {
     var pack = s.packages.find(t(), p);
-    return s.json.hash(
-        Arrays.asList(
+    var basis = Arrays.<Object>asList(
             pack.version(),
             pack.dataJson(),
             versions(p),
@@ -92,7 +91,26 @@ public class AgencyArchiveService {
             post.issues(t(), p),
             finance.accounts(t(), p),
             finance.entries(t(), p),
-            data.events(t(), p).stream().filter(e -> !e.dimension().equals("archive")).toList()));
+            data.events(t(), p).stream().filter(e -> !e.dimension().equals("archive")).toList());
+    var reviewed = s.data.paperScoreReviews(t(), p);
+    return s.json.hash(reviewed.isEmpty() ? basis : List.of(basis, reviewed));
+  }
+
+  private List<ReviewedEvaluationFile> reviewedEvaluationFiles(String p) {
+    List<ReviewedEvaluationFile> rows = new ArrayList<>();
+    for (var raw : s.data.paperScoreReviews(t(), p)) {
+      var review = s.json.read(raw, AgencyPaperScoreReview.Review.class);
+      for (var ref : review.files()) {
+        var version = s.packages.version(t(), ref.versionId());
+        var file = version == null ? null : s.packages.file(t(), version.fileId());
+        if (file == null || !p.equals(file.packageId()) || !"sealed".equals(version.status())
+            || version.ordinal() != ref.ordinal() || !ref.sha256().equals(version.hash()))
+          throw new IllegalStateException("已核对评标文件的封存版本或指纹不一致");
+        rows.add(new ReviewedEvaluationFile(ref.kind(), ref.versionId(), ref.ordinal(), ref.sha256(),
+            file.name(), review.reviewedAt(), review.fingerprint()));
+      }
+    }
+    return List.copyOf(rows);
   }
 
   List<Requirement> requirements(String p) {
@@ -103,6 +121,7 @@ public class AgencyArchiveService {
         stopped = !results.isEmpty() && !awarded;
     var docs = post.documents(t(), p);
     var execution = s.data.documents(t(), p);
+    boolean hasReviewedFiles = !s.data.paperScoreReviews(t(), p).isEmpty();
     List<Requirement> r = new ArrayList<>();
     r.add(
         new Requirement(
@@ -134,11 +153,11 @@ public class AgencyArchiveService {
             "opening",
             "接收、开启、独立审查与评审材料",
             stopped ? "conditional" : "required",
-            false,
+            hasReviewedFiles,
             "包含现场记录、职责意见及更正历史；原始响应材料保持原权限"));
     r.add(
         new Requirement(
-            "report", "评审报告与签署材料", stopped ? "conditional" : "required", false, "内部审核不替代实际成员签署"));
+            "report", "评审报告与签署材料", stopped ? "conditional" : "required", hasReviewedFiles, "内部审核不替代实际成员签署"));
     r.add(
         new Requirement(
             "result", "有权结果确认", "required", !results.isEmpty(), "推荐与采购人确认分离，失败终止亦保留有权依据"));
@@ -264,7 +283,8 @@ public class AgencyArchiveService {
                         r.createdAt()))
             .toList(),
         blockers(p),
-        data.events(t(), p));
+        data.events(t(), p),
+        reviewedEvaluationFiles(p).stream().filter(file -> visible(file.versionId())).toList());
   }
 
   @Transactional
@@ -376,6 +396,10 @@ public class AgencyArchiveService {
     var blockers = blockers(p);
     if (d.complete() && !blockers.isEmpty())
       throw new IllegalStateException(String.join("；", blockers));
+    var reviewedFiles = reviewedEvaluationFiles(p);
+    Set<String> signed = new HashSet<>();
+    reviewedFiles.stream().filter(file -> "signed_material".equals(file.kind()))
+        .map(ReviewedEvaluationFile::versionId).forEach(signed::add);
     var entries = new ArrayList<Entry>();
     long size = 0;
     for (var v : versions(p)) {
@@ -403,7 +427,7 @@ public class AgencyArchiveService {
               v.hash(),
               v.contentSize(),
               v.reason(),
-              signing));
+              signed.contains(v.id()) ? "signed" : signing));
     }
     var pack = s.packages.find(t(), p);
     Map<String, Object> snap = new TreeMap<>();
@@ -412,6 +436,7 @@ public class AgencyArchiveService {
     snap.put("method", pack.procurementMethod());
     snap.put("sourceFingerprint", fp);
     snap.put("entries", entries);
+    if (!reviewedFiles.isEmpty()) snap.put("reviewedEvaluationFiles", reviewedFiles);
     snap.put("checklist", data.checklist(t(), p));
     snap.put("requirements", requirements(p));
     snap.put("postResults", post.results(t(), p));
@@ -638,6 +663,15 @@ public class AgencyArchiveService {
         manifest.put(
             "retentionYears", s.json.tree(r.snapshotJson()).path("retentionYears").asInt());
         manifest.put("files", rows);
+        var reviewed = s.json.tree(r.snapshotJson()).path("reviewedEvaluationFiles");
+        if (reviewed.isArray()) {
+          Set<Object> exportedVersions = new HashSet<>(rows.stream().map(row -> row.get("versionId")).toList());
+          var visibleReviewed = new ArrayList<com.fasterxml.jackson.databind.JsonNode>();
+          reviewed.forEach(file -> {
+            if (exportedVersions.contains(file.path("versionId").asText())) visibleReviewed.add(file);
+          });
+          manifest.put("reviewedEvaluationFiles", visibleReviewed);
+        }
         manifest.put("withheldCount", withheld);
         manifest.put("scope", "只导出当前权限可见的快照文件；受限资料不披露名称；不表示目录已包含无权读取的完整项目档案");
         manifest.put("missingNotes", s.json.tree(r.snapshotJson()).path("blockers"));

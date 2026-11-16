@@ -122,6 +122,9 @@ public final class AgencyArchiveRecords {
       String createdBy,
       OffsetDateTime createdAt) {}
 
+  public record ReviewedEvaluationFile(String kind, String versionId, int ordinal, String sha256,
+                                       String name, OffsetDateTime reviewedAt, String reviewFingerprint) {}
+
   public record Workspace(
       Completion state,
       String businessStatus,
@@ -131,5 +134,6 @@ public final class AgencyArchiveRecords {
       List<ChecklistView> checklist,
       List<SnapshotView> snapshots,
       List<String> blockers,
-      List<CompletionEvent> completionHistory) {}
+      List<CompletionEvent> completionHistory,
+      List<ReviewedEvaluationFile> reviewedEvaluationFiles) {}
 }
