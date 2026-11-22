@@ -1,4 +1,4 @@
-import {workbenchHref} from "../workbench/workbench-model";
+import { workbenchHref, workbenchModules } from "../workbench/workbench-model";
 import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -252,6 +252,18 @@ function AgencyWorkspace() {
   const d = detail.data;
   const currentReview = d?.reviews.find(review => review.workflowId === d.record.workflowId && review.workflowId)
     ?? d?.reviews.find(review => review.workflowId);
+  const relatedModules = [
+    { id: "project-materials", title: "项目资料", description: "分类附件与版本" },
+    { id: "documents", title: "招标文件", description: "编制、版本与审核" },
+    { id: "announcements", title: "公告管理", description: "公告编制与发布" },
+    { id: "execution", title: "项目执行", description: "专家抽取、签到、评分与文件核对" },
+    { id: "fees", title: "费用管理", description: "服务费与成本收支" },
+    { id: "project-archive", title: "项目归档", description: "核对通过的评标文件及归档版本" },
+  ].filter(({ id }) => {
+    if (id !== "project-materials" && d?.record.status !== "approved") return false;
+    const permission = workbenchModules.find(module => module.id === id)?.requiredPermission;
+    return !permission || can(permission);
+  });
   const detailView = Boolean(id && !draft);
   const content = (
     <>
@@ -538,16 +550,11 @@ function AgencyWorkspace() {
               </section>
             )}
           </div>
-          {d.record.status === "approved" && (
+          {relatedModules.length > 0 && (
             <section className={detailCard + " mb-5"} aria-label="项目关联业务">
               <h3 className="mb-3 font-bold">项目关联业务</h3>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                {[
-                  ["documents", "招标文件", "编制、版本与审核"],
-                  ["announcements", "公告管理", "公告编制与发布"],
-                  ["execution", "项目执行", "开评标、结果与归档"],
-                  ["fees", "费用管理", "服务费与成本收支"],
-                ].map(([module, title, description]) => (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {relatedModules.map(({ id: module, title, description }) => (
                   <a key={module} href={workbenchHref(module, d.record.id)}
                     className="rounded-md border border-slate-200 p-3 hover:border-blue-300 hover:bg-blue-50">
                     <h4 className="text-sm font-bold text-blue-700">{title} →</h4>
