@@ -55,6 +55,7 @@ public class AgencyEvaluationService {
     s.publicProjectSource(r.fileVersionId(), pkg, "评审规则");
     var v = s.sourceVersion(r.fileVersionId(), pkg);
     if (!r.hash().equals(v.hash())) throw new IllegalStateException("定稿与封存文件哈希不一致");
+    var scoring = scoringSnapshot(r.snapshotJson());
     return new Source(
         r.id(),
         d.id(),
@@ -64,7 +65,20 @@ public class AgencyEvaluationService {
         "approved".equals(d.status())
             && r.id().equals(d.currentRevisionId())
             && d.version() == r.inputVersion(),
-        documentBasis.stale(s.guard.tenant(), pkg, d.basisJson()));
+        documentBasis.stale(s.guard.tenant(), pkg, d.basisJson()),
+        scoring == null ? List.of() : scoring.criteria(),
+        scoring == null ? null : scoring.tieRule());
+  }
+
+  private AgencyScoringMethod scoringSnapshot(String json) {
+    return AgencyScoringMethod.parse(s, s.json.tree(json).path("settings")
+        .path(AgencyScoringMethod.SETTING).asText(null));
+  }
+
+  private void verifyScoring(Source source, Config config) {
+    if (!source.scoringCriteria().isEmpty()
+        && !new AgencyScoringMethod(source.scoringCriteria(), source.scoringTieRule()).matches(config))
+      throw new IllegalArgumentException("线上评分项须与定稿中锁定的结构化评分办法一致");
   }
 
   private List<MemberSnapshot> members(String pkg, Config c) {
@@ -84,9 +98,14 @@ public class AgencyEvaluationService {
     return list;
   }
 
+  // Keep the original source serialization used by previously frozen basis fingerprints.
+  private record FrozenSource(String revisionId, String documentId, String fileVersionId, String hash,
+                              long inputVersion, boolean current, boolean basisStale) {}
+
   private Map<String, Object> basis(String pkg, Config c) {
     var p = s.packages.find(s.guard.tenant(), pkg);
     var prep = s.data.preparation(s.guard.tenant(), pkg);
+    var source = source(pkg, c.documentRevisionId());
     return Map.of(
         "packageVersion",
         p.version(),
@@ -95,7 +114,8 @@ public class AgencyEvaluationService {
         "procurementMethod",
         p.procurementMethod(),
         "source",
-        source(pkg, c.documentRevisionId()),
+        new FrozenSource(source.revisionId(), source.documentId(), source.fileVersionId(), source.hash(),
+            source.inputVersion(), source.current(), source.basisStale()),
         "members",
         members(pkg, c));
   }
@@ -105,6 +125,7 @@ public class AgencyEvaluationService {
     List<String> errors = new ArrayList<>(AgencyEvaluationRules.blockers(c, p.procurementMethod()));
     try {
       var source = source(pkg, c.documentRevisionId());
+      verifyScoring(source, c);
       if (!source.current()) errors.add("引用的定稿已不是当前已审批版本");
       if (source.basisStale()) errors.add("定稿公共字段或确认需求已变化，须先重新核对采购文件");
       members(pkg, c);
@@ -171,7 +192,7 @@ public class AgencyEvaluationService {
     if (d == null) throw new IllegalArgumentException("缺少轮次配置");
     AgencyEvaluationRules.validate(d.config());
     s.text(d.reason(), 2000, true, "维护原因");
-    source(pkg, d.config().documentRevisionId());
+    verifyScoring(source(pkg, d.config().documentRevisionId()), d.config());
     members(pkg, d.config());
     String key = "evaluation-save:" + d.idempotencyKey();
     s.text(d.idempotencyKey(), 100, true, "幂等键");
@@ -231,6 +252,7 @@ public class AgencyEvaluationService {
       var basis = basis(pkg, c);
       snapshot.put("schemaVersion", "AGENCY-EVALUATION-1");
       snapshot.put("config", c);
+      if (!source.scoringCriteria().isEmpty()) snapshot.put("expertCheckInRequired", true);
       snapshot.put("basis", basis);
       snapshot.put("basisHash", s.json.hash(basis));
       snapshot.put("reviewedBy", s.guard.actor());

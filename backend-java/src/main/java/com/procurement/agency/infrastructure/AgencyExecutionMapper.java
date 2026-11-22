@@ -415,6 +415,32 @@ insert into agency_execution_events(id,tenant_id,package_id,object_type,object_i
       String reason,
       String actor);
 
+  @Select("""
+      select after_json::text from agency_execution_events
+      where tenant_id=#{tenant} and package_id=#{pkg}
+        and object_type='paper_score_reviewed' and object_id=#{session}
+      order by created_at desc, id desc limit 1
+      """)
+  String paperScoreReview(String tenant, String pkg, String session);
+
+  @Select("""
+      select after_json::text from agency_execution_events
+      where tenant_id=#{tenant} and package_id=#{pkg} and object_type='paper_score_reviewed'
+        and jsonb_typeof(after_json->'files')='array'
+      order by created_at desc, id desc
+      """)
+  List<String> paperScoreReviews(String tenant, String pkg);
+
+  @Select("""
+      select after_json::text from agency_execution_events
+      where tenant_id=#{tenant} and package_id=#{pkg}
+        and object_type='expert_check_in' and object_id=#{round}
+      order by (after_json->>'version')::bigint desc limit 1
+      """)
+  String expertCheckIn(String tenant, String pkg, String round);
+
+
+
   @Insert(
       "insert into"
           + " agency_document_review_contexts(tenant_id,workflow_id,revision_id,waived_issues_json,exception_reason,created_by)"

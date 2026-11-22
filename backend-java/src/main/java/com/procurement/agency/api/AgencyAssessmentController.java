@@ -1,6 +1,7 @@
 package com.procurement.agency.api;
 
 import com.procurement.agency.application.AgencyAssessmentService;
+import com.procurement.agency.application.AgencyPaperScoreReview;
 import com.procurement.agency.domain.AgencyAssessmentRecords.*;
 import com.procurement.common.api.ApiResponse;
 import java.util.*;
@@ -8,7 +9,20 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/buyer/agency/evaluation/packages/{pkg}")
-public record AgencyAssessmentController(AgencyAssessmentService service) {
+public record AgencyAssessmentController(AgencyAssessmentService service, AgencyPaperScoreReview paperScores) {
+  @GetMapping("/sessions/{session}/paper-score-review")
+  public ApiResponse<AgencyPaperScoreReview.Summary> paperScoreReview(
+      @PathVariable String pkg, @PathVariable String session) {
+    return ApiResponse.ok(paperScores.summary(pkg, session));
+  }
+
+  @PostMapping("/sessions/{session}/paper-score-review")
+  public ApiResponse<AgencyPaperScoreReview.Review> confirmPaperScoreReview(
+      @PathVariable String pkg, @PathVariable String session,
+      @RequestBody AgencyPaperScoreReview.Confirm request) {
+    return ApiResponse.ok(paperScores.confirm(pkg, session, request));
+  }
+
   @io.swagger.v3.oas.annotations.Operation(operationId = "agencyAssessmentOverview")
   @GetMapping("/rounds/{round}/assessment")
   public ApiResponse<Overview> overview(@PathVariable String pkg, @PathVariable String round) {

@@ -61,6 +61,8 @@ export type EvaluationWorkspace = {
     hash: string;
     current: boolean;
     basisStale: boolean;
+    scoringCriteria?: EvaluationCriterion[];
+    scoringTieRule?: string;
   }[];
 };
 export const evaluationRequest = <T>(

@@ -121,6 +121,7 @@ public class AgencyFiles {
         || "preparation_form".equals(f.category())
         || "response_material".equals(f.category())
         || "final_quote_material".equals(f.category())
+        || "paper_score_artifact".equals(f.category())
         || "evaluation_report".equals(f.category())))
       throw new IllegalStateException("生成文档须从编制工作区创建新版本");
     var versions = mapper.versions(guard.tenant(), fileId);

@@ -1,206 +1,43 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
-import { Construction, RefreshCw, ShieldAlert } from 'lucide-react';
-import { buyerNavigation, hasPermission } from '@24bid/shared';
-import { useSessionPermissions, useBuyerCapabilityCapabilities } from '@24bid/api-client';
-import { AppShell, FeedbackNotice, Panel, PrimaryActionButton } from '@24bid/ui';
-import { useAuthStore } from './lib/auth-store';
-import { PageErrorBoundary } from './lib/page-error-boundary';
-import { PortalLanding } from './features/portal/portal-landing';
-const DemandsPage = lazy(() => import('./features/demands/demands-page').then((module) => ({ default: module.DemandsPage })));
-const ProcurementPlansPage = lazy(() => import('./features/procurement-plans/procurement-plans-page').then((module) => ({ default: module.ProcurementPlansPage })));
-const MallPage = lazy(() => import('./features/mall/mall-page').then((module) => ({ default: module.MallPage })));
-const ApprovalsPage = lazy(() => import('./features/approvals/approvals-page').then((module) => ({ default: module.ApprovalsPage })));
-const SuppliersPage = lazy(() => import('./features/suppliers/suppliers-page').then((module) => ({ default: module.SuppliersPage })));
-const MaterialsPage = lazy(() => import('./features/materials/materials-page').then((module) => ({ default: module.MaterialsPage })));
-const RfqsPage = lazy(() => import('./features/rfqs/rfqs-page').then((module) => ({ default: module.RfqsPage })));
-const OrdersPage = lazy(() => import('./features/orders/orders-page').then((module) => ({ default: module.OrdersPage })));
-const ReceiptsPage = lazy(() => import('./features/receipts/receipts-page').then((module) => ({ default: module.ReceiptsPage })));
-const AuctionsPage = lazy(() => import('./features/auctions/auctions-page').then((module) => ({ default: module.AuctionsPage })));
-const TendersPage = lazy(() => import('./features/tenders/tenders-page').then((module) => ({ default: module.TendersPage })));
-const InvoicesPage = lazy(() => import('./features/finance/invoices-page').then((module) => ({ default: module.InvoicesPage })));
-const ContractsPage = lazy(() => import('./features/contracts/contracts-page').then((module) => ({ default: module.ContractsPage })));
-const DashboardPage = lazy(() => import('./features/dashboard/dashboard-page').then((module) => ({ default: module.DashboardPage })));
-const AnalyticsPage = lazy(() => import('./features/analytics/analytics-page').then((module) => ({ default: module.AnalyticsPage })));
-const BudgetsPage = lazy(() => import('./features/budgets/budgets-page').then((module) => ({ default: module.BudgetsPage })));
-const AgencyPage = lazy(() => import('./features/agency/agency-page').then(module => ({ default: module.AgencyPage })));
-const ProjectsPage = lazy(() => import('./features/projects/projects-page').then((module) => ({ default: module.ProjectsPage })));
-const AuditPage = lazy(() => import('./features/audit/audit-page').then((module) => ({ default: module.AuditPage })));
-const TeamPage = lazy(() => import('./features/team/team-page').then((module) => ({ default: module.TeamPage })));
-const NumberingRulesPage = lazy(() => import('./features/settings/numbering-rules-page').then((module) => ({ default: module.NumberingRulesPage })));
-const AiPoliciesPage = lazy(() => import('./features/ai/ai-policies-page').then((module) => ({ default: module.AiPoliciesPage })));
-const OrgStructurePage = lazy(() => import('./features/org/org-structure-page').then((module) => ({ default: module.OrgStructurePage })));
-const ProcessEnginePage = lazy(() => import('./features/process/process-engine-page').then((module) => ({ default: module.ProcessEnginePage })));
-const LudongPocApp = lazy(() => import('./features/ludong-poc/ludong-poc-app').then((module) => ({ default: module.LudongPocApp })));
-
-const initialModuleId = () => {
-  if (typeof window === 'undefined') return 'dashboard';
-  return new URLSearchParams(window.location.search).get('module') ?? 'dashboard';
-};
-
-export function App() {
-  const isLudongPoc = typeof window !== 'undefined'
-    && new URLSearchParams(window.location.search).get('solution') === 'ludong-poc';
-  return <PageErrorBoundary><Suspense fallback={<PageLoading />}>
-    {isLudongPoc ? <LudongPocApp /> : <TenantPortalApp />}
-  </Suspense></PageErrorBoundary>;
-}
-
-function PageLoading() {
-  return <div role="status" className="p-6 text-sm text-slate-500">正在加载...</div>;
-}
-
-function TenantPortalApp() {
-  const session = useAuthStore((s) => s.session);
-  const [activeModuleId, setActiveModuleId] = useState(initialModuleId);
-
-  useEffect(() => {
-    const handlePopState = () => setActiveModuleId(initialModuleId());
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
-
-  // 当前用户的有效权限点 → 菜单/路由门禁。仅登录后查询。
-  const permsQuery = useSessionPermissions(session?.userId);
-  const grantedKey = (permsQuery.isError ? [] : permsQuery.data?.data?.permissions ?? []).join(',');
-
-  // Procurement capabilities gate new work; explicitly retained historical modules remain readable.
-  const capabilityQuery = useBuyerCapabilityCapabilities({ query: {
-    queryKey: ['/api/v1/buyer/capabilities', session?.tenantId, session?.userId],
-    enabled: !!session,
-    retry: 2,
-    refetchInterval: 30_000,
-    refetchOnWindowFocus: 'always',
-  } });
-  const capability = capabilityQuery.data?.data;
-  const enabledModuleKey = (capability?.moduleIds ?? []).join(',');
-  const gatedModuleKey = (capability?.methodGatedModuleIds ?? []).join(',');
-  const historicalModuleKey = (capability?.historicalModuleIds ?? []).join(',');
-
-  const visibleModules = useMemo(() => {
-    const granted = grantedKey ? grantedKey.split(',') : [];
-    const enabled = enabledModuleKey ? enabledModuleKey.split(',') : [];
-    const gated = gatedModuleKey ? gatedModuleKey.split(',') : [];
-    const historical = historicalModuleKey ? historicalModuleKey.split(',') : [];
-    return buyerNavigation.modules.filter((m) => {
-      if (m.requiredPermission && !hasPermission(granted, m.requiredPermission)) return false;
-      // Do not hide historical fulfillment when a procurement method is disabled.
-      if (gated.length > 0 && gated.includes(m.id) && !enabled.includes(m.id) && !historical.includes(m.id)) return false;
-      return true;
-    });
-  }, [grantedKey, enabledModuleKey, gatedModuleKey, historicalModuleKey]);
-
-  // 当前模块若因权限收紧而不可见,回落到首页看板。
-  useEffect(() => {
-    if (!session || permsQuery.isLoading || capabilityQuery.isLoading) return;
-    if (activeModuleId !== 'dashboard' && !visibleModules.some((m) => m.id === activeModuleId)) {
-      setActiveModuleId('dashboard');
-    }
-  }, [visibleModules, activeModuleId, session, permsQuery.isLoading, capabilityQuery.isLoading]);
-
-  const selectModule = (moduleId: string) => {
-    setActiveModuleId(moduleId);
-    const url = new URL(window.location.href);
-    url.searchParams.set('module', moduleId);
-    url.searchParams.delete('recordId');
-    if (url.href !== window.location.href) window.history.pushState(null, '', url.toString());
-  };
-
-  const activeModule = buyerNavigation.modules.find((m) => m.id === activeModuleId);
-  const permitted = visibleModules.some((m) => m.id === activeModuleId);
-
-  // ?portal=1:登录态下也可回看系统门户(顶栏「门户首页」入口)。
-  const forcePortal = typeof window !== 'undefined'
-    && new URLSearchParams(window.location.search).get('portal') === '1';
-  if (!session || forcePortal) {
-    return <PortalLanding />;
-  }
-
-  if (permsQuery.isPending) return <PageLoading />;
-  if (permsQuery.isError) return <div className="p-6"><FeedbackNotice tone="error" message="权限加载失败，请重试。" /><button type="button" onClick={() => void permsQuery.refetch()}>重新加载</button></div>;
-
-  return (
-    <AppShell
-      brandSubtitle={buyerNavigation.label}
-      mainlineHint="需求申请 - 询比报价 - 订单履约 - 发票付款"
-      modules={visibleModules}
-      activeModuleId={activeModuleId}
-      onSelectModule={selectModule}
-      portalUrl="/?portal=1"
-      aiModuleId="analytics"
-      title={activeModule?.label ?? '企业工作台'}
-      accountLabel={`${session.displayName} · ${session.tenantId}`}
-    >
-      <PageErrorBoundary key={activeModuleId}><Suspense fallback={<PageLoading />}>
-      {capabilityQuery.isError && <div className="mb-4 flex flex-wrap items-center gap-3" role="status">
-        <div className="min-w-0 flex-1"><FeedbackNotice tone="error" message="业务能力配置暂时加载失败，系统将自动重试；新增业务开通状态尚未确认。" /></div>
-        <PrimaryActionButton icon={RefreshCw} busy={capabilityQuery.isFetching} pendingLabel="正在重新加载" onClick={() => void capabilityQuery.refetch()}>
-          重新加载业务配置
-        </PrimaryActionButton>
-      </div>}
-      {historicalModuleKey.split(',').includes(activeModuleId) && gatedModuleKey.split(',').includes(activeModuleId)
-        && !enabledModuleKey.split(',').includes(activeModuleId) && <FeedbackNotice tone="info" message="此采购方式已停止新增业务，仍可按权限查看历史资料并办理既有业务；新增操作须先由平台开通。" />}
-      {!permitted ? (
-        <Panel title={activeModule?.label ?? '无权限'} icon={ShieldAlert} subtitle="访问受限">
-          <FeedbackNotice
-            tone="error"
-            message={`当前角色无「${activeModule?.label ?? '该模块'}」访问权限。请联系管理员在「团队与权限」中授予。`}
-          />
-        </Panel>
-      ) : activeModuleId === 'dashboard' ? (
-        <DashboardPage onNavigate={selectModule} />
-      ) : activeModuleId === 'analytics' ? (
-        <AnalyticsPage />
-      ) : activeModuleId === 'budgets' ? (
-        <BudgetsPage />
-      ) : activeModuleId === 'agency' ? (<AgencyPage />) : activeModuleId === 'projects' ? (
-        <ProjectsPage />
-      ) : activeModuleId === 'demands' ? (
-        <DemandsPage onNavigate={selectModule} />
-      ) : activeModuleId === 'procurement-plans' ? (
-        <ProcurementPlansPage onNavigate={selectModule} />
-      ) : activeModuleId === 'approvals' ? (
-        <ApprovalsPage />
-      ) : activeModuleId === 'suppliers' ? (
-        <SuppliersPage />
-      ) : activeModuleId === 'materials' ? (
-        <MaterialsPage />
-      ) : activeModuleId === 'mall' ? (
-        <MallPage onNavigate={selectModule} />
-      ) : activeModuleId === 'rfqs' ? (
-        <RfqsPage />
-      ) : activeModuleId === 'auctions' ? (
-        <AuctionsPage onNavigate={selectModule} />
-      ) : activeModuleId === 'tenders' ? (
-        <TendersPage />
-      ) : activeModuleId === 'receipts' ? (
-        <ReceiptsPage />
-      ) : activeModuleId === 'orders' ? (
-        <OrdersPage onNavigate={selectModule} />
-      ) : activeModuleId === 'invoices' ? (
-        <InvoicesPage />
-      ) : activeModuleId === 'process-engine' ? (
-        <ProcessEnginePage />
-      ) : activeModuleId === 'org' ? (
-        <OrgStructurePage />
-      ) : activeModuleId === 'team' ? (
-        <TeamPage />
-      ) : activeModuleId === 'numbering-rules' ? (
-        <NumberingRulesPage />
-      ) : activeModuleId === 'ai-policies' ? (
-        <AiPoliciesPage />
-      ) : activeModuleId === 'audit' ? (
-        <AuditPage />
-      ) : activeModuleId === 'contracts' ? (
-        <ContractsPage />
-      ) : (
-        <Panel title={activeModule?.label ?? '模块'} icon={Construction} subtitle="后续切片实现">
-          <FeedbackNotice
-            tone="info"
-            message={`「${activeModule?.label}」将在后续垂直切片中接通真实后端。`}
-          />
-        </Panel>
-      )}
-      </Suspense></PageErrorBoundary>
-    </AppShell>
-  );
+import {lazy,Suspense,useEffect,useMemo,useState} from 'react';
+import {ShieldAlert} from 'lucide-react';
+import {hasPermission} from '@24bid/shared';
+import {useSessionPermissions} from '@24bid/api-client';
+import {AppShell,FeedbackNotice,Panel} from '@24bid/ui';
+import {useAuthStore} from './lib/auth-store';
+import {PageErrorBoundary} from './lib/page-error-boundary';
+import {workbenchGroups,workbenchModules} from './features/workbench/workbench-model';
+import {WorkbenchLoginPage} from './features/workbench/workbench-login-page';
+const Dashboard=lazy(()=>import('./features/workbench/agency-dashboard-page').then(m=>({default:m.AgencyDashboardPage})));
+const Calendar=lazy(()=>import('./features/workbench/opening-calendar-page').then(m=>({default:m.OpeningCalendarPage})));
+const Documents=lazy(()=>import('./features/workbench/document-library-page').then(m=>({default:m.DocumentLibraryPage})));
+const Templates=lazy(()=>import('./features/workbench/template-library-page').then(m=>({default:m.TemplateLibraryPage})));
+const Business=lazy(()=>import('./features/workbench/project-business-page').then(m=>({default:m.ProjectBusinessPage})));
+const Projects=lazy(()=>import('./features/agency/agency-page').then(m=>({default:m.AgencyPage})));
+const Approvals=lazy(()=>import('./features/approvals/approvals-page').then(m=>({default:m.ApprovalsPage})));
+const Contracts=lazy(()=>import('./features/contracts/contracts-page').then(m=>({default:m.ContractsPage})));
+const Process=lazy(()=>import('./features/process/process-engine-page').then(m=>({default:m.ProcessEnginePage})));
+const Org=lazy(()=>import('./features/org/org-structure-page').then(m=>({default:m.OrgStructurePage})));
+const Team=lazy(()=>import('./features/team/team-page').then(m=>({default:m.TeamPage})));
+const Policies=lazy(()=>import('./features/ai/ai-policies-page').then(m=>({default:m.AiPoliciesPage})));
+const Audit=lazy(()=>import('./features/audit/audit-page').then(m=>({default:m.AuditPage})));
+const Numbering=lazy(()=>import('./features/workbench/workbench-numbering-page').then(m=>({default:m.WorkbenchNumberingPage})));
+const initialModule=()=>new URLSearchParams(location.search).get('module')||'dashboard';
+function Loading(){return <p role="status" className="p-6 text-sm text-slate-500">正在加载工作台…</p>;}
+export function App(){return <PageErrorBoundary><TenantWorkbench/></PageErrorBoundary>;}
+function TenantWorkbench(){
+ const session=useAuthStore(s=>s.session),signOut=useAuthStore(s=>s.signOut),[active,setActive]=useState(initialModule);
+ const q=useSessionPermissions(session?.userId),permissions=q.isError?[]:q.data?.data?.permissions??[];
+ const granted=permissions.join(',');
+ const modules=useMemo(()=>workbenchModules.filter(m=>!m.requiredPermission||hasPermission(granted.split(','),m.requiredPermission)),[granted]);
+ const select=(id:string)=>{setActive(id);const u=new URL(location.href);u.search='';u.searchParams.set('module',id);history.pushState(null,'',u);};
+ useEffect(()=>{const pop=()=>setActive(initialModule());window.addEventListener('popstate',pop);return()=>window.removeEventListener('popstate',pop);},[]);
+ useEffect(()=>{if(session&&q.isSuccess&&!modules.some(m=>m.id===active)&&modules.length)select(modules[0].id);},[active,session,q.isSuccess,modules]);
+ if(!session||new URLSearchParams(location.search).get('portal')==='1')return <WorkbenchLoginPage/>;
+ if(q.isPending)return <Loading/>;
+ if(q.isError)return <div className="p-6"><FeedbackNotice tone="error" message="权限加载失败，请重试。"/><button onClick={()=>void q.refetch()}>重新加载</button></div>;
+ const permitted=modules.some(m=>m.id===active),title=modules.find(m=>m.id===active)?.label||'业务工作台';
+ return <AppShell brandName="24Bm" mainlineLabel="业务主线" isolationHint="项目资料、文件版本与费用记录按企业及项目授权范围访问。" brandSubtitle="招标代理业务工作台" mainlineHint="项目立项 → 文件编审 → 开评标 → 合同费用 → 归档" modules={modules} moduleGroups={workbenchGroups} activeModuleId={active} onSelectModule={select} title={title} accountLabel={session.displayName} onSignOut={signOut}>
+  <PageErrorBoundary key={active}><Suspense fallback={<Loading/>}>{!permitted?<Panel title="访问受限" icon={ShieldAlert}><FeedbackNotice tone="error" message="当前账号暂无该模块权限，请联系管理员。"/></Panel>:
+   active==='dashboard'?<Dashboard/>:active==='analytics'?<Calendar/>:active==='agency'?<Projects/>:active==='project-materials'?<Business mode="materials"/>:active==='project-archive'?<Business mode="archive"/>:active==='project-stats'||active==='owners'?<Panel title={title} icon={ShieldAlert}><FeedbackNotice tone="info" message={active==='owners'?'业主台账待接入。当前可在项目库查看项目已有的采购人信息。':'项目统计待接入。当前可通过项目库查看项目清单。'}/><a className="mt-3 inline-block text-sm text-blue-700" href="/?module=agency">打开项目库 →</a></Panel>:active==='documents'?<Documents/>:active==='announcements'?<Documents kind="announcement"/>:active==='templates'?<Templates/>:active==='execution'?<Business mode="execution"/>:active==='fees'?<Business mode="fees"/>:active==='approvals'?<Approvals/>:active==='contracts'?<Contracts/>:active==='process-engine'?<Process/>:active==='org'?<Org/>:active==='team'?<Team/>:active==='numbering-rules'?<Numbering/>:active==='ai-policies'?<Policies/>:active==='audit'?<Audit/>:null}</Suspense></PageErrorBoundary>
+ </AppShell>;
 }

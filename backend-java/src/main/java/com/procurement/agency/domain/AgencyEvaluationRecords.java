@@ -75,7 +75,9 @@ public final class AgencyEvaluationRecords {
       String hash,
       long inputVersion,
       boolean current,
-      boolean basisStale) {}
+      boolean basisStale,
+      List<Criterion> scoringCriteria,
+      String scoringTieRule) {}
 
   @io.swagger.v3.oas.annotations.media.Schema(name = "AgencyEvaluationMemberSnapshot")
   public record MemberSnapshot(String userId, String name, List<String> roles) {}

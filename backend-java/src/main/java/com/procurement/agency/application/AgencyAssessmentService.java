@@ -14,16 +14,19 @@ public class AgencyAssessmentService {
   private final AgencyAssessmentContext c;
   private final UnifiedWorkflowApplicationService workflows;
   private final AgencyAssessmentStages stages;
+  private final AgencyExpertCheckIn expertCheckIn;
   private final com.procurement.agency.infrastructure.AgencyOpeningMapper openings;
 
   public AgencyAssessmentService(
       AgencyAssessmentContext c,
       UnifiedWorkflowApplicationService workflows,
       AgencyAssessmentStages stages,
+      AgencyExpertCheckIn expertCheckIn,
       com.procurement.agency.infrastructure.AgencyOpeningMapper openings) {
     this.c = c;
     this.workflows = workflows;
     this.stages = stages;
+    this.expertCheckIn = expertCheckIn;
     this.openings = openings;
   }
 
@@ -69,6 +72,7 @@ public class AgencyAssessmentService {
     c.s.expected(v.round().version(), d.expectedRoundVersion());
     if (!v.round().status().equals("frozen") || v.frozenBasisStale() || !v.blockers().isEmpty())
       throw new IllegalStateException("须使用当前有效且无阻断项的冻结规则");
+    expertCheckIn.requireReady(pkg, v);
     if (!d.openingReviewed() || d.openedAt() == null || d.openedAt().isAfter(OffsetDateTime.now()))
       throw new IllegalArgumentException("须人工确认真实线下开启记录及非未来开启时间");
     c.s.text(d.note(), 2000, true, "开启与对象核对说明");

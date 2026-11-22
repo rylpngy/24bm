@@ -34,6 +34,7 @@ export interface AgencyPackage {
   status: string;
   version: number;
   workflowId?: string;
+  departmentId?: string;
   ownerId?: string;
   budget?: string;
   currency: string;

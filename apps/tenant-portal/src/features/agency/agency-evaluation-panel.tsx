@@ -1,3 +1,4 @@
+import { PaperScoreReviewWorkspace } from "./agency-paper-score-review";
 import { AgencyMethodProcedurePanel } from "./agency-method-procedure-panel";
 import { AgencyIncidentPanel } from "./agency-incident-panel";
 import { AgencyOpeningPanel } from "./agency-opening-panel";
@@ -115,12 +116,14 @@ export function AgencyEvaluationPanel({
   detail,
   editable,
   canFreeze,
+  reviewOnly = false,
   busy,
   run,
 }: {
   detail: AgencyDetail;
   editable: boolean;
   canFreeze: boolean;
+  reviewOnly?: boolean;
   busy: boolean;
   run: (fn: () => Promise<unknown>) => Promise<boolean>;
 }) {
@@ -212,11 +215,13 @@ export function AgencyEvaluationPanel({
       setReviewed((n) => ({ ...n, [v.round.id]: 0 }));
     }
   };
+  if (reviewOnly) return <PaperScoreReviewWorkspace detail={detail} workspace={q.data} loading={q.isPending} error={q.isError} />;
+  const lockedSource = q.data?.sources.find(source => source.revisionId === draft.documentRevisionId && source.scoringCriteria?.length);
   return (
     <section className="space-y-4" aria-label="评审轮次与规则冻结">
       <h4 className="font-bold">评审轮次与规则冻结</h4>
       <p className="text-sm text-slate-600">
-        本阶段冻结评审准备配置。独立审查和评分意见在冻结后的任务中记录；报价、材料在线开启和排名尚未开放。原文规则由项目人员按定稿逐项录入、核对，系统对照已录入数据展示差异，不自动认定采购文件的全部规则。
+        选择采购文件定稿。定稿含结构化评分办法时带入锁定评分项；确认纸质材料开启和评审人员后，专家可办理本人任务。
       </p>
       {q.error && (
         <FeedbackNotice tone="error" message={(q.error as Error).message} />
@@ -250,15 +255,20 @@ export function AgencyEvaluationPanel({
                   aria-label="评审来源定稿"
                   className={input}
                   value={draft.documentRevisionId}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    const source = q.data?.sources.find(item => item.revisionId === e.target.value);
+                    const rules = source?.scoringCriteria?.map((rule, index) => ({
+                      documentRule: rule, configuredRule: rule, locator: `定稿评审办法第 ${index + 1} 项`, manuallyChecked: false,
+                    }));
                     change({
                       documentRevisionId: e.target.value,
-                      rules: draft.rules.map((r) => ({
-                        ...r,
-                        manuallyChecked: false,
-                      })),
-                    })
-                  }
+                      rules: rules?.length ? rules : lockedSource ? [] : draft.rules.map(rule => ({ ...rule, manuallyChecked: false })),
+                      ...(rules?.length && source ? {
+                        evaluationMethod: "comprehensive", ruleVersion: `文件定稿 V${source.inputVersion}`,
+                        ruleBasis: "采购文件定稿 · 结构化评分办法", tieRule: source.scoringTieRule ?? "",
+                      } : {}),
+                    });
+                  }}
                 >
                   <option value="">请选择原始定稿版本</option>
                   {q.data?.sources.map((s) => (
@@ -273,6 +283,7 @@ export function AgencyEvaluationPanel({
               <Label title="评审方法">
                 <select
                   aria-label="评审方法"
+                  disabled={!!lockedSource}
                   className={input}
                   value={draft.evaluationMethod}
                   onChange={(e) => change({ evaluationMethod: e.target.value })}
@@ -287,6 +298,7 @@ export function AgencyEvaluationPanel({
               <Label title="规则版本标识">
                 <input
                   aria-label="规则版本标识"
+                  disabled={!!lockedSource}
                   className={input}
                   value={draft.ruleVersion}
                   onChange={(e) => change({ ruleVersion: e.target.value })}
@@ -319,6 +331,7 @@ export function AgencyEvaluationPanel({
             <Label title="适用规则依据及文件位置">
               <textarea
                 aria-label="评审规则依据"
+                  disabled={!!lockedSource}
                 className={input}
                 value={draft.ruleBasis}
                 onChange={(e) => change({ ruleBasis: e.target.value })}
@@ -327,6 +340,7 @@ export function AgencyEvaluationPanel({
             <Label title="同分处理依据（综合评分必填）">
               <textarea
                 aria-label="同分处理依据"
+                  disabled={!!lockedSource}
                 className={input}
                 value={draft.tieRule}
                 onChange={(e) => change({ tieRule: e.target.value })}
@@ -393,6 +407,13 @@ export function AgencyEvaluationPanel({
             <h5 className="font-semibold">逐项原文与配置</h5>
             {draft.rules.map((r, i) => (
               <article className="space-y-3 rounded border p-3" key={i}>
+                {lockedSource ? (
+                  <div className="text-sm">
+                    <p className="font-semibold">{r.configuredRule.key} · {r.configuredRule.title}</p>
+                    <p className="whitespace-pre-wrap">{r.configuredRule.applicableTo}</p>
+                    <p>满分 {r.configuredRule.maximum} · 权重 {r.configuredRule.weight}</p>
+                  </div>
+                ) : <>
                 <Label title="原文位置">
                   <input
                     aria-label={"规则" + (i + 1) + "原文位置"}
@@ -442,6 +463,9 @@ export function AgencyEvaluationPanel({
                   >
                     移除此规则草稿项
                   </button>
+                </div>
+                </>}
+                <div className="flex flex-wrap gap-3">
                   <label className="text-sm">
                     <input
                       type="checkbox"
@@ -464,7 +488,7 @@ export function AgencyEvaluationPanel({
             ))}
             <button
               className={btn}
-              disabled={draft.rules.length >= 100}
+              disabled={!!lockedSource || draft.rules.length >= 100}
               onClick={() =>
                 change({
                   rules: [
@@ -679,7 +703,7 @@ export function AgencyEvaluationPanel({
               run={run}
             />
           )}
-          {v.round.frozenHash && (
+          {v.round.frozenHash && !q.data?.sources.some(source => source.revisionId === v.config.documentRevisionId && source.scoringCriteria?.length) && (
             <AgencyMethodProcedurePanel
               detail={detail}
               round={v}
@@ -697,6 +721,7 @@ export function AgencyEvaluationPanel({
           )}
           {v.round.frozenHash && (
             <AgencyAssessmentPanel
+              paperScoring={q.data?.sources.some(source => source.revisionId === v.config.documentRevisionId && source.scoringCriteria?.length)}
               detail={detail}
               round={v}
               busy={busy}

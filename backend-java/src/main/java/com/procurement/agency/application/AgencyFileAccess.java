@@ -59,6 +59,10 @@ public class AgencyFileAccess implements AttachmentOwnerAccess {
   }
 
   public boolean visible(FileRow f) {
+    if ("paper_score_artifact".equals(f.category()))
+      return guard.permissions().currentUserHas("buyer:agency:evaluation:total:read")
+          && guard.permissions().currentUserHas("buyer:agency:evaluation:confidential")
+          && (guard.actor().equals(f.createdBy()) || guard.permissions().currentUserHas("buyer:agency:file:confidential"));
     if ("evaluation_report".equals(f.category())) return reports != null && reports.visible(f);
     if ("final_quote_material".equals(f.category()))
       return finalQuotes != null && finalQuotes.visible(f);
